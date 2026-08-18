@@ -1,0 +1,122 @@
+# Non-secret configuration only. Real secret values are either auto-generated
+# at install time (see templates/_helpers.tpl's secretValue helper) or
+# supplied via `--set`/-f a local, gitignored values file — never hardcode a
+# real secret here.
+
+postgres:
+  image: postgis/postgis:18-3.6
+  database: workout
+  user: workout
+  password: "" # leave empty to auto-generate and persist across `helm upgrade`
+  port: 5432
+  storage: 2Gi
+  storageClassName: standard
+
+mongo:
+  image: mongo:8.2
+  rootUsername: root
+  rootPassword: "" # leave empty to auto-generate
+  appUsername: timeline
+  appPassword: "" # leave empty to auto-generate
+  database: timeline
+  port: 27017
+  storage: 2Gi
+  storageClassName: standard
+
+# Shared JWT signing secret consumed by workout, integration, and timeline.
+auth:
+  accessTokenSecret: "" # leave empty to auto-generate
+  refreshTokenSecret: "" # leave empty to auto-generate
+
+# TLS secret (kind: Secret, type: kubernetes.io/tls) used by the gateway and
+# by integration's gRPC listener. Created out-of-band via
+# `scripts/gen-dev-certs.sh` + `kubectl create secret tls`, not templated by
+# this chart - referenced here only by name.
+tls:
+  secretName: socialgym-tls
+
+workout:
+  image:
+    repository: workout-app
+    tag: local
+    pullPolicy: IfNotPresent
+  port: 8090
+  rustLog: info
+  authRules:
+    enabled: true
+    passwordMinLength: 8
+    passwordRequireUppercase: true
+    passwordRequireLowercase: true
+    passwordRequireDigit: true
+    passwordRequireSpecial: true
+    loginMaxFailedAttempts: 3
+    loginLockoutDurationSeconds: 900
+  # AWS/CloudFront integration is not available locally by default - avatar
+  # and cover-image upload and CloudFront-signed URLs won't work unless you
+  # override these with real credentials (see chart README).
+  # NOTE: sqsQueueUrl must stay non-empty - workout's SQS consumer busy-loops
+  # with no backoff when AWS_SQS_QUEUE_URL="" (starves the HTTP server and
+  # fails probes), so this uses the same CHANGE_ME placeholder convention as
+  # infra/prod/.env.example rather than an empty string.
+  aws:
+    bucket: "CHANGE_ME"
+    sqsQueueUrl: "CHANGE_ME"
+    region: us-east-1
+    cloudfrontKeyPairId: "CHANGE_ME"
+    cloudfrontDomain: "CHANGE_ME"
+    accessKeyId: "CHANGE_ME"
+    secretAccessKey: "CHANGE_ME"
+    privateKeyRaw: "CHANGE_ME"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+integration:
+  image:
+    repository: integration-app
+    tag: local
+    pullPolicy: IfNotPresent
+  port: 50051
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+timeline:
+  image:
+    repository: timeline-app
+    tag: local
+    pullPolicy: IfNotPresent
+  port: 8091
+  rustLog: info
+  aws:
+    bucket: "CHANGE_ME"
+    region: us-east-1
+    cloudfrontKeyPairId: "CHANGE_ME"
+    cloudfrontDomain: "CHANGE_ME"
+    accessKeyId: "CHANGE_ME"
+    secretAccessKey: "CHANGE_ME"
+    privateKeyRaw: "CHANGE_ME"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+gateway:
+  image:
+    repository: nginx
+    tag: alpine
+    pullPolicy: IfNotPresent
+  serviceType: NodePort
+  httpPort: 80
+  httpsPort: 443

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: timeline
+  labels:
+    {{- include "socialgym.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: timeline
+  ports:
+    - name: http
+      port: {{ .Values.timeline.port }}
+      targetPort: http

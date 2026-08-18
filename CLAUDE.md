@@ -46,14 +46,15 @@ When the permission model is built, follow the consent pattern the codebase alre
 
 ## Repository layout
 
-This is a polyglot monorepo (not itself a git repo — each subproject below is its own independent git repository) containing the SocialGym platform:
+This is a polyglot monorepo — a single git repository (remote: `github.com:erickrocha/socialgym.git`) with every subproject below tracked directly in it. There are no submodules and no nested `.git` directories; despite older docs/notes suggesting otherwise, none of the subprojects is an independent repo.
 
 - **`workout/`** — Rust/Axum REST API + Tonic gRPC service. Owns Person, User, Friends, Workout/Exercise, and Business Profile data in PostgreSQL/PostGIS via SeaORM. This is the **source of truth for identity/social-graph data** — other services read it over gRPC rather than duplicating it.
 - **`timeline/`** — Rust/Axum REST API. Owns Post/Feed, Reactions, Comments, Notifications, Evolution Check-ins in MongoDB. Calls into `workout`'s gRPC service (`integration` package) as a client for Person/Friend/User data — see `timeline/business/src/commons/grpc_config.rs` and the `.proto` files mirrored under `timeline/business/proto/`.
 - **`socialgym_web/`** — React 19 + Vite + Redux Toolkit web frontend.
-- **`socialgym_mobile/`** — Flutter mobile app, consumes both REST (via `dio`/`http`) and gRPC (via generated Dart stubs in `lib/src/generated/grpc/`) directly against `workout`'s `integration` gRPC service.
-- **`billion/`** and **`development/`** — Docker Compose stacks (production-like and local dev respectively) wiring up nginx gateway, PostgreSQL/PostGIS, MongoDB, and the Rust services. `development/` is the one to use for local work.
-- **`certs/`** — TLS certs shared by the gRPC services and nginx gateway.
+- **`socialgym_mobile/`** — Flutter mobile app (iOS and Android only), consumes both REST (via `dio`/`http`) and gRPC (via generated Dart stubs in `lib/src/generated/grpc/`) directly against `workout`'s `integration` gRPC service.
+- **`lapidation_mobile/`** — a second Flutter mobile app (iOS and Android only) for a separate brand ("Lapidation Clinic"), derived from the SocialGym mobile feature set. Same REST/gRPC consumption pattern as `socialgym_mobile`.
+- **`infra/dev/`** and **`infra/prod/`** — Docker Compose stacks (local dev and production-like respectively). `infra/dev/` is the one to use for local work: it only brings up nginx gateway, PostgreSQL/PostGIS, and MongoDB — `workout` and `timeline` run on the host (`cargo run`) and are reached by the gateway via `host.docker.internal`. `infra/prod/` containerizes everything, including the Rust services (`workout-app`, `integration-app`, `timeline-app`); see `infra/prod/README.md` for its setup, network model, and known limitations.
+- **`infra/certs/`** — TLS certs shared by `infra/prod/`'s gRPC service and nginx gateway. `infra/dev/certs/` is the equivalent for the `infra/dev/` stack.
 
 ## Rust services (`workout`, `timeline`)
 
@@ -117,4 +118,9 @@ Keep `.proto` files in `socialgym_mobile/proto/`, `workout/integration/proto/`, 
 
 ## Local environment
 
-`development/compose.yml` (dev) and `billion/compose.yml` (prod-like) both bring up: nginx `gateway`, PostgreSQL/PostGIS (workout's DB), MongoDB (timeline's DB), and the Rust app containers. TLS certs come from `certs/` (prod) or `development/certs/` (dev). The gRPC `integration-app` container serves on port 50051 and requires `../certs/server.crt`/`server.key`.
+`infra/dev/compose.yml` and `infra/prod/compose.yml` are not equivalent stacks:
+
+- `infra/dev/compose.yml` (local dev) brings up only nginx `gateway`, PostgreSQL/PostGIS (workout's DB), and MongoDB (timeline's DB). `workout` and `timeline` are run on the host with `cargo run`, not in containers — the gateway's `nginx.conf` proxies to them via `host.docker.internal:8090`/`:8091` (REST) and `:50051` (gRPC).
+- `infra/prod/compose.yml` (production-like) additionally containerizes the Rust services themselves: `workout-app`, `integration-app` (the Tonic gRPC server), and `timeline-app`.
+
+TLS certs come from `infra/certs/` (used by `infra/prod/`) or `infra/dev/certs/` (used by `infra/dev/`). In `infra/prod/`, the gRPC `integration-app` container serves on port 50051 and requires `../certs/server.crt`/`server.key`.

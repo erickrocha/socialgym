@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: integration
+  labels:
+    app: integration
+    {{- include "socialgym.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: integration
+  template:
+    metadata:
+      labels:
+        app: integration
+    spec:
+      containers:
+        - name: integration
+          image: "{{ .Values.integration.image.repository }}:{{ .Values.integration.image.tag }}"
+          imagePullPolicy: {{ .Values.integration.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+              exec integration
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.integration.port }}
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: GRPC_PORT
+              value: {{ .Values.integration.port | quote }}
+            - name: TLS_CERT_PATH
+              value: /etc/grpc/certs/server.crt
+            - name: TLS_KEY_PATH
+              value: /etc/grpc/certs/server.key
+            - name: RUST_LOG
+              value: "info"
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.user | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.database | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_PASSWORD
+          envFrom:
+            - secretRef:
+                name: socialgym-auth
+          volumeMounts:
+            - name: tls
+              mountPath: /etc/grpc/certs
+              readOnly: true
+          resources:
+            {{- toYaml .Values.integration.resources | nindent 12 }}
+          readinessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 20
+            periodSeconds: 15
+      volumes:
+        - name: tls
+          secret:
+            secretName: {{ .Values.tls.secretName }}
+            items:
+              - key: tls.crt
+                path: server.crt
+              - key: tls.key
+                path: server.key

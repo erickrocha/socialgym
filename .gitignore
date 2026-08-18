@@ -1,3 +1,6 @@
 /infra/prod/.env
 /infra/dev/.env
+/infra/helm/socialgym/.dev-certs/
+/infra/certs/server.key
+/infra/dev/certs/server.key
 .idea

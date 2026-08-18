@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-init
+  labels:
+    {{- include "socialgym.labels" . | nindent 4 }}
+data:
+  # Runs once, on first boot with an empty data volume (official mongo image
+  # convention: any *.sh in /docker-entrypoint-initdb.d/ is executed with the
+  # container's env already in scope, so no secret value is baked in here).
+  init-app-user.sh: |
+    #!/bin/bash
+    set -e
+    mongosh <<EOF
+    use $MONGO_APP_DATABASE
+    db.createUser({
+      user: "$MONGO_APP_USERNAME",
+      pwd: "$MONGO_APP_PASSWORD",
+      roles: [{ role: "readWrite", db: "$MONGO_APP_DATABASE" }]
+    })
+    EOF
