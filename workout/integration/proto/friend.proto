@@ -1,0 +1,38 @@
+syntax = "proto3";
+package grpc.friend;
+
+import "person.proto";
+
+service FriendService {
+  rpc GetFriends (FriendsRequest) returns (FriendsResponse);
+  rpc GetFriendPage (FriendPageRequest) returns (FriendPageResponse);
+}
+
+message FriendsRequest {
+  int32 id = 1;
+  string uuid = 2;
+}
+
+message FriendsResponse {
+  repeated Friend friends = 1;
+}
+
+message Friend {
+  int32 id = 1;
+  string uuid= 2;
+  int32 person_id = 3;
+  string person_uuid = 4;
+  int32 friend_id = 5;
+  string friend_uuid = 6;
+}
+
+message FriendPageRequest {
+  int32 person_id = 1;
+}
+
+message FriendPageResponse {
+  repeated person.Person suggestions = 1;
+  repeated person.Person friends = 2;
+  repeated person.Person receive_requests = 3;
+  repeated person.Person sent_requests = 4;
+}

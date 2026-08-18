@@ -1,0 +1,21 @@
+@use "colors" as c;
+
+@mixin gradient($from: c.$color-primary, $to: c.$color-secondary, $deg: 90deg) {
+  background-color: $from; // fallback
+  background-image: linear-gradient($deg, $from 0%, $to 100%);
+  background-repeat: no-repeat;
+}
+
+@mixin gradient-3(
+  $from: c.$color-primary,
+  $mid: c.$color-secondary,
+  $to: c.$color-third,
+  $deg: 90deg,
+  $stop1: 0%,
+  $stop2: 50%,
+  $stop3: 100%
+) {
+  background-color: $from; // fallback for older browsers
+  background-image: linear-gradient($deg, $from $stop1, $mid $stop2, $to $stop3);
+  background-repeat: no-repeat;
+}

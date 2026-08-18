@@ -1,0 +1,251 @@
+@use "../../../assets/scss/colors" as c;
+
+// Mobile-first: Sidebar starts as horizontal navigation at top
+.sidebar {
+  width: 100%;
+  height: auto;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #ddd;
+  border-right: none;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  transition: width 0.3s ease;
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  &--collapsed {
+    width: 100%;
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    order: -1;
+  }
+
+  &__toggle {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: #333;
+    display: block;
+
+    &:hover,
+    &:focus {
+      color: c.$color-primary;
+    }
+
+    &:focus {
+      outline: 2px solid c.$color-primary;
+      outline-offset: 2px;
+    }
+  }
+
+  &__avatar-section {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  &__avatar-button {
+    background: none;
+    border: 2px solid c.$color-primary;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0.25rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+
+    &:hover,
+    &:focus {
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(124, 178, 168, 0.3);
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  &__user-name {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #333;
+    text-align: center;
+    word-break: break-word;
+    display: none;
+
+    @media (min-width: 480px) {
+      display: block;
+      font-size: 0.85rem;
+    }
+  }
+
+  &__menu {
+    display: flex;
+    flex-direction: row;
+    gap: 0.25rem;
+    flex-grow: 1;
+  }
+
+  &__menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0.5rem;
+    background: none;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    color: #333;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+    flex: 1;
+    min-width: 40px;
+
+    &:hover {
+      background-color: #e0e0e0;
+    }
+
+    &--active {
+      background: rgba(124, 178, 168, 0.22);
+      color: #26423d;
+      font-weight: 600;
+    }
+
+    &:focus {
+      outline: 2px solid c.$color-primary;
+      outline-offset: -2px;
+    }
+  }
+
+  &__menu-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  &__menu-label {
+    display: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // Tablet and above: Switch to vertical sidebar
+  @media (min-width: 768px) {
+    width: 250px;
+    height: calc(100vh - 50px);
+    background-color: #f8f9fa;
+    border-right: 1px solid #ddd;
+    border-bottom: none;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    transition: width 0.3s ease;
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    &--collapsed {
+      width: 80px;
+    }
+
+    &__header {
+      display: flex;
+      justify-content: flex-end;
+      order: 0;
+    }
+
+    &__toggle {
+      display: block;
+      font-size: 1.5rem;
+    }
+
+    &__avatar-section {
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    &__avatar-button {
+      width: auto;
+      height: auto;
+    }
+
+    &__user-name {
+      display: block;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #333;
+      text-align: center;
+      word-break: break-word;
+    }
+
+    &__menu {
+      flex-direction: column;
+      gap: 0.5rem;
+      flex-grow: 0;
+    }
+
+    &__menu-item {
+      justify-content: flex-start;
+      gap: 1rem;
+      padding: 0.75rem;
+      font-size: 0.95rem;
+      flex: none;
+
+      &:hover {
+        background-color: #e0e0e0;
+      }
+
+      &--active {
+        background: rgba(124, 178, 168, 0.22);
+        color: #26423d;
+        font-weight: 600;
+      }
+
+      &:focus {
+        outline: 2px solid c.$color-primary;
+        outline-offset: -2px;
+      }
+    }
+
+    &__menu-icon {
+      font-size: 1.25rem;
+    }
+
+    &__menu-label {
+      display: inline;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // Small mobile: Ensure touch targets
+  @media (max-width: 480px) {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+
+    &__avatar-button {
+      width: 36px;
+      height: 36px;
+    }
+
+    &__menu-item {
+      min-width: 36px;
+      padding: 0.4rem;
+    }
+  }
+}
+

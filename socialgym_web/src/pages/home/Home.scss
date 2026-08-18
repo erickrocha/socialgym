@@ -1,0 +1,20 @@
+@use "../../assets/scss/colors" as c;
+
+.home-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.home-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+  }
+}
+
+

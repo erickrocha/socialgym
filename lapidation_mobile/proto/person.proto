@@ -1,0 +1,94 @@
+syntax = "proto3";
+package grpc.person;
+
+import "user.proto";
+import "person_info.proto";
+import "person_address.proto";
+import "business_profile.proto";
+
+service PersonService {
+  rpc GetPerson (PersonIdRequest) returns (PersonResponse);
+  rpc GetMe (GetMeRequest) returns (PersonResponse);
+  rpc SearchMentionableFriends (SearchMentionableFriendsRequest) returns (PeopleResponse);
+  rpc updatePerson (Person) returns (PersonResponse);
+  rpc SearchPersons (PersonParams) returns (PeopleResponse);
+  rpc UpdatePersonInfo (person_info.PersonInfo) returns (person_info.PersonInfo);
+  rpc AddPersonAddress (person_address.PersonAddress) returns (person_address.PersonAddress);
+  rpc UpdatePersonAddress (person_address.PersonAddress) returns (person_address.PersonAddress);
+  rpc RemovePersonAddress (RemovePersonAddressRequest) returns (RemovePersonAddressResponse);
+  rpc GetPersonImageUploadUrl (PersonImageUploadRequest) returns (PersonImageUploadResponse);
+  rpc DeletePersonImage (PersonImageRequest) returns (DeletePersonImageResponse);
+}
+
+message GetMeRequest {}
+
+message RemovePersonAddressRequest {
+  int32 id = 1;
+  string uuid = 2;
+}
+message RemovePersonAddressResponse {
+  bool success = 1;
+}
+
+message PersonImageUploadRequest {
+  string image_type = 1;
+  string format = 2;
+}
+message PersonImageUploadResponse {
+  string url = 1;
+  string object_key = 2;
+  int32 person_id = 3;
+}
+message PersonImageRequest {
+  string image_type = 1;
+}
+message DeletePersonImageResponse {
+  bool success = 1;
+}
+
+message PersonParams{
+  oneof ParamIdentifier {
+    int32 id = 1;
+    string uuid = 2;
+  }
+  string query = 3;
+  int32 limit = 4;
+}
+
+message PersonIdRequest {
+  oneof identifier {
+    int32 id = 1;
+    string uuid = 2;
+  }
+}
+
+message SearchMentionableFriendsRequest {
+  int32 person_id = 1;
+  string query = 2;
+  int32 limit = 3;
+}
+
+message PeopleResponse {
+  repeated Person people = 1;
+}
+message PersonResponse {
+  Person person = 1;
+}
+
+message Person {
+  int32 id = 1;
+  string uuid = 2;
+  string firstname = 3;
+  string surname = 4;
+  string date_of_birth = 5;
+  string gender = 6;
+  string object_key = 7;
+  string avatar = 8;
+  string cover = 9;
+  user.User user = 10;
+  person_info.PersonInfo person_info = 11;
+  repeated person_address.PersonAddress addresses = 12;
+  string created_at = 13;
+  string updated_at = 14;
+  repeated business_profile.BusinessProfile business_profiles = 15;
+}

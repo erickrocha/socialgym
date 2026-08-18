@@ -1,0 +1,206 @@
+@use "../../../assets/scss/effects" as effects;
+@use "../../../assets/scss/colors" as c;
+@use "../../../assets/scss/components";
+
+.SignUp {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  @include effects.gradient-3();
+
+
+
+  .body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    gap: 1.5rem;
+
+    > div:first-child {
+      margin-bottom: 0;
+
+      img {
+        max-width: 100%;
+        height: auto;
+        width: 120px;
+      }
+    }
+
+    .form-container {
+      background-color: c.$background-color;
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 100%;
+
+      h1 {
+        margin: 0 0 1.5rem 0;
+        text-align: center;
+        font-size: 1.5rem;
+        color: #333;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+
+        .birthday-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          border: none;
+          padding: 0;
+          margin: 0;
+
+          legend {
+            font-weight: 500;
+            color: #333;
+            font-size: 0.95rem;
+            padding: 0;
+            margin: 0;
+          }
+
+          .birthday-inputs {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 0.5rem;
+
+            > * {
+              flex: 1;
+              min-width: 0;
+            }
+
+            @media (min-width: 640px) {
+              gap: 0.75rem;
+            }
+          }
+        }
+
+
+        .field-hint {
+          font-size: 0.85rem;
+          color: #666;
+          margin: -0.75rem 0 0 0;
+          font-style: italic;
+        }
+      }
+
+      .sign-in-link {
+        text-align: center;
+        margin-top: 1rem;
+
+        a {
+          color: c.$color-primary;
+          text-decoration: none;
+          font-size: 0.9rem;
+
+          &:hover {
+            text-decoration: underline;
+          }
+
+          &:focus {
+            outline: 2px solid c.$color-primary-hover;
+            outline-offset: 2px;
+          }
+        }
+      }
+    }
+  }
+
+  .footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    background-color: #333;
+    font-size: 0.9rem;
+    gap: 1rem;
+  }
+
+  /* Tablet and larger screens (640px and up) */
+  @media (min-width: 640px) {
+    .header {
+      min-height: 20vh;
+      font-size: 1.5rem;
+      padding: 1.5rem;
+    }
+
+    .body {
+      flex-direction: row;
+      gap: 2rem;
+      padding: 1.5rem;
+
+      > div:first-child {
+        flex-shrink: 0;
+
+        img {
+          width: 180px;
+        }
+      }
+
+      .form-container {
+        max-width: 450px;
+        padding: 2rem;
+
+        h1 {
+          font-size: 1.75rem;
+        }
+
+        form {
+          gap: 1.5rem;
+
+          .birthday-group {
+            .birthday-inputs {
+              grid-template-columns: 1fr 1fr 1fr;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* Desktop screens (1024px and up) */
+  @media (min-width: 1024px) {
+    .header {
+      min-height: 25vh;
+      font-size: 2rem;
+      padding: 3rem 2rem 2rem 5rem;
+    }
+
+    .body {
+      justify-content: space-around;
+      padding: 2rem;
+      gap: 3rem;
+
+      > div:first-child {
+        img {
+          width: 250px;
+        }
+      }
+
+      .form-container {
+        max-width: 500px;
+        padding: 2.5rem;
+
+        h1 {
+          font-size: 2rem;
+        }
+      }
+    }
+  }
+
+  /* Accessibility: Reduce motion if preferred */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}
+

@@ -1,0 +1,1 @@
+export {getMe, updatePerson, updatePersonInfo, uploadCoverImage, uploadAvatar} from './person.actions.js';

@@ -1,0 +1,53 @@
+syntax = "proto3";
+package grpc.workout;
+
+import "exercise.proto";
+import "google/protobuf/empty.proto";
+
+message Workout {
+  int32 id = 1;
+  string uuid = 2;
+  int32 owner_id = 3;
+  string owner_uuid = 4;
+  string name = 5;
+  string description = 6;
+  string difficulty = 7;
+  string muscle_group = 8;
+  string visibility = 9;
+  repeated grpc.exercise.Exercise exercises = 10;
+  string created_at = 11;
+  string updated_at = 12;
+}
+
+service WorkoutService {
+  rpc GetWorkout (WorkoutRequest) returns (Workout);
+  rpc GetWorkoutsByOwner (WorkoutListRequest) returns (WorkoutResponse);
+  rpc AddWorkout(Workout) returns (Workout);
+  rpc UpdateWorkout(Workout) returns (Workout);
+  rpc DeleteWorkout(WorkoutRequest) returns (google.protobuf.Empty);
+  rpc AddExercisesToWorkout(WorkoutExercisesRequest) returns (Workout);
+}
+
+message WorkoutRequest {
+  oneof identifier {
+    int32 id = 1;
+    string uuid = 2;
+  }
+}
+
+message WorkoutExercisesRequest {
+  string workout_uuid = 1;
+  repeated grpc.exercise.Exercise exercises = 2;
+}
+
+message WorkoutListRequest {
+  oneof identifier {
+    int32 owner_id = 1;
+    string owner_uuid = 2;
+  }
+}
+
+message WorkoutResponse {
+  repeated Workout workouts = 1;
+}
+

@@ -1,0 +1,222 @@
+@use '../../../assets/scss/colors' as c;
+
+.workout-complete {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, #{c.$color-primary} 0%, #{c.$color-secondary} 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 1000;
+    animation: fadeIn 0.5s ease;
+
+    &__content {
+        background: white;
+        border-radius: 24px;
+        padding: 2rem;
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        animation: scaleIn 0.5s ease;
+    }
+
+    &__celebration {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    &__trophy {
+        font-size: 5rem;
+        display: block;
+        animation: bounce 1s ease infinite;
+    }
+
+    &__confetti {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+
+        span {
+            position: absolute;
+            font-size: 1.5rem;
+            animation: confetti 2s ease infinite;
+
+            &:nth-child(1) {
+                animation-delay: 0s;
+                transform: rotate(0deg);
+            }
+            &:nth-child(2) {
+                animation-delay: 0.3s;
+                transform: rotate(90deg);
+            }
+            &:nth-child(3) {
+                animation-delay: 0.6s;
+                transform: rotate(180deg);
+            }
+            &:nth-child(4) {
+                animation-delay: 0.9s;
+                transform: rotate(270deg);
+            }
+        }
+    }
+
+    &__title {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.75rem;
+        color: c.$foreground-color;
+        font-weight: 700;
+    }
+
+    &__workout-name {
+        margin: 0 0 1.5rem 0;
+        font-size: 1.1rem;
+        color: c.$color-primary;
+        font-weight: 600;
+    }
+
+    &__stats {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    &__stat {
+        flex: 1;
+        background: linear-gradient(135deg, rgba(c.$color-primary, 0.1), rgba(c.$color-secondary, 0.1));
+        border-radius: 16px;
+        padding: 1rem 0.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    &__stat-icon {
+        font-size: 1.5rem;
+    }
+
+    &__stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: c.$foreground-color;
+    }
+
+    &__stat-label {
+        font-size: 0.7rem;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    &__message {
+        background: linear-gradient(135deg, rgba(c.$color-third, 0.2), rgba(c.$color-secondary, 0.2));
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+
+        p {
+            margin: 0;
+            font-size: 1rem;
+            color: c.$foreground-color;
+            font-weight: 500;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    &__btn {
+        flex: 1;
+        padding: 1rem;
+        border-radius: 12px;
+        font-weight: 600;
+
+        &--primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, c.$color-primary, c.$color-primary-hover);
+        }
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes confetti {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--x, 50px), var(--y, -50px)) scale(0);
+    }
+}
+
+.workout-complete__confetti span:nth-child(1) { --x: -60px; --y: -40px; }
+.workout-complete__confetti span:nth-child(2) { --x: 60px; --y: -40px; }
+.workout-complete__confetti span:nth-child(3) { --x: -60px; --y: 40px; }
+.workout-complete__confetti span:nth-child(4) { --x: 60px; --y: 40px; }
+
+@media (min-width: 768px) {
+    .workout-complete {
+        &__content {
+            padding: 2.5rem;
+        }
+
+        &__trophy {
+            font-size: 6rem;
+        }
+
+        &__stats {
+            gap: 1.5rem;
+        }
+
+        &__stat {
+            padding: 1.25rem 0.75rem;
+        }
+
+        &__stat-value {
+            font-size: 1.75rem;
+        }
+    }
+}
+

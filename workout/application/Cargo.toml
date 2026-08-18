@@ -1,0 +1,30 @@
+[package]
+name = "application"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+business = { path = "../business" }
+migration = { path = "../migration" }
+chrono = { workspace = true}
+dotenvy = {workspace = true}
+utoipa = { workspace = true }
+utoipa-swagger-ui = { workspace = true }
+tokio = {workspace = true}
+tracing-subscriber = {workspace = true}
+
+axum = "0.8.9"
+serde = "1.0.229"
+anyhow = "1.0.104"
+log = "0.4.33"
+tower-http = { version = "0.7.0", features = ["full"] }
+base64 = "0.23.1"
+fluent-templates = "0.15.1"
+unic-langid = { version = "0.9", features = ["macros"] }
+
+[features]
+mock = ["business/mock"]
+
+[[test]]
+name = "mock"
+required-features = ["mock"]

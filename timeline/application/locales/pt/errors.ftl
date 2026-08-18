@@ -1,0 +1,16 @@
+auth-token-invalid = Token invalido
+auth-header-empty = Cabecalho vazio nao e permitido
+auth-token-missing = Adicione o token JWT no cabecalho
+auth-token-malformed = Formato de token invalido
+workout-add-failed = Falha ao salvar treino
+workout-find-failed = Falha ao buscar treino
+workout-find-all-failed = Falha ao buscar treinos
+workout-not-found = Sessao de treino nao encontrada
+post-create-failed = Falha ao criar post
+feed-fetch-failed = Falha ao buscar feed
+comment-add-failed = Falha ao adicionar comentario
+reaction-add-failed = Falha ao adicionar reacao
+reaction-remove-failed = Falha ao remover reacao
+evolution-checkin-add-failed = Falha ao salvar check-in de evolucao
+evolution-checkin-find-failed = Falha ao buscar check-in de evolucao
+unknown-error = Erro interno inesperado

@@ -1,0 +1,354 @@
+@use '../../assets/scss/colors' as c;
+
+.friends-page {
+  min-height: 100vh;
+  background-color: c.$background-color;
+
+  &__layout {
+    display: flex;
+    flex-direction: column;
+    padding-top: 60px;
+
+    @media (min-width: 768px) {
+      flex-direction: row;
+    }
+  }
+
+  // Hide sidebar on mobile, show on tablet+
+  .sidebar {
+    display: none;
+
+    @media (min-width: 768px) {
+      display: flex;
+      flex-direction: column;
+      width: 240px;
+      min-width: 240px;
+    }
+  }
+
+  &__content {
+    flex: 1;
+    padding: 0.75rem;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+
+    @media (min-width: 576px) {
+      padding: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      padding: 1.5rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+  }
+
+  &__header {
+    margin-bottom: 1rem;
+
+    @media (min-width: 768px) {
+      margin-bottom: 1.5rem;
+    }
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: c.$foreground-color;
+    margin: 0 0 0.25rem 0;
+
+    @media (min-width: 576px) {
+      font-size: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      font-size: 1.75rem;
+    }
+  }
+
+  &__subtitle {
+    font-size: 0.8125rem;
+    color: #65676B;
+    margin: 0;
+
+    @media (min-width: 576px) {
+      font-size: 0.875rem;
+    }
+  }
+
+  &__tabs {
+    display: flex;
+    gap: 0.375rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #E4E6EB;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    // Hide scrollbar but keep functionality
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    @media (min-width: 576px) {
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+    }
+  }
+
+  &__tab {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: #E4E6EB;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: c.$foreground-color;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+
+    @media (min-width: 576px) {
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+    }
+
+    &:hover {
+      background: #D8DADF;
+    }
+
+    &--active {
+      background: c.$color-primary;
+      color: white;
+
+      &:hover {
+        background: c.$color-primary-hover;
+      }
+    }
+  }
+
+  &__tab-icon {
+    font-size: 0.875rem;
+
+    @media (min-width: 576px) {
+      font-size: 1rem;
+    }
+  }
+
+  &__tab-label {
+    // Hide label on very small screens, show icon only
+    @media (max-width: 374px) {
+      display: none;
+    }
+  }
+
+  &__tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    margin-left: 0.25rem;
+
+    @media (min-width: 576px) {
+      min-width: 1.5rem;
+      height: 1.5rem;
+      font-size: 0.75rem;
+    }
+
+    .friends-page__tab--active & {
+      background: rgba(255, 255, 255, 0.25);
+    }
+  }
+
+  &__sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    @media (min-width: 576px) {
+      gap: 1.5rem;
+    }
+  }
+}
+
+.friends-box {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  @media (min-width: 576px) {
+    border-radius: 12px;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #E4E6EB;
+
+    @media (min-width: 576px) {
+      padding: 1rem 1.25rem;
+    }
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: c.$foreground-color;
+    margin: 0;
+
+    @media (min-width: 576px) {
+      gap: 0.5rem;
+      font-size: 1.125rem;
+    }
+  }
+
+  &__icon {
+    font-size: 1.125rem;
+
+    @media (min-width: 576px) {
+      font-size: 1.25rem;
+    }
+  }
+
+  &__count {
+    background: c.$color-primary;
+    color: white;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.1875rem 0.5rem;
+    border-radius: 10px;
+
+    @media (min-width: 576px) {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 12px;
+    }
+  }
+
+  &__content {
+    padding: 0.75rem;
+
+    @media (min-width: 576px) {
+      padding: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      padding: 1.25rem;
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+
+    // Very small screens - single column
+    @media (max-width: 374px) {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (min-width: 576px) {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+    }
+
+    @media (min-width: 768px) {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    @media (min-width: 992px) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    @media (min-width: 1200px) {
+      grid-template-columns: repeat(5, 1fr);
+    }
+  }
+
+  &__loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+
+    @media (min-width: 576px) {
+      padding: 3rem;
+    }
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    text-align: center;
+
+    @media (min-width: 576px) {
+      padding: 3rem 1rem;
+    }
+  }
+
+  &__empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+
+    @media (min-width: 576px) {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+  }
+
+  &__empty p {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: c.$foreground-color;
+    margin: 0 0 0.375rem 0;
+
+    @media (min-width: 576px) {
+      font-size: 1rem;
+      margin: 0 0 0.5rem 0;
+    }
+  }
+
+  &__empty-hint {
+    font-size: 0.8125rem;
+    color: #65676B;
+
+    @media (min-width: 576px) {
+      font-size: 0.875rem;
+    }
+  }
+
+  // Suggestion box specific styles
+  &--suggestions {
+    .friends-box__header {
+      background: linear-gradient(135deg, #{c.$color-primary}10 0%, #{c.$color-secondary}10 100%);
+    }
+  }
+}

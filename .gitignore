@@ -1,0 +1,3 @@
+/infra/prod/.env
+/infra/dev/.env
+.idea

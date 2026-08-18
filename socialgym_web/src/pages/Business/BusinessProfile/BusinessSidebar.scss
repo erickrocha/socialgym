@@ -1,0 +1,201 @@
+@use "../../../assets/scss/colors" as c;
+@use "sass:color";
+
+.business-sidebar {
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: width 0.3s ease;
+    position: relative;
+
+    @media (min-width: 768px) {
+        width: 260px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 80px;
+        height: fit-content;
+        margin-bottom: 0;
+    }
+
+    &--collapsed {
+        @media (min-width: 768px) {
+            width: 70px;
+
+            .business-sidebar__title {
+                display: none;
+            }
+
+            .business-sidebar__item {
+                justify-content: center;
+                padding: 0.75rem;
+            }
+
+            .business-sidebar__label {
+                display: none;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .business-sidebar__nav {
+                flex-direction: row;
+                overflow-x: auto;
+            }
+
+            .business-sidebar__section {
+                flex-direction: row;
+            }
+
+            .business-sidebar__divider {
+                width: 1px;
+                height: auto;
+                margin: 0 0.5rem;
+            }
+
+            .business-sidebar__title {
+                display: none;
+            }
+
+            .business-sidebar__label {
+                display: none;
+            }
+        }
+    }
+
+    &__toggle {
+        position: absolute;
+        top: 10px;
+        right: -12px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: c.$color-primary;
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        transition: background 0.2s ease;
+        z-index: 10;
+
+        &:hover {
+            background: c.$color-primary-hover;
+        }
+
+        @media (max-width: 767px) {
+            display: none;
+        }
+    }
+
+    &__back-btn {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: transparent;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        color: #666;
+        cursor: pointer;
+        text-align: left;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background: #f5f5f5;
+            color: c.$color-primary;
+            border-color: c.$color-primary;
+        }
+
+        &--icon {
+            width: auto;
+            padding: 0.75rem;
+            text-align: center;
+            font-size: 1rem;
+        }
+    }
+
+    &__section {
+        margin-bottom: 1.5rem;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    &__title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #888;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        margin: 0 0 0.75rem 0;
+        padding: 0 0.5rem;
+    }
+
+    &__nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+
+        @media (max-width: 767px) {
+            flex-direction: row;
+            gap: 0.25rem;
+        }
+    }
+
+    &__divider {
+        height: 1px;
+        background: #e4e6eb;
+        margin: 0.5rem 0;
+
+        @media (max-width: 767px) {
+            width: 1px;
+            height: auto;
+            margin: 0 0.5rem;
+        }
+    }
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        width: 100%;
+
+        &:hover {
+            background: #f5f5f5;
+        }
+
+        &--active {
+            background: color.adjust(c.$color-primary, $lightness: 35%);
+            color: color.adjust(c.$color-primary, $lightness: -20%);
+
+            .business-sidebar__label {
+                font-weight: 600;
+            }
+        }
+    }
+
+    &__icon {
+        font-size: 1.125rem;
+        width: 24px;
+        text-align: center;
+    }
+
+    &__label {
+        font-size: 0.9375rem;
+        color: c.$foreground-color;
+    }
+}
+

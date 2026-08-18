@@ -1,0 +1,29 @@
+[package]
+name = "business"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+domain = { path = "../domain" }
+tonic = { workspace = true }
+tokio = { workspace = true }
+log = "0.4.32"
+jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
+mongodb = { workspace = true }
+futures = "0.3.32"
+cloudfront_sign = "0.4.1"
+async-trait = "0.1.89"
+chrono = { workspace = true }
+rustls = { version = "0.23", features = ["ring"] }
+prost = "0.14.4"
+tonic-prost = "0.14.6"
+
+
+[dev-dependencies]
+
+[build-dependencies]
+tonic-prost-build = "0.14.6"
+protoc-bin-vendored = "3"
+
+[[test]]
+name = "mock"

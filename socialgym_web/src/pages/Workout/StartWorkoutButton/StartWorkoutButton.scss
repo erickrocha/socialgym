@@ -1,0 +1,138 @@
+@use '../../../assets/scss/colors' as c;
+
+.start-workout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1.5rem;
+    background: linear-gradient(135deg, c.$color-primary 0%, c.$color-primary-hover 50%, c.$color-secondary 100%);
+    border: none;
+    border-radius: 50px;
+    color: white;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(c.$color-primary, 0.3);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s ease;
+    }
+
+    &:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(c.$color-primary, 0.4);
+
+        &::before {
+            left: 100%;
+        }
+    }
+
+    &:active {
+        transform: translateY(-1px) scale(1);
+    }
+
+    &--disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        box-shadow: none;
+
+        &:hover {
+            transform: none;
+            box-shadow: none;
+        }
+    }
+
+    &__icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+            width: 100%;
+            height: 100%;
+            color: white;
+        }
+    }
+
+    &__spark {
+        animation: sparkle 1.5s ease-in-out infinite;
+
+        &--delay {
+            animation-delay: 0.5s;
+        }
+    }
+
+    &__text {
+        letter-spacing: 0.5px;
+    }
+
+    &__emoji {
+        font-size: 1.25rem;
+        animation: rocket 1s ease-in-out infinite;
+    }
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(1.3);
+    }
+}
+
+@keyframes rocket {
+    0%, 100% {
+        transform: translateY(0) rotate(-15deg);
+    }
+    50% {
+        transform: translateY(-3px) rotate(-15deg);
+    }
+}
+
+/* Mobile styles */
+@media (max-width: 480px) {
+    .start-workout-btn {
+        width: 100%;
+        padding: 1rem;
+        font-size: 0.95rem;
+
+        &__icon {
+            width: 28px;
+            height: 28px;
+        }
+    }
+}
+
+/* Desktop styles */
+@media (min-width: 768px) {
+    .start-workout-btn {
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+
+        &__icon {
+            width: 36px;
+            height: 36px;
+        }
+
+        &__emoji {
+            font-size: 1.5rem;
+        }
+    }
+}
+

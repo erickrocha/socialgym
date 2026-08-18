@@ -1,0 +1,211 @@
+.exercises-page {
+  min-height: 100vh;
+  background-color: #0b0f19;
+  color: #f8fafc;
+
+  .exercises-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .exercises-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin: 0 0 0.25rem 0;
+      background: linear-gradient(135deg, #f8fafc, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p {
+      color: #94a3b8;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+  }
+
+  .exercises-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    background: #1e293b;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid #334155;
+
+    .category-pills {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+
+      .category-pill {
+        background: #0f172a;
+        border: 1px solid #334155;
+        color: #94a3b8;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s;
+
+        &:hover {
+          color: #f8fafc;
+          border-color: #3b82f6;
+        }
+
+        &.active {
+          background: #3b82f6;
+          color: #fff;
+          border-color: #3b82f6;
+        }
+      }
+    }
+
+    .search-wrapper {
+      min-width: 250px;
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: #64748b;
+    font-size: 1.1rem;
+  }
+
+  .exercises-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .exercise-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s, box-shadow 0.2s;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+      border-color: #3b82f6;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+
+      .category-badge {
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.2rem 0.6rem;
+        border-radius: 6px;
+        text-transform: uppercase;
+      }
+
+      .visibility-badge {
+        background: #0f172a;
+        color: #94a3b8;
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+      }
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      margin: 0 0 0.5rem 0;
+      color: #f8fafc;
+    }
+
+    .description {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin: 0 0 1rem 0;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 1rem;
+      background: #0f172a;
+      padding: 0.6rem 0.8rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+
+      .stat {
+        display: flex;
+        flex-direction: column;
+
+        .label {
+          font-size: 0.7rem;
+          color: #64748b;
+          text-transform: uppercase;
+          font-weight: 700;
+        }
+
+        .val {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: #38bdf8;
+        }
+      }
+    }
+
+    .card-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+
+      button {
+        background: transparent;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &.btn-edit {
+          color: #60a5fa;
+
+          &:hover {
+            background: rgba(59, 130, 246, 0.1);
+          }
+        }
+
+        &.btn-delete {
+          color: #f87171;
+
+          &:hover {
+            background: rgba(239, 68, 68, 0.1);
+          }
+        }
+      }
+    }
+  }
+}

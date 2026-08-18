@@ -1,0 +1,1 @@
+export {uploadFileToS3} from './s3.action.js'

@@ -1,0 +1,18 @@
+syntax = "proto3";
+package grpc.person_info;
+
+message PersonInfo {
+  int32 id = 1;
+  int32 person_id = 2;
+  string biography = 3;
+  string relationship = 4;
+  string job = 5;
+  string home_town = 6;
+  string current_city = 7;
+  float weight = 8;
+  float height = 9;
+  string uuid = 10;
+  string created_at = 11;
+  string updated_at = 12;
+}
+

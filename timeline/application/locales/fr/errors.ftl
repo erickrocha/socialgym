@@ -1,0 +1,16 @@
+auth-token-invalid = Jeton invalide
+auth-header-empty = En-tete vide non autorise
+auth-token-missing = Ajoutez le jeton JWT dans l'en-tete
+auth-token-malformed = Format de jeton invalide
+workout-add-failed = Echec de l'enregistrement de l'entrainement
+workout-find-failed = Echec de la recherche de l'entrainement
+workout-find-all-failed = Echec de la recherche des entrainements
+workout-not-found = Session d'entrainement introuvable
+post-create-failed = Echec de la creation de la publication
+feed-fetch-failed = Echec du chargement du fil
+comment-add-failed = Echec de l'ajout du commentaire
+reaction-add-failed = Echec de l'ajout de la reaction
+reaction-remove-failed = Echec de la suppression de la reaction
+evolution-checkin-add-failed = Echec de l'enregistrement du check-in d'evolution
+evolution-checkin-find-failed = Echec de la recherche du check-in d'evolution
+unknown-error = Erreur interne inattendue

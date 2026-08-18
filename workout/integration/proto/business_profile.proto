@@ -1,0 +1,54 @@
+syntax = "proto3";
+package grpc.business_profile;
+
+import "business_profile_address.proto";
+
+message BusinessProfile {
+  int32 id = 1;
+  string uuid = 2;
+  int32 owner_id = 3;
+  string owner_uuid = 4;
+  string tax_id = 5;
+  string business_name = 6;
+  string business_type = 7;
+  string social_name = 8;
+  string object_key = 9;
+  string logo = 10;
+  string cover_image = 11;
+  string created_at = 12;
+  string updated_at = 13;
+  repeated grpc.business_profile_address.BusinessProfileAddress addresses = 14;
+}
+
+service BusinessProfileService {
+  rpc GetBusinessProfileById (BusinessProfileRequestId) returns (BusinessProfile);
+  rpc GetBusinessProfileByOwnerId (BusinessProfileRequestOwnerId) returns (BusinessProfilesResponse);
+  rpc AddBusinessProfile(BusinessProfile) returns (BusinessProfile);
+  rpc UpdateBusinessProfile(BusinessProfile) returns (BusinessProfile);
+  rpc AddBusinessProfileAddress(grpc.business_profile_address.BusinessProfileAddress) returns (grpc.business_profile_address.BusinessProfileAddress);
+  rpc UpdateBusinessProfileAddress(grpc.business_profile_address.BusinessProfileAddress) returns (grpc.business_profile_address.BusinessProfileAddress);
+  rpc RemoveBusinessProfileAddress(RemoveBusinessProfileAddressRequest) returns (RemoveBusinessProfileAddressResponse);
+}
+
+message BusinessProfileRequestId {
+  int32 id = 1;
+  string uuid = 2;
+}
+
+message BusinessProfileRequestOwnerId {
+  int32 owner_id = 1;
+  string owner_uuid = 2;
+}
+
+message BusinessProfilesResponse {
+  repeated BusinessProfile business_profiles = 1;
+}
+
+message RemoveBusinessProfileAddressRequest {
+  int32 id = 1;
+  string uuid = 2;
+}
+
+message RemoveBusinessProfileAddressResponse {
+  bool success = 1;
+}

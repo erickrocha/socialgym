@@ -1,0 +1,32 @@
+@use "../../../assets/scss/colors" as c;
+
+.footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  background-color: c.$color-primary;
+  font-size: 0.9rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+  width: 100%;
+
+  /* Accessibility: ensure footer is easily navigable */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
+  @media (min-width: 640px) {
+    padding: 1.5rem;
+    gap: 2rem;
+  }
+
+  @media (min-width: 1024px) {
+    padding: 2rem;
+    gap: 3rem;
+  }
+}
+

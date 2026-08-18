@@ -1,0 +1,89 @@
+@use "../../../assets/scss/colors" as c;
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+
+  .dropdown-trigger {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+
+    &:hover {
+      opacity: 0.8;
+    }
+
+    &:focus {
+      outline: 2px solid white;
+      outline-offset: 2px;
+      border-radius: 0.25rem;
+    }
+
+    @media (min-width: 480px) {
+      gap: 0.5rem;
+      font-size: 0.9rem;
+    }
+  }
+
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    min-width: 120px;
+    z-index: 1000;
+    margin-top: 0.5rem;
+
+    @media (min-width: 480px) {
+      min-width: 150px;
+    }
+
+    button,
+    a {
+      display: block;
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: none;
+      background: none;
+      text-align: left;
+      cursor: pointer;
+      color: #333;
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: background-color 0.2s;
+
+      @media (min-width: 480px) {
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+      }
+
+      &:hover {
+        background-color: #f5f5f5;
+      }
+
+      &:focus {
+        outline: 2px solid c.$color-primary;
+        outline-offset: -2px;
+      }
+    }
+
+    button:last-child,
+    a:last-child {
+      border-top: 1px solid #eee;
+      color: #d32f2f;
+
+      &:hover {
+        background-color: #ffebee;
+      }
+    }
+  }
+}
+

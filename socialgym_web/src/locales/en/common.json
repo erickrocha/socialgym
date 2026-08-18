@@ -1,0 +1,428 @@
+{
+  "application": {
+    "button": {
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    }
+  },
+  "visibility": {
+    "selectVisibility": "Select visibility",
+    "privateDescription": "Only you can see",
+    "friendsDescription": "Your friends can see",
+    "publicDescription": "Anyone can see"
+  },
+  "difficulty": {
+    "selectDifficulty": "Select difficulty",
+    "softDescription": "Very light, perfect for beginners",
+    "easyDescription": "Light and comfortable exercise",
+    "mediumDescription": "Moderate intensity",
+    "hardDescription": "Intense and challenging workout",
+    "strongDescription": "Extreme level for athletes"
+  },
+  "signIn": {
+    "title": "Log In",
+    "emailPlaceholder": "Email",
+    "passwordPlaceholder": "Password",
+    "submit": "Log In",
+    "forgotPassword": "Forgot password",
+    "createAccount": "Create new account"
+  },
+  "signUp": {
+    "title": "Create Account",
+    "firstName": "First Name",
+    "surname": "Surname",
+    "birthday": "Birthday",
+    "birthdayMonth": "Month",
+    "birthdayDay": "Day",
+    "birthdayYear": "Year",
+    "gender": "Gender",
+    "genderFemale": "Female",
+    "genderMale": "Male",
+    "genderCustom": "Custom",
+    "genderCustomPlaceholder": "Please specify",
+    "mobileOrEmail": "Mobile or Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "passwordMismatch": "Passwords do not match",
+    "submit": "Create Account",
+    "passwordHint": "Use at least 8 characters with uppercase, lowercase, and numbers",
+    "alreadyHaveAccount": "Already have an account? Sign in"
+  },
+  "cover-photo": {
+    "changeCoverPhoto": "Change Cover Photo"
+  },
+  "profile": {
+    "changeCoverPhoto": "Change Cover Photo",
+    "unsavedChanges": "You have unsaved changes",
+    "biography": "Biography",
+    "relationship": "Relationship",
+    "job": "Job",
+    "homeTown": "Home Town",
+    "currentCity": "Current City",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "enterBiography": "Enter your biography",
+    "enterRelationship": "e.g., Single, Married",
+    "enterJobTitle": "Enter your job title",
+    "enterHomeTown": "Enter your home town",
+    "enterCurrentCity": "Enter your current city",
+    "createCoachProfile": "Create a Coach Profile",
+    "createBusinessProfile": "Create a Business Profile",
+    "weight": "Weight",
+    "height": "Height",
+    "dateOfBirth": "Date of Birth",
+    "enterWeight": "Enter your weight in kg",
+    "enterHeight": "Enter your height in cm",
+    "enterDateOfBirth": "Enter your date of birth"
+  },
+  "profileSidebar": {
+    "sections": "Sections",
+    "actions": "Actions",
+    "about": "About",
+    "photos": "Photos",
+    "friends": "Friends",
+    "workouts": "Workouts",
+    "achievements": "Achievements",
+    "stats": "Statistics",
+    "editProfile": "Edit Profile",
+    "privacy": "Privacy Settings",
+    "activityLog": "Activity Log",
+    "business": "Business",
+    "toggleMenu": "Toggle menu"
+  },
+  "modal": {
+    "editProfileInformation": "Edit Profile Information",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "months": {
+    "January": "January",
+    "February": "February",
+    "March": "March",
+    "April": "April",
+    "May": "May",
+    "June": "June",
+    "July": "July",
+    "August": "August",
+    "September": "September",
+    "October": "October",
+    "November": "November",
+    "December": "December"
+  },
+  "header": {
+    "homeTitle": "Home",
+    "homeAriaLabel": "Navigate to home",
+    "workoutTitle": "Workouts",
+    "workoutAriaLabel": "Navigate to workouts",
+    "friendsTitle": "Friends",
+    "friendsAriaLabel": "Navigate to friends",
+    "marketplaceTitle": "Marketplace",
+    "marketplaceAriaLabel": "Navigate to marketplace",
+    "galleryTitle": "Gallery",
+    "galleryAriaLabel": "Navigate to gallery",
+    "sessionsTitle": "Workout sessions",
+    "sessionsAriaLabel": "Navigate to workout sessions",
+    "evolutionTitle": "Evolution",
+    "evolutionAriaLabel": "Navigate to evolution",
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "sidebar": {
+    "menu": {
+      "home": "Home",
+      "profile": "Profile",
+      "workouts": "Workouts",
+      "friends": "Friends",
+      "business": "Business",
+      "settings": "Settings",
+      "gallery": "Gallery",
+      "sessions": "Sessions",
+      "evolution": "Evolution"
+    },
+    "defaultUser": "User",
+    "toggleAriaLabel": "Toggle sidebar",
+    "profileAriaLabel": "Go to profile",
+    "uploadPictureTitle": "Upload profile picture"
+  },
+  "workout": {
+    "title": "My Workouts",
+    "description": "Manage and track your workouts",
+    "addWorkout": "Add Workout",
+    "addExercise": "Add Exercise",
+    "addExerciseHint": "Add exercises to start your workout",
+    "noWorkouts": "No workouts yet. Start by creating your first workout!",
+    "noExercises": "No exercises in this workout yet.",
+    "exercises": "exercises",
+    "exercisesList": "Exercise List",
+    "exercisesFor": "Exercises for",
+    "minutes": "min",
+    "sets": "Sets",
+    "reps": "Reps",
+    "weight": "Weight",
+    "weightUnit": "lbs",
+    "exercise": {
+      "name": "Exercise Name",
+      "namePlaceholder": "Enter exercise name",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter exercise description",
+      "setsPlaceholder": "e.g., 3",
+      "repsPlaceholder": "e.g., 12",
+      "weightPlaceholder": "e.g., 10"
+    },
+    "difficulty": {
+      "soft": "Soft",
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "strong": "Strong"
+    },
+    "muscleGroups": {
+      "chest": "Chest",
+      "legs": "Legs",
+      "back": "Back",
+      "core": "Core",
+      "full_body": "Full Body",
+      "shoulders": "Shoulders",
+      "arms": "Arms"
+    },
+    "daysOfWeek": {
+      "Monday": "Monday",
+      "Tuesday": "Tuesday",
+      "Wednesday": "Wednesday",
+      "Thursday": "Thursday",
+      "Friday": "Friday",
+      "Saturday": "Saturday",
+      "Sunday": "Sunday"
+    },
+    "visibility": {
+      "Private": "Private",
+      "Friends": "Friends",
+      "Public": "Public"
+    },
+    "form": {
+      "name": "Workout Name",
+      "namePlaceholder": "Enter workout name",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter workout description",
+      "difficulty": "Difficulty",
+      "difficultyPlaceholder": "Select difficulty level",
+      "difficultyOptions": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard"
+      },
+      "muscleGroups": "Muscle Groups",
+      "visibility": "Visibility",
+      "visibilityPlaceholder": "Select workout visibility"
+    }
+  },
+  "feed": {
+    "whatAreYouThinking": "What are you thinking?",
+    "addPhoto": "Add Photo",
+    "addVideo": "Add Video",
+    "post": "Post",
+    "cancel": "Cancel",
+    "removeAttachment": "Remove attachment",
+    "like": "Like",
+    "likes": "Likes",
+    "liked": "Liked",
+    "comment": "Comment",
+    "comments": "Comments",
+    "share": "Share",
+    "writeComment": "Write a comment...",
+    "now": "now",
+    "ago": "ago",
+    "noPostsYet": "No posts yet. Be the first to post something!",
+    "loading": "Loading feed...",
+    "errors": {
+      "create": "Unable to create post",
+      "react": "Unable to react to post",
+      "comment": "Unable to comment"
+    }
+  },
+  "friends": {
+    "title": "Friends",
+    "subtitle": "Connect with people who share your fitness journey",
+    "tabs": {
+      "all": "All",
+      "suggestions": "Suggestions",
+      "received": "Received",
+      "sent": "Sent"
+    },
+    "peopleYouMayKnow": "People You May Know",
+    "myFriends": "My Friends",
+    "receivedRequests": "Friend Requests",
+    "sentRequests": "Sent Requests",
+    "noSuggestions": "No suggestions available at the moment",
+    "noFriends": "You haven't added any friends yet",
+    "noFriendsHint": "Check out the suggestions to find people with similar interests!",
+    "noReceivedRequests": "No pending friend requests",
+    "noSentRequests": "You haven't sent any friend requests",
+    "addFriend": "Add Friend",
+    "accept": "Accept",
+    "decline": "Decline",
+    "cancelRequest": "Cancel Request",
+    "remove": "Remove",
+    "viewProfile": "View Profile",
+    "mutualFriends": "{{count}} mutual friend",
+    "mutualFriends_plural": "{{count}} mutual friends",
+    "friendAdded": "Friend request sent successfully!",
+    "requestAccepted": "Friend request accepted!",
+    "requestDeclined": "Friend request declined",
+    "requestCancelled": "Friend request cancelled",
+    "friendRemoved": "Friend removed",
+    "suggestionRemoved": "Suggestion removed",
+    "errorLoading": "Error loading friends",
+    "errorAddingFriend": "Error sending friend request",
+    "errorAcceptingRequest": "Error accepting friend request",
+    "errorDecliningRequest": "Error declining friend request",
+    "errorCancellingRequest": "Error cancelling friend request",
+    "errorRemovingFriend": "Error removing friend",
+    "unknownUser": "Unknown User"
+  },
+  "welcome": "Welcome",
+  "business": {
+    "title": "My Business",
+    "subtitle": "Manage your business profiles",
+    "toggleMenu": "Toggle menu",
+    "socialName": "Social Name",
+    "taxId": "Tax ID",
+    "addresses": "Addresses",
+    "zipcode": "Zipcode",
+    "noProfiles": "You don't have any business profiles yet",
+    "backToList": "Back to list",
+    "editProfile": "Edit Profile",
+    "editBusinessProfile": "Edit Business Profile",
+    "businessInfo": "Business Information",
+    "businessName": "Business Name",
+    "businessType": "Business Type",
+    "services": "Services",
+    "schedule": "Schedule",
+    "team": "Team",
+    "noServicesYet": "No services registered yet",
+    "noScheduleYet": "No schedule registered yet",
+    "noTeamYet": "No team members registered yet",
+    "sidebarSections": {
+      "title": "Sections",
+      "about": "About",
+      "services": "Services",
+      "schedule": "Schedule",
+      "team": "Team",
+      "photos": "Photos"
+    },
+    "sidebarActions": {
+      "title": "Actions",
+      "edit": "Edit Profile",
+      "settings": "Settings"
+    },
+    "form": {
+      "businessName": "Business Name",
+      "businessNamePlaceholder": "Enter business name",
+      "socialName": "Social Name",
+      "socialNamePlaceholder": "Enter social name",
+      "businessType": "Business Type",
+      "businessTypePlaceholder": "e.g., Gym, Studio, Personal Trainer",
+      "taxId": "Tax ID",
+      "taxIdPlaceholder": "Enter tax ID"
+    }
+  },
+  "workoutExecution": {
+    "startWorkout": "Start Workout",
+    "noExercises": "This workout has no exercises. Add some exercises first!",
+    "exercise": "Exercise",
+    "set": "Set",
+    "of": "of",
+    "editValues": "Edit values",
+    "skip": "Skip",
+    "confirmSet": "Confirm Set",
+    "keepGoing": "Keep going! You're doing great!",
+    "almostDone": "Almost there! Final push!",
+    "completedSets": "Completed Sets",
+    "workoutComplete": "Workout Complete!",
+    "duration": "Duration",
+    "setsCompleted": "Sets Done",
+    "totalVolume": "Total Volume",
+    "greatJob": "Great job! You crushed this workout! 💪",
+    "close": "Close",
+    "saveSession": "Save Session"
+  },
+  "gallery": {
+    "title": "Gallery",
+    "subtitle": "Media posts from your training community",
+    "loading": "Loading gallery...",
+    "empty": "No media posts yet",
+    "unknownUser": "Unknown User"
+  },
+  "workoutSessions": {
+    "title": "Workout Sessions",
+    "loading": "Loading sessions...",
+    "empty": "No sessions in this period.",
+    "sets": "sets",
+    "apply": "Apply",
+    "filters": {
+      "week": "Last week",
+      "month": "Last month",
+      "quarter": "Last 3 months",
+      "custom": "Custom"
+    },
+    "summary": {
+      "sessions": "Sessions",
+      "totalVolume": "Total volume",
+      "avgDuration": "Avg duration"
+    }
+  },
+  "evolution": {
+    "title": "Body Evolution",
+    "loading": "Loading evolution data...",
+    "newCheckin": "New check-in",
+    "save": "Save check-in",
+    "saving": "Saving...",
+    "noNotes": "No notes",
+    "apply": "Apply",
+    "filters": {
+      "week": "Last week",
+      "month": "Last month",
+      "half": "Last 6 months",
+      "custom": "Custom"
+    },
+    "metrics": {
+      "weight": "Weight",
+      "bodyFat": "Body fat",
+      "waist": "Waist"
+    },
+    "form": {
+      "weight": "Weight (kg)",
+      "bodyFat": "Body fat (%)",
+      "muscleMass": "Muscle mass (%)",
+      "chest": "Chest (cm)",
+      "waist": "Waist (cm)",
+      "hip": "Hip (cm)",
+      "note": "How did you feel?"
+    },
+    "errors": {
+      "userNotLoaded": "User data is not loaded yet",
+      "save": "Could not save check-in"
+    }
+  },
+  "personProfile": {
+    "back": "Back",
+    "loading": "Loading profile...",
+    "memberSince": "Member since",
+    "personalInfo": "Personal information",
+    "physicalStats": "Physical stats",
+    "biography": "Biography",
+    "job": "Job",
+    "relationship": "Relationship",
+    "homeTown": "Home town",
+    "currentCity": "Current city",
+    "weight": "Weight",
+    "height": "Height",
+    "dateOfBirth": "Date of birth",
+    "gender": "Gender",
+    "errors": {
+      "load": "Could not load profile"
+    }
+  }
+}
+

@@ -1,0 +1,236 @@
+@use '../../../assets/scss/colors' as c;
+
+.post {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e5e5;
+}
+
+.post__header {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    align-items: flex-start;
+}
+
+.post__header-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.post__author {
+    font-weight: 600;
+    color: #050505;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.post__timestamp {
+    color: #65676b;
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.post__content {
+    margin-bottom: 1rem;
+    line-height: 1.5;
+    color: #050505;
+
+    p {
+        margin: 0;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+    }
+}
+
+.post__media {
+    margin: 1rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.post__media--single {
+    display: flex;
+    width: 100%;
+}
+
+.post__media--multiple {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+}
+
+.post__media-item {
+    width: 100%;
+    background-color: #f0f2f5;
+    border-radius: 8px;
+    overflow: hidden;
+
+    img,
+    video {
+        width: 100%;
+        height: auto;
+        display: block;
+        max-height: 500px;
+        object-fit: cover;
+    }
+}
+
+.post__stats {
+    display: flex;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid #e5e5e5;
+    border-bottom: 1px solid #e5e5e5;
+    font-size: 0.85rem;
+    color: #65676b;
+}
+
+.post__likes,
+.post__comment-count {
+    cursor: pointer;
+    transition: color 0.2s;
+
+    &:hover {
+        color: c.$color-primary;
+    }
+}
+
+.post__actions {
+    display: flex;
+    gap: 0;
+}
+
+.post__action-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #65676b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    border-radius: 4px;
+
+    &:hover {
+        background-color: #f0f2f5;
+        color: #050505;
+    }
+
+    &--active {
+        color: c.$color-primary;
+    }
+}
+
+.post__comments-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e5e5;
+}
+
+.post__comments-list {
+    margin-bottom: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.post__comment {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.post__comment-content {
+    flex: 1;
+    background-color: #f0f2f5;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+
+.post__comment-author {
+    font-weight: 600;
+    color: #050505;
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.post__comment-text {
+    color: #050505;
+    margin: 0.25rem 0 0 0;
+    font-size: 0.85rem;
+    word-wrap: break-word;
+}
+
+.post__comment-time {
+    color: #65676b;
+    font-size: 0.75rem;
+    margin: 0.25rem 0 0 0;
+}
+
+.post__comment-input-wrapper {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.post__comment-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+
+    &:focus {
+        border-color: c.$color-primary;
+    }
+}
+
+.post__comment-submit {
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    background-color: #f0f2f5;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        background-color: c.$color-primary;
+        color: white;
+    }
+}
+
+@media (max-width: 768px) {
+    .post {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        border-radius: 0;
+        box-shadow: none;
+        border-bottom: 1px solid #e5e5e5;
+    }
+
+    .post__media--multiple {
+        grid-template-columns: 1fr;
+    }
+
+    .post__action-btn {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.75rem;
+    }
+}

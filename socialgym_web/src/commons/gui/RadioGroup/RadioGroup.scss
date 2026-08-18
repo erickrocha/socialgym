@@ -1,0 +1,68 @@
+@use "../../../assets/scss/colors" as c;
+
+.RadioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+
+  legend {
+    font-weight: 500;
+    color: #333;
+    font-size: 0.95rem;
+    padding: 0;
+    margin: 0;
+
+    span[aria-label="required"] {
+      color: #e74c3c;
+      margin-left: 0.25rem;
+    }
+  }
+
+  .radio-options {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .radio-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    input[type="radio"] {
+      width: 1.25rem;
+      height: 1.25rem;
+      cursor: pointer;
+      accent-color: #7CB2A8;
+      flex-shrink: 0;
+
+      &:focus {
+        outline: 2px solid #7CB2A8;
+        outline-offset: 2px;
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    }
+
+    label {
+      cursor: pointer;
+      user-select: none;
+      margin: 0;
+      font-weight: normal;
+      color: #333;
+
+      &:hover {
+        color: #7CB2A8;
+      }
+    }
+  }
+}
+

@@ -1,0 +1,115 @@
+@use '../../../assets/scss/colors' as c;
+
+.difficulty-dropdown {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+
+    &__trigger {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.625rem 0.875rem;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        color: c.$foreground-color;
+        transition: all 0.2s ease;
+
+        &:hover {
+            border-color: c.$color-primary;
+        }
+
+        &:focus {
+            outline: none;
+            border-color: c.$color-primary;
+            box-shadow: 0 0 0 3px rgba(c.$color-primary, 0.1);
+        }
+    }
+
+    &__icon {
+        font-size: 1.125rem;
+    }
+
+    &__label {
+        flex: 1;
+        text-align: left;
+    }
+
+    &__arrow {
+        font-size: 0.625rem;
+        color: #666;
+        transition: transform 0.2s ease;
+    }
+
+    &__menu {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        list-style: none;
+        margin: 0;
+        padding: 0.5rem 0;
+    }
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+            background-color: #f5f5f5;
+        }
+
+        &--selected {
+            background-color: rgba(c.$color-primary, 0.08);
+
+            .difficulty-dropdown__item-label {
+                color: c.$color-primary;
+                font-weight: 600;
+            }
+        }
+    }
+
+    &__item-icon {
+        font-size: 1.25rem;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f0f2f5;
+        border-radius: 50%;
+    }
+
+    &__item-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+    }
+
+    &__item-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: c.$foreground-color;
+    }
+
+    &__item-description {
+        font-size: 0.75rem;
+        color: #65676b;
+    }
+
+    &__item-check {
+        color: c.$color-primary;
+        font-weight: bold;
+        font-size: 1rem;
+    }
+}
+

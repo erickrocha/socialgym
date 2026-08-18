@@ -1,0 +1,16 @@
+auth-token-invalid = Ongeldig token
+auth-header-empty = Lege header is niet toegestaan
+auth-token-missing = Voeg de JWT-token toe aan de header
+auth-token-malformed = Ongeldig tokenformaat
+workout-add-failed = Workout opslaan mislukt
+workout-find-failed = Workout zoeken mislukt
+workout-find-all-failed = Workouts ophalen mislukt
+workout-not-found = Workout-sessie niet gevonden
+post-create-failed = Post aanmaken mislukt
+feed-fetch-failed = Feed ophalen mislukt
+comment-add-failed = Reactie toevoegen mislukt
+reaction-add-failed = Reactie toevoegen mislukt
+reaction-remove-failed = Reactie verwijderen mislukt
+evolution-checkin-add-failed = Evolutie check-in opslaan mislukt
+evolution-checkin-find-failed = Evolutie check-in zoeken mislukt
+unknown-error = Onverwachte interne fout

@@ -1,0 +1,37 @@
+syntax = "proto3";
+package grpc.settings;
+
+service SettingsService {
+  rpc GetById (SettingIdRequest) returns (Setting);
+  rpc PersistSettings (Setting) returns (Setting);
+  rpc GetByUuid(SettingIdRequest) returns (Setting);
+  rpc GetByOwnerIds(SettingOwnerIdRequest) returns (Setting);
+}
+
+message SettingIdRequest {
+  int32 id = 1;
+  string uuid = 2;
+}
+
+message SettingOwnerIdRequest {
+  int32 owner_id = 1;
+  string owner_uuid = 2;
+}
+
+message SettingsResponse {
+  repeated Setting settings = 1;
+}
+
+message Setting{
+  int32 id = 1;
+  string uuid = 2;
+  int32 owner_id = 3;
+  string owner_uuid = 4;
+  string language = 5;
+  string theme = 6;
+  bool notifications_enabled = 7;
+  string context_menu_position = 8;
+  string home_page = 9;
+  string created_at = 10;
+  string updated_at = 11;
+}

@@ -1,0 +1,46 @@
+@use "colors" as c;
+
+.input-group {
+  margin-bottom: 1rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid c.$color-primary;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+}
+
+
+.primary-button {
+  background-color: c.$color-primary;
+
+  &:hover {
+    background-color: c.$color-primary-hover;
+  }
+
+  &:disabled {
+    background-color: c.$color-primary-disabled;
+  }
+}
+
+.secondary-button {
+  background-color: c.$color-secondary;
+  color: c.$background-color;
+
+  &:hover {
+    background-color: c.$color-secondary-hover;
+  }
+
+  &:disabled {
+    background-color: c.$color-secondary-disabled
+  }
+}

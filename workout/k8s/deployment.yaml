@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workout-app
+  namespace: workout-app
+  labels:
+    app: workout-app
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: workout-app
+  template:
+    metadata:
+      labels:
+        app: workout-app
+        version: v1
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - workout-app
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: workout-app
+          image: workout-app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8090
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: workout-config
+            - secretRef:
+                name: workout-secrets
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          volumeMounts:
+            - name: cloudfront-key
+              mountPath: /app/cloudfront_private_rsa.pem
+              subPath: cloudfront_private_rsa.pem
+              readOnly: true
+      volumes:
+        - name: cloudfront-key
+          secret:
+            secretName: cloudfront-key
+            defaultMode: 0400
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+

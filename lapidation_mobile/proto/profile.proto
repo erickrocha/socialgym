@@ -1,0 +1,32 @@
+syntax = "proto3";
+package grpc.profile;
+
+service ProfileService {
+    rpc GetProfiles(ProfileRequest) returns (ProfileResponse);
+    rpc GetProfilesByPerson(ProfileRequestByPersonId) returns (ProfileResponse);
+}
+
+message ProfileRequest{
+    int32 id = 1;
+    string uuid = 2;
+}
+
+message ProfileRequestByPersonId {
+    int32 person_id = 1;
+    string person_uuid = 2;
+}
+
+message ProfileResponse {
+    repeated Profile profiles = 1;
+}
+
+message Profile {
+    int32 id = 1;
+    string uuid = 2;
+    int32 person_id = 3;
+    string person_uuid = 4;
+    int32 business_profile_id = 5;
+    string business_profile_uuid = 6;
+    string created_at = 7;
+    string updated_at = 8;
+}

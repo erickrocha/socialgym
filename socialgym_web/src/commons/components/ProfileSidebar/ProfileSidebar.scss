@@ -1,0 +1,198 @@
+@use '../../../assets/scss/colors' as c;
+
+.profile-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 240px;
+    min-height: 100%;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: width 0.3s ease;
+    position: relative;
+
+    &--collapsed {
+        width: 60px;
+
+        .profile-sidebar__section-title {
+            display: none;
+        }
+
+        .profile-sidebar__item {
+            justify-content: center;
+            padding: 0.75rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        width: 100%;
+        min-height: auto;
+        border-radius: 8px 8px 0 0;
+
+        &--collapsed {
+            width: 100%;
+
+            .profile-sidebar__nav {
+                flex-direction: row;
+                overflow-x: auto;
+            }
+
+            .profile-sidebar__section {
+                flex-direction: row;
+            }
+
+            .profile-sidebar__menu {
+                flex-direction: row;
+            }
+
+            .profile-sidebar__divider {
+                width: 1px;
+                height: auto;
+                margin: 0 0.5rem;
+            }
+        }
+    }
+}
+
+.profile-sidebar__toggle {
+    position: absolute;
+    top: 10px;
+    right: -12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: c.$color-primary;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transition: background 0.2s ease;
+    z-index: 10;
+
+    &:hover {
+        background: c.$color-primary-hover;
+    }
+
+    @media (max-width: 768px) {
+        display: none;
+    }
+}
+
+.profile-sidebar__nav {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0;
+
+    @media (max-width: 768px) {
+        flex-direction: row;
+        padding: 0.5rem;
+        overflow-x: auto;
+        gap: 0.5rem;
+    }
+}
+
+.profile-sidebar__section {
+    display: flex;
+    flex-direction: column;
+
+    @media (max-width: 768px) {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+.profile-sidebar__section-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #65676b;
+    padding: 0.5rem 1rem;
+    margin: 0;
+
+    @media (max-width: 768px) {
+        display: none;
+    }
+}
+
+.profile-sidebar__menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+
+    @media (max-width: 768px) {
+        flex-direction: row;
+        gap: 0.25rem;
+    }
+}
+
+.profile-sidebar__item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    color: #1a1a2e;
+    font-size: 0.9rem;
+
+    &:hover {
+        background: #f5f5f5;
+        color: c.$color-primary;
+    }
+
+    &--active {
+        background: linear-gradient(90deg, rgba(c.$color-primary, 0.1) 0%, transparent 100%);
+        color: c.$color-primary;
+        border-left: 3px solid c.$color-primary;
+        font-weight: 600;
+
+        @media (max-width: 768px) {
+            border-left: none;
+            border-bottom: 3px solid c.$color-primary;
+            border-radius: 8px 8px 0 0;
+        }
+    }
+
+    @media (max-width: 768px) {
+        padding: 0.6rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+}
+
+.profile-sidebar__icon {
+    font-size: 1.25rem;
+    line-height: 1;
+
+    @media (max-width: 768px) {
+        font-size: 1.1rem;
+    }
+}
+
+.profile-sidebar__label {
+    flex: 1;
+}
+
+.profile-sidebar__divider {
+    height: 1px;
+    background: #e5e5e5;
+    margin: 0.75rem 1rem;
+
+    @media (max-width: 768px) {
+        width: 1px;
+        height: 24px;
+        margin: 0 0.5rem;
+    }
+}

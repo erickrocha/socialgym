@@ -1,0 +1,210 @@
+@use '../../assets/scss/colors' as c;
+@use '../../assets/scss/effects' as effects;
+
+.workout-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.workout-container {
+    display: flex;
+    flex: 1;
+    overflow-y: auto;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+    }
+}
+
+.workout-content {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    background: c.$background-color;
+
+    @media (max-width: 768px) {
+        padding: 1rem;
+    }
+}
+
+.workout-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 2rem;
+
+    @media (max-width: 768px) {
+        margin-bottom: 1.5rem;
+    }
+}
+
+.workout-header__text {
+    flex: 1;
+
+    h1 {
+        color: c.$color-primary;
+        margin: 0 0 0.5rem 0;
+        font-size: 2rem;
+    }
+
+    p {
+        color: c.$color-third;
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        h1 {
+            font-size: 1.5rem;
+        }
+
+        p {
+            font-size: 0.9rem;
+        }
+    }
+}
+
+.workout-header__add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: none;
+    border-radius: 50%;
+    @include effects.gradient-3();
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+
+    &:hover {
+        background: c.$color-primary-hover;
+        transform: scale(1.05);
+    }
+
+    &:active {
+        transform: scale(0.95);
+    }
+
+    svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    @media (max-width: 768px) {
+        width: 42px;
+        height: 42px;
+
+        svg {
+            width: 20px;
+            height: 20px;
+        }
+    }
+}
+
+.workout-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+.workout-grid__item {
+    display: flex;
+    flex-direction: column;
+}
+
+.workout-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    background: c.$background-color;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    @media (max-width: 768px) {
+        padding: 3rem 1.5rem;
+    }
+}
+
+.workout-empty__icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+
+    @media (max-width: 768px) {
+        font-size: 3rem;
+    }
+}
+
+.workout-empty__text {
+    color: #65676b;
+    font-size: 1.125rem;
+    text-align: center;
+    margin: 0;
+
+    @media (max-width: 768px) {
+        font-size: 1rem;
+    }
+}
+
+.workout-no-exercises {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    margin-top: 1rem;
+    background: white;
+    border-radius: 12px;
+    border: 2px dashed #ddd;
+    text-align: center;
+
+    p {
+        color: #65676b;
+        font-size: 0.95rem;
+        margin: 0 0 1rem 0;
+    }
+
+    &__btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: c.$color-primary;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s ease;
+
+        &:hover {
+            background: c.$color-primary-hover;
+        }
+    }
+}
+
+.workout-start-section {
+    display: flex;
+    justify-content: center;
+    padding: 1rem 0;
+    margin-top: 0.5rem;
+
+    @media (max-width: 768px) {
+        padding: 0.75rem 0;
+    }
+}
+
+
+

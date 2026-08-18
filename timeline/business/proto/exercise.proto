@@ -1,0 +1,53 @@
+syntax = "proto3";
+package grpc.exercise;
+import "google/protobuf/empty.proto";
+
+service ExerciseService {
+  rpc GetExercise (ExerciseRequest) returns (Exercise);
+  rpc GetExercises (ExerciseParams) returns (PaginatedExercise);
+  rpc AddExercise(Exercise) returns (Exercise);
+  rpc UpdateExercise(Exercise) returns (Exercise);
+  rpc DeleteExercise(ExerciseRequest) returns (google.protobuf.Empty);
+}
+
+message ExerciseParams {
+  string owner_uuid = 1;
+  string category = 2;
+  string visibility = 3;
+  repeated string owners = 4;
+  int64 page_number = 5;
+  int64 page_size = 6;
+  string sort_by = 7;
+}
+
+message ExerciseRequest {
+  oneof identifier {
+    int32 id = 1;
+    string uuid = 2;
+  }
+}
+
+message Exercise {
+  int32 id = 1;
+  string name = 2;
+  int32 owner_id = 3;
+  string owner_uuid = 4;
+  string owner_name = 5;
+  string description = 6;
+  int32 sets = 7;
+  string category = 8;
+  int32 reps_or_duration = 9;
+  string uuid = 10;
+  string visibility = 11;
+  string created_at = 12;
+  string updated_at = 13;
+}
+
+message PaginatedExercise {
+  repeated Exercise content = 1;
+  int64 total_count = 2;
+  int64 page_number = 3;
+  int64 page_size = 4;
+  bool has_next_page = 5;
+}
+

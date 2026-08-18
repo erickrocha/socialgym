@@ -1,0 +1,22 @@
+
+.PersonInfoForm {
+
+
+  .action-buttons {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 1.0rem;
+    border-top: 1px solid #e5e7eb;
+
+    @media (min-width: 480px) {
+      gap: 1rem;
+      align-self: center;
+    }
+
+    @media (min-width: 768px) {
+      gap: 1rem;
+      align-self: center;
+    }
+  }
+
+}

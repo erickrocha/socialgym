@@ -1,0 +1,16 @@
+auth-token-invalid = Token invalido
+auth-header-empty = No se permite cabecera vacia
+auth-token-missing = Agrega el token JWT en la cabecera
+auth-token-malformed = Formato de token invalido
+workout-add-failed = No se pudo guardar el entrenamiento
+workout-find-failed = No se pudo buscar el entrenamiento
+workout-find-all-failed = No se pudieron buscar los entrenamientos
+workout-not-found = Sesion de entrenamiento no encontrada
+post-create-failed = No se pudo crear la publicacion
+feed-fetch-failed = No se pudo cargar el feed
+comment-add-failed = No se pudo agregar el comentario
+reaction-add-failed = No se pudo agregar la reaccion
+reaction-remove-failed = No se pudo quitar la reaccion
+evolution-checkin-add-failed = No se pudo guardar el check-in de evolucion
+evolution-checkin-find-failed = No se pudo buscar el check-in de evolucion
+unknown-error = Error interno inesperado

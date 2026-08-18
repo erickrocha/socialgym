@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: workout-app
+  labels:
+    name: workout-app
+

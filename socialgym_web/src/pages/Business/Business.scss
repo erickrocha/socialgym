@@ -1,0 +1,234 @@
+@use "../../assets/scss/colors" as c;
+@use "sass:color";
+
+.business-layout {
+  min-height: 100vh;
+  background-color: c.$background-color;
+}
+
+.business-container {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  gap: 1rem;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+}
+
+.business-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.business-header {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  @media (min-width: 768px) {
+    padding: 1.5rem;
+  }
+}
+
+.business-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: c.$foreground-color;
+  margin: 0 0 0.5rem 0;
+
+  @media (min-width: 768px) {
+    font-size: 1.75rem;
+  }
+}
+
+.business-subtitle {
+  font-size: 0.875rem;
+  color: #666;
+  margin: 0;
+
+  @media (min-width: 768px) {
+    font-size: 1rem;
+  }
+}
+
+.business-profiles-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.business-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &--clickable {
+    cursor: pointer;
+
+    &:focus {
+      outline: 2px solid c.$color-primary;
+      outline-offset: 2px;
+    }
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, c.$color-primary 0%, color.adjust(c.$color-primary, $lightness: 10%) 100%);
+    color: white;
+  }
+
+  &__logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: white;
+  }
+
+  &__logo-placeholder {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__type {
+    font-size: 0.875rem;
+    opacity: 0.9;
+  }
+
+  &__body {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &__detail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    @media (min-width: 480px) {
+      flex-direction: row;
+      gap: 0.5rem;
+    }
+  }
+
+  &__label {
+    font-size: 0.75rem;
+    color: #666;
+    font-weight: 500;
+    text-transform: uppercase;
+
+    @media (min-width: 480px) {
+      min-width: 100px;
+    }
+  }
+
+  &__value {
+    font-size: 0.875rem;
+    color: c.$foreground-color;
+  }
+
+  &__addresses {
+    padding: 1rem;
+    background: #f9f9f9;
+    border-top: 1px solid #eee;
+  }
+
+  &__addresses-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: c.$foreground-color;
+    margin: 0 0 0.75rem 0;
+  }
+
+  &__address {
+    padding: 0.5rem;
+    background: white;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__address-line {
+    font-size: 0.8125rem;
+    color: #555;
+    margin: 0 0 0.25rem 0;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.business-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  &__icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  &__text {
+    font-size: 1rem;
+    color: #666;
+    text-align: center;
+    margin: 0;
+  }
+}
+

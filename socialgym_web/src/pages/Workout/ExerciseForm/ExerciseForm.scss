@@ -1,0 +1,153 @@
+@use '../../../assets/scss/colors' as c;
+
+.exercise-form {
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem;
+
+    background: white;
+    border-radius: 12px;
+    border: 2px solid c.$color-primary;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+
+    @media (max-width: 768px) {
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    &__input-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    &__inline-row {
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-end;
+
+        @media (max-width: 480px) {
+            flex-wrap: wrap;
+        }
+
+        .TextField {
+            flex: 1;
+            min-width: 80px;
+        }
+    }
+
+    &__add-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        background: c.$color-primary;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover:not(:disabled) {
+            background: c.$color-primary-hover;
+        }
+
+        &:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        svg {
+            width: 20px;
+            height: 20px;
+        }
+    }
+
+    &__list {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    &__list-title {
+        margin: 0 0 0.75rem 0;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #65676b;
+    }
+
+    &__items {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    &__item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: white;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    &__item-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+    }
+
+    &__item-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: c.$foreground-color;
+    }
+
+    &__item-desc {
+        font-size: 0.8rem;
+        color: #65676b;
+    }
+
+    &__item-details {
+        font-size: 0.75rem;
+        color: c.$color-primary;
+        font-weight: 500;
+    }
+
+    &__remove-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        background: transparent;
+        color: #999;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background: #fee;
+            color: #c00;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e4e6eb;
+    }
+}

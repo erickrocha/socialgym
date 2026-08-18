@@ -1,0 +1,30 @@
+[req]
+distinguished_name = req_distinguished_name
+x509_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+C = BR
+ST = SP
+L = SaoPaulo
+O = Desenvolvimento
+CN = 127.0.0.1
+
+[v3_req]
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+DNS.2 = host.docker.internal
+DNS.3 = latently-bubaline-salome.ngrok-free.dev
+DNS.4 = scrutiny-elevator-washstand.ngrok-free.dev
+DNS.5 = integration-app
+DNS.6 = workout-app
+DNS.7 = timeline-app
+DNS.8 = gateway
+IP.1 = 127.0.0.1
+IP.2 = ::1
+IP.3 = 10.0.2.2
+IP.4 = 192.168.15.4

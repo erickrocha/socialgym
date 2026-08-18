@@ -1,0 +1,15 @@
+<svg width="24" height="24" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="500" height="500" fill="#E5E7EB"/>
+
+    <g fill="#2C3E42">
+        <rect x="150" y="240" width="200" height="6" rx="3"/> <rect x="127" y="233" width="8" height="20" rx="2"/> <rect x="365" y="233" width="8" height="20" rx="2"/> <rect x="137" y="220" width="12" height="46" rx="3"/> <rect x="351" y="220" width="12" height="46" rx="3"/> <rect x="153" y="208" width="16" height="70" rx="4"/> <rect x="331" y="208" width="16" height="70" rx="4"/> </g>
+
+    <g stroke="#2C3E42" stroke-width="3" stroke-linejoin="round">
+        <path d="M250 230 C210 230 180 190 180 150 C180 110 220 90 250 130 C230 90 180 80 160 120 C140 160 180 230 250 230Z" fill="#F19A9A"/>
+        <path d="M250 230 C290 230 320 190 320 150 C320 110 280 90 250 130 C270 90 320 80 340 120 C360 160 320 230 250 230Z" fill="#7CB2A8"/>
+        <path d="M250 230 C220 210 210 150 250 90 C290 150 280 210 250 230Z" fill="#F8C491"/>
+    </g>
+
+    <text x="250" y="345" text-anchor="middle" font-family="Arial, sans-serif" font-weight="800" font-size="52" fill="#2C3E42" style="letter-spacing: 2px;">SOCIAL GYM</text>
+    <text x="250" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-weight="400" font-size="34" fill="#2C3E42" style="letter-spacing: 12px;">WELLNESS</text>
+</svg>

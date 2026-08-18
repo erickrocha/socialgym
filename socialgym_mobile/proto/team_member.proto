@@ -1,0 +1,45 @@
+syntax = "proto3";
+package grpc.team_member;
+
+import "person.proto";
+import "business_profile.proto";
+
+// Mirrors the REST endpoints under /workout/api/team-members. gRPC has no ambient active
+// business profile, so both sides of the membership are always passed explicitly.
+service TeamMemberService {
+  rpc GetTeamMemberPage (TeamMemberPageRequest) returns (TeamMemberPageResponse);
+  rpc GetTeamMember (TeamMemberRequest) returns (TeamMember);
+  rpc SendTeamMemberRequest (TeamMemberRequest) returns (TeamMember);
+  rpc AcceptTeamMemberRequest (TeamMemberRequest) returns (TeamMember);
+  rpc DenyTeamMemberRequest (TeamMemberRequest) returns (TeamMember);
+  rpc CancelTeamMemberRequest (TeamMemberRequest) returns (TeamMember);
+}
+
+message TeamMemberRequest {
+  int32 business_profile_id = 1;
+  int32 person_id = 2;
+}
+
+message TeamMember {
+  int32 id = 1;
+  string uuid = 2;
+  int32 business_profile_id = 3;
+  string business_profile_uuid = 4;
+  int32 person_id = 5;
+  string person_uuid = 6;
+  string status = 7;
+}
+
+// Either side may be asked for: business_profile_id fills members/sent_requests,
+// person_id fills teams/received_requests. At least one must be informed.
+message TeamMemberPageRequest {
+  int32 business_profile_id = 1;
+  int32 person_id = 2;
+}
+
+message TeamMemberPageResponse {
+  repeated person.Person members = 1;
+  repeated person.Person sent_requests = 2;
+  repeated business_profile.BusinessProfile teams = 3;
+  repeated business_profile.BusinessProfile received_requests = 4;
+}

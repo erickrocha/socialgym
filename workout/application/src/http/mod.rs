@@ -1,0 +1,14 @@
+pub mod auth_controller;
+pub mod exercise_controller;
+pub mod friend_controller;
+pub mod image_controller;
+pub mod json;
+pub mod person_controller;
+pub mod welcome_controller;
+pub mod workout_controller;
+pub mod business_profile_controller;
+pub mod person_address_controller;
+pub mod person_info_controller;
+pub mod resource_controller;
+pub mod settings_controller;
+pub mod team_member_controller;

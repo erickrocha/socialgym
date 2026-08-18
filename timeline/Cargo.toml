@@ -1,0 +1,22 @@
+[package]
+name = "timeline"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = ["application", "domain", "business"]
+
+[dependencies]
+application = { path = "application" }
+
+[workspace.dependencies]
+mongodb = "3.7.0"
+dotenvy = "0.15.7"
+utoipa = { version = "^5.5.0", features = ["axum_extras", "chrono"] } # Or your desired utoipa version
+utoipa-swagger-ui = { version = "^9.0.2", features = ["axum", "vendored"] }
+tokio = { version = "1.52.3", features = ["full"] }
+tonic = { version = "0.14.6",features = ["transport", "tls-ring"] }
+chrono = { version = "0.4.45", features = ["serde"] }
+serde = "1.0.228"
+serde_json = "1.0.150"
+uuid = "1.23.4"

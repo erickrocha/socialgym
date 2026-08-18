@@ -1,0 +1,121 @@
+@use "../../../assets/scss/colors" as c;
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.3s ease-out;
+  position: relative;
+  min-width: 300px;
+
+  &--error {
+    background-color: #fee;
+    border-left: 4px solid #f44;
+    color: #c33;
+  }
+
+  &--success {
+    background-color: #efe;
+    border-left: 4px solid #4f4;
+    color: #3a3;
+  }
+
+  &--warning {
+    background-color: #ffe;
+    border-left: 4px solid #ff4;
+    color: #a90;
+  }
+
+  &--info {
+    background-color: #eef;
+    border-left: 4px solid #44f;
+    color: #33a;
+  }
+
+  &__content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+
+  &__message {
+    font-size: 0.95rem;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  &__close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s ease;
+    flex-shrink: 0;
+
+    &:hover {
+      opacity: 0.7;
+    }
+
+    &:active {
+      opacity: 0.5;
+    }
+  }
+}
+
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  max-width: 400px;
+  pointer-events: none;
+
+  .toast {
+    pointer-events: auto;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .toast-container {
+    left: 0.5rem;
+    right: 0.5rem;
+    max-width: none;
+  }
+
+  .toast {
+    min-width: auto;
+  }
+}

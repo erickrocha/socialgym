@@ -1,0 +1,427 @@
+{
+  "application": {
+    "button": {
+      "cancel": "Cancelar",
+      "confirm": "Confirmar"
+    }
+  },
+  "visibility": {
+    "selectVisibility": "Seleccionar visibilidad",
+    "privateDescription": "Solo tú puedes ver",
+    "friendsDescription": "Tus amigos pueden ver",
+    "publicDescription": "Cualquiera puede ver"
+  },
+  "difficulty": {
+    "selectDifficulty": "Seleccionar dificultad",
+    "softDescription": "Muy ligero, perfecto para principiantes",
+    "easyDescription": "Ejercicio ligero y cómodo",
+    "mediumDescription": "Intensidad moderada",
+    "hardDescription": "Entrenamiento intenso y desafiante",
+    "strongDescription": "Nivel extremo para atletas"
+  },
+  "signIn": {
+    "title": "Iniciar Sesión",
+    "emailPlaceholder": "Correo electrónico",
+    "passwordPlaceholder": "Contraseña",
+    "submit": "Iniciar Sesión",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "createAccount": "Crear cuenta nueva"
+  },
+  "signUp": {
+    "title": "Crear Cuenta",
+    "firstName": "Nombre",
+    "surname": "Apellido",
+    "birthday": "Fecha de nacimiento",
+    "birthdayMonth": "Mes",
+    "birthdayDay": "Día",
+    "birthdayYear": "Año",
+    "gender": "Género",
+    "genderFemale": "Femenino",
+    "genderMale": "Masculino",
+    "genderCustom": "Personalizado",
+    "genderCustomPlaceholder": "Por favor especifica",
+    "mobileOrEmail": "Móvil o correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "submit": "Crear Cuenta",
+    "passwordHint": "Usa al menos 8 caracteres con mayúsculas, minúsculas y números",
+    "alreadyHaveAccount": "¿Ya tienes una cuenta? Inicia sesión"
+  },
+  "cover-photo": {
+    "changeCoverPhoto": "Cambiar Foto de Portada"
+  },
+  "profile": {
+    "changeCoverPhoto": "Cambiar foto de portada",
+    "unsavedChanges": "Tienes cambios sin guardar",
+    "biography": "Biografía",
+    "relationship": "Relación",
+    "job": "Trabajo",
+    "homeTown": "Ciudad natal",
+    "currentCity": "Ciudad actual",
+    "edit": "Editar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "enterBiography": "Ingresa tu biografía",
+    "enterRelationship": "Ej: Soltero, Casado",
+    "enterJobTitle": "Ingresa tu puesto de trabajo",
+    "enterHomeTown": "Ingresa tu ciudad natal",
+    "enterCurrentCity": "Ingresa tu ciudad actual",
+    "createCoachProfile": "Crear perfil de entrenador",
+    "createBusinessProfile": "Crear perfil de negocio",
+    "weight": "Peso",
+    "height": "Altura",
+    "dateOfBirth": "Fecha de Nacimiento",
+    "enterWeight": "Ingresa tu peso en kg",
+    "enterHeight": "Ingresa tu altura en cm",
+    "enterDateOfBirth": "Ingresa tu fecha de nacimiento"
+  },
+  "profileSidebar": {
+    "sections": "Secciones",
+    "actions": "Acciones",
+    "about": "Acerca de",
+    "photos": "Fotos",
+    "friends": "Amigos",
+    "workouts": "Entrenamientos",
+    "achievements": "Logros",
+    "stats": "Estadísticas",
+    "editProfile": "Editar perfil",
+    "privacy": "Configuración de privacidad",
+    "activityLog": "Registro de actividad",
+    "business": "Negocios",
+    "toggleMenu": "Alternar menú"
+  },
+  "modal": {
+    "editProfileInformation": "Editar información del perfil",
+    "save": "Guardar",
+    "cancel": "Cancelar"
+  },
+  "months": {
+    "January": "Enero",
+    "February": "Febrero",
+    "March": "Marzo",
+    "April": "Abril",
+    "May": "Mayo",
+    "June": "Junio",
+    "July": "Julio",
+    "August": "Agosto",
+    "September": "Septiembre",
+    "October": "Octubre",
+    "November": "Noviembre",
+    "December": "Diciembre"
+  },
+  "header": {
+    "homeTitle": "Inicio",
+    "homeAriaLabel": "Ir a inicio",
+    "workoutTitle": "Entrenamientos",
+    "workoutAriaLabel": "Ir a entrenamientos",
+    "friendsTitle": "Amigos",
+    "friendsAriaLabel": "Ir a amigos",
+    "marketplaceTitle": "Mercado",
+    "marketplaceAriaLabel": "Ir al mercado",
+    "galleryTitle": "Galería",
+    "galleryAriaLabel": "Ir a galería",
+    "sessionsTitle": "Sesiones",
+    "sessionsAriaLabel": "Ir a sesiones",
+    "evolutionTitle": "Evolución",
+    "evolutionAriaLabel": "Ir a evolución",
+    "profile": "Perfil",
+    "logout": "Cerrar sesión"
+  },
+  "sidebar": {
+    "menu": {
+      "home": "Inicio",
+      "profile": "Perfil",
+      "workouts": "Entrenamientos",
+      "friends": "Amigos",
+      "business": "Negocios",
+      "settings": "Configuración",
+      "gallery": "Galería",
+      "sessions": "Sesiones",
+      "evolution": "Evolución"
+    },
+    "defaultUser": "Usuario",
+    "toggleAriaLabel": "Alternar barra lateral",
+    "profileAriaLabel": "Ir al perfil",
+    "uploadPictureTitle": "Subir foto de perfil"
+  },
+  "workout": {
+    "title": "Mis Entrenamientos",
+    "description": "Gestiona y rastrea tus entrenamientos",
+    "addWorkout": "Añadir Entrenamiento",
+    "addExercise": "Añadir Ejercicio",
+    "addExerciseHint": "Añade ejercicios para comenzar tu entrenamiento",
+    "noWorkouts": "Aún no hay entrenamientos. ¡Empieza creando tu primer entrenamiento!",
+    "noExercises": "Aún no hay ejercicios en este entrenamiento.",
+    "exercises": "ejercicios",
+    "exercisesList": "Lista de Ejercicios",
+    "exercisesFor": "Ejercicios para",
+    "minutes": "min",
+    "sets": "Series",
+    "reps": "Reps",
+    "weight": "Peso",
+    "weightUnit": "kg",
+    "exercise": {
+      "name": "Nombre del Ejercicio",
+      "namePlaceholder": "Ingresa el nombre del ejercicio",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Ingresa la descripción del ejercicio",
+      "setsPlaceholder": "Ej: 3",
+      "repsPlaceholder": "Ej: 12",
+      "weightPlaceholder": "Ej: 10"
+    },
+    "difficulty": {
+      "soft": "Suave",
+      "easy": "Fácil",
+      "medium": "Medio",
+      "hard": "Difícil",
+      "strong": "Intenso"
+    },
+    "muscleGroups": {
+      "chest": "Pecho",
+      "legs": "Piernas",
+      "back": "Espalda",
+      "core": "Core",
+      "full_body": "Cuerpo completo",
+      "shoulders": "Hombros",
+      "arms": "Brazos"
+    },
+    "daysOfWeek": {
+      "Monday": "Lunes",
+      "Tuesday": "Martes",
+      "Wednesday": "Miércoles",
+      "Thursday": "Jueves",
+      "Friday": "Viernes",
+      "Saturday": "Sábado",
+      "Sunday": "Domingo"
+    },
+    "visibility": {
+      "Private": "Privado",
+      "Friends": "Amigos",
+      "Public": "Público"
+    },
+    "form": {
+      "name": "Nombre del Entrenamiento",
+      "namePlaceholder": "Ingresa el nombre del entrenamiento",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Ingresa la descripción del entrenamiento",
+      "difficulty": "Dificultad",
+      "difficultyPlaceholder": "Selecciona el nivel de dificultad",
+      "difficultyOptions": {
+        "easy": "Fácil",
+        "medium": "Medio",
+        "hard": "Difícil"
+      },
+      "muscleGroups": "Grupos Musculares",
+      "visibility": "Visibilidad",
+      "visibilityPlaceholder": "Selecciona la visibilidad del entrenamiento"
+    }
+  },
+  "feed": {
+    "whatAreYouThinking": "¿En qué estás pensando?",
+    "addPhoto": "Añadir foto",
+    "addVideo": "Añadir vídeo",
+    "post": "Publicar",
+    "cancel": "Cancelar",
+    "removeAttachment": "Eliminar adjunto",
+    "like": "Me gusta",
+    "likes": "Me gusta",
+    "liked": "Te gusta",
+    "comment": "Comentar",
+    "comments": "Comentarios",
+    "share": "Compartir",
+    "writeComment": "Escribe un comentario...",
+    "now": "ahora",
+    "ago": "hace",
+    "noPostsYet": "Aún no hay publicaciones. ¡Sé el primero en publicar algo!",
+    "loading": "Cargando feed...",
+    "errors": {
+      "create": "No se pudo crear la publicación",
+      "react": "No se pudo reaccionar a la publicación",
+      "comment": "No se pudo comentar"
+    }
+  },
+  "friends": {
+    "title": "Amigos",
+    "subtitle": "Conéctate con personas que comparten tu viaje fitness",
+    "tabs": {
+      "all": "Todos",
+      "suggestions": "Sugerencias",
+      "received": "Recibidas",
+      "sent": "Enviadas"
+    },
+    "peopleYouMayKnow": "Personas que Quizás Conozcas",
+    "myFriends": "Mis Amigos",
+    "receivedRequests": "Solicitudes de Amistad",
+    "sentRequests": "Solicitudes Enviadas",
+    "noSuggestions": "No hay sugerencias disponibles en este momento",
+    "noFriends": "Aún no has añadido ningún amigo",
+    "noFriendsHint": "¡Consulta las sugerencias para encontrar personas con intereses similares!",
+    "noReceivedRequests": "No hay solicitudes de amistad pendientes",
+    "noSentRequests": "No has enviado ninguna solicitud de amistad",
+    "addFriend": "Añadir Amigo",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "cancelRequest": "Cancelar Solicitud",
+    "remove": "Eliminar",
+    "viewProfile": "Ver Perfil",
+    "mutualFriends": "{{count}} amigo en común",
+    "mutualFriends_plural": "{{count}} amigos en común",
+    "friendAdded": "¡Solicitud de amistad enviada con éxito!",
+    "requestAccepted": "¡Solicitud de amistad aceptada!",
+    "requestDeclined": "Solicitud de amistad rechazada",
+    "requestCancelled": "Solicitud de amistad cancelada",
+    "friendRemoved": "Amigo eliminado",
+    "suggestionRemoved": "Sugerencia eliminada",
+    "errorLoading": "Error al cargar amigos",
+    "errorAddingFriend": "Error al enviar solicitud de amistad",
+    "errorAcceptingRequest": "Error al aceptar solicitud de amistad",
+    "errorDecliningRequest": "Error al rechazar solicitud de amistad",
+    "errorCancellingRequest": "Error al cancelar solicitud de amistad",
+    "errorRemovingFriend": "Error al eliminar amigo",
+    "unknownUser": "Usuario Desconocido"
+  },
+  "welcome": "Bienvenido",
+  "business": {
+    "title": "Mis Negocios",
+    "subtitle": "Gestiona tus perfiles de negocio",
+    "toggleMenu": "Alternar menú",
+    "socialName": "Nombre Social",
+    "taxId": "NIF/CIF",
+    "addresses": "Direcciones",
+    "zipcode": "Código Postal",
+    "noProfiles": "Aún no tienes perfiles de negocio",
+    "backToList": "Volver a la lista",
+    "editProfile": "Editar Perfil",
+    "editBusinessProfile": "Editar Perfil de Negocio",
+    "businessInfo": "Información del Negocio",
+    "businessName": "Nombre del Negocio",
+    "businessType": "Tipo de Negocio",
+    "services": "Servicios",
+    "schedule": "Horarios",
+    "team": "Equipo",
+    "noServicesYet": "No hay servicios registrados aún",
+    "noScheduleYet": "No hay horarios registrados aún",
+    "noTeamYet": "No hay miembros del equipo registrados aún",
+    "sidebarSections": {
+      "title": "Secciones",
+      "about": "Acerca de",
+      "services": "Servicios",
+      "schedule": "Horarios",
+      "team": "Equipo",
+      "photos": "Fotos"
+    },
+    "sidebarActions": {
+      "title": "Acciones",
+      "edit": "Editar Perfil",
+      "settings": "Configuración"
+    },
+    "form": {
+      "businessName": "Nombre del Negocio",
+      "businessNamePlaceholder": "Ingresa el nombre del negocio",
+      "socialName": "Nombre Social",
+      "socialNamePlaceholder": "Ingresa el nombre social",
+      "businessType": "Tipo de Negocio",
+      "businessTypePlaceholder": "Ej: Gimnasio, Estudio, Entrenador Personal",
+      "taxId": "NIF/CIF",
+      "taxIdPlaceholder": "Ingresa el NIF o CIF"
+    }
+  },
+  "workoutExecution": {
+    "startWorkout": "Iniciar Entrenamiento",
+    "noExercises": "Este entrenamiento no tiene ejercicios. ¡Añade algunos ejercicios primero!",
+    "exercise": "Ejercicio",
+    "set": "Serie",
+    "of": "de",
+    "editValues": "Editar valores",
+    "skip": "Saltar",
+    "confirmSet": "Confirmar Serie",
+    "keepGoing": "¡Sigue así! ¡Lo estás haciendo genial!",
+    "almostDone": "¡Casi terminamos! ¡Último esfuerzo!",
+    "completedSets": "Series Completadas",
+    "workoutComplete": "¡Entrenamiento Completado!",
+    "duration": "Duración",
+    "setsCompleted": "Series Hechas",
+    "totalVolume": "Volumen Total",
+    "greatJob": "¡Excelente trabajo! ¡Arrasaste este entrenamiento! 💪",
+    "close": "Cerrar",
+    "saveSession": "Guardar Sesión"
+  },
+  "gallery": {
+    "title": "Galería",
+    "subtitle": "Publicaciones multimedia de tu comunidad de entrenamiento",
+    "loading": "Cargando galería...",
+    "empty": "Aún no hay publicaciones con multimedia",
+    "unknownUser": "Usuario desconocido"
+  },
+  "workoutSessions": {
+    "title": "Sesiones de Entrenamiento",
+    "loading": "Cargando sesiones...",
+    "empty": "No hay sesiones en este período.",
+    "sets": "series",
+    "apply": "Aplicar",
+    "filters": {
+      "week": "Última semana",
+      "month": "Último mes",
+      "quarter": "Últimos 3 meses",
+      "custom": "Personalizado"
+    },
+    "summary": {
+      "sessions": "Sesiones",
+      "totalVolume": "Volumen total",
+      "avgDuration": "Duración media"
+    }
+  },
+  "evolution": {
+    "title": "Evolución Corporal",
+    "loading": "Cargando datos de evolución...",
+    "newCheckin": "Nuevo check-in",
+    "save": "Guardar check-in",
+    "saving": "Guardando...",
+    "noNotes": "Sin notas",
+    "apply": "Aplicar",
+    "filters": {
+      "week": "Última semana",
+      "month": "Último mes",
+      "half": "Últimos 6 meses",
+      "custom": "Personalizado"
+    },
+    "metrics": {
+      "weight": "Peso",
+      "bodyFat": "Grasa corporal",
+      "waist": "Cintura"
+    },
+    "form": {
+      "weight": "Peso (kg)",
+      "bodyFat": "Grasa corporal (%)",
+      "muscleMass": "Masa muscular (%)",
+      "chest": "Pecho (cm)",
+      "waist": "Cintura (cm)",
+      "hip": "Cadera (cm)",
+      "note": "¿Cómo te sentiste?"
+    },
+    "errors": {
+      "userNotLoaded": "Los datos del usuario aún no están cargados",
+      "save": "No se pudo guardar el check-in"
+    }
+  },
+  "personProfile": {
+    "back": "Volver",
+    "loading": "Cargando perfil...",
+    "memberSince": "Miembro desde",
+    "personalInfo": "Información personal",
+    "physicalStats": "Estadísticas físicas",
+    "biography": "Biografía",
+    "job": "Trabajo",
+    "relationship": "Relación",
+    "homeTown": "Ciudad natal",
+    "currentCity": "Ciudad actual",
+    "weight": "Peso",
+    "height": "Altura",
+    "dateOfBirth": "Fecha de nacimiento",
+    "gender": "Género",
+    "errors": {
+      "load": "No se pudo cargar el perfil"
+    }
+  }
+}

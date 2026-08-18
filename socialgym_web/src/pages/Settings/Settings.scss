@@ -1,0 +1,125 @@
+.settings-page {
+  min-height: 100vh;
+  background-color: #0b0f19;
+  color: #f8fafc;
+
+  .settings-container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .settings-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+
+    h1 {
+      font-size: 1.6rem;
+      margin: 0 0 0.25rem 0;
+      color: #f8fafc;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      margin: 0 0 2rem 0;
+      font-size: 0.95rem;
+    }
+  }
+
+  .settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.8rem;
+  }
+
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: #f1f5f9;
+    }
+  }
+
+  .gui-select-custom {
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #f8fafc;
+    border: 1px solid #334155;
+    outline: none;
+    font-size: 0.95rem;
+    width: 100%;
+
+    &:focus {
+      border-color: #3b82f6;
+    }
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 1rem;
+
+    .radio-tile {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 0.8rem;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+
+      input {
+        accent-color: #3b82f6;
+      }
+
+      span {
+        font-size: 0.9rem;
+        color: #94a3b8;
+      }
+
+      &.selected {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.1);
+
+        span {
+          color: #fff;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #3b82f6;
+    }
+
+    span {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+  }
+}

@@ -1,0 +1,376 @@
+@use "../../assets/scss/colors" as c;
+@use "../../assets/scss/effects" as effects;
+@use "sass:color";
+
+// Mobile-first: Start with mobile layout
+.profile-page {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .profile-cover-section {
+    position: relative;
+    width: 100%;
+    max-width: 1024px;
+    height: 250px;
+    overflow: hidden;
+    margin: 0 auto;
+
+    @media (min-width: 480px) {
+      height: 300px;
+    }
+
+    @media (min-width: 768px) {
+      height: 350px;
+    }
+
+    .profile-cover {
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      @include effects.gradient-3();
+
+      &:hover .cover-upload-label {
+        opacity: 1;
+      }
+    }
+
+    .cover-upload-label {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      font-weight: 500;
+      font-size: 0.875rem;
+
+      @media (min-width: 480px) {
+        padding: 10px 20px;
+        font-size: 0.95rem;
+      }
+
+      span {
+        pointer-events: none;
+      }
+    }
+
+    .cover-upload-btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+
+      @media (min-width: 480px) {
+        bottom: 15px;
+        right: 15px;
+        font-size: 0.95rem;
+        padding: 0.6rem 1.2rem;
+      }
+    }
+  }
+
+  .profile-content-wrapper {
+    display: flex;
+    gap: 1.5rem;
+    max-width: 1200px;
+    width: 100%;
+    margin: -50px auto 0;
+    padding: 0 1rem;
+    position: relative;
+    z-index: 1;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 0;
+      padding: 0;
+      margin-top: 0;
+    }
+
+    @media (min-width: 480px) {
+      margin: 0 auto 0;
+    }
+  }
+
+  .profile-main-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .profile-container {
+    max-width: 100%;
+    width: 100%;
+    background-color: white;
+    border-radius: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+
+    @media (min-width: 480px) {
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      border-radius: 8px;
+      padding: 2rem;
+    }
+
+    .profile-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: center;
+
+      @media (min-width: 480px) {
+        flex-direction: row;
+        align-items: center;
+        gap: 2rem;
+        text-align: left;
+      }
+
+      @media (min-width: 768px) {
+        flex-direction: row;
+        align-items: center;
+        gap: 2rem;
+        text-align: left;
+      }
+
+      .profile-avatar-wrapper {
+        position: relative;
+        flex-shrink: 0;
+        display: flex;
+        align-items: flex-start;
+        gap: 2rem;
+
+        @media (min-width: 480px) {
+          gap: 2.5rem;
+        }
+
+        @media (min-width: 768px) {
+          gap: 3rem;
+        }
+
+        .avatar {
+          width: 120px;
+          height: 120px;
+          border: 4px solid white;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          flex-shrink: 0;
+
+          @media (min-width: 480px) {
+            width: 140px;
+            height: 140px;
+          }
+
+          @media (min-width: 768px) {
+            width: 160px;
+            height: 160px;
+          }
+        }
+
+        .profile-action-buttons {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          align-self: center;
+
+          @media (min-width: 480px) {
+            gap: 1rem;
+            align-self: center;
+          }
+
+          @media (min-width: 768px) {
+            gap: 1rem;
+            align-self: center;
+          }
+
+          .profile-action-btn {
+            padding: 0.625rem 1.25rem;
+            font-size: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: white;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            white-space: nowrap;
+
+            @media (min-width: 480px) {
+              padding: 0.75rem 1.5rem;
+              font-size: 0.85rem;
+            }
+
+            @media (min-width: 768px) {
+              padding: 0.85rem 1.75rem;
+              font-size: 0.9rem;
+            }
+
+            &:hover {
+              background-color: #f5f5f5;
+              border-color: c.$color-primary;
+              color: c.$color-primary;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            &:active {
+              transform: scale(0.98);
+            }
+
+            &--coach {
+              &:hover {
+                background-color: rgba(124, 178, 168, 0.1);
+              }
+            }
+
+            &--business {
+              &:hover {
+                background-color: rgba(124, 178, 168, 0.05);
+              }
+            }
+          }
+        }
+      }
+
+      .profile-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        text-align: left;
+
+        h1 {
+          margin: 0 0 1rem 0;
+          font-size: 1.5rem;
+          color: #050505;
+
+          @media (min-width: 480px) {
+            font-size: 1.75rem;
+            margin: 0 0 1.25rem 0;
+          }
+
+          @media (min-width: 768px) {
+            font-size: 2rem;
+            margin: 0 0 1.5rem 0;
+          }
+        }
+
+        .profile-upload-btn {
+          font-size: 0.875rem;
+          padding: 0.5rem 1rem;
+          align-self: flex-start;
+
+          @media (min-width: 480px) {
+            font-size: 0.95rem;
+            padding: 0.6rem 1.2rem;
+          }
+        }
+      }
+    }
+
+    .profile-details-box {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+
+      @media (min-width: 480px) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.75rem;
+      }
+
+      @media (min-width: 768px) {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+      }
+
+      .detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        .detail-label {
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: #666;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+          font-size: 0.95rem;
+          color: #333;
+          line-height: 1.5;
+          font-weight: 500;
+
+          @media (min-width: 480px) {
+            font-size: 1rem;
+          }
+        }
+      }
+
+      .detail-item-action {
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-end;
+        margin-top: 1rem;
+
+        .edit-person-info-btn {
+          padding: 0.75rem 1.5rem;
+          font-size: 0.95rem;
+          font-weight: 600;
+
+          @media (min-width: 480px) {
+            padding: 0.85rem 1.75rem;
+            font-size: 1rem;
+          }
+        }
+      }
+    }
+
+    .profile-footer {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      flex-direction: column;
+
+      @media (min-width: 480px) {
+        gap: 1rem;
+        flex-direction: row;
+        justify-content: center;
+      }
+
+      @media (min-width: 768px) {
+        justify-content: flex-start;
+      }
+    }
+  }
+
+  .profile-input.hidden {
+    display: none;
+  }
+}
+
+
+
+

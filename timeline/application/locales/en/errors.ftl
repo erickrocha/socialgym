@@ -1,0 +1,16 @@
+auth-token-invalid = Token is invalid
+auth-header-empty = Empty header is not allowed
+auth-token-missing = Please add the JWT token to the header
+auth-token-malformed = Invalid token format
+workout-add-failed = Failed to add workout
+workout-find-failed = Failed to find workout
+workout-find-all-failed = Failed to find workouts
+workout-not-found = Workout session not found
+post-create-failed = Failed to create post
+feed-fetch-failed = Failed to fetch feed
+comment-add-failed = Failed to add comment
+reaction-add-failed = Failed to add reaction
+reaction-remove-failed = Failed to remove reaction
+evolution-checkin-add-failed = Failed to add evolution check-in
+evolution-checkin-find-failed = Failed to find evolution check-in
+unknown-error = Unexpected server error

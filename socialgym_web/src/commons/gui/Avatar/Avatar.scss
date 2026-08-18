@@ -1,0 +1,215 @@
+@use "../../../assets/scss/colors" as c;
+@use "../../../assets/scss/effects" as effects;
+@use "sass:color";
+
+.avatar-container {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+
+  @media (min-width: 480px) {
+    gap: 2.5rem;
+  }
+
+  @media (min-width: 768px) {
+    gap: 3rem;
+  }
+
+  .avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: c.$color-primary;
+    flex-shrink: 0;
+    // Mobile-first: start with smallest size
+    width: 32px;
+    height: 32px;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .avatar-placeholder {
+      color: white;
+      font-weight: bold;
+      font-size: 0.75rem;
+    }
+
+    &--sm {
+      width: 32px;
+      height: 32px;
+
+      .avatar-placeholder {
+        font-size: 0.75rem;
+      }
+    }
+
+    &--md {
+      width: 36px;
+      height: 36px;
+
+      .avatar-placeholder {
+        font-size: 0.8rem;
+      }
+
+      @media (min-width: 480px) {
+        width: 40px;
+        height: 40px;
+
+        .avatar-placeholder {
+          font-size: 0.875rem;
+        }
+      }
+    }
+
+    &--lg {
+      width: 44px;
+      height: 44px;
+
+      .avatar-placeholder {
+        font-size: 0.95rem;
+      }
+
+      @media (min-width: 480px) {
+        width: 48px;
+        height: 48px;
+
+        .avatar-placeholder {
+          font-size: 1rem;
+        }
+      }
+    }
+
+    &--xl {
+      width: 120px;
+      height: 120px;
+
+      .avatar-placeholder {
+        font-size: 2.5rem;
+      }
+
+      @media (min-width: 480px) {
+        width: 140px;
+        height: 140px;
+
+        .avatar-placeholder {
+          font-size: 3rem;
+        }
+      }
+
+      @media (min-width: 768px) {
+        width: 160px;
+        height: 160px;
+
+        .avatar-placeholder {
+          font-size: 3.5rem;
+        }
+      }
+    }
+  }
+
+  .avatar-upload-label {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 40px;
+    height: 40px;
+    background-color: c.$color-primary;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    border: 3px solid white;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+    @media (min-width: 480px) {
+      width: 45px;
+      height: 45px;
+    }
+
+    @media (min-width: 768px) {
+      width: 50px;
+      height: 50px;
+    }
+
+    .camera-icon {
+      width: 60%;
+      height: 60%;
+      stroke-width: 2.5;
+      pointer-events: none;
+    }
+
+    &:hover {
+      background-color: color.adjust(c.$color-primary, $lightness: 10%);
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  .avatar-action-btn {
+    position: absolute;
+    bottom: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    border: 3px solid white;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+    @media (min-width: 480px) {
+      width: 45px;
+      height: 45px;
+    }
+
+    @media (min-width: 768px) {
+      width: 50px;
+      height: 50px;
+    }
+
+    svg {
+      width: 60%;
+      height: 60%;
+      pointer-events: none;
+    }
+
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  .avatar-cancel-btn {
+    left: 0;
+    background-color: c.$color-danger;
+
+    &:hover {
+      background-color: color.adjust(c.$color-danger, $lightness: 10%);
+    }
+  }
+
+  .avatar-save-btn {
+    right: 0;
+    background-color: c.$color-success;
+
+    &:hover {
+      background-color: color.adjust(c.$color-success, $lightness: 10%);
+    }
+  }
+
+}
+
+

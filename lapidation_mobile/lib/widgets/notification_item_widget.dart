@@ -1,0 +1,72 @@
+import 'package:flutter/material.dart';
+import 'package:lapidation_mobile/config/app_colors.dart';
+import 'package:lapidation_mobile/models/notification.dart' as app_notification;
+
+class NotificationItemWidget extends StatelessWidget {
+  final app_notification.Notification notification;
+  final VoidCallback? onTap;
+
+  const NotificationItemWidget({
+    super.key,
+    required this.notification,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final actorName = notification.actorName.isNotEmpty
+        ? notification.actorName
+        : 'Someone';
+    final subtitle = notification.snippet.isNotEmpty
+        ? notification.snippet
+        : notification.notificationType;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      color: notification.isUnread
+          ? AppColors.primary.withAlpha(10)
+          : Colors.white,
+      child: ListTile(
+        onTap: onTap,
+        leading: CircleAvatar(
+          backgroundColor: notification.isUnread
+              ? AppColors.primary
+              : Colors.grey.shade300,
+          child: Icon(
+            _iconForType(notification.notificationType),
+            color: notification.isUnread ? Colors.white : Colors.grey.shade700,
+          ),
+        ),
+        title: Text(
+          actorName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontWeight: notification.isUnread
+                ? FontWeight.w700
+                : FontWeight.w500,
+          ),
+        ),
+        subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+        trailing: notification.isUnread
+            ? const Icon(Icons.circle, color: AppColors.primary, size: 10)
+            : null,
+      ),
+    );
+  }
+
+  IconData _iconForType(String type) {
+    switch (type.toLowerCase()) {
+      case 'comment':
+        return Icons.comment_outlined;
+      case 'reaction':
+      case 'like':
+        return Icons.favorite_border;
+      case 'friend':
+      case 'follow':
+        return Icons.person_add_alt_1_outlined;
+      default:
+        return Icons.notifications_outlined;
+    }
+  }
+}

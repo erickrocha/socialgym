@@ -1,0 +1,427 @@
+{
+  "application": {
+    "button": {
+      "cancel": "Annuleren",
+      "confirm": "Bevestigen"
+    }
+  },
+  "visibility": {
+    "selectVisibility": "Selecteer zichtbaarheid",
+    "privateDescription": "Alleen jij kunt zien",
+    "friendsDescription": "Je vrienden kunnen zien",
+    "publicDescription": "Iedereen kan zien"
+  },
+  "difficulty": {
+    "selectDifficulty": "Selecteer moeilijkheid",
+    "softDescription": "Zeer licht, perfect voor beginners",
+    "easyDescription": "Lichte en comfortabele oefening",
+    "mediumDescription": "Matige intensiteit",
+    "hardDescription": "Intensieve en uitdagende training",
+    "strongDescription": "Extreem niveau voor atleten"
+  },
+  "signIn": {
+    "title": "Inloggen",
+    "emailPlaceholder": "E-mail",
+    "passwordPlaceholder": "Wachtwoord",
+    "submit": "Inloggen",
+    "forgotPassword": "Wachtwoord vergeten",
+    "createAccount": "Nieuw account maken"
+  },
+  "signUp": {
+    "title": "Account Aanmaken",
+    "firstName": "Voornaam",
+    "surname": "Achternaam",
+    "birthday": "Geboortedatum",
+    "birthdayMonth": "Maand",
+    "birthdayDay": "Dag",
+    "birthdayYear": "Jaar",
+    "gender": "Geslacht",
+    "genderFemale": "Vrouw",
+    "genderMale": "Man",
+    "genderCustom": "Anders",
+    "genderCustomPlaceholder": "Specificeer alstublieft",
+    "mobileOrEmail": "Mobiel of e-mail",
+    "password": "Wachtwoord",
+    "confirmPassword": "Bevestig wachtwoord",
+    "passwordMismatch": "Wachtwoorden komen niet overeen",
+    "submit": "Account Aanmaken",
+    "passwordHint": "Gebruik minimaal 8 tekens met hoofdletters, kleine letters en cijfers",
+    "alreadyHaveAccount": "Heb je al een account? Log in"
+  },
+  "cover-photo": {
+    "changeCoverPhoto": "Omslagfoto Wijzigen"
+  },
+  "profile": {
+    "changeCoverPhoto": "Omslagfoto wijzigen",
+    "unsavedChanges": "Je hebt niet-opgeslagen wijzigingen",
+    "biography": "Biografie",
+    "relationship": "Relatie",
+    "job": "Baan",
+    "homeTown": "Geboorteplaats",
+    "currentCity": "Huidige stad",
+    "edit": "Bewerken",
+    "cancel": "Annuleren",
+    "confirm": "Bevestigen",
+    "enterBiography": "Voer je biografie in",
+    "enterRelationship": "Bijv. Alleenstaand, Getrouwd",
+    "enterJobTitle": "Voer je functie in",
+    "enterHomeTown": "Voer je geboorteplaats in",
+    "enterCurrentCity": "Voer je huidige stad in",
+    "createCoachProfile": "Coach profiel aanmaken",
+    "createBusinessProfile": "Bedrijfsprofiel aanmaken",
+    "weight": "Gewicht",
+    "height": "Lengte",
+    "dateOfBirth": "Geboortedatum",
+    "enterWeight": "Voer je gewicht in kg in",
+    "enterHeight": "Voer je lengte in cm in",
+    "enterDateOfBirth": "Voer je geboortedatum in"
+  },
+  "profileSidebar": {
+    "sections": "Secties",
+    "actions": "Acties",
+    "about": "Over",
+    "photos": "Foto's",
+    "friends": "Vrienden",
+    "workouts": "Trainingen",
+    "achievements": "Prestaties",
+    "stats": "Statistieken",
+    "editProfile": "Profiel bewerken",
+    "privacy": "Privacy-instellingen",
+    "activityLog": "Activiteitenlogboek",
+    "business": "Zakelijk",
+    "toggleMenu": "Menu schakelen"
+  },
+  "modal": {
+    "editProfileInformation": "Profielinformatie bewerken",
+    "save": "Opslaan",
+    "cancel": "Annuleren"
+  },
+  "months": {
+    "January": "Januari",
+    "February": "Februari",
+    "March": "Maart",
+    "April": "April",
+    "May": "Mei",
+    "June": "Juni",
+    "July": "Juli",
+    "August": "Augustus",
+    "September": "September",
+    "October": "Oktober",
+    "November": "November",
+    "December": "December"
+  },
+  "header": {
+    "homeTitle": "Home",
+    "homeAriaLabel": "Ga naar home",
+    "workoutTitle": "Trainingen",
+    "workoutAriaLabel": "Ga naar trainingen",
+    "friendsTitle": "Vrienden",
+    "friendsAriaLabel": "Ga naar vrienden",
+    "marketplaceTitle": "Marktplaats",
+    "marketplaceAriaLabel": "Ga naar marktplaats",
+    "galleryTitle": "Galerij",
+    "galleryAriaLabel": "Ga naar galerij",
+    "sessionsTitle": "Sessies",
+    "sessionsAriaLabel": "Ga naar sessies",
+    "evolutionTitle": "Evolutie",
+    "evolutionAriaLabel": "Ga naar evolutie",
+    "profile": "Profiel",
+    "logout": "Uitloggen"
+  },
+  "sidebar": {
+    "menu": {
+      "home": "Home",
+      "profile": "Profiel",
+      "workouts": "Trainingen",
+      "friends": "Vrienden",
+      "business": "Zakelijk",
+      "settings": "Instellingen",
+      "gallery": "Galerij",
+      "sessions": "Sessies",
+      "evolution": "Evolutie"
+    },
+    "defaultUser": "Gebruiker",
+    "toggleAriaLabel": "Zijbalk schakelen",
+    "profileAriaLabel": "Ga naar profiel",
+    "uploadPictureTitle": "Profielfoto uploaden"
+  },
+  "workout": {
+    "title": "Mijn Trainingen",
+    "description": "Beheer en volg uw trainingen",
+    "addWorkout": "Training Toevoegen",
+    "addExercise": "Oefening Toevoegen",
+    "addExerciseHint": "Voeg oefeningen toe om uw training te starten",
+    "noWorkouts": "Nog geen trainingen. Begin met het maken van uw eerste training!",
+    "noExercises": "Nog geen oefeningen in deze training.",
+    "exercises": "oefeningen",
+    "exercisesList": "Oefeningenlijst",
+    "exercisesFor": "Oefeningen voor",
+    "minutes": "min",
+    "sets": "Sets",
+    "reps": "Reps",
+    "weight": "Gewicht",
+    "weightUnit": "kg",
+    "exercise": {
+      "name": "Naam van de Oefening",
+      "namePlaceholder": "Voer de naam van de oefening in",
+      "description": "Beschrijving",
+      "descriptionPlaceholder": "Voer de beschrijving van de oefening in",
+      "setsPlaceholder": "Bijv: 3",
+      "repsPlaceholder": "Bijv: 12",
+      "weightPlaceholder": "Bijv: 10"
+    },
+    "difficulty": {
+      "soft": "Zacht",
+      "easy": "Makkelijk",
+      "medium": "Gemiddeld",
+      "hard": "Moeilijk",
+      "strong": "Intens"
+    },
+    "muscleGroups": {
+      "chest": "Borst",
+      "legs": "Benen",
+      "back": "Rug",
+      "core": "Core",
+      "full_body": "Hele lichaam",
+      "shoulders": "Schouders",
+      "arms": "Armen"
+    },
+    "daysOfWeek": {
+      "Monday": "Maandag",
+      "Tuesday": "Dinsdag",
+      "Wednesday": "Woensdag",
+      "Thursday": "Donderdag",
+      "Friday": "Vrijdag",
+      "Saturday": "Zaterdag",
+      "Sunday": "Zondag"
+    },
+    "visibility": {
+      "Private": "Privé",
+      "Friends": "Vrienden",
+      "Public": "Openbaar"
+    },
+    "form": {
+      "name": "Trainingsnaam",
+      "namePlaceholder": "Voer de naam van de training in",
+      "description": "Beschrijving",
+      "descriptionPlaceholder": "Voer de beschrijving van de training in",
+      "difficulty": "Moeilijkheid",
+      "difficultyPlaceholder": "Selecteer moeilijkheidsniveau",
+      "difficultyOptions": {
+        "easy": "Makkelijk",
+        "medium": "Gemiddeld",
+        "hard": "Moeilijk"
+      },
+      "muscleGroups": "Spiergroepen",
+      "visibility": "Zichtbaarheid",
+      "visibilityPlaceholder": "Selecteer de zichtbaarheid van de training"
+    }
+  },
+  "feed": {
+    "whatAreYouThinking": "Waar denk je aan?",
+    "addPhoto": "Foto toevoegen",
+    "addVideo": "Video toevoegen",
+    "post": "Plaatsen",
+    "cancel": "Annuleren",
+    "removeAttachment": "Bijlage verwijderen",
+    "like": "Vind ik leuk",
+    "likes": "Vind-ik-leuks",
+    "liked": "Leuk gevonden",
+    "comment": "Reageren",
+    "comments": "Reacties",
+    "share": "Delen",
+    "writeComment": "Schrijf een reactie...",
+    "now": "nu",
+    "ago": "geleden",
+    "noPostsYet": "Nog geen berichten. Wees de eerste om iets te plaatsen!",
+    "loading": "Feed laden...",
+    "errors": {
+      "create": "Bericht kon niet worden gemaakt",
+      "react": "Kon niet reageren op bericht",
+      "comment": "Kon geen reactie plaatsen"
+    }
+  },
+  "friends": {
+    "title": "Vrienden",
+    "subtitle": "Maak contact met mensen die jouw fitnessreis delen",
+    "tabs": {
+      "all": "Alle",
+      "suggestions": "Suggesties",
+      "received": "Ontvangen",
+      "sent": "Verzonden"
+    },
+    "peopleYouMayKnow": "Mensen die je Misschien Kent",
+    "myFriends": "Mijn Vrienden",
+    "receivedRequests": "Vriendschapsverzoeken",
+    "sentRequests": "Verzonden Verzoeken",
+    "noSuggestions": "Geen suggesties beschikbaar op dit moment",
+    "noFriends": "Je hebt nog geen vrienden toegevoegd",
+    "noFriendsHint": "Bekijk de suggesties om mensen met vergelijkbare interesses te vinden!",
+    "noReceivedRequests": "Geen openstaande vriendschapsverzoeken",
+    "noSentRequests": "Je hebt geen vriendschapsverzoeken verzonden",
+    "addFriend": "Vriend Toevoegen",
+    "accept": "Accepteren",
+    "decline": "Weigeren",
+    "cancelRequest": "Verzoek Annuleren",
+    "remove": "Verwijderen",
+    "viewProfile": "Profiel Bekijken",
+    "mutualFriends": "{{count}} gemeenschappelijke vriend",
+    "mutualFriends_plural": "{{count}} gemeenschappelijke vrienden",
+    "friendAdded": "Vriendschapsverzoek succesvol verzonden!",
+    "requestAccepted": "Vriendschapsverzoek geaccepteerd!",
+    "requestDeclined": "Vriendschapsverzoek geweigerd",
+    "requestCancelled": "Vriendschapsverzoek geannuleerd",
+    "friendRemoved": "Vriend verwijderd",
+    "suggestionRemoved": "Suggestie verwijderd",
+    "errorLoading": "Fout bij het laden van vrienden",
+    "errorAddingFriend": "Fout bij het verzenden van vriendschapsverzoek",
+    "errorAcceptingRequest": "Fout bij het accepteren van vriendschapsverzoek",
+    "errorDecliningRequest": "Fout bij het weigeren van vriendschapsverzoek",
+    "errorCancellingRequest": "Fout bij het annuleren van vriendschapsverzoek",
+    "errorRemovingFriend": "Fout bij het verwijderen van vriend",
+    "unknownUser": "Onbekende Gebruiker"
+  },
+  "welcome": "Welkom",
+  "business": {
+    "title": "Mijn Bedrijven",
+    "subtitle": "Beheer uw bedrijfsprofielen",
+    "toggleMenu": "Menu schakelen",
+    "socialName": "Handelsnaam",
+    "taxId": "BTW-nummer",
+    "addresses": "Adressen",
+    "zipcode": "Postcode",
+    "noProfiles": "U heeft nog geen bedrijfsprofielen",
+    "backToList": "Terug naar lijst",
+    "editProfile": "Profiel Bewerken",
+    "editBusinessProfile": "Bedrijfsprofiel Bewerken",
+    "businessInfo": "Bedrijfsinformatie",
+    "businessName": "Bedrijfsnaam",
+    "businessType": "Bedrijfstype",
+    "services": "Diensten",
+    "schedule": "Planning",
+    "team": "Team",
+    "noServicesYet": "Nog geen diensten geregistreerd",
+    "noScheduleYet": "Nog geen planning geregistreerd",
+    "noTeamYet": "Nog geen teamleden geregistreerd",
+    "sidebarSections": {
+      "title": "Secties",
+      "about": "Over",
+      "services": "Diensten",
+      "schedule": "Planning",
+      "team": "Team",
+      "photos": "Foto's"
+    },
+    "sidebarActions": {
+      "title": "Acties",
+      "edit": "Profiel Bewerken",
+      "settings": "Instellingen"
+    },
+    "form": {
+      "businessName": "Bedrijfsnaam",
+      "businessNamePlaceholder": "Voer bedrijfsnaam in",
+      "socialName": "Handelsnaam",
+      "socialNamePlaceholder": "Voer handelsnaam in",
+      "businessType": "Bedrijfstype",
+      "businessTypePlaceholder": "Bijv. Sportschool, Studio, Personal Trainer",
+      "taxId": "BTW-nummer",
+      "taxIdPlaceholder": "Voer BTW-nummer in"
+    }
+  },
+  "workoutExecution": {
+    "startWorkout": "Start Training",
+    "noExercises": "Deze training heeft geen oefeningen. Voeg eerst oefeningen toe!",
+    "exercise": "Oefening",
+    "set": "Set",
+    "of": "van",
+    "editValues": "Waarden bewerken",
+    "skip": "Overslaan",
+    "confirmSet": "Bevestig Set",
+    "keepGoing": "Ga zo door! Je doet het geweldig!",
+    "almostDone": "Bijna klaar! Laatste zetje!",
+    "completedSets": "Voltooide Sets",
+    "workoutComplete": "Training Voltooid!",
+    "duration": "Duur",
+    "setsCompleted": "Sets Gedaan",
+    "totalVolume": "Totaal Volume",
+    "greatJob": "Goed gedaan! Je hebt deze training verpletterd! 💪",
+    "close": "Sluiten",
+    "saveSession": "Sessie Opslaan"
+  },
+  "gallery": {
+    "title": "Galerij",
+    "subtitle": "Mediaberichten uit je trainingscommunity",
+    "loading": "Galerij laden...",
+    "empty": "Nog geen mediaberichten",
+    "unknownUser": "Onbekende gebruiker"
+  },
+  "workoutSessions": {
+    "title": "Workoutsessies",
+    "loading": "Sessies laden...",
+    "empty": "Geen sessies in deze periode.",
+    "sets": "sets",
+    "apply": "Toepassen",
+    "filters": {
+      "week": "Afgelopen week",
+      "month": "Afgelopen maand",
+      "quarter": "Laatste 3 maanden",
+      "custom": "Aangepast"
+    },
+    "summary": {
+      "sessions": "Sessies",
+      "totalVolume": "Totaal volume",
+      "avgDuration": "Gemiddelde duur"
+    }
+  },
+  "evolution": {
+    "title": "Lichaamsevolutie",
+    "loading": "Evolutiegegevens laden...",
+    "newCheckin": "Nieuwe check-in",
+    "save": "Check-in opslaan",
+    "saving": "Opslaan...",
+    "noNotes": "Geen notities",
+    "apply": "Toepassen",
+    "filters": {
+      "week": "Afgelopen week",
+      "month": "Afgelopen maand",
+      "half": "Laatste 6 maanden",
+      "custom": "Aangepast"
+    },
+    "metrics": {
+      "weight": "Gewicht",
+      "bodyFat": "Lichaamsvet",
+      "waist": "Taille"
+    },
+    "form": {
+      "weight": "Gewicht (kg)",
+      "bodyFat": "Lichaamsvet (%)",
+      "muscleMass": "Spiermassa (%)",
+      "chest": "Borst (cm)",
+      "waist": "Taille (cm)",
+      "hip": "Heup (cm)",
+      "note": "Hoe voelde je je?"
+    },
+    "errors": {
+      "userNotLoaded": "Gebruikersgegevens zijn nog niet geladen",
+      "save": "Check-in kon niet worden opgeslagen"
+    }
+  },
+  "personProfile": {
+    "back": "Terug",
+    "loading": "Profiel laden...",
+    "memberSince": "Lid sinds",
+    "personalInfo": "Persoonlijke informatie",
+    "physicalStats": "Fysieke statistieken",
+    "biography": "Biografie",
+    "job": "Werk",
+    "relationship": "Relatie",
+    "homeTown": "Geboorteplaats",
+    "currentCity": "Huidige stad",
+    "weight": "Gewicht",
+    "height": "Lengte",
+    "dateOfBirth": "Geboortedatum",
+    "gender": "Geslacht",
+    "errors": {
+      "load": "Profiel kon niet geladen worden"
+    }
+  }
+}

@@ -1,0 +1,108 @@
+@use '../../assets/scss/colors' as c;
+
+.person-profile-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.person-profile-page__layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  flex-direction: column;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+  }
+}
+
+.person-profile-page__content {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem;
+  background: #f5f8f7;
+}
+
+.person-profile-page__back {
+  border: none;
+  border-radius: 8px;
+  background: c.$color-primary;
+  color: #fff;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+
+.person-profile-page__error {
+  color: #b3261e;
+}
+
+.person-card {
+  margin-top: 1rem;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #dfe9e6;
+  background: #fff;
+  box-shadow: 0 12px 24px rgba(40, 63, 57, 0.08);
+}
+
+.person-card__cover {
+  height: 210px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.person-card__head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+
+  h1 {
+    margin: 0;
+    color: #223631;
+  }
+
+  p {
+    margin: 0.3rem 0 0;
+    color: #677571;
+  }
+}
+
+.person-card__avatar {
+  width: 104px;
+  height: 104px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  box-shadow: 0 8px 18px rgba(44, 71, 64, 0.22);
+}
+
+.person-card__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.7rem;
+  padding: 0 1rem 1rem;
+
+  section {
+    border: 1px solid #e4ece8;
+    border-radius: 10px;
+    padding: 0.85rem;
+    background: #fbfdfc;
+  }
+
+  h3 {
+    margin: 0 0 0.55rem;
+    color: #2a3d38;
+  }
+
+  p {
+    margin: 0.32rem 0;
+    color: #5d6b68;
+  }
+}
