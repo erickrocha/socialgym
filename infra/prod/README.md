@@ -24,13 +24,19 @@ one is meant to run closer to how a real deployment looks.
      in sync with `POSTGRES_PASSWORD`/`MONGODB_PASSWORD` respectively.
    - **Never commit `.env`.**
 
-2. TLS certs: `../certs/server.crt`/`server.key` must exist (see
-   `../certs/san.cnf`; regenerate with `openssl req -x509 ...` if the SAN
-   list needs to change — e.g. a new ngrok hostname). Both `gateway` and
-   `integration-app` mount these read-only; `timeline-app` mounts only the
-   cert (it's a gRPC client, not a server). This is a self-signed cert — for
-   a real public deployment with a trusted CA-issued certificate, swap this
-   for a Let's Encrypt/ACME-issued cert instead.
+2. TLS certs: `../certs/server.crt`/`server.key` must exist. The private key
+   is gitignored (not committed) — generate your own from `../certs/san.cnf`:
+   ```bash
+   openssl req -x509 -nodes -newkey rsa:2048 -days 825 \
+     -keyout ../certs/server.key -out ../certs/server.crt \
+     -config ../certs/san.cnf -extensions v3_req
+   ```
+   Re-run this (edit `../certs/san.cnf` first) if the SAN list needs to
+   change — e.g. a new ngrok hostname. Both `gateway` and `integration-app`
+   mount these read-only; `timeline-app` mounts only the cert (it's a gRPC
+   client, not a server). This is a self-signed cert — for a real public
+   deployment with a trusted CA-issued certificate, swap this for a Let's
+   Encrypt/ACME-issued cert instead.
 
 3. Build and start:
    ```bash

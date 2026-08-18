@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: timeline
+  labels:
+    app: timeline
+    {{- include "socialgym.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: timeline
+  template:
+    metadata:
+      labels:
+        app: timeline
+    spec:
+      containers:
+        - name: timeline
+          image: "{{ .Values.timeline.image.repository }}:{{ .Values.timeline.image.tag }}"
+          imagePullPolicy: {{ .Values.timeline.image.pullPolicy }}
+          # DATABASE_URL is built at container start from discrete MONGO_*
+          # env vars so the mongo Secret stays the single source of truth
+          # for the app password.
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              export DATABASE_URL="mongodb://${MONGO_APP_USERNAME}:${MONGO_APP_PASSWORD}@mongo:27017/${MONGO_APP_DATABASE}"
+              exec ./timeline
+          ports:
+            - name: http
+              containerPort: {{ .Values.timeline.port }}
+          envFrom:
+            - configMapRef:
+                name: timeline
+            - secretRef:
+                name: timeline
+            - secretRef:
+                name: socialgym-auth
+          env:
+            - name: MONGO_APP_USERNAME
+              value: {{ .Values.mongo.appUsername | quote }}
+            - name: MONGO_APP_DATABASE
+              value: {{ .Values.mongo.database | quote }}
+            - name: MONGO_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo
+                  key: MONGO_APP_PASSWORD
+          volumeMounts:
+            - name: grpc-cert
+              mountPath: /etc/grpc/certs
+              readOnly: true
+          resources:
+            {{- toYaml .Values.timeline.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+      volumes:
+        - name: grpc-cert
+          secret:
+            secretName: {{ .Values.tls.secretName }}
+            items:
+              - key: tls.crt
+                path: server.crt

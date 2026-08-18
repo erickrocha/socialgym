@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: integration
+  labels:
+    {{- include "socialgym.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: integration
+  ports:
+    - name: grpc
+      port: {{ .Values.integration.port }}
+      targetPort: grpc

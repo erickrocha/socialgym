@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workout
+  labels:
+    {{- include "socialgym.labels" . | nindent 4 }}
+data:
+  HOST: "0.0.0.0"
+  PORT: {{ .Values.workout.port | quote }}
+  DATABASE_NAME: {{ .Values.postgres.database | quote }}
+  RUST_LOG: {{ .Values.workout.rustLog | quote }}
+  AUTH_RULES_ENABLED: {{ .Values.workout.authRules.enabled | quote }}
+  PASSWORD_POLICY_ENABLED: {{ .Values.workout.authRules.enabled | quote }}
+  PASSWORD_MIN_LENGTH: {{ .Values.workout.authRules.passwordMinLength | quote }}
+  PASSWORD_REQUIRE_UPPERCASE: {{ .Values.workout.authRules.passwordRequireUppercase | quote }}
+  PASSWORD_REQUIRE_LOWERCASE: {{ .Values.workout.authRules.passwordRequireLowercase | quote }}
+  PASSWORD_REQUIRE_DIGIT: {{ .Values.workout.authRules.passwordRequireDigit | quote }}
+  PASSWORD_REQUIRE_SPECIAL: {{ .Values.workout.authRules.passwordRequireSpecial | quote }}
+  LOGIN_LOCKOUT_ENABLED: {{ .Values.workout.authRules.enabled | quote }}
+  LOGIN_MAX_FAILED_ATTEMPTS: {{ .Values.workout.authRules.loginMaxFailedAttempts | quote }}
+  LOGIN_LOCKOUT_DURATION_SECONDS: {{ .Values.workout.authRules.loginLockoutDurationSeconds | quote }}
+  TOKEN_REVOCATION_ENABLED: {{ .Values.workout.authRules.enabled | quote }}
+  AWS_REGION: {{ .Values.workout.aws.region | quote }}
+  AWS_WORKOUT_BUCKET: {{ .Values.workout.aws.bucket | quote }}
+  AWS_SQS_QUEUE_URL: {{ .Values.workout.aws.sqsQueueUrl | quote }}
+  CLOUDFRONT_DOMAIN: {{ .Values.workout.aws.cloudfrontDomain | quote }}
+  CLOUDFRONT_KEY_PAIR_ID: {{ .Values.workout.aws.cloudfrontKeyPairId | quote }}

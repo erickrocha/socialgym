@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workout
+  labels:
+    app: workout
+    {{- include "socialgym.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workout
+  template:
+    metadata:
+      labels:
+        app: workout
+    spec:
+      containers:
+        - name: workout
+          image: "{{ .Values.workout.image.repository }}:{{ .Values.workout.image.tag }}"
+          imagePullPolicy: {{ .Values.workout.image.pullPolicy }}
+          # DATABASE_URL is built at container start from discrete
+          # POSTGRES_* env vars so the postgres Secret stays the single
+          # source of truth for the password (never duplicated into another
+          # rendered Secret at Helm template time).
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+              exec ./workout
+          ports:
+            - name: http
+              containerPort: {{ .Values.workout.port }}
+          envFrom:
+            - configMapRef:
+                name: workout
+            - secretRef:
+                name: workout
+            - secretRef:
+                name: socialgym-auth
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.user | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.database | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: POSTGRES_PASSWORD
+          resources:
+            {{- toYaml .Values.workout.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
