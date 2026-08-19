@@ -1,5 +1,5 @@
 use crate::commons::entity_mapper::EntityMapper;
-use crate::commons::functions::string_to_uuid;
+use crate::commons::functions::parse_uuid;
 use crate::commons::gateway::Gateway;
 use crate::domain::settings::{Settings, SettingsEntityMapper};
 use entity::prelude::Settings as SettingsQuery;
@@ -26,8 +26,8 @@ impl SettingsGateway {
             query = query.filter(entity::settings::Column::PersonId.eq(id));
         }
         if let Some(uuid) = owner_uuid {
-            query = query
-                .filter(entity::settings::Column::PersonUuid.eq(string_to_uuid(uuid.as_str())));
+            let uuid = parse_uuid(&uuid).map_err(|e| DbErr::Type(e.to_string()))?;
+            query = query.filter(entity::settings::Column::PersonUuid.eq(uuid));
         }
         query.one(&self.db).await
     }
@@ -59,8 +59,9 @@ impl Gateway<Settings, Model, ActiveModel> for SettingsGateway {
     }
 
     async fn find_by_uuid(&self, uuid: String) -> Result<Option<Model>, DbErr> {
+        let uuid = parse_uuid(&uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         SettingsQuery::find()
-            .filter(entity::settings::Column::Uuid.eq(string_to_uuid(uuid.as_str())))
+            .filter(entity::settings::Column::Uuid.eq(uuid))
             .one(&self.db)
             .await
     }

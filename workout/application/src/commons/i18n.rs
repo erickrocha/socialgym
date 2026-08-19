@@ -79,13 +79,10 @@ pub enum ErrorKey {
     TokenRevoked,
 
     PersonNotFound,
-    PersonFetchFailed,
     PersonNotUpdated,
 
-    PersonInfoNotFound,
     PersonInfoNotUpdated,
 
-    PersonAddressNotFound,
     PersonAddressNotUpdated,
     PersonAddressNotAdded,
     PersonAddressNotDeleted,
@@ -118,7 +115,6 @@ pub enum ErrorKey {
 
     WorkoutNotFound,
     WorkoutAddFailed,
-    WorkoutFetchFailed,
     ExercisesFetchFailed,
     ExercisesNotAdded,
 
@@ -139,11 +135,8 @@ impl ErrorKey {
             ErrorKey::AccountLocked => "AccountLocked",
             ErrorKey::TokenRevoked => "TokenRevoked",
             ErrorKey::PersonNotFound => "PersonNotFound",
-            ErrorKey::PersonFetchFailed => "PersonFetchFailed",
             ErrorKey::PersonNotUpdated => "PersonNotUpdated",
-            ErrorKey::PersonInfoNotFound => "PersonInfoNotFound",
             ErrorKey::PersonInfoNotUpdated => "PersonInfoNotUpdated",
-            ErrorKey::PersonAddressNotFound => "PersonAddressNotFound",
             ErrorKey::PersonAddressNotUpdated => "PersonAddressNotUpdated",
             ErrorKey::PersonAddressNotAdded => "PersonAddressNotAdded",
             ErrorKey::PersonAddressNotDeleted => "PersonAddressNotDeleted",
@@ -170,7 +163,6 @@ impl ErrorKey {
             ErrorKey::TeamMemberCancelRequestFailed => "TeamMemberCancelRequestFailed",
             ErrorKey::WorkoutNotFound => "WorkoutNotFound",
             ErrorKey::WorkoutAddFailed => "WorkoutAddFailed",
-            ErrorKey::WorkoutFetchFailed => "WorkoutFetchFailed",
             ErrorKey::ExercisesFetchFailed => "ExercisesFetchFailed",
             ErrorKey::ExercisesNotAdded => "ExercisesNotAdded",
             ErrorKey::SettingsNotFound => "SettingsNotFound",
@@ -190,11 +182,8 @@ impl ErrorKey {
             ErrorKey::AccountLocked => "account-locked",
             ErrorKey::TokenRevoked => "token-revoked",
             ErrorKey::PersonNotFound => "person-not-found",
-            ErrorKey::PersonFetchFailed => "person-fetch-failed",
             ErrorKey::PersonNotUpdated => "person-not-updated",
-            ErrorKey::PersonInfoNotFound => "person-info-not-found",
             ErrorKey::PersonInfoNotUpdated => "person-info-not-updated",
-            ErrorKey::PersonAddressNotFound => "person-address-not-found",
             ErrorKey::PersonAddressNotUpdated => "person-address-not-updated",
             ErrorKey::PersonAddressNotAdded => "person-address-not-added",
             ErrorKey::PersonAddressNotDeleted => "person-address-not-deleted",
@@ -221,7 +210,6 @@ impl ErrorKey {
             ErrorKey::TeamMemberCancelRequestFailed => "team-member-cancel-request-failed",
             ErrorKey::WorkoutNotFound => "workout-not-found",
             ErrorKey::WorkoutAddFailed => "workout-add-failed",
-            ErrorKey::WorkoutFetchFailed => "workout-fetch-failed",
             ErrorKey::ExercisesFetchFailed => "exercises-fetch-failed",
             ErrorKey::ExercisesNotAdded => "exercises-not-added",
             ErrorKey::SettingsNotFound => "settings-not-found",
@@ -259,7 +247,7 @@ mod tests {
         Locale::Dutch,
     ];
 
-    const ALL_KEYS: [ErrorKey; 43] = [
+    const ALL_KEYS: [ErrorKey; 39] = [
         ErrorKey::SignUpPersonFailed,
         ErrorKey::SignUpUserFailed,
         ErrorKey::AuthHeaderMissing,
@@ -269,11 +257,8 @@ mod tests {
         ErrorKey::AccountLocked,
         ErrorKey::TokenRevoked,
         ErrorKey::PersonNotFound,
-        ErrorKey::PersonFetchFailed,
         ErrorKey::PersonNotUpdated,
-        ErrorKey::PersonInfoNotFound,
         ErrorKey::PersonInfoNotUpdated,
-        ErrorKey::PersonAddressNotFound,
         ErrorKey::PersonAddressNotUpdated,
         ErrorKey::PersonAddressNotAdded,
         ErrorKey::PersonAddressNotDeleted,
@@ -300,7 +285,6 @@ mod tests {
         ErrorKey::TeamMemberCancelRequestFailed,
         ErrorKey::WorkoutNotFound,
         ErrorKey::WorkoutAddFailed,
-        ErrorKey::WorkoutFetchFailed,
         ErrorKey::ExercisesFetchFailed,
         ErrorKey::ExercisesNotAdded,
     ];

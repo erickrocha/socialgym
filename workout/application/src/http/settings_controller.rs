@@ -3,6 +3,7 @@ use axum::{Extension, Json};
 use business::domain::user::User;
 use business::gateway::settings_gateway::SettingsGateway;
 use business::use_cases::setings_use_case::SettingsUseCase;
+use business::commons::functions::parse_uuid;
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
 use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::error_response_json::{BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson};
@@ -73,6 +74,9 @@ pub async fn get_settings_by_uuid(
     Extension(locale): Extension<Locale>,
     Path(uuid): Path<String>,
 ) -> HttpResponse<Json<SettingsJson>> {
+    if parse_uuid(&uuid).is_err() {
+        return Err(ExceptionResponse::BadRequest(locale, ErrorKey::InvalidParameterValue));
+    }
     let use_case = SettingsUseCase::new(SettingsGateway::new((*state.conn).clone()));
     
     let result = use_case.get_by_uuid(uuid.clone()).await;

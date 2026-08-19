@@ -88,15 +88,6 @@ impl Visibility {
             _ => Visibility::Public,
         }
     }
-
-    fn to_text(&self) -> String {
-        match self {
-            Visibility::Public => "Public".to_string(),
-            Visibility::Private => "Private".to_string(),
-            Visibility::Friends => "Friends".to_string(),
-            Visibility::Professional => "Professional".to_string(),
-        }
-    }
 }
 
 #[derive(Debug, Clone)]

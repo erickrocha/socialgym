@@ -20,6 +20,7 @@ use business::use_cases::logout_use_case::LogoutUseCase;
 use business::use_cases::{authentication::{Authentication, AuthenticatedContext, AuthenticationError}, refresh_token::RefreshToken};
 use business::use_cases::setings_use_case::SettingsUseCase;
 use business::use_cases::switch_business_profile::{SwitchBusinessProfile, SwitchBusinessProfileError};
+use business::commons::functions::parse_uuid;
 use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::error_response_json::{BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson};
 
@@ -182,6 +183,10 @@ pub async fn activate(
     Extension(auth_context): Extension<AuthenticatedContext>,
     Extension(locale): Extension<Locale>) -> HttpResponse<Json<AccessTokenJson>> {
     log::info!("Activating business profile uuid={} for owner_id={:?}",business_profile_uuid,current_user.id);
+
+    if parse_uuid(&business_profile_uuid).is_err() {
+        return Err(ExceptionResponse::BadRequest(locale, ErrorKey::InvalidParameterValue));
+    }
 
     let result = SwitchBusinessProfile::activate(&state.conn, &current_user, business_profile_uuid, auth_context.jti, auth_context.exp).await;
 

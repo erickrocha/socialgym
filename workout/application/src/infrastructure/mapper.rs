@@ -32,10 +32,7 @@ pub trait Mapper<T, U> {
     fn json_opt(t: Option<T>) -> Option<U> {
         t.map(Self::json)
     }
-
-    fn domain_opt(u: Option<U>) -> Option<T> {
-        u.map(Self::domain)
-    }
+    
     fn domain_vec(u: Vec<U>) -> Vec<T> {
         u.into_iter().map(Self::domain).collect()
     }

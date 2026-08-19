@@ -7,6 +7,7 @@ use business::use_cases::setings_use_case::SettingsUseCase;
 use business::gateway::settings_gateway::SettingsGateway;
 use business::domain::settings::Settings;
 use business::domain::enums::Position;
+use crate::service::validate_uuid;
 
 pub struct GrpcSettingService {
 	conn: Arc<DatabaseConnection>,
@@ -90,6 +91,7 @@ impl SettingsService for GrpcSettingService {
 
 	async fn get_by_uuid(&self, request: Request<SettingIdRequest>) -> Result<Response<Setting>, Status> {
 		let req = request.into_inner();
+		validate_uuid(&req.uuid, "uuid")?;
 		let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
 		
 		let result = use_case.get_by_uuid(req.uuid).await;

@@ -1,5 +1,5 @@
 use crate::commons::entity_mapper::EntityMapper;
-use crate::commons::functions::string_to_uuid;
+use crate::commons::functions::parse_uuid;
 use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapper};
 use entity::business_profile::{ActiveModel, Model};
 use entity::prelude::BusinessProfile as BusinessProfileQuery;
@@ -23,12 +23,12 @@ impl BusinessProfileGateway {
             .unwrap_or(None)
     }
 
-    pub async fn find_by_uuid(db: &DbConn, uuid: &str) -> Option<Model> {
+    pub async fn find_by_uuid(db: &DbConn, uuid: &str) -> Result<Option<Model>, DbErr> {
+        let uuid = parse_uuid(uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         BusinessProfileQuery::find()
-            .filter(entity::business_profile::Column::Uuid.eq(string_to_uuid(uuid)))
+            .filter(entity::business_profile::Column::Uuid.eq(uuid))
             .one(db)
             .await
-            .unwrap_or(None)
     }
 
     pub async fn find_by_owner_id(db: &DbConn, owner_id: i32) -> Vec<Model> {
@@ -39,12 +39,12 @@ impl BusinessProfileGateway {
             .unwrap_or_else(|_| Vec::new())
     }
 
-    pub async fn find_by_owner_uuid(db: &DbConn, owner_uuid: &str) -> Vec<Model> {
+    pub async fn find_by_owner_uuid(db: &DbConn, owner_uuid: &str) -> Result<Vec<Model>, DbErr> {
+        let owner_uuid = parse_uuid(owner_uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         BusinessProfileQuery::find()
-            .filter(entity::business_profile::Column::OwnerUuid.eq(string_to_uuid(owner_uuid)))
+            .filter(entity::business_profile::Column::OwnerUuid.eq(owner_uuid))
             .all(db)
             .await
-            .unwrap_or_else(|_| Vec::new())
     }
 
     pub async fn count_by_owner_id(db: &DbConn, owner_id: i32) -> u64 {

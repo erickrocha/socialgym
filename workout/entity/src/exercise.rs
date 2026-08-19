@@ -15,7 +15,6 @@ pub struct Model {
     pub owner_uuid: Uuid,
     pub owner_name: String,
     pub sets: i32,
-    #[sea_orm(name = "exercise_type")]
     pub category: String,
     pub reps_or_duration: i32,
     pub visibility: String,

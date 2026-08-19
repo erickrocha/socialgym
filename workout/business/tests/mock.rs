@@ -8,6 +8,11 @@ mod tests {
     use business::domain::person_info::PersonInfo;
     use business::domain::user::User;
     use business::domain::workout::Workout;
+    use business::gateway::business_profile_gateway::BusinessProfileGateway;
+    use business::gateway::exercise_gateway::ExerciseGateway;
+    use business::gateway::friend_gateway::FriendGateway;
+    use business::gateway::person_gateway::PersonGateway;
+    use business::gateway::workout_gateway::WorkoutGateway;
     use business::use_cases::authentication::{Authentication, AuthenticationError, ValidateError};
     use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
     use business::use_cases::exercise_use_case::ExerciseUseCase;
@@ -34,6 +39,20 @@ mod tests {
         env::remove_var("PASSWORD_POLICY_ENABLED");
         env::remove_var("LOGIN_LOCKOUT_ENABLED");
         env::remove_var("TOKEN_REVOCATION_ENABLED");
+    }
+
+    #[tokio::test]
+    async fn uuid_gateways_reject_malformed_strings_before_querying() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres).into_connection();
+        let invalid = "not-a-uuid";
+
+        assert!(ExerciseGateway::find_by_uuid(&db, invalid.to_string()).await.is_err());
+        assert!(WorkoutGateway::find_by_uuid(&db, invalid.to_string()).await.is_err());
+        assert!(PersonGateway::find_by_uuid(&db, invalid).await.is_err());
+        assert!(BusinessProfileGateway::find_by_uuid(&db, invalid).await.is_err());
+        assert!(FriendGateway::find_all_accepted_friends_by_uuid(&db, invalid.to_string())
+            .await
+            .is_err());
     }
 
     #[allow(clippy::too_many_arguments)]

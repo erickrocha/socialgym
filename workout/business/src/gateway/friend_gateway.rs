@@ -4,7 +4,7 @@ use entity::friends;
 use entity::friends::Column;
 use entity::prelude::Friends as FriendsQuery;
 use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, DbConn, DbErr, EntityTrait, QueryFilter};
-use uuid::Uuid;
+use crate::commons::functions::parse_uuid;
 
 pub struct FriendGateway {}
 
@@ -76,13 +76,14 @@ impl FriendGateway {
 
     pub async fn find_all_accepted_friends_by_uuid(
         db: &DbConn,
-        person_uuid: Uuid,
+        person_uuid: String,
     ) -> Result<Vec<friends::Model>, DbErr> {
+        let person_uuid = parse_uuid(&person_uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         FriendsQuery::find()
             .filter(
                 Condition::any()
-                    .add(Column::PersonUuid.eq(person_uuid.clone()))
-                    .add(Column::FriendUuid.eq(person_uuid.clone())),
+                    .add(Column::PersonUuid.eq(person_uuid))
+                    .add(Column::FriendUuid.eq(person_uuid)),
             )
             .filter(Column::Status.eq(FriendStatus::Accepted.as_str()))
             .all(db)

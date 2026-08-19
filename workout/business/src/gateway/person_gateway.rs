@@ -1,5 +1,5 @@
 use crate::commons::entity_mapper::EntityMapper;
-use crate::commons::functions::string_to_uuid;
+use crate::commons::functions::{parse_uuid, parse_uuids};
 use crate::domain::person::{Person, PersonEntityMapper};
 use entity::person;
 use entity::person::{ActiveModel, Model};
@@ -10,7 +10,6 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, DbConn, DbErr, EntityTrait, JoinType, QueryFilter,
     QuerySelect, RelationTrait,
 };
-use uuid::Uuid;
 
 pub struct PersonGateway {}
 
@@ -28,12 +27,12 @@ impl PersonGateway {
             .unwrap_or(None)
     }
 
-    pub async fn find_by_uuid(db: &DbConn, uuid: &str) -> Option<Model> {
+    pub async fn find_by_uuid(db: &DbConn, uuid: &str) -> Result<Option<Model>, DbErr> {
+        let uuid = parse_uuid(uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         PersonQuery::find()
-            .filter(person::Column::Uuid.eq(string_to_uuid(uuid)))
+            .filter(person::Column::Uuid.eq(uuid))
             .one(db)
             .await
-            .unwrap_or(None)
     }
 
     pub async fn find_all(db: &DbConn) -> Vec<Model> {
@@ -51,12 +50,12 @@ impl PersonGateway {
             .unwrap_or_else(|_| Vec::new())
     }
 
-    pub async fn find_all_by_uuid_in(db: &DbConn, ids: Vec<Uuid>) -> Vec<Model> {
+    pub async fn find_all_by_uuid_in(db: &DbConn, ids: Vec<String>) -> Result<Vec<Model>, DbErr> {
+        let ids = parse_uuids(&ids).map_err(|e| DbErr::Type(e.to_string()))?;
         PersonQuery::find()
             .filter(person::Column::Uuid.is_in(ids))
             .all(db)
             .await
-            .unwrap_or_else(|_| Vec::new())
     }
 
     pub async fn search_by_query(
@@ -86,11 +85,13 @@ impl PersonGateway {
     pub async fn search_by_query_uuid(
         db: &DbConn,
         query: &str,
-        exclude_person_uuid: Uuid,
+        exclude_person_uuid: String,
         limit: u64,
-    ) -> Vec<Uuid> {
+    ) -> Result<Vec<String>, DbErr> {
+        let exclude_person_uuid = parse_uuid(&exclude_person_uuid)
+            .map_err(|e| DbErr::Type(e.to_string()))?;
         let search_pattern = format!("%{}%", query);
-        PersonQuery::find()
+        let people = PersonQuery::find()
             .filter(
                 Condition::any()
                     .add(person::Column::FirstName.like(&search_pattern))
@@ -100,10 +101,11 @@ impl PersonGateway {
             .limit(limit)
             .all(db)
             .await
-            .unwrap_or_else(|_| Vec::new())
+            ?;
+        Ok(people
             .into_iter()
-            .map(|p| p.uuid)
-            .collect()
+            .map(|p| p.uuid.to_string())
+            .collect())
     }
 
     pub async fn search_by_query_with_email(
@@ -135,9 +137,11 @@ impl PersonGateway {
     pub async fn search_by_query_with_email_uuid(
         db: &DbConn,
         query: &str,
-        exclude_person_uuid: Uuid,
+        exclude_person_uuid: String,
         limit: u64,
-    ) -> Vec<Uuid> {
+    ) -> Result<Vec<String>, DbErr> {
+        let exclude_person_uuid = parse_uuid(&exclude_person_uuid)
+            .map_err(|e| DbErr::Type(e.to_string()))?;
         let search_pattern = format!("%{}%", query);
 
         let users: Vec<user::Model> = UserQuery::find()
@@ -151,11 +155,11 @@ impl PersonGateway {
             .await
             .unwrap_or_else(|_| Vec::new());
 
-        users
+        Ok(users
             .into_iter()
             .filter(|u| u.person_uuid != exclude_person_uuid)
-            .map(|u| u.person_uuid)
-            .collect()
+            .map(|u| u.person_uuid.to_string())
+            .collect())
     }
 
     pub async fn search_friend_ids_by_username_or_email(

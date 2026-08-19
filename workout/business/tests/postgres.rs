@@ -1,4 +1,5 @@
 use business::gateway::person_address_gateway::PersonAddressGateway;
+use business::gateway::exercise_gateway::ExerciseGateway;
 use migration::{Migrator, MigratorTrait};
 use sea_orm::{ConnectionTrait, Database};
 
@@ -40,4 +41,24 @@ async fn radius_search_uses_current_indexable_geography_points() {
     ids.sort_unstable();
 
     assert_eq!(ids, vec![1, 2]);
+
+    db.execute_unprepared(
+        r#"INSERT INTO exercise
+             (id, uuid, name, category, owner_id, owner_uuid, owner_name,
+              sets, reps_or_duration, description, visibility, created_at, updated_at)
+           VALUES
+             (1, '20000000-0000-0000-0000-000000000001', 'Push Ups', 'Force',
+              1, '00000000-0000-0000-0000-000000000001', 'Center Person',
+              3, 12, NULL, 'Public', now(), now())"#,
+    )
+    .await
+    .unwrap();
+
+    let exercise = ExerciseGateway::find_by_uuid(
+        &db,
+        "20000000-0000-0000-0000-000000000001".to_string(),
+    )
+    .await
+    .unwrap();
+    assert_eq!(exercise.map(|model| model.id), Some(1));
 }

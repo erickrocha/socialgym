@@ -1,4 +1,5 @@
 use crate::commons::entity_mapper::EntityMapper;
+use crate::commons::functions::{parse_uuid, parse_uuids};
 use crate::domain::exercise::{Exercise, ExerciseEntityMapper};
 use entity::exercise;
 use entity::exercise::{Column, Entity};
@@ -7,7 +8,6 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, DbConn, DbErr, DeleteResult, EntityTrait, Order,
     PaginatorTrait, QueryFilter, QueryOrder,
 };
-use uuid::Uuid;
 
 pub struct ExerciseGateway {}
 
@@ -20,6 +20,7 @@ impl ExerciseGateway {
     }
 
     pub async fn find_by_uuid(db: &DbConn, uuid: String) -> Result<Option<exercise::Model>, DbErr> {
+        let uuid = parse_uuid(&uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         ExerciseQuery::find()
             .filter(Column::Uuid.eq(uuid))
             .one(db)
@@ -48,7 +49,8 @@ impl ExerciseGateway {
         ExerciseQuery::delete_by_id(id).exec(db).await
     }
 
-    pub async fn delete_by_uuid(db: &DbConn, uuid: Uuid) -> Result<DeleteResult, DbErr> {
+    pub async fn delete_by_uuid(db: &DbConn, uuid: String) -> Result<DeleteResult, DbErr> {
+        let uuid = parse_uuid(&uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         Entity::delete_many()
             .filter(Column::Uuid.eq(uuid))
             .exec(db)
@@ -224,18 +226,24 @@ impl ExerciseGateway {
     #[allow(clippy::too_many_arguments)]
     pub async fn find_by_complex_filters_paginated_uuid(
         db: &DbConn,
-        current_user_owner_uuid: Uuid,
-        friend_uuids: Vec<Uuid>,
-        public_owner_uuids: Vec<Uuid>,
+        current_user_owner_uuid: String,
+        friend_uuids: Vec<String>,
+        public_owner_uuids: Vec<String>,
         category: Option<String>,
         visibility: Option<String>,
         offset: u64,
         limit: u64,
         sort_by: Option<String>,
     ) -> Result<(Vec<exercise::Model>, u64), DbErr> {
+        let current_user_owner_uuid = parse_uuid(&current_user_owner_uuid)
+            .map_err(|e| DbErr::Type(e.to_string()))?;
+        let friend_uuids = parse_uuids(&friend_uuids)
+            .map_err(|e| DbErr::Type(e.to_string()))?;
+        let public_owner_uuids = parse_uuids(&public_owner_uuids)
+            .map_err(|e| DbErr::Type(e.to_string()))?;
         let mut query = ExerciseQuery::find().filter(
             Condition::any()
-                .add(Column::OwnerUuid.eq(current_user_owner_uuid.clone()))
+                .add(Column::OwnerUuid.eq(current_user_owner_uuid))
                 .add(
                     Condition::all()
                         .add(Column::OwnerUuid.is_in(friend_uuids.clone()))
@@ -259,7 +267,7 @@ impl ExerciseGateway {
         if let Some(vis) = visibility {
             query = query.filter(
                 Condition::any()
-                    .add(Column::OwnerUuid.eq(current_user_owner_uuid.clone()))
+                    .add(Column::OwnerUuid.eq(current_user_owner_uuid))
                     .add(Column::Visibility.eq(vis)),
             );
         }

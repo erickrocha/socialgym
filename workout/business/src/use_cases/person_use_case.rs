@@ -1,5 +1,4 @@
 use crate::commons::entity_mapper::EntityMapper;
-use crate::commons::functions::string_to_uuid;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapper};
 use crate::domain::enums::ImageType;
@@ -440,19 +439,21 @@ impl PersonUseCase {
         let mut person_uuids = PersonGateway::search_by_query_uuid(
             db,
             query,
-            string_to_uuid(&current_user_person_uuid),
+            current_user_person_uuid.clone(),
             limit_u64,
         )
-        .await;
+        .await
+        .unwrap_or_default();
 
         // Search by user email/name and get additional person_ids
         let email_person_ids = PersonGateway::search_by_query_with_email_uuid(
             db,
             query,
-            string_to_uuid(&current_user_person_uuid),
+            current_user_person_uuid,
             limit_u64,
         )
-        .await;
+        .await
+        .unwrap_or_default();
         person_uuids.extend(email_person_ids);
 
         // Remove duplicates
@@ -463,7 +464,9 @@ impl PersonUseCase {
         person_uuids.truncate(limit as usize);
 
         // Fetch all persons by IDs
-        let models = PersonGateway::find_all_by_uuid_in(db, person_uuids).await;
+        let models = PersonGateway::find_all_by_uuid_in(db, person_uuids)
+            .await
+            .unwrap_or_default();
         PersonEntityMapper::from_models(models)
     }
 
@@ -543,7 +546,9 @@ impl PersonUseCase {
 
     pub async fn find_by_uuid(db: &DbConn, uuid: String) -> Result<Person, BusinessError> {
         log::info!("Finding person by UUID: {:?}", uuid);
-        let person_entity = PersonGateway::find_by_uuid(db, uuid.as_str()).await;
+        let person_entity = PersonGateway::find_by_uuid(db, uuid.as_str())
+            .await
+            .map_err(|e| BusinessError::new(e.to_string()))?;
         let person_model = handle_option(person_entity, "Person not found")?;
 
         let person_info_entity = PersonInfoGateway::find_by_person_id(db, person_model.id).await;

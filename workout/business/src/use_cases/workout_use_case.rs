@@ -1,5 +1,4 @@
 use crate::commons::entity_mapper::EntityMapper;
-use crate::commons::functions::string_to_uuid;
 use crate::domain::business_error::BusinessError;
 use crate::domain::exercise::ExerciseEntityMapper;
 use crate::domain::workout::{Workout, WorkoutEntityMapper};
@@ -95,8 +94,7 @@ impl WorkoutUseCase {
     pub async fn find_all_by_owner_uuid(db: &DbConn, owner_uuid: String) -> Vec<Workout> {
         log::info!("Finding workouts for owner_uuid: {}", owner_uuid);
 
-        let domain =
-            WorkoutGateway::find_by_owner_uuid(db, string_to_uuid(owner_uuid.as_str())).await;
+        let domain = WorkoutGateway::find_by_owner_uuid(db, owner_uuid).await;
 
         if domain.is_err() {
             log::error!("Error finding workouts: {}", domain.as_ref().err().unwrap());

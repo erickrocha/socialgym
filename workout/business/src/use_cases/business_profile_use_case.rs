@@ -42,14 +42,18 @@ impl BusinessProfileUseCase {
         let business_profile = BusinessProfileGateway::find_by_uuid(db, uuid.as_str()).await;
 
         match business_profile {
-            Some(business_profile) => {
+            Ok(Some(business_profile)) => {
                 let mut result = BusinessProfileEntityMapper::from_model(business_profile);
                 Self::fill_images(&mut result).await;
                 let addresses = Self::load_addresses(db, result.id.unwrap()).await;
                 result.addresses = addresses;
                 Some(result)
             }
-            None => None,
+            Ok(None) => None,
+            Err(error) => {
+                log::error!("Error getting business profile by uuid: {}", error);
+                None
+            }
         }
     }
 
@@ -67,7 +71,9 @@ impl BusinessProfileUseCase {
     pub async fn get_by_owner_uuid(db: &DbConn, uuid: String) -> Result<Vec<BusinessProfile>, BusinessError> {
         log::info!("Getting business profiles for owner uuid: {:?}", uuid);
 
-        let business_profiles = BusinessProfileGateway::find_by_owner_uuid(db, uuid.as_str()).await;
+        let business_profiles = BusinessProfileGateway::find_by_owner_uuid(db, uuid.as_str())
+            .await
+            .map_err(|e| BusinessError::new(e.to_string()))?;
 
         let result = Self::fill_business_profiles(db, business_profiles).await;
 

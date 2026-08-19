@@ -243,10 +243,14 @@ impl SqsConsumerUseCase {
 
         // ---- Resolve person ----
         let person_model = match PersonGateway::find_by_uuid(db, person_uuid).await {
-            Some(p) => p,
-            None => {
+            Ok(Some(p)) => p,
+            Ok(None) => {
                 // Person was deleted; nothing to do – discard permanently
                 log::warn!("No person found for uuid '{}' (key '{}') – discarding message", person_uuid, object_key);
+                return Ok(());
+            }
+            Err(e) => {
+                log::warn!("Invalid person uuid '{}' in object key '{}': {} – discarding message", person_uuid, object_key, e);
                 return Ok(());
             }
         };

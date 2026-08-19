@@ -8,6 +8,7 @@ use crate::infrastructure::mapper::{BusinessProfileAddressMapper, BusinessProfil
 use crate::proto::business_profile::business_profile_service_server::BusinessProfileService;
 use crate::proto::business_profile::{BusinessProfile, BusinessProfileRequestId, BusinessProfileRequestOwnerId, BusinessProfilesResponse, RemoveBusinessProfileAddressRequest, RemoveBusinessProfileAddressResponse};
 use crate::proto::business_profile_address::BusinessProfileAddress;
+use crate::service::validate_uuid;
 
 pub struct GrpcBusinessProfileService {
     conn: Arc<DatabaseConnection>,
@@ -30,6 +31,7 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         }
 
         if !payload.uuid.is_empty() {
+            validate_uuid(&payload.uuid, "uuid")?;
             let business_profile = BusinessProfileUseCase::get_by_uuid(&self.conn, payload.uuid)
                 .await
                 .ok_or_else(|| Status::internal("Business profile not found"))?;
@@ -54,6 +56,7 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         }
 
         if !payload.owner_uuid.is_empty() {
+            validate_uuid(&payload.owner_uuid, "owner_uuid")?;
             let business_profiles = BusinessProfileUseCase::get_by_owner_uuid(&self.conn, payload.owner_uuid)
                 .await
                 .map_err(|e| Status::internal(e.message))?;
@@ -121,4 +124,3 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         Ok(Response::new(RemoveBusinessProfileAddressResponse { success: true }))
     }
 }
-

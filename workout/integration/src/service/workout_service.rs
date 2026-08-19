@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use hyper::StatusCode;
 use business::use_cases::workout_use_case::WorkoutUseCase;
+use crate::service::validate_uuid;
 use sea_orm::DatabaseConnection;
 use tonic::{Request, Response, Status};
 use business::domain::exercise::Exercise;
@@ -35,6 +36,7 @@ impl WorkoutService for GrpcWorkoutService {
                 Ok(Response::new(grpc_workout))
             }
             Some(Identifier::Uuid(uuid)) => {
+                validate_uuid(&uuid, "uuid")?;
                 let workout = WorkoutUseCase::get_by_uuid(&self.conn, uuid)
                     .await
                     .ok_or_else(|| Status::not_found("workout not found"))?;
@@ -57,6 +59,7 @@ impl WorkoutService for GrpcWorkoutService {
                 Ok(Response::new(WorkoutResponse{workouts: grpc_workouts}))
             }
             Some(OwnerIdentifier::OwnerUuid(owner_uuid)) => {
+                validate_uuid(&owner_uuid, "owner_uuid")?;
                 let workouts = WorkoutUseCase::find_all_by_owner_uuid(&self.conn, owner_uuid)
                     .await;
                 let grpc_workouts = WorkoutMapper::response_vec(workouts);
@@ -99,6 +102,7 @@ impl WorkoutService for GrpcWorkoutService {
                 Ok(Response::new(()))
             }
             Some(Identifier::Uuid(uuid)) => {
+                validate_uuid(&uuid, "uuid")?;
                 let result = WorkoutUseCase::delete_by_uuid(&self.conn, uuid).await;
                 if result.is_err() {
                     return Err(Status::internal("Failed to delete workout"));
@@ -111,6 +115,7 @@ impl WorkoutService for GrpcWorkoutService {
 
     async fn add_exercises_to_workout(&self, request: Request<WorkoutExercisesRequest>) -> Result<Response<Workout>, Status> {
         let payload = request.into_inner();
+        validate_uuid(&payload.workout_uuid, "workout_uuid")?;
         let workout_result = WorkoutUseCase::get_by_uuid(&self.conn, payload.workout_uuid.clone()).await;
 
         if workout_result.is_none() {
@@ -132,4 +137,3 @@ impl WorkoutService for GrpcWorkoutService {
         Ok(Response::new(workout_response))
     }
 }
-

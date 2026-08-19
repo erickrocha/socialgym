@@ -24,6 +24,7 @@ impl SwitchBusinessProfile {
 
         let model = BusinessProfileGateway::find_by_uuid(db, business_profile_uuid.as_str())
             .await
+            .map_err(|_| SwitchBusinessProfileError::NotFound)?
             .ok_or(SwitchBusinessProfileError::NotFound)?;
         let business_profile = BusinessProfileEntityMapper::from_model(model);
 

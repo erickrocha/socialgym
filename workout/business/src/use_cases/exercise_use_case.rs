@@ -1,5 +1,4 @@
 use crate::commons::entity_mapper::EntityMapper;
-use crate::commons::functions::string_to_uuid;
 use crate::domain::business_error::BusinessError;
 use crate::domain::enums::Visibility;
 use crate::domain::exercise::{Exercise, ExerciseEntityMapper};
@@ -8,7 +7,6 @@ use crate::gateway::exercise_gateway::ExerciseGateway;
 use crate::gateway::friend_gateway::FriendGateway;
 use crate::gateway::workout_exercise_gateway::WorkoutExerciseGateway;
 use sea_orm::DbConn;
-use uuid::Uuid;
 
 pub struct ExerciseUseCase {}
 
@@ -147,8 +145,9 @@ impl ExerciseUseCase {
             log::error!("Error getting exercise: {}", domain.as_ref().err().unwrap());
             return None;
         }
-        let model_option = domain.unwrap();
-        Some(ExerciseEntityMapper::from_model(model_option.unwrap()))
+        domain
+            .unwrap()
+            .map(ExerciseEntityMapper::from_model)
     }
 
     pub async fn get_by_uuid(db: &DbConn, uuid: String) -> Option<Exercise> {
@@ -158,8 +157,9 @@ impl ExerciseUseCase {
             log::error!("Error getting exercise: {}", domain.as_ref().err().unwrap());
             return None;
         }
-        let model_option = domain.unwrap();
-        Some(ExerciseEntityMapper::from_model(model_option.unwrap()))
+        domain
+            .unwrap()
+            .map(ExerciseEntityMapper::from_model)
     }
 
     pub async fn find_all_by_workout_id(
@@ -199,7 +199,7 @@ impl ExerciseUseCase {
     pub async fn delete_by_uuid(db: &DbConn, uuid: String) -> Result<(), BusinessError> {
         log::info!("Deleting exercise for uuid: {}", uuid);
 
-        let delete_result = ExerciseGateway::delete_by_uuid(db, string_to_uuid(uuid.as_str()))
+        let delete_result = ExerciseGateway::delete_by_uuid(db, uuid.clone())
             .await
             .map_err(|e| {
                 log::error!("Error deleting exercise: {}", e);
@@ -376,8 +376,8 @@ impl ExerciseUseCase {
     #[allow(clippy::too_many_arguments)]
     pub async fn find_by_complex_filters_paginated_uuid(
         db: &DbConn,
-        person_uuid: Uuid,
-        public_owner_uuids: Vec<Uuid>,
+        person_uuid: String,
+        public_owner_uuids: Vec<String>,
         category: Option<String>,
         visibility: Option<String>,
         page_number: u64,
@@ -390,13 +390,13 @@ impl ExerciseUseCase {
             .await
             .unwrap_or_else(|_| Vec::new());
 
-        let friend_uuids: Vec<Uuid> = friends
+        let friend_uuids: Vec<String> = friends
             .into_iter()
             .map(|f| {
-                if f.person_uuid == person_uuid {
-                    f.friend_uuid
+                if f.person_uuid.to_string() == person_uuid {
+                    f.friend_uuid.to_string()
                 } else {
-                    f.person_uuid
+                    f.person_uuid.to_string()
                 }
             })
             .collect();

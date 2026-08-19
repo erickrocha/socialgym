@@ -1,13 +1,12 @@
 use crate::infrastructure::mapper::{ExerciseMapper, Mapper};
+use crate::service::{validate_uuid, validate_uuids};
 use crate::proto::exercise::exercise_request::Identifier;
 use crate::proto::exercise::exercise_service_server::ExerciseService;
 use crate::proto::exercise::{Exercise, ExerciseParams, ExerciseRequest, PaginatedExercise};
-use business::commons::functions::string_to_uuid;
 use business::use_cases::exercise_use_case::ExerciseUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
-use uuid::Uuid;
 
 pub struct GrpcExerciseService {
     conn: Arc<DatabaseConnection>,
@@ -35,6 +34,7 @@ impl ExerciseService for GrpcExerciseService {
                 Ok(Response::new(grpc_exercise))
             }
             Some(Identifier::Uuid(uuid)) => {
+                validate_uuid(&uuid, "uuid")?;
                 let exercise = ExerciseUseCase::get_by_uuid(&self.conn, uuid)
                     .await
                     .ok_or_else(|| Status::not_found("exercise not found"))?;
@@ -71,15 +71,18 @@ impl ExerciseService for GrpcExerciseService {
 
         let capped_page_size = if page_size > 100 { 100 } else { page_size };
 
+        validate_uuid(&req.owner_uuid, "owner_uuid")?;
+        validate_uuids(&req.owners, "owners")?;
+
         // Get public_owner_ids, default to empty if not provided
         let public_owner_uuids = req
             .owners
             .iter()
-            .map(|owner| string_to_uuid(owner))
-            .collect::<Vec<Uuid>>();
+            .cloned()
+            .collect::<Vec<String>>();
         let result = ExerciseUseCase::find_by_complex_filters_paginated_uuid(
             &self.conn,
-            string_to_uuid(&req.owner_uuid),
+            req.owner_uuid,
             public_owner_uuids,
             category,
             visibility,
@@ -136,6 +139,7 @@ impl ExerciseService for GrpcExerciseService {
                 Ok(Response::new(()))
             }
             Some(Identifier::Uuid(uuid)) => {
+                validate_uuid(&uuid, "uuid")?;
                 let result = ExerciseUseCase::delete_by_uuid(&self.conn, uuid).await;
                 if result.is_err() {
                     return Err(Status::internal("Failed to delete exercise"));

@@ -1,4 +1,5 @@
 use crate::commons::entity_mapper::EntityMapper;
+use crate::commons::functions::parse_uuid;
 use crate::domain::workout::{Workout, WorkoutEntityMapper};
 use entity::prelude::Workout as WorkoutQuery;
 use entity::workout;
@@ -6,7 +7,6 @@ use entity::workout::Entity;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, DeleteResult, EntityTrait, QueryFilter,
 };
-use uuid::Uuid;
 
 pub struct WorkoutGateway {}
 
@@ -24,6 +24,7 @@ impl WorkoutGateway {
     }
 
     pub async fn find_by_uuid(db: &DbConn, uuid: String) -> Result<Option<workout::Model>, DbErr> {
+        let uuid = parse_uuid(&uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         WorkoutQuery::find()
             .filter(workout::Column::Uuid.eq(uuid))
             .one(db)
@@ -37,7 +38,8 @@ impl WorkoutGateway {
             .await
     }
 
-    pub async fn find_by_owner_uuid(db: &DbConn, uuid: Uuid) -> Result<Vec<workout::Model>, DbErr> {
+    pub async fn find_by_owner_uuid(db: &DbConn, uuid: String) -> Result<Vec<workout::Model>, DbErr> {
+        let uuid = parse_uuid(&uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         WorkoutQuery::find()
             .filter(workout::Column::OwnerUuid.eq(uuid))
             .all(db)
@@ -49,6 +51,7 @@ impl WorkoutGateway {
     }
 
     pub async fn delete_by_uuid(db: &DbConn, uuid: String) -> Result<DeleteResult, DbErr> {
+        let uuid = parse_uuid(&uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         Entity::delete_many()
             .filter(workout::Column::Uuid.eq(uuid))
             .exec(db)

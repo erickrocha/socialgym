@@ -15,12 +15,6 @@ pub enum ExceptionResponse {
 }
 
 impl ExceptionResponse {
-    pub fn unauthorized(locale: Locale, key: ErrorKey) -> Self {
-        Self::Unauthorized(locale, key)
-    }
-    pub fn forbidden(locale: Locale, key: ErrorKey) -> Self {
-        Self::Forbidden(locale, key)
-    }
     pub fn bad_request(locale: Locale, key: ErrorKey) -> Self {
         Self::BadRequest(locale, key)
     }

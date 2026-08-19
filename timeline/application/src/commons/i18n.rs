@@ -63,8 +63,6 @@ pub enum ErrorKey {
     AuthTokenMalformed,
 
     WorkoutAddFailed,
-    WorkoutFindFailed,
-    WorkoutFindAllFailed,
     WorkoutNotFound,
 
     PostCreateFailed,
@@ -74,7 +72,6 @@ pub enum ErrorKey {
     ReactionRemoveFailed,
 
     EvolutionCheckInAddFailed,
-    EvolutionCheckInFindFailed,
 
     Unknown,
 }
@@ -87,8 +84,6 @@ impl ErrorKey {
             ErrorKey::AuthTokenMissing => "AUTH_TOKEN_MISSING",
             ErrorKey::AuthTokenMalformed => "AUTH_TOKEN_MALFORMED",
             ErrorKey::WorkoutAddFailed => "WORKOUT_ADD_FAILED",
-            ErrorKey::WorkoutFindFailed => "WORKOUT_FIND_FAILED",
-            ErrorKey::WorkoutFindAllFailed => "WORKOUT_FIND_ALL_FAILED",
             ErrorKey::WorkoutNotFound => "WORKOUT_NOT_FOUND",
             ErrorKey::PostCreateFailed => "POST_CREATE_FAILED",
             ErrorKey::FeedFetchFailed => "FEED_FETCH_FAILED",
@@ -96,7 +91,6 @@ impl ErrorKey {
             ErrorKey::ReactionAddFailed => "REACTION_ADD_FAILED",
             ErrorKey::ReactionRemoveFailed => "REACTION_REMOVE_FAILED",
             ErrorKey::EvolutionCheckInAddFailed => "EVOLUTION_CHECKIN_ADD_FAILED",
-            ErrorKey::EvolutionCheckInFindFailed => "EVOLUTION_CHECKIN_FIND_FAILED",
             ErrorKey::Unknown => "UNKNOWN_ERROR",
         }
     }
@@ -108,8 +102,6 @@ impl ErrorKey {
             ErrorKey::AuthTokenMissing => "auth-token-missing",
             ErrorKey::AuthTokenMalformed => "auth-token-malformed",
             ErrorKey::WorkoutAddFailed => "workout-add-failed",
-            ErrorKey::WorkoutFindFailed => "workout-find-failed",
-            ErrorKey::WorkoutFindAllFailed => "workout-find-all-failed",
             ErrorKey::WorkoutNotFound => "workout-not-found",
             ErrorKey::PostCreateFailed => "post-create-failed",
             ErrorKey::FeedFetchFailed => "feed-fetch-failed",
@@ -117,7 +109,6 @@ impl ErrorKey {
             ErrorKey::ReactionAddFailed => "reaction-add-failed",
             ErrorKey::ReactionRemoveFailed => "reaction-remove-failed",
             ErrorKey::EvolutionCheckInAddFailed => "evolution-checkin-add-failed",
-            ErrorKey::EvolutionCheckInFindFailed => "evolution-checkin-find-failed",
             ErrorKey::Unknown => "unknown-error",
         }
     }
@@ -151,14 +142,12 @@ mod tests {
         Locale::Dutch,
     ];
 
-    const ALL_KEYS: [ErrorKey; 16] = [
+    const ALL_KEYS: [ErrorKey; 13] = [
         ErrorKey::AuthTokenInvalid,
         ErrorKey::AuthHeaderEmpty,
         ErrorKey::AuthTokenMissing,
         ErrorKey::AuthTokenMalformed,
         ErrorKey::WorkoutAddFailed,
-        ErrorKey::WorkoutFindFailed,
-        ErrorKey::WorkoutFindAllFailed,
         ErrorKey::WorkoutNotFound,
         ErrorKey::PostCreateFailed,
         ErrorKey::FeedFetchFailed,
@@ -166,7 +155,6 @@ mod tests {
         ErrorKey::ReactionAddFailed,
         ErrorKey::ReactionRemoveFailed,
         ErrorKey::EvolutionCheckInAddFailed,
-        ErrorKey::EvolutionCheckInFindFailed,
         ErrorKey::Unknown,
     ];
 

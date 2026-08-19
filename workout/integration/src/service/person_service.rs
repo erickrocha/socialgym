@@ -20,6 +20,7 @@ use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 use crate::proto::person::person_params::ParamIdentifier;
+use crate::service::validate_uuid;
 
 pub struct GrpcPersonService {
     conn: Arc<DatabaseConnection>,
@@ -67,6 +68,7 @@ impl PersonService for GrpcPersonService {
                 if uuid.is_empty() {
                     return Err(Status::invalid_argument("uuid must be informed"));
                 }
+                validate_uuid(&uuid, "uuid")?;
                 let person = PersonUseCase::find_by_uuid(&self.conn, uuid)
                     .await
                     .map_err(|e| Status::internal(e.message))?;
@@ -302,6 +304,7 @@ impl PersonService for GrpcPersonService {
                 if uuid.is_empty() {
                     return Err(Status::invalid_argument("uuid must be informed"));
                 }
+                validate_uuid(&uuid, "uuid")?;
                 // Cap the limit at 100
                 let limit = if limit > 100 { 100 } else if limit < 1 { 50 } else { limit };
                 let persons = PersonUseCase::search_persons_by_uuid(&self.conn, &query, uuid, limit).await;

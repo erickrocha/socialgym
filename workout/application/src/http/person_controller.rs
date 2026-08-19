@@ -7,6 +7,7 @@ use axum::{Extension, Json};
 use business::domain::person::Person;
 use business::domain::user::User;
 use business::use_cases::person_use_case::PersonUseCase;
+use business::commons::functions::parse_uuid;
 use serde::Deserialize;
 use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::error_response_json::{BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson};
@@ -216,6 +217,9 @@ pub async fn search_persons(state: State<AppState>,Query(params): Query<SearchPe
 )]
 pub async fn get_me_by_uuid(state: State<AppState>, Path(uuid): Path<String>,Extension(locale): Extension<Locale>,) -> HttpResponse<Json<PersonJson>> {
     log::info!("Getting person by uuid: {}", uuid);
+    if parse_uuid(&uuid).is_err() {
+        return Err(ExceptionResponse::BadRequest(locale, ErrorKey::InvalidParameterValue));
+    }
     let person_entity = PersonUseCase::find_by_uuid(&state.conn, uuid).await;
 
     if person_entity.is_err() {
