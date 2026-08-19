@@ -1,8 +1,8 @@
 use axum::{
-	http::{header, HeaderName, Method},
-	middleware,
-	routing::{get},
-	Router,
+    http::{header, HeaderName, Method},
+    middleware,
+    routing::get,
+    Router,
 };
 use business::sea_orm::{Database, DatabaseConnection};
 use migration::{Migrator, MigratorTrait};
@@ -20,7 +20,7 @@ mod infrastructure;
 pub mod routes;
 
 use crate::authentication::authentication_middleware::authentication;
-use crate::http::image_controller::{generate_media_upload_url};
+use crate::http::image_controller::generate_media_upload_url;
 use crate::http::resource_controller::get_resource;
 use crate::http::welcome_controller::welcome;
 use crate::infrastructure::sqs_worker;
@@ -36,19 +36,19 @@ use crate::routes::workout_routes::workout_routes;
 struct SecurityAddon;
 
 impl Modify for SecurityAddon {
-	fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
-		if let Some(components) = openapi.components.as_mut() {
-			components.add_security_scheme(
-				"bearer_auth",
-				SecurityScheme::Http(
-					HttpBuilder::new()
-						.scheme(HttpAuthScheme::Bearer)
-						.bearer_format("JWT")
-						.build(),
-				),
-			);
-		}
-	}
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "bearer_auth",
+                SecurityScheme::Http(
+                    HttpBuilder::new()
+                        .scheme(HttpAuthScheme::Bearer)
+                        .bearer_format("JWT")
+                        .build(),
+                ),
+            );
+        }
+    }
 }
 
 #[derive(OpenApi)]
@@ -92,9 +92,20 @@ impl Modify for SecurityAddon {
 		http::workout_controller::get_workouts,
 		http::workout_controller::add_exercises,
 		http::workout_controller::get_exercises,
+		http::workout_controller::get_workout_by_id,
+		http::workout_controller::get_workout_by_uuid,
+		http::workout_controller::get_workouts_by_owner_uuid,
+		http::workout_controller::update_workout,
+		http::workout_controller::delete_workout_by_id,
+		http::workout_controller::delete_workout_by_uuid,
+		http::workout_controller::add_exercises_by_workout_uuid,
 		http::exercise_controller::add_exercise,
 		http::exercise_controller::delete_exercise,
 		http::exercise_controller::query_exercises,
+		http::exercise_controller::get_exercise_by_id,
+		http::exercise_controller::get_exercise_by_uuid,
+		http::exercise_controller::update_exercise,
+		http::exercise_controller::delete_exercise_by_uuid,
 		http::image_controller::generate_media_upload_url,
 		http::settings_controller::get_settings_by_id,
 		http::settings_controller::get_settings_by_uuid,
@@ -139,118 +150,115 @@ struct ApiDoc;
 // ==================== Route Builders ====================
 /// Build public welcome route
 fn welcome_route() -> Router<AppState> {
-	Router::new()
-		.route("/", get(welcome))
+    Router::new().route("/", get(welcome))
 }
 
 /// Build media/upload routes
 fn media_routes(state: AppState) -> Router<AppState> {
-	Router::new()
-		.route(
-			"/upload",
-			get(generate_media_upload_url).route_layer(middleware::from_fn_with_state(
-				state.clone(),
-				authentication,
-			)),
-		)
+    Router::new().route(
+        "/upload",
+        get(generate_media_upload_url).route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            authentication,
+        )),
+    )
 }
 
 /// Build resource/utility routes
 fn resource_routes(state: AppState) -> Router<AppState> {
-	Router::new()
-		.route(
-			"/resource",
-			get(get_resource).route_layer(middleware::from_fn_with_state(
-				state.clone(),
-				authentication,
-			)),
-		)
+    Router::new().route(
+        "/resource",
+        get(get_resource).route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            authentication,
+        )),
+    )
 }
 
 #[tokio::main]
 async fn start() -> anyhow::Result<()> {
-	env::set_var("RUST_LOG", "debug");
-	tracing_subscriber::fmt::init();
-	dotenvy::dotenv().ok();
-	let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-	let host = env::var("HOST").expect("HOST is not set in .env file");
-	let port = env::var("PORT").expect("PORT is not set in .env file");
-	let server_url = format!("{host}:{port}");
+    env::set_var("RUST_LOG", "debug");
+    tracing_subscriber::fmt::init();
+    dotenvy::dotenv().ok();
+    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let host = env::var("HOST").expect("HOST is not set in .env file");
+    let port = env::var("PORT").expect("PORT is not set in .env file");
+    let server_url = format!("{host}:{port}");
 
-	let connection = Database::connect(&db_url)
-		.await
-		.expect("Failed to connect to database");
-	Migrator::up(&connection, None).await?;
+    let connection = Database::connect(&db_url)
+        .await
+        .expect("Failed to connect to database");
+    Migrator::up(&connection, None).await?;
 
-	let state = AppState {
-		conn: Arc::new(connection),
-	};
+    let state = AppState {
+        conn: Arc::new(connection),
+    };
 
-	// Start the SQS consumer background worker.
-	// It will no-op gracefully when AWS_SQS_QUEUE_URL is not set.
-	sqs_worker::start(Arc::clone(&state.conn));
+    // Start the SQS consumer background worker.
+    // It will no-op gracefully when AWS_SQS_QUEUE_URL is not set.
+    sqs_worker::start(Arc::clone(&state.conn));
 
-	log::info!("Starting server...");
+    log::info!("Starting server...");
 
-	let cors = CorsLayer::new()
-		.allow_methods([
-			Method::GET,
-			Method::POST,
-			Method::PUT,
-			Method::PATCH,
-			Method::DELETE,
-			Method::HEAD,
-		])
-		.allow_origin(Any)
-		.allow_headers([
-			header::CONTENT_TYPE,
-			header::AUTHORIZATION,
-			header::ACCEPT,
-			header::ORIGIN,
-			header::ACCESS_CONTROL_ALLOW_ORIGIN,
-			header::ACCESS_CONTROL_ALLOW_METHODS,
-			header::ACCESS_CONTROL_ALLOW_HEADERS,
-			HeaderName::from_static("ngrok-skip-browser-warning"),
-		]);
+    let cors = CorsLayer::new()
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::PATCH,
+            Method::DELETE,
+            Method::HEAD,
+        ])
+        .allow_origin(Any)
+        .allow_headers([
+            header::CONTENT_TYPE,
+            header::AUTHORIZATION,
+            header::ACCEPT,
+            header::ORIGIN,
+            header::ACCESS_CONTROL_ALLOW_ORIGIN,
+            header::ACCESS_CONTROL_ALLOW_METHODS,
+            header::ACCESS_CONTROL_ALLOW_HEADERS,
+            HeaderName::from_static("ngrok-skip-browser-warning"),
+        ]);
 
-	let app = Router::new()
-		.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
-		// Public routes (no authentication)
-		.merge(welcome_route())
-		.merge(auth_routes(state.clone()))
-		// API routes with authentication - nested organization
-		.nest(
-			"/workout/api",
-			Router::new()
-				.nest("/people", person_routes(state.clone()))
-				.nest("/friends", friend_routes(state.clone()))
-				.nest("/team-members", team_member_routes(state.clone()))
-				.nest("/business-profiles", business_profile_routes(state.clone()))
-				.nest("/workouts", workout_routes(state.clone()))
-				.nest("/exercises", exercise_routes(state.clone()))
-				.nest("/settings", settings_routes(state.clone()))
-				.nest("/media", media_routes(state.clone()))
-				.merge(resource_routes(state.clone())),
-		)
-		.layer(cors)
-		.with_state(state);
+    let app = Router::new()
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
+        // Public routes (no authentication)
+        .merge(welcome_route())
+        .merge(auth_routes(state.clone()))
+        // API routes with authentication - nested organization
+        .nest(
+            "/workout/api",
+            Router::new()
+                .nest("/people", person_routes(state.clone()))
+                .nest("/friends", friend_routes(state.clone()))
+                .nest("/team-members", team_member_routes(state.clone()))
+                .nest("/business-profiles", business_profile_routes(state.clone()))
+                .nest("/workouts", workout_routes(state.clone()))
+                .nest("/exercises", exercise_routes(state.clone()))
+                .nest("/settings", settings_routes(state.clone()))
+                .nest("/media", media_routes(state.clone()))
+                .merge(resource_routes(state.clone())),
+        )
+        .layer(cors)
+        .with_state(state);
 
-	let listener = tokio::net::TcpListener::bind(&server_url).await?;
-	log::info!("Server started on address {}", server_url);
-	axum::serve(listener, app).await?;
+    let listener = tokio::net::TcpListener::bind(&server_url).await?;
+    log::info!("Server started on address {}", server_url);
+    axum::serve(listener, app).await?;
 
-	Ok(())
+    Ok(())
 }
 
 #[derive(Clone)]
 pub struct AppState {
-	pub conn: Arc<DatabaseConnection>,
+    pub conn: Arc<DatabaseConnection>,
 }
 
 pub fn main() {
-	let result = start();
+    let result = start();
 
-	if let Some(err) = result.err() {
-		println!("Error: {err}");
-	}
+    if let Some(err) = result.err() {
+        println!("Error: {err}");
+    }
 }

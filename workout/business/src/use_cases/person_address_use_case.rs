@@ -74,4 +74,12 @@ impl PersonAddressUseCase {
             }
         }
     }
+
+    pub async fn delete_person_address_by_uuid(db: &DbConn, uuid: String) -> Result<(), BusinessError> {
+        log::info!("[PersonAddressUseCase::delete_person_address_by_uuid] Executing for uuid={}", uuid);
+        PersonAddressGateway::delete_by_uuid(db, uuid.clone()).await.map_err(|error| {
+            log::error!("[PersonAddressUseCase::delete_person_address_by_uuid] Failed for uuid={}: {}", uuid, error);
+            BusinessError::infrastructure("Error deleting person address")
+        })
+    }
 }

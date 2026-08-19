@@ -1,4 +1,5 @@
 use crate::commons::entity_mapper::EntityMapper;
+use crate::commons::functions::parse_uuid;
 use crate::domain::person_address::{PersonAddress, PersonAddressEntityMapper};
 use entity::person_address_entity as person_address;
 use entity::person_address_entity::{ActiveModel, PersonAddressEntity};
@@ -82,6 +83,15 @@ impl PersonAddressGateway {
             active_model.delete(db).await?;
         }
 
+        Ok(())
+    }
+
+    pub async fn delete_by_uuid(db: &DbConn, uuid: String) -> Result<(), DbErr> {
+        let uuid = parse_uuid(&uuid).map_err(|error| DbErr::Type(error.to_string()))?;
+        person_address::Entity::delete_many()
+            .filter(person_address::Column::Uuid.eq(uuid))
+            .exec(db)
+            .await?;
         Ok(())
     }
 

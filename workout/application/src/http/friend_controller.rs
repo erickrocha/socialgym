@@ -1,4 +1,5 @@
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
+use crate::http::json::friend_json::FriendJson;
 use crate::http::json::friend_page_json::FriendPageJson;
 use crate::http::json::person_json::PersonJson;
 use crate::infrastructure::mapper::{Mapper, PersonMapper};
@@ -8,10 +9,49 @@ use axum::{Extension, Json};
 use business::domain::user::User;
 use std::collections::HashMap;
 
+use crate::commons::i18n::{ErrorKey, Locale};
+use crate::http::json::error_response_json::{
+    BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,
+};
 use business::use_cases::friend_use_case::FriendUseCase;
 use business::use_cases::person_use_case::PersonUseCase;
-use crate::commons::i18n::{ErrorKey, Locale};
-use crate::http::json::error_response_json::{BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson};
+
+pub async fn get_friend_relationships_by_id(
+    State(state): State<AppState>,
+    Path(person_id): Path<i32>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<Vec<FriendJson>>> {
+    let friends = FriendUseCase::find_all_friend(&state.conn, person_id)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::FriendNotFound)
+        })?;
+    Ok(Json(
+        friends
+            .into_iter()
+            .map(|friend| FriendJson {
+                id: friend.id,
+                person_id: friend.person_id,
+                friend_id: friend.friend_id,
+                person_uuid: friend.person_uuid,
+                friend_uuid: friend.friend_uuid,
+            })
+            .collect(),
+    ))
+}
+
+pub async fn get_friend_relationships_by_uuid(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<Vec<FriendJson>>> {
+    let person = PersonUseCase::find_by_uuid(&state.conn, uuid)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::PersonNotFound)
+        })?;
+    get_friend_relationships_by_id(State(state), Path(person.id.unwrap()), Extension(locale)).await
+}
 
 #[utoipa::path(
     get,
@@ -37,8 +77,6 @@ pub async fn get_friends(
 ) -> HttpResponse<Json<FriendPageJson>> {
     let current_user = req.extensions().get::<User>().unwrap();
     let person_id = current_user.person_id;
-
-    log::info!("Getting friends info for person with id: {}", person_id);
 
     let km = params
         .get("radius_km")
@@ -97,16 +135,15 @@ pub async fn get_friend(
     state: State<AppState>,
     Path(friend_id): Path<i32>,
     Extension(locale): Extension<Locale>,
-    Extension(current_user): Extension<User>,
+    Extension(_current_user): Extension<User>,
 ) -> HttpResponse<Json<PersonJson>> {
-    let person_id = current_user.person_id;
-
-    log::info!("Getting friend info for person with id: {} and friend id: {}", person_id, friend_id);
-
     let friend_entity = PersonUseCase::get(&state.conn, friend_id).await;
 
     if friend_entity.is_err() {
-        return Err(ExceptionResponse::NotFound(locale,ErrorKey::FriendNotFound));
+        return Err(ExceptionResponse::NotFound(
+            locale,
+            ErrorKey::FriendNotFound,
+        ));
     }
 
     Ok(Json(PersonMapper::json(friend_entity.unwrap())))
@@ -138,8 +175,10 @@ pub async fn send_friend_request(
     let request_result =
         FriendUseCase::send_friend_request(&state.conn, person_id, receiver_id).await;
     if request_result.is_err() {
-        log::error!("Error sending friend request: {:?}", request_result.err());
-        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::FriendSendRequestFailed));
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::FriendSendRequestFailed,
+        ));
     }
     Ok(Json(()))
 }
@@ -171,8 +210,10 @@ pub async fn accept_friend_request(
     let request_result =
         FriendUseCase::accept_friend_request(&state.conn, person_id, receiver_id).await;
     if request_result.is_err() {
-        log::error!("Error sending friend request: {:?}", request_result.err());
-        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::FriendAcceptRequestFailed));
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::FriendAcceptRequestFailed,
+        ));
     }
     Ok(Json(()))
 }
@@ -204,8 +245,10 @@ pub async fn deny_friend_request(
     let request_result =
         FriendUseCase::deny_friend_request(&state.conn, person_id, receiver_id).await;
     if request_result.is_err() {
-        log::error!("Error sending friend request: {:?}", request_result.err());
-        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::FriendDenyRequestFailed));
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::FriendDenyRequestFailed,
+        ));
     }
     Ok(Json(()))
 }
@@ -237,8 +280,10 @@ pub async fn cancel_friend_request(
     let request_result =
         FriendUseCase::deny_friend_request(&state.conn, person_id, sender_id).await;
     if request_result.is_err() {
-        log::error!("Error sending friend request: {:?}", request_result.err());
-        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::FriendCancelRequestFailed));
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::FriendCancelRequestFailed,
+        ));
     }
     Ok(Json(()))
 }

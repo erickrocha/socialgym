@@ -1,8 +1,8 @@
 use crate::infrastructure::mapper::{ExerciseMapper, Mapper};
-use crate::service::{validate_uuid, validate_uuids};
 use crate::proto::exercise::exercise_request::Identifier;
 use crate::proto::exercise::exercise_service_server::ExerciseService;
 use crate::proto::exercise::{Exercise, ExerciseParams, ExerciseRequest, PaginatedExercise};
+use crate::service::{business_status, validate_uuid, validate_uuids};
 use business::use_cases::exercise_use_case::ExerciseUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
@@ -29,7 +29,7 @@ impl ExerciseService for GrpcExerciseService {
             Some(Identifier::Id(id)) => {
                 let exercise = ExerciseUseCase::get(&self.conn, id)
                     .await
-                    .ok_or_else(|| Status::not_found("exercise not found"))?;
+                    .map_err(business_status)?;
                 let grpc_exercise = ExerciseMapper::response(exercise);
                 Ok(Response::new(grpc_exercise))
             }
@@ -37,7 +37,7 @@ impl ExerciseService for GrpcExerciseService {
                 validate_uuid(&uuid, "uuid")?;
                 let exercise = ExerciseUseCase::get_by_uuid(&self.conn, uuid)
                     .await
-                    .ok_or_else(|| Status::not_found("exercise not found"))?;
+                    .map_err(business_status)?;
                 let grpc_exercise = ExerciseMapper::response(exercise);
                 Ok(Response::new(grpc_exercise))
             }
@@ -75,11 +75,7 @@ impl ExerciseService for GrpcExerciseService {
         validate_uuids(&req.owners, "owners")?;
 
         // Get public_owner_ids, default to empty if not provided
-        let public_owner_uuids = req
-            .owners
-            .iter()
-            .cloned()
-            .collect::<Vec<String>>();
+        let public_owner_uuids = req.owners.iter().cloned().collect::<Vec<String>>();
         let result = ExerciseUseCase::find_by_complex_filters_paginated_uuid(
             &self.conn,
             req.owner_uuid,
@@ -104,10 +100,7 @@ impl ExerciseService for GrpcExerciseService {
         let payload = request.into_inner();
         let exercise = ExerciseMapper::domain(payload);
         let persisted = ExerciseUseCase::persist(&self.conn, exercise).await;
-        if persisted.is_none() {
-            return Err(Status::internal("Failed to persist exercise"));
-        }
-        let grpc_exercise = ExerciseMapper::response(persisted.unwrap());
+        let grpc_exercise = ExerciseMapper::response(persisted.map_err(business_status)?);
         Ok(Response::new(grpc_exercise))
     }
 
@@ -118,10 +111,7 @@ impl ExerciseService for GrpcExerciseService {
         let payload = request.into_inner();
         let exercise = ExerciseMapper::domain(payload);
         let persisted = ExerciseUseCase::persist(&self.conn, exercise).await;
-        if persisted.is_none() {
-            return Err(Status::internal("Failed to persist exercise"));
-        }
-        let grpc_exercise = ExerciseMapper::response(persisted.unwrap());
+        let grpc_exercise = ExerciseMapper::response(persisted.map_err(business_status)?);
         Ok(Response::new(grpc_exercise))
     }
 

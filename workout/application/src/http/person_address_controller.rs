@@ -1,14 +1,16 @@
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
+use crate::commons::i18n::{ErrorKey, Locale};
+use crate::http::json::error_response_json::{
+    BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,
+};
 use crate::http::json::person_address_json::PersonAddressJson;
 use crate::infrastructure::mapper::{Mapper, PersonAddressMapper};
 use crate::AppState;
 use axum::extract::{Path, State};
-use axum::{Extension, Json};
 use axum::http::StatusCode;
+use axum::{Extension, Json};
 use business::domain::user::User;
 use business::use_cases::person_address_use_case::PersonAddressUseCase;
-use crate::commons::i18n::{ErrorKey, Locale};
-use crate::http::json::error_response_json::{BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson};
 
 #[utoipa::path(
   post,
@@ -30,19 +32,22 @@ pub async fn add_person_address(
     Extension(locale): Extension<Locale>,
     Extension(current_user): Extension<User>,
     Json(payload): Json<PersonAddressJson>,
-) -> HttpResponse<(StatusCode,Json<PersonAddressJson>)> {
+) -> HttpResponse<(StatusCode, Json<PersonAddressJson>)> {
     let person_id = current_user.person_id;
-
-    log::info!("Adding person address for person_id: {}", person_id);
-
     let mut address = PersonAddressMapper::domain(payload);
     address.person_id = person_id;
 
     let result = PersonAddressUseCase::add_person_address(&state.conn, address).await;
 
     match result {
-        Ok(address) => Ok((StatusCode::CREATED,Json(PersonAddressMapper::json(address)))),
-        Err(_) => Err(ExceptionResponse::BadRequest(locale,ErrorKey::PersonAddressNotAdded)),
+        Ok(address) => Ok((
+            StatusCode::CREATED,
+            Json(PersonAddressMapper::json(address)),
+        )),
+        Err(_) => Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::PersonAddressNotAdded,
+        )),
     }
 }
 
@@ -73,12 +78,6 @@ pub async fn update_person_address(
 ) -> HttpResponse<Json<PersonAddressJson>> {
     let person_id = current_user.person_id;
 
-    log::info!(
-        "Updating person address for person_id: {}, address_id: {}",
-        person_id,
-        person_address_id
-    );
-
     let mut address = PersonAddressMapper::domain(payload);
     address.id = Some(person_address_id);
     address.person_id = person_id;
@@ -87,7 +86,10 @@ pub async fn update_person_address(
 
     match result {
         Ok(address) => Ok(Json(PersonAddressMapper::json(address))),
-        Err(_) => Err(ExceptionResponse::BadRequest(locale,ErrorKey::PersonAddressNotUpdated)),
+        Err(_) => Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::PersonAddressNotUpdated,
+        )),
     }
 }
 
@@ -107,17 +109,25 @@ pub async fn update_person_address(
 )]
 pub async fn delete_person_address(
     state: State<AppState>,
-	Path(person_address_id): Path<i32>,
+    Path(person_address_id): Path<i32>,
     Extension(locale): Extension<Locale>,
-    Extension(current_user): Extension<User>
+    Extension(_current_user): Extension<User>,
 ) -> HttpResponse<Json<()>> {
-    let person_id = current_user.person_id;
-
-    log::info!("Adding person address for person_id: {}", person_id);
     let result = PersonAddressUseCase::delete_person_address(&state.conn, person_address_id).await;
 
     match result {
         Ok(_) => Ok(Json(())),
-        Err(_) => Err(ExceptionResponse::BadRequest(locale,ErrorKey::PersonAddressNotDeleted)),
+        Err(_) => Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::PersonAddressNotDeleted,
+        )),
     }
+}
+
+pub async fn delete_person_address_by_uuid(
+    State(state): State<AppState>, Path(uuid): Path<String>, Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<()>> {
+    PersonAddressUseCase::delete_person_address_by_uuid(&state.conn, uuid).await
+        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::PersonAddressNotDeleted))?;
+    Ok(Json(()))
 }

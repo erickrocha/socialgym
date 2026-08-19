@@ -1,7 +1,7 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::workout_exercise::{WorkoutExercise, WorkoutExerciseEntityMapper};
-use entity::workout_exercise_entity as workout_exercise;
 use entity::prelude::WorkoutExerciseEntity as WorkoutExerciseQuery;
+use entity::workout_exercise_entity as workout_exercise;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, DeleteResult, EntityTrait, QueryFilter,
     QueryOrder,
@@ -30,30 +30,28 @@ impl WorkoutExerciseGateway {
         Ok(result)
     }
 
-    pub async fn find_by_workout_id(db: &DbConn,workout_id: i32) -> Vec<workout_exercise::WorkoutExerciseEntity> {
+    pub async fn find_by_workout_id(
+        db: &DbConn,
+        workout_id: i32,
+    ) -> Result<Vec<workout_exercise::WorkoutExerciseEntity>, DbErr> {
         WorkoutExerciseQuery::find()
             .filter(workout_exercise::Column::WorkoutId.eq(workout_id))
             .order_by_asc(workout_exercise::Column::OrderIndex)
             .all(db)
             .await
-            .unwrap_or_else(|_| Vec::new())
     }
 
     pub async fn find_by_exercise_id(
         db: &DbConn,
         exercise_id: i32,
-    ) -> Vec<workout_exercise::WorkoutExerciseEntity> {
+    ) -> Result<Vec<workout_exercise::WorkoutExerciseEntity>, DbErr> {
         WorkoutExerciseQuery::find()
             .filter(workout_exercise::Column::ExerciseId.eq(exercise_id))
             .all(db)
             .await
-            .unwrap_or_else(|_| Vec::new())
     }
 
-    pub async fn delete_by_workout_id(
-        db: &DbConn,
-        workout_id: i32,
-    ) -> Result<DeleteResult, DbErr> {
+    pub async fn delete_by_workout_id(db: &DbConn, workout_id: i32) -> Result<DeleteResult, DbErr> {
         workout_exercise::Entity::delete_many()
             .filter(workout_exercise::Column::WorkoutId.eq(workout_id))
             .exec(db)

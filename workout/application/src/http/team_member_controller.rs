@@ -57,10 +57,6 @@ pub async fn get_team_members(
     let (members, sent_requests) = match active_profile {
         Some(profile) => {
             let business_profile_id = profile.id.unwrap();
-            log::info!(
-                "Getting team members for business profile with id: {}",
-                business_profile_id
-            );
             (
                 TeamMemberUseCase::find_all_persons(
                     &state.conn,
@@ -80,7 +76,6 @@ pub async fn get_team_members(
     };
 
     let person_id = current_user.person_id;
-    log::info!("Getting teams for person with id: {}", person_id);
 
     let teams = TeamMemberUseCase::find_all_business_profiles(
         &state.conn,
@@ -128,18 +123,9 @@ pub async fn get_team_member(
 ) -> HttpResponse<Json<TeamMemberJson>> {
     let business_profile_id = active_business_profile(&req, locale)?.id.unwrap();
 
-    log::info!(
-        "Getting team member for business profile id: {} and person id: {}",
-        business_profile_id,
-        person_id
-    );
-
     let result = TeamMemberUseCase::find_membership(&state.conn, business_profile_id, person_id)
         .await
-        .map_err(|e| {
-            log::error!("Error finding team member: {:?}", e);
-            ExceptionResponse::NotFound(locale, ErrorKey::TeamMemberNotFound)
-        })?;
+        .map_err(|_e| ExceptionResponse::NotFound(locale, ErrorKey::TeamMemberNotFound))?;
 
     Ok(Json(TeamMemberMapper::json(result)))
 }
@@ -173,10 +159,6 @@ pub async fn send_team_member_request(
         TeamMemberUseCase::send_team_member_request(&state.conn, business_profile_id, person_id)
             .await;
     if request_result.is_err() {
-        log::error!(
-            "Error sending team member request: {:?}",
-            request_result.err()
-        );
         return Err(ExceptionResponse::BadRequest(
             locale,
             ErrorKey::TeamMemberSendRequestFailed,
@@ -215,10 +197,6 @@ pub async fn accept_team_member_request(
     )
     .await;
     if request_result.is_err() {
-        log::error!(
-            "Error accepting team member request: {:?}",
-            request_result.err()
-        );
         return Err(ExceptionResponse::BadRequest(
             locale,
             ErrorKey::TeamMemberAcceptRequestFailed,
@@ -257,10 +235,6 @@ pub async fn deny_team_member_request(
     )
     .await;
     if request_result.is_err() {
-        log::error!(
-            "Error denying team member request: {:?}",
-            request_result.err()
-        );
         return Err(ExceptionResponse::BadRequest(
             locale,
             ErrorKey::TeamMemberDenyRequestFailed,
@@ -298,10 +272,6 @@ pub async fn cancel_team_member_request(
         TeamMemberUseCase::cancel_team_member_request(&state.conn, business_profile_id, person_id)
             .await;
     if request_result.is_err() {
-        log::error!(
-            "Error cancelling team member request: {:?}",
-            request_result.err()
-        );
         return Err(ExceptionResponse::BadRequest(
             locale,
             ErrorKey::TeamMemberCancelRequestFailed,

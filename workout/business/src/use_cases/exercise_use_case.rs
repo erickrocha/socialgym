@@ -127,39 +127,69 @@ impl ExerciseUseCase {
         Ok(())
     }
 
-    pub async fn persist(db: &DbConn, exercise: Exercise) -> Option<Exercise> {
-        log::info!("Adding exercise: {:?}", exercise);
-        let domain = ExerciseGateway::persist(db, exercise).await;
-        if domain.is_err() {
-            log::error!("Error adding exercise: {}", domain.as_ref().err().unwrap());
-            return None;
-        }
-        let model = domain.unwrap();
-        Some(ExerciseEntityMapper::from_active_model(model))
+    pub async fn persist(db: &DbConn, exercise: Exercise) -> Result<Exercise, BusinessError> {
+        log::info!(
+            "[ExerciseUseCase::persist] Executing for owner_id={:?}",
+            exercise.owner_id
+        );
+        let model = ExerciseGateway::persist(db, exercise)
+            .await
+            .map_err(|error| {
+                log::error!("[ExerciseUseCase::persist] Failed: {}", error);
+                BusinessError::infrastructure("Error adding exercise")
+            })?;
+        Ok(ExerciseEntityMapper::from_active_model(model))
     }
 
-    pub async fn get(db: &DbConn, exercise_id: i32) -> Option<Exercise> {
-        log::info!("Getting exercise for exercise_id: {}", exercise_id);
-        let domain = ExerciseGateway::find_by_id(db, exercise_id).await;
-        if domain.is_err() {
-            log::error!("Error getting exercise: {}", domain.as_ref().err().unwrap());
-            return None;
-        }
-        domain
-            .unwrap()
-            .map(ExerciseEntityMapper::from_model)
+    pub async fn get(db: &DbConn, exercise_id: i32) -> Result<Exercise, BusinessError> {
+        log::info!(
+            "[ExerciseUseCase::get] Executing for exercise_id={}",
+            exercise_id
+        );
+        let model = ExerciseGateway::find_by_id(db, exercise_id)
+            .await
+            .map_err(|error| {
+                log::error!(
+                    "[ExerciseUseCase::get] Failed for exercise_id={}: {}",
+                    exercise_id,
+                    error
+                );
+                BusinessError::infrastructure("Error getting exercise")
+            })?
+            .ok_or_else(|| {
+                let error = BusinessError::not_found("Exercise not found");
+                log::error!(
+                    "[ExerciseUseCase::get] Failed for exercise_id={}: {}",
+                    exercise_id,
+                    error
+                );
+                error
+            })?;
+        Ok(ExerciseEntityMapper::from_model(model))
     }
 
-    pub async fn get_by_uuid(db: &DbConn, uuid: String) -> Option<Exercise> {
-        log::info!("Getting exercise for uuid: {}", uuid);
-        let domain = ExerciseGateway::find_by_uuid(db, uuid).await;
-        if domain.is_err() {
-            log::error!("Error getting exercise: {}", domain.as_ref().err().unwrap());
-            return None;
-        }
-        domain
-            .unwrap()
-            .map(ExerciseEntityMapper::from_model)
+    pub async fn get_by_uuid(db: &DbConn, uuid: String) -> Result<Exercise, BusinessError> {
+        log::info!("[ExerciseUseCase::get_by_uuid] Executing for uuid={}", uuid);
+        let model = ExerciseGateway::find_by_uuid(db, uuid.clone())
+            .await
+            .map_err(|error| {
+                log::error!(
+                    "[ExerciseUseCase::get_by_uuid] Failed for uuid={}: {}",
+                    uuid,
+                    error
+                );
+                BusinessError::infrastructure("Error getting exercise")
+            })?
+            .ok_or_else(|| {
+                let error = BusinessError::not_found("Exercise not found");
+                log::error!(
+                    "[ExerciseUseCase::get_by_uuid] Failed for uuid={}: {}",
+                    uuid,
+                    error
+                );
+                error
+            })?;
+        Ok(ExerciseEntityMapper::from_model(model))
     }
 
     pub async fn find_all_by_workout_id(
@@ -168,14 +198,30 @@ impl ExerciseUseCase {
     ) -> Result<Vec<Exercise>, BusinessError> {
         log::info!("Finding exercises for workout_id: {}", workout_id);
 
-        let workout_exercises = WorkoutExerciseGateway::find_by_workout_id(db, workout_id).await;
+        let workout_exercises = WorkoutExerciseGateway::find_by_workout_id(db, workout_id)
+            .await
+            .map_err(|error| {
+                log::error!(
+                    "[ExerciseUseCase::find_all_by_workout_id] Failed: {}",
+                    error
+                );
+                BusinessError::infrastructure("Error finding workout exercises")
+            })?;
         let exercise_ids: Vec<i32> = workout_exercises.iter().map(|we| we.exercise_id).collect();
 
         if exercise_ids.is_empty() {
             return Ok(Vec::new());
         }
 
-        let domain = ExerciseGateway::find_by_ids(db, exercise_ids).await;
+        let domain = ExerciseGateway::find_by_ids(db, exercise_ids)
+            .await
+            .map_err(|error| {
+                log::error!(
+                    "[ExerciseUseCase::find_all_by_workout_id] Failed: {}",
+                    error
+                );
+                BusinessError::infrastructure("Error finding exercises")
+            })?;
         let exercises: Vec<Exercise> = ExerciseEntityMapper::from_models(domain);
         Ok(exercises)
     }
@@ -312,7 +358,7 @@ impl ExerciseUseCase {
         page_number: u64,
         page_size: u64,
         sort_by: Option<String>,
-    ) -> (Vec<Exercise>, i64, bool) {
+    ) -> Result<(Vec<Exercise>, i64, bool), BusinessError> {
         log::info!(
             "Finding exercises with complex filters: current_user_id={}, public_owner_ids={:?}, category={:?}, page_number={}, page_size={}",
             current_user_person_id,
@@ -326,7 +372,10 @@ impl ExerciseUseCase {
 
         let friends = FriendGateway::find_all_accepted_friends(db, current_user_person_id)
             .await
-            .unwrap_or_else(|_| Vec::new());
+            .map_err(|error| {
+                log::error!("[ExerciseUseCase::find_by_complex_filters_paginated] Failed to find friends: {}", error);
+                BusinessError::infrastructure("Error finding friends")
+            })?;
 
         let friend_ids: Vec<i32> = friends
             .into_iter()
@@ -357,7 +406,7 @@ impl ExerciseUseCase {
                 "Error finding exercises with complex filters: {}",
                 result.as_ref().err().unwrap()
             );
-            return (vec![], 0, false);
+            return Err(BusinessError::infrastructure("Error finding exercises"));
         }
 
         let (models, total_count) = result.unwrap();
@@ -370,7 +419,7 @@ impl ExerciseUseCase {
             exercises.len(),
             total_count_i64
         );
-        (exercises, total_count_i64, has_next_page)
+        Ok((exercises, total_count_i64, has_next_page))
     }
 
     #[allow(clippy::too_many_arguments)]

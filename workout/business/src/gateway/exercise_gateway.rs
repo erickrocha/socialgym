@@ -12,14 +12,20 @@ use sea_orm::{
 pub struct ExerciseGateway {}
 
 impl ExerciseGateway {
-    pub async fn find_by_id(db: &DbConn, id: i32) -> Result<Option<exercise::ExerciseEntity>, DbErr> {
+    pub async fn find_by_id(
+        db: &DbConn,
+        id: i32,
+    ) -> Result<Option<exercise::ExerciseEntity>, DbErr> {
         ExerciseQuery::find()
             .filter(Column::Id.eq(id))
             .one(db)
             .await
     }
 
-    pub async fn find_by_uuid(db: &DbConn, uuid: String) -> Result<Option<exercise::ExerciseEntity>, DbErr> {
+    pub async fn find_by_uuid(
+        db: &DbConn,
+        uuid: String,
+    ) -> Result<Option<exercise::ExerciseEntity>, DbErr> {
         let uuid = parse_uuid(&uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         ExerciseQuery::find()
             .filter(Column::Uuid.eq(uuid))
@@ -27,12 +33,14 @@ impl ExerciseGateway {
             .await
     }
 
-    pub async fn find_by_ids(db: &DbConn, ids: Vec<i32>) -> Vec<exercise::ExerciseEntity> {
+    pub async fn find_by_ids(
+        db: &DbConn,
+        ids: Vec<i32>,
+    ) -> Result<Vec<exercise::ExerciseEntity>, DbErr> {
         ExerciseQuery::find()
             .filter(Column::Id.is_in(ids))
             .all(db)
             .await
-            .unwrap_or_else(|_| vec![])
     }
 
     pub async fn persist(db: &DbConn, entity: Exercise) -> Result<exercise::ActiveModel, DbErr> {
@@ -235,12 +243,11 @@ impl ExerciseGateway {
         limit: u64,
         sort_by: Option<String>,
     ) -> Result<(Vec<exercise::ExerciseEntity>, u64), DbErr> {
-        let current_user_owner_uuid = parse_uuid(&current_user_owner_uuid)
-            .map_err(|e| DbErr::Type(e.to_string()))?;
-        let friend_uuids = parse_uuids(&friend_uuids)
-            .map_err(|e| DbErr::Type(e.to_string()))?;
-        let public_owner_uuids = parse_uuids(&public_owner_uuids)
-            .map_err(|e| DbErr::Type(e.to_string()))?;
+        let current_user_owner_uuid =
+            parse_uuid(&current_user_owner_uuid).map_err(|e| DbErr::Type(e.to_string()))?;
+        let friend_uuids = parse_uuids(&friend_uuids).map_err(|e| DbErr::Type(e.to_string()))?;
+        let public_owner_uuids =
+            parse_uuids(&public_owner_uuids).map_err(|e| DbErr::Type(e.to_string()))?;
         let mut query = ExerciseQuery::find().filter(
             Condition::any()
                 .add(Column::OwnerUuid.eq(current_user_owner_uuid))
