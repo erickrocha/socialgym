@@ -1,7 +1,7 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::uuid_to_string;
 use chrono::NaiveDateTime;
-use entity::workout_exercise::{ActiveModel, Model};
+use entity::workout_exercise_entity::{ActiveModel, WorkoutExerciseEntity};
 use sea_orm::{NotSet, Set};
 
 #[derive(Debug, Clone)]
@@ -17,7 +17,7 @@ pub struct WorkoutExercise {
 
 pub struct WorkoutExerciseEntityMapper {}
 
-impl EntityMapper<WorkoutExercise, Model, ActiveModel> for WorkoutExerciseEntityMapper {
+impl EntityMapper<WorkoutExercise, WorkoutExerciseEntity, ActiveModel> for WorkoutExerciseEntityMapper {
     fn build_active_model(d: WorkoutExercise) -> ActiveModel {
         ActiveModel {
             id: NotSet,
@@ -30,7 +30,7 @@ impl EntityMapper<WorkoutExercise, Model, ActiveModel> for WorkoutExerciseEntity
         }
     }
 
-    fn from_model(e: Model) -> WorkoutExercise {
+    fn from_model(e: WorkoutExerciseEntity) -> WorkoutExercise {
         WorkoutExercise {
             id: Some(e.id),
             workout_id: e.workout_id,

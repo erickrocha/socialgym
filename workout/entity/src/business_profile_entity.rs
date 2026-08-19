@@ -2,46 +2,44 @@ use sea_orm::entity::prelude::*;
 use sea_orm::prelude::async_trait::async_trait;
 use sea_orm::Set;
 
-#[derive(Debug, Clone, PartialEq, Eq, DeriveEntityModel)]
-#[sea_orm(table_name = "exercise")]
+pub type BusinessProfileEntity = Model;
+
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
+#[sea_orm(table_name = "business_profile")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     #[sea_orm(unique)]
     pub uuid: Uuid,
-    pub name: String,
-    pub description: Option<String>,
     pub owner_id: i32,
     pub owner_uuid: Uuid,
-    pub owner_name: String,
-    pub sets: i32,
-    pub category: String,
-    pub reps_or_duration: i32,
-    pub visibility: String,
+    pub tax_id: String,
+    pub business_name: String,
+    pub business_type: String,
+    pub social_name: Option<String>,
+    pub logo: Option<String>,
+    pub cover_image: Option<String>,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::workout_exercise::Entity")]
-    WorkoutExercise,
+    #[sea_orm(has_many = "super::business_profile_address_entity::Entity")]
+    BusinessProfileAddress,
+    #[sea_orm(has_many = "super::profile_entity::Entity")]
+    Profile,
 }
 
-impl Related<super::workout_exercise::Entity> for Entity {
+impl Related<super::business_profile_address_entity::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::WorkoutExercise.def()
+        Relation::BusinessProfileAddress.def()
     }
 }
 
-// Many-to-many relation to Workout via WorkoutExercise
-impl Related<super::workout::Entity> for Entity {
+impl Related<super::profile_entity::Entity> for Entity {
     fn to() -> RelationDef {
-        super::workout_exercise::Relation::Workout.def()
-    }
-
-    fn via() -> Option<RelationDef> {
-        Some(super::workout_exercise::Relation::Exercise.def().rev())
+        Relation::Profile.def()
     }
 }
 

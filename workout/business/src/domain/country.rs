@@ -1,4 +1,4 @@
-use entity::country::{ActiveModel, Model};
+use entity::country_entity::{ActiveModel, CountryEntity};
 use crate::commons::entity_mapper::EntityMapper;
 
 #[derive(Clone, Debug)]
@@ -10,7 +10,7 @@ pub struct Country {
 }
 
 pub struct CountryEntityMapper;
-impl EntityMapper<Country,Model, ActiveModel> for CountryEntityMapper {
+impl EntityMapper<Country,CountryEntity, ActiveModel> for CountryEntityMapper {
 	fn build_active_model(d: Country) -> ActiveModel {
 		ActiveModel {
 			id: sea_orm::Set(d.id),
@@ -20,7 +20,7 @@ impl EntityMapper<Country,Model, ActiveModel> for CountryEntityMapper {
 		}
 	}
 
-	fn from_model(e: Model) -> Country {
+	fn from_model(e: CountryEntity) -> Country {
 		Country {
 			id: e.id,
 			name: e.name,

@@ -1,7 +1,7 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::workout_exercise::{WorkoutExercise, WorkoutExerciseEntityMapper};
-use entity::workout_exercise;
-use entity::prelude::WorkoutExercise as WorkoutExerciseQuery;
+use entity::workout_exercise_entity as workout_exercise;
+use entity::prelude::WorkoutExerciseEntity as WorkoutExerciseQuery;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, DeleteResult, EntityTrait, QueryFilter,
     QueryOrder,
@@ -30,7 +30,7 @@ impl WorkoutExerciseGateway {
         Ok(result)
     }
 
-    pub async fn find_by_workout_id(db: &DbConn,workout_id: i32) -> Vec<workout_exercise::Model> {
+    pub async fn find_by_workout_id(db: &DbConn,workout_id: i32) -> Vec<workout_exercise::WorkoutExerciseEntity> {
         WorkoutExerciseQuery::find()
             .filter(workout_exercise::Column::WorkoutId.eq(workout_id))
             .order_by_asc(workout_exercise::Column::OrderIndex)
@@ -42,7 +42,7 @@ impl WorkoutExerciseGateway {
     pub async fn find_by_exercise_id(
         db: &DbConn,
         exercise_id: i32,
-    ) -> Vec<workout_exercise::Model> {
+    ) -> Vec<workout_exercise::WorkoutExerciseEntity> {
         WorkoutExerciseQuery::find()
             .filter(workout_exercise::Column::ExerciseId.eq(exercise_id))
             .all(db)

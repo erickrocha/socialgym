@@ -13,7 +13,7 @@ use business::domain::access_token::AccessToken;
 use business::domain::business_profile::BusinessProfile;
 use business::domain::business_profile_address::BusinessProfileAddress;
 use business::domain::country::Country;
-use business::domain::enums::{Position, ProfileType};
+use business::domain::enums::{Difficulty, Position, ProfileType};
 use business::domain::exercise::{Category, Exercise};
 use business::domain::person::Person;
 use business::domain::person_address::PersonAddress;
@@ -253,7 +253,7 @@ impl Mapper<Workout, WorkoutJson> for WorkoutMapper {
             uuid: workout.uuid,
             name: Some(workout.name),
             description: workout.description,
-            difficulty: Some(workout.difficulty),
+            difficulty: Some(workout.difficulty.to_string()),
             muscle_group: Some(workout.muscle_group),
             owner_id: workout.owner_id,
             owner_uuid: workout.owner_uuid,
@@ -270,7 +270,7 @@ impl Mapper<Workout, WorkoutJson> for WorkoutMapper {
             uuid: u.uuid,
             name: u.name.unwrap(),
             description: u.description,
-            difficulty: u.difficulty.unwrap(),
+            difficulty: Difficulty::from_string(u.difficulty.unwrap().as_str()),
             muscle_group: u.muscle_group.unwrap(),
             owner_id: u.owner_id,
             owner_uuid: u.owner_uuid,

@@ -1,8 +1,8 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::revoked_token::{RevokedToken, RevokedTokenMapper};
 use chrono::NaiveDateTime;
-use entity::prelude::RevokedToken as RevokedTokenQuery;
-use entity::revoked_token;
+use entity::prelude::RevokedTokenEntity as RevokedTokenQuery;
+use entity::revoked_token_entity as revoked_token;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
 
 pub struct TokenRevocationGateway {}

@@ -157,7 +157,7 @@ impl PersonUseCase {
     async fn persist_person_info(
         db: &DbConn,
         person_info: PersonInfo,
-    ) -> Result<entity::person_info::ActiveModel, BusinessError> {
+    ) -> Result<entity::person_info_entity::ActiveModel, BusinessError> {
         let person_info_result = PersonInfoGateway::persist(db, person_info).await;
         match person_info_result {
             Ok(persisted) => {
@@ -235,7 +235,7 @@ impl PersonUseCase {
     }
 
     fn extract_neighbor_ids(
-        nearby_addresses: Vec<entity::person_address::Model>,
+        nearby_addresses: Vec<entity::person_address_entity::PersonAddressEntity>,
         person_id: i32,
         excluded_ids: &[i32],
     ) -> Vec<i32> {
@@ -253,7 +253,7 @@ impl PersonUseCase {
 
     async fn get_friends_by_column_and_status(
         db: &DbConn,
-        column: entity::friends::Column,
+        column: entity::friends_entity::Column,
         person_id: i32,
         status: FriendStatus,
     ) -> Vec<Person> {
@@ -269,8 +269,8 @@ impl PersonUseCase {
         }
         let friends = friends.unwrap();
         let friend_ids: Vec<i32> = match column {
-            entity::friends::Column::PersonId => friends.into_iter().map(|f| f.friend_id).collect(),
-            entity::friends::Column::FriendId => friends.into_iter().map(|f| f.person_id).collect(),
+            entity::friends_entity::Column::PersonId => friends.into_iter().map(|f| f.friend_id).collect(),
+            entity::friends_entity::Column::FriendId => friends.into_iter().map(|f| f.person_id).collect(),
             _ => Vec::new(),
         };
         let persons = PersonGateway::find_all_by_id_in(db, friend_ids.clone()).await;
@@ -309,7 +309,7 @@ impl PersonUseCase {
     pub async fn get_all_received_requests(db: &DbConn, person_id: i32) -> Vec<Person> {
         Self::get_friends_by_column_and_status(
             db,
-            entity::friends::Column::FriendId,
+            entity::friends_entity::Column::FriendId,
             person_id,
             FriendStatus::Pending,
         )
@@ -319,7 +319,7 @@ impl PersonUseCase {
     pub async fn get_all_sent_requests(db: &DbConn, person_id: i32) -> Vec<Person> {
         Self::get_friends_by_column_and_status(
             db,
-            entity::friends::Column::PersonId,
+            entity::friends_entity::Column::PersonId,
             person_id,
             FriendStatus::Pending,
         )
@@ -582,11 +582,11 @@ mod tests {
     use crate::commons::functions::string_to_uuid;
     use crate::domain::friend::{Friend, FriendStatus};
     use chrono::Utc;
-    use entity::{friends, person_address};
+    use entity::person_address_entity as person_address;
     use serde::de::Unexpected::Option;
 
-    fn make_address(id: i32, person_id: i32) -> person_address::Model {
-        person_address::Model {
+    fn make_address(id: i32, person_id: i32) -> person_address::PersonAddressEntity {
+        person_address::PersonAddressEntity {
             id,
             uuid: string_to_uuid(format!("address-{id}").as_str()),
             person_id,

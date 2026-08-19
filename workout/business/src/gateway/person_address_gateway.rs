@@ -1,8 +1,8 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::person_address::{PersonAddress, PersonAddressEntityMapper};
-use entity::person_address;
-use entity::person_address::{ActiveModel, Model};
-use entity::prelude::PersonAddress as PersonAddressQuery;
+use entity::person_address_entity as person_address;
+use entity::person_address_entity::{ActiveModel, PersonAddressEntity};
+use entity::prelude::PersonAddressEntity as PersonAddressQuery;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbBackend, DbConn, DbErr, EntityTrait, QueryFilter, Statement,
     UpdateResult,
@@ -15,7 +15,7 @@ impl PersonAddressGateway {
         db: &DbConn,
         person_id: i32,
         current: bool,
-    ) -> Result<Option<Model>, DbErr> {
+    ) -> Result<Option<PersonAddressEntity>, DbErr> {
         PersonAddressQuery::find()
             .filter(person_address::Column::PersonId.eq(person_id))
             .filter(person_address::Column::Current.eq(current))
@@ -23,14 +23,14 @@ impl PersonAddressGateway {
             .await
     }
 
-    pub async fn find_by_id(db: &DbConn, id: i32) -> Result<Option<Model>, DbErr> {
+    pub async fn find_by_id(db: &DbConn, id: i32) -> Result<Option<PersonAddressEntity>, DbErr> {
         PersonAddressQuery::find()
             .filter(person_address::Column::Id.eq(id))
             .one(db)
             .await
     }
 
-    pub async fn find_all_by_person_id(db: &DbConn, person_id: i32) -> Vec<Model> {
+    pub async fn find_all_by_person_id(db: &DbConn, person_id: i32) -> Vec<PersonAddressEntity> {
         PersonAddressQuery::find()
             .filter(person_address::Column::PersonId.eq(person_id))
             .all(db)
@@ -48,7 +48,7 @@ impl PersonAddressGateway {
         latitude: f64,
         longitude: f64,
         radius_km: f64,
-    ) -> Result<Vec<person_address::Model>, DbErr> {
+    ) -> Result<Vec<person_address::PersonAddressEntity>, DbErr> {
         PersonAddressQuery::find()
             .from_raw_sql(Statement::from_sql_and_values(
                 DbBackend::Postgres,

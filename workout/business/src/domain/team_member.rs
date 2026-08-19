@@ -1,7 +1,7 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
 use chrono::NaiveDateTime;
-use entity::team_member::{ActiveModel, Model};
+use entity::team_member_entity::{ActiveModel, TeamMemberEntity};
 use sea_orm::{NotSet, Set};
 
 #[derive(Debug, Clone)]
@@ -70,7 +70,7 @@ impl TeamMemberStatus {
 
 pub struct TeamMemberMapper {}
 
-impl EntityMapper<TeamMember, Model, ActiveModel> for TeamMemberMapper {
+impl EntityMapper<TeamMember, TeamMemberEntity, ActiveModel> for TeamMemberMapper {
     fn build_active_model(d: TeamMember) -> ActiveModel {
         ActiveModel {
             id: match d.id {
@@ -91,7 +91,7 @@ impl EntityMapper<TeamMember, Model, ActiveModel> for TeamMemberMapper {
         }
     }
 
-    fn from_model(e: Model) -> TeamMember {
+    fn from_model(e: TeamMemberEntity) -> TeamMember {
         TeamMember {
             id: Some(e.id),
             uuid: Some(uuid_to_string(e.uuid)),

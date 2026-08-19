@@ -8,10 +8,9 @@ use business::domain::{
     user::User as DomainUser, workout::Workout as DomainWorkout,
     settings::Settings as DomainSettings,
     team_member::{TeamMember as DomainTeamMember, TeamMemberStatus},
-    profile::Profile as DomainProfile
 };
 use chrono::NaiveDateTime;
-use business::domain::enums::{Position, ProfileType};
+use business::domain::enums::{Difficulty, Position, ProfileType};
 use crate::proto;
 
 // ---------------------------------------------------------------------------
@@ -344,7 +343,7 @@ impl Mapper<DomainWorkout, proto::workout::Workout> for WorkoutMapper {
             owner_uuid: t.owner_uuid,
             name: t.name,
             description: t.description.unwrap_or_default(),
-            difficulty: t.difficulty,
+            difficulty: t.difficulty.to_string(),
             muscle_group: t.muscle_group,
             visibility: t.visibility.to_string(),
             exercises: ExerciseMapper::response_vec(t.exercises),
@@ -364,7 +363,7 @@ impl Mapper<DomainWorkout, proto::workout::Workout> for WorkoutMapper {
             owner_uuid: u.owner_uuid,
             name: u.name,
             description: Some(u.description),
-            difficulty: u.difficulty,
+            difficulty: Difficulty::from_string(u.difficulty.as_str()),
             muscle_group: u.muscle_group,
             exercises: ExerciseMapper::domain_vec(u.exercises),
             visibility: Visibility::from_string(&u.visibility),

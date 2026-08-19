@@ -2,7 +2,7 @@ use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
 use crate::domain::enums::MimeType;
 use chrono::NaiveDateTime;
-use entity::person_media::{ActiveModel, Model};
+use entity::person_media_entity::{ActiveModel, PersonMediaEntity};
 
 #[derive(Debug, Clone)]
 pub struct PersonMedia {
@@ -19,7 +19,7 @@ pub struct PersonMedia {
 
 pub struct PersonMediaEntityMapper {}
 
-impl EntityMapper<PersonMedia, Model, ActiveModel> for PersonMediaEntityMapper {
+impl EntityMapper<PersonMedia, PersonMediaEntity, ActiveModel> for PersonMediaEntityMapper {
     fn build_active_model(d: PersonMedia) -> ActiveModel {
         ActiveModel {
             person_id: sea_orm::Set(d.person_id),
@@ -31,7 +31,7 @@ impl EntityMapper<PersonMedia, Model, ActiveModel> for PersonMediaEntityMapper {
         }
     }
 
-    fn from_model(e: Model) -> PersonMedia {
+    fn from_model(e: PersonMediaEntity) -> PersonMedia {
         PersonMedia {
             id: Some(e.id),
             uuid: Some(uuid_to_string(e.uuid)),

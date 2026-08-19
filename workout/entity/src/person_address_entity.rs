@@ -2,42 +2,42 @@ use sea_orm::entity::prelude::*;
 use sea_orm::prelude::async_trait::async_trait;
 use sea_orm::Set;
 
-#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
-#[sea_orm(table_name = "business_profile")]
+pub type PersonAddressEntity = Model;
+
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+#[sea_orm(table_name = "person_address")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     #[sea_orm(unique)]
     pub uuid: Uuid,
-    pub owner_id: i32,
-    pub owner_uuid: Uuid,
-    pub tax_id: String,
-    pub business_name: String,
-    pub business_type: String,
-    pub social_name: Option<String>,
-    pub logo: Option<String>,
-    pub cover_image: Option<String>,
+    pub person_id: i32,
+    pub address_line1: String,
+    pub address_line2: Option<String>,
+    pub locality: String,
+    pub administrative_area: String,
+    pub postal_code: Option<String>,
+    pub country_code: String,
+    pub current: bool,
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::business_profile_address::Entity")]
-    BusinessProfileAddress,
-    #[sea_orm(has_many = "super::profile::Entity")]
-    Profile,
+    #[sea_orm(
+        belongs_to = "super::person_entity::Entity",
+        from = "Column::PersonId",
+        to = "super::person_entity::Column::Id"
+    )]
+    Person,
 }
 
-impl Related<super::business_profile_address::Entity> for Entity {
+impl Related<super::person_entity::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::BusinessProfileAddress.def()
-    }
-}
-
-impl Related<super::profile::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Profile.def()
+        Relation::Person.def()
     }
 }
 

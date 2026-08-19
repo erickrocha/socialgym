@@ -5,6 +5,8 @@ use sea_orm::entity::prelude::*;
 use sea_orm::prelude::async_trait::async_trait;
 use sea_orm::Set;
 
+pub type PersonEntity = Model;
+
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
 #[sea_orm(table_name = "person")]
 pub struct Model {
@@ -25,35 +27,35 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_one = "super::user::Entity")]
+    #[sea_orm(has_one = "super::user_entity::Entity")]
     User,
-    #[sea_orm(has_many = "super::workout::Entity")]
+    #[sea_orm(has_many = "super::workout_entity::Entity")]
     Workout,
-    #[sea_orm(has_many = "super::person_address::Entity")]
+    #[sea_orm(has_many = "super::person_address_entity::Entity")]
     PersonAddress,
-    #[sea_orm(has_many = "super::profile::Entity")]
+    #[sea_orm(has_many = "super::profile_entity::Entity")]
     Profile,
 }
 
-impl Related<super::user::Entity> for Entity {
+impl Related<super::user_entity::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::User.def()
     }
 }
 
-impl Related<super::workout::Entity> for Entity {
+impl Related<super::workout_entity::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Workout.def()
     }
 }
 
-impl Related<super::person_address::Entity> for Entity {
+impl Related<super::person_address_entity::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::PersonAddress.def()
     }
 }
 
-impl Related<super::profile::Entity> for Entity {
+impl Related<super::profile_entity::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Profile.def()
     }

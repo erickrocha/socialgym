@@ -1,7 +1,7 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
 use chrono::NaiveDateTime;
-use entity::revoked_token::{ActiveModel, Model};
+use entity::revoked_token_entity::{ActiveModel, RevokedTokenEntity};
 use sea_orm::{NotSet, Set};
 
 #[derive(Debug, Clone)]
@@ -36,7 +36,7 @@ impl RevokedToken {
 
 pub struct RevokedTokenMapper {}
 
-impl EntityMapper<RevokedToken, Model, ActiveModel> for RevokedTokenMapper {
+impl EntityMapper<RevokedToken, RevokedTokenEntity, ActiveModel> for RevokedTokenMapper {
     fn build_active_model(d: RevokedToken) -> ActiveModel {
         ActiveModel {
             id: match d.id {
@@ -55,7 +55,7 @@ impl EntityMapper<RevokedToken, Model, ActiveModel> for RevokedTokenMapper {
         }
     }
 
-    fn from_model(e: Model) -> RevokedToken {
+    fn from_model(e: RevokedTokenEntity) -> RevokedToken {
         RevokedToken {
             id: Some(e.id),
             uuid: Some(uuid_to_string(e.uuid)),

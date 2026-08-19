@@ -11,7 +11,7 @@ use crate::gateway::business_profile_gateway::BusinessProfileGateway;
 use crate::use_cases::common_use_case::{handle_option};
 use crate::use_cases::image_storage_use_case::ImageStorageUseCase;
 use sea_orm::{DbConn};
-use entity::business_profile::Model;
+use entity::business_profile_entity::BusinessProfileEntity;
 use crate::domain::profile::Profile;
 use crate::gateway::profile_gateway::ProfileGateway;
 
@@ -82,7 +82,7 @@ impl BusinessProfileUseCase {
         Ok(result)
     }
 
-    async fn fill_business_profiles(db: &DbConn, business_profiles: Vec<Model>) -> Vec<BusinessProfile> {
+    async fn fill_business_profiles(db: &DbConn, business_profiles: Vec<BusinessProfileEntity>) -> Vec<BusinessProfile> {
         let mut result = Vec::new();
 
         for profile in business_profiles {

@@ -1,4 +1,4 @@
-    use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum ImageType {
@@ -66,7 +66,7 @@ pub enum Visibility {
 }
 
 impl Display for Visibility {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Visibility::Public => write!(f, "public"),
             Visibility::Private => write!(f, "private"),
@@ -74,8 +74,6 @@ impl Display for Visibility {
             Visibility::Professional => write!(f, "professional"),
         }
     }
-
-
 }
 
 impl Visibility {
@@ -97,7 +95,7 @@ pub enum Category {
     Hypertrophy,
     Endurance,
     Power,
-    Speed
+    Speed,
 }
 
 impl Category {
@@ -145,7 +143,11 @@ impl MimeType {
     /// Maps a full content-type header value (e.g. `"image/jpeg"`) to a `MimeType`.
     pub fn from_content_type(content_type: &str) -> MimeType {
         // Strip any parameters like "; charset=utf-8"
-        let base = content_type.split(';').next().unwrap_or(content_type).trim();
+        let base = content_type
+            .split(';')
+            .next()
+            .unwrap_or(content_type)
+            .trim();
         match base {
             "image/jpeg" | "image/jpg" => MimeType::Jpeg(base.to_string()),
             "image/png" => MimeType::Png(base.to_string()),
@@ -209,7 +211,9 @@ impl MimeType {
 }
 
 pub enum MediaType {
-    Image, Video, Audio,
+    Image,
+    Video,
+    Audio,
 }
 
 impl MediaType {
@@ -231,13 +235,12 @@ impl MediaType {
     }
 }
 
-
 #[derive(Debug, Clone)]
 pub enum Position {
     Left,
     Top,
     Bottom,
-    Right
+    Right,
 }
 
 impl Position {
@@ -257,6 +260,40 @@ impl Position {
             Position::Top => "Top".to_string(),
             Position::Bottom => "Bottom".to_string(),
             Position::Right => "Right".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Difficulty {
+    Soft,
+    Easy,
+    Medium,
+    Hard,
+    Strong,
+}
+
+impl Display for Difficulty {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Difficulty::Soft => write!(f, "Soft"),
+            Difficulty::Easy => write!(f, "Easy"),
+            Difficulty::Medium => write!(f, "Medium"),
+            Difficulty::Hard => write!(f, "Hard"),
+            Difficulty::Strong => write!(f, "Strong"),
+        }
+    }
+}
+
+impl Difficulty {
+    pub fn from_string(s: &str) -> Difficulty {
+        match s {
+            "Soft" => Difficulty::Soft,
+            "Easy" => Difficulty::Easy,
+            "Medium" => Difficulty::Medium,
+            "Hard" => Difficulty::Hard,
+            "Strong" => Difficulty::Strong,
+            _ => Difficulty::Soft,
         }
     }
 }

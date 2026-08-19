@@ -1,6 +1,8 @@
 use sea_orm::entity::prelude::*;
 use sea_orm::prelude::async_trait::async_trait;
 use sea_orm::Set;
+pub type WorkoutExerciseEntity = Model;
+
 #[derive(Debug, Clone, PartialEq, Eq, DeriveEntityModel)]
 #[sea_orm(table_name = "workout_exercise")]
 pub struct Model {
@@ -17,24 +19,24 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
-        belongs_to = "super::workout::Entity",
+        belongs_to = "super::workout_entity::Entity",
         from = "Column::WorkoutId",
-        to = "super::workout::Column::Id"
+        to = "super::workout_entity::Column::Id"
     )]
     Workout,
     #[sea_orm(
-        belongs_to = "super::exercise::Entity",
+        belongs_to = "super::exercise_entity::Entity",
         from = "Column::ExerciseId",
-        to = "super::exercise::Column::Id"
+        to = "super::exercise_entity::Column::Id"
     )]
     Exercise,
 }
-impl Related<super::workout::Entity> for Entity {
+impl Related<super::workout_entity::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Workout.def()
     }
 }
-impl Related<super::exercise::Entity> for Entity {
+impl Related<super::exercise_entity::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Exercise.def()
     }

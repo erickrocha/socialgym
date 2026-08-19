@@ -1,7 +1,7 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
 use chrono::NaiveDateTime;
-use entity::profile::{ActiveModel, Model};
+use entity::profile_entity::{ActiveModel, ProfileEntity};
 
 #[derive(Debug, Clone)]
 pub struct Profile {
@@ -37,7 +37,7 @@ impl Profile {
     }
 }
 
-impl EntityMapper<Profile, Model, ActiveModel> for ProfileEntityMapper {
+impl EntityMapper<Profile, ProfileEntity, ActiveModel> for ProfileEntityMapper {
     fn build_active_model(d: Profile) -> ActiveModel {
         ActiveModel {
             id: match d.id {
@@ -57,7 +57,7 @@ impl EntityMapper<Profile, Model, ActiveModel> for ProfileEntityMapper {
         }
     }
 
-    fn from_model(e: Model) -> Profile {
+    fn from_model(e: ProfileEntity) -> Profile {
         Profile {
             id: Some(e.id),
             uuid: Some(uuid_to_string(e.uuid)),

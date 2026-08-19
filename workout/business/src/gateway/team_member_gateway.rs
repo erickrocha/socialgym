@@ -1,8 +1,8 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::team_member::{TeamMember, TeamMemberMapper, TeamMemberStatus};
-use entity::prelude::TeamMember as TeamMemberQuery;
-use entity::team_member;
-use entity::team_member::Column;
+use entity::prelude::TeamMemberEntity as TeamMemberQuery;
+use entity::team_member_entity as team_member;
+use entity::team_member_entity::Column;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
 
 pub struct TeamMemberGateway {}
@@ -16,7 +16,7 @@ impl TeamMemberGateway {
         active_model.save(db).await
     }
 
-    pub async fn update(db: &DbConn, team_member: TeamMember) -> Result<team_member::Model, DbErr> {
+    pub async fn update(db: &DbConn, team_member: TeamMember) -> Result<team_member::TeamMemberEntity, DbErr> {
         let active_model = TeamMemberMapper::build_active_model(team_member);
         active_model.update(db).await
     }
@@ -27,7 +27,7 @@ impl TeamMemberGateway {
         db: &DbConn,
         business_profile_id: i32,
         person_id: i32,
-    ) -> Result<Option<team_member::Model>, DbErr> {
+    ) -> Result<Option<team_member::TeamMemberEntity>, DbErr> {
         TeamMemberQuery::find()
             .filter(Column::BusinessProfileId.eq(business_profile_id))
             .filter(Column::PersonId.eq(person_id))
@@ -39,7 +39,7 @@ impl TeamMemberGateway {
         db: &DbConn,
         business_profile_id: i32,
         status: TeamMemberStatus,
-    ) -> Result<Vec<team_member::Model>, DbErr> {
+    ) -> Result<Vec<team_member::TeamMemberEntity>, DbErr> {
         TeamMemberQuery::find()
             .filter(Column::BusinessProfileId.eq(business_profile_id))
             .filter(Column::Status.eq(status.as_str()))
@@ -51,7 +51,7 @@ impl TeamMemberGateway {
         db: &DbConn,
         person_id: i32,
         status: TeamMemberStatus,
-    ) -> Result<Vec<team_member::Model>, DbErr> {
+    ) -> Result<Vec<team_member::TeamMemberEntity>, DbErr> {
         TeamMemberQuery::find()
             .filter(Column::PersonId.eq(person_id))
             .filter(Column::Status.eq(status.as_str()))

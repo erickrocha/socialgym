@@ -1,7 +1,7 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
 use chrono::NaiveDateTime;
-use entity::business_profile_address::{ActiveModel, Model};
+use entity::business_profile_address_entity::{ActiveModel, BusinessProfileAddressEntity};
 use sea_orm::{NotSet, Set};
 
 #[derive(Debug, Clone)]
@@ -23,7 +23,7 @@ pub struct BusinessProfileAddress {
 
 pub struct BusinessProfileAddressEntityMapper {}
 
-impl EntityMapper<BusinessProfileAddress, Model, ActiveModel>
+impl EntityMapper<BusinessProfileAddress, BusinessProfileAddressEntity, ActiveModel>
     for BusinessProfileAddressEntityMapper
 {
     fn build_active_model(d: BusinessProfileAddress) -> ActiveModel {
@@ -50,7 +50,7 @@ impl EntityMapper<BusinessProfileAddress, Model, ActiveModel>
         }
     }
 
-    fn from_model(e: Model) -> BusinessProfileAddress {
+    fn from_model(e: BusinessProfileAddressEntity) -> BusinessProfileAddress {
         BusinessProfileAddress {
             id: Some(e.id),
             uuid: Some(uuid_to_string(e.uuid)),

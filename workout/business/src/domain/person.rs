@@ -5,7 +5,7 @@ use crate::domain::person_address::PersonAddress;
 use crate::domain::person_info::PersonInfo;
 use crate::domain::user::User;
 use chrono::{NaiveDate, NaiveDateTime};
-use entity::person::{ActiveModel, Model};
+use entity::person_entity::{ActiveModel, PersonEntity};
 use sea_orm::{NotSet, Set};
 
 #[derive(Debug, Clone)]
@@ -29,7 +29,7 @@ pub struct Person {
 
 pub struct PersonEntityMapper {}
 
-impl EntityMapper<Person, Model, ActiveModel> for PersonEntityMapper {
+impl EntityMapper<Person, PersonEntity, ActiveModel> for PersonEntityMapper {
     fn build_active_model(d: Person) -> ActiveModel {
         ActiveModel {
             id: match d.id {
@@ -51,7 +51,7 @@ impl EntityMapper<Person, Model, ActiveModel> for PersonEntityMapper {
         }
     }
 
-    fn from_model(e: Model) -> Person {
+    fn from_model(e: PersonEntity) -> Person {
         Person {
             id: Some(e.id),
             firstname: e.first_name,

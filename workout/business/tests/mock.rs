@@ -62,8 +62,8 @@ mod tests {
         failed_login_attempts: i32,
         locked_until: Option<DateTime<Utc>>,
         token_valid_after: Option<DateTime<Utc>>,
-    ) -> entity::user::Model {
-        entity::user::Model {
+    ) -> entity::user_entity::UserEntity {
+        entity::user_entity::UserEntity {
             id: 1,
             name: Some("John doe".to_string()),
             email: email.to_string(),
@@ -81,8 +81,8 @@ mod tests {
         }
     }
 
-    fn mock_person_model() -> entity::person::Model {
-        entity::person::Model {
+    fn mock_person_model() -> entity::person_entity::PersonEntity {
+        entity::person_entity::PersonEntity {
             id: 1,
             uuid: Uuid::new_v4(),
             first_name: "John".to_string(),
@@ -307,7 +307,7 @@ mod tests {
     #[tokio::test]
     async fn test_person_info_use_case_get_valid_id() {
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
-            .append_query_results(vec![vec![entity::person_info::Model {
+            .append_query_results(vec![vec![entity::person_info_entity::PersonInfoEntity {
                 id: 1,
                 person_id: 1,
                 biography: Some("Test bio".to_string()),
@@ -334,7 +334,7 @@ mod tests {
     #[tokio::test]
     async fn test_person_info_use_case_get_not_found() {
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
-            .append_query_results::<entity::person_info::Model, Vec<_>, Vec<Vec<_>>>(vec![vec![]])
+            .append_query_results::<entity::person_info_entity::PersonInfoEntity, Vec<_>, Vec<Vec<_>>>(vec![vec![]])
             .into_connection();
 
         let result = PersonInfoUseCase::get(&db, 999).await;
@@ -346,7 +346,7 @@ mod tests {
     #[tokio::test]
     async fn test_person_info_use_case_update_valid() {
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
-            .append_query_results(vec![vec![entity::person_info::Model {
+            .append_query_results(vec![vec![entity::person_info_entity::PersonInfoEntity {
                 id: 1,
                 person_id: 1,
                 biography: Some("Test bio".to_string()),
@@ -364,7 +364,7 @@ mod tests {
                 last_insert_id: 1,
                 rows_affected: 1,
             }])
-            .append_query_results(vec![vec![entity::person_info::Model {
+            .append_query_results(vec![vec![entity::person_info_entity::PersonInfoEntity {
                 id: 1,
                 person_id: 1,
                 biography: Some("Updated bio".to_string()),
@@ -414,7 +414,7 @@ mod tests {
                 last_insert_id: 1,
                 rows_affected: 1,
             }])
-            .append_query_results(vec![vec![entity::person_address::Model {
+            .append_query_results(vec![vec![entity::person_address_entity::PersonAddressEntity {
                 id: 1,
                 person_id: 1,
                 address_line1: "123 Main St".to_string(),
@@ -463,7 +463,7 @@ mod tests {
                 last_insert_id: 1,
                 rows_affected: 1,
             }])
-            .append_query_results(vec![vec![entity::person_address::Model {
+            .append_query_results(vec![vec![entity::person_address_entity::PersonAddressEntity {
                 id: 1,
                 uuid: Uuid::new_v4(),
                 person_id: 1,
@@ -522,8 +522,8 @@ mod tests {
     #[tokio::test]
     async fn test_friend_use_case_send_friend_request_valid() {
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
-            .append_query_results(vec![Vec::<entity::friends::Model>::new()])
-            .append_query_results(vec![vec![entity::person::Model {
+            .append_query_results(vec![Vec::<entity::friends_entity::FriendsEntity>::new()])
+            .append_query_results(vec![vec![entity::person_entity::PersonEntity {
                 id: 1,
                 uuid: Uuid::new_v4(),
                 first_name: "John".to_string(),
@@ -535,7 +535,7 @@ mod tests {
                 created_at: chrono::Utc::now(),
                 updated_at: chrono::Utc::now(),
             }]])
-            .append_query_results(vec![vec![entity::person::Model {
+            .append_query_results(vec![vec![entity::person_entity::PersonEntity {
                 id: 2,
                 uuid: Uuid::new_v4(),
                 first_name: "Jane".to_string(),
@@ -551,7 +551,7 @@ mod tests {
                 last_insert_id: 1,
                 rows_affected: 1,
             }])
-            .append_query_results(vec![vec![entity::friends::Model {
+            .append_query_results(vec![vec![entity::friends_entity::FriendsEntity {
                 id: 1,
                 person_id: 1,
                 friend_id: 2,
@@ -576,7 +576,7 @@ mod tests {
     #[tokio::test]
     async fn test_friend_use_case_accept_friend_request() {
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
-            .append_query_results(vec![vec![entity::friends::Model {
+            .append_query_results(vec![vec![entity::friends_entity::FriendsEntity {
                 id: 1,
                 person_id: 1,
                 friend_id: 2,
@@ -591,7 +591,7 @@ mod tests {
                 last_insert_id: 1,
                 rows_affected: 1,
             }])
-            .append_query_results(vec![vec![entity::friends::Model {
+            .append_query_results(vec![vec![entity::friends_entity::FriendsEntity {
                 id: 1,
                 person_id: 1,
                 friend_id: 2,
@@ -617,7 +617,7 @@ mod tests {
         let person_uuid = Uuid::new_v4();
         let friend_uuid = Uuid::new_v4();
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
-            .append_query_results(vec![vec![entity::friends::Model {
+            .append_query_results(vec![vec![entity::friends_entity::FriendsEntity {
                 id: 1,
                 person_id: 1,
                 friend_id: 2,
@@ -632,7 +632,7 @@ mod tests {
                 last_insert_id: 1,
                 rows_affected: 1,
             }])
-            .append_query_results(vec![vec![entity::friends::Model {
+            .append_query_results(vec![vec![entity::friends_entity::FriendsEntity {
                 id: 1,
                 person_id: 1,
                 friend_id: 2,
@@ -659,7 +659,7 @@ mod tests {
     #[tokio::test]
     async fn test_workout_use_case_get_not_found() {
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
-            .append_query_results::<entity::workout::Model, Vec<_>, Vec<Vec<_>>>(vec![vec![]])
+            .append_query_results::<entity::workout_entity::WorkoutEntity, Vec<_>, Vec<Vec<_>>>(vec![vec![]])
             .into_connection();
 
         let result = WorkoutUseCase::get(&db, 999).await;
@@ -678,7 +678,7 @@ mod tests {
                 last_insert_id: 1,
                 rows_affected: 1,
             }])
-            .append_query_results(vec![vec![entity::workout::Model {
+            .append_query_results(vec![vec![entity::workout_entity::WorkoutEntity {
                 id: 1,
                 uuid: uuid.clone(),
                 name: "Push ups".to_string(),
@@ -724,7 +724,7 @@ mod tests {
                 last_insert_id: 1,
                 rows_affected: 1,
             }])
-            .append_query_results(vec![vec![entity::exercise::Model {
+            .append_query_results(vec![vec![entity::exercise_entity::ExerciseEntity {
                 id: 1,
                 uuid: uuid.clone(),
                 name: "Push Ups".to_string(),
@@ -766,7 +766,7 @@ mod tests {
         let uuid = Uuid::new_v4();
         let owner_uuid = Uuid::new_v4();
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
-            .append_query_results(vec![vec![entity::exercise::Model {
+            .append_query_results(vec![vec![entity::exercise_entity::ExerciseEntity {
                 id: 1,
                 uuid: uuid.clone(),
                 name: "Push Ups".to_string(),
@@ -796,7 +796,7 @@ mod tests {
         let uuid = Uuid::new_v4();
         let owner_uuid = Uuid::new_v4();
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
-            .append_query_results(vec![vec![entity::exercise::Model {
+            .append_query_results(vec![vec![entity::exercise_entity::ExerciseEntity {
                 id: 1,
                 uuid: uuid.clone(),
                 name: "Push Ups".to_string(),
@@ -844,7 +844,7 @@ mod tests {
         let uuid = Uuid::new_v4();
         let owner_uuid = Uuid::new_v4();
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
-            .append_query_results(vec![vec![entity::business_profile::Model {
+            .append_query_results(vec![vec![entity::business_profile_entity::BusinessProfileEntity {
                 id: 1,
                 uuid: uuid.clone(),
                 owner_id: 1,
@@ -858,7 +858,7 @@ mod tests {
                 created_at: chrono::Utc::now(),
                 updated_at: chrono::Utc::now(),
             }]])
-            .append_query_results::<entity::business_profile_address::Model, Vec<_>, Vec<Vec<_>>>(
+            .append_query_results::<entity::business_profile_address_entity::BusinessProfileAddressEntity, Vec<_>, Vec<Vec<_>>>(
                 vec![vec![]],
             )
             .into_connection();
@@ -1031,7 +1031,7 @@ mod tests {
                 None,
                 None,
             )]])
-            .append_query_results(vec![vec![entity::revoked_token::Model {
+            .append_query_results(vec![vec![entity::revoked_token_entity::RevokedTokenEntity {
                 id: 1,
                 uuid: Uuid::new_v4(),
                 jti: "revoked-jti".to_string(),
@@ -1135,7 +1135,7 @@ mod tests {
                 last_insert_id: 1,
                 rows_affected: 1,
             }])
-            .append_query_results(vec![vec![entity::revoked_token::Model {
+            .append_query_results(vec![vec![entity::revoked_token_entity::RevokedTokenEntity {
                 id: 1,
                 uuid: Uuid::new_v4(),
                 jti: "some-jti".to_string(),

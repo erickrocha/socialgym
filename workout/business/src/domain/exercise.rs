@@ -1,9 +1,9 @@
 use crate::commons::entity_mapper::EntityMapper;
-use crate::commons::functions::{string_to_uuid, uuid_to_string};
+use crate::commons::functions::{parse_uuid, string_to_uuid, uuid_to_string};
 pub use crate::domain::enums::{Category, Visibility};
 use chrono::NaiveDateTime;
-use entity::exercise::{ActiveModel, Model};
-use sea_orm::{NotSet, Set};
+use entity::exercise_entity::{ActiveModel, ExerciseEntity};
+use sea_orm::{ActiveValue, NotSet, Set};
 
 #[derive(Debug, Clone)]
 pub struct Exercise {
@@ -24,11 +24,17 @@ pub struct Exercise {
 
 pub struct ExerciseEntityMapper {}
 
-impl EntityMapper<Exercise, Model, ActiveModel> for ExerciseEntityMapper {
+impl EntityMapper<Exercise, ExerciseEntity, ActiveModel> for ExerciseEntityMapper {
     fn build_active_model(d: Exercise) -> ActiveModel {
         ActiveModel {
-            id: NotSet,
-            uuid: NotSet,
+            id: match d.id {
+                Some(id) => Set(id),
+                None => NotSet,
+            },
+            uuid: match d.uuid {
+                Some(uuid) => Set(string_to_uuid(uuid.as_str())),
+                None => NotSet,
+            },
             name: Set(d.name),
             owner_id: Set(d.owner_id),
             owner_uuid: Set(string_to_uuid(d.owner_uuid.as_str())),
@@ -43,7 +49,7 @@ impl EntityMapper<Exercise, Model, ActiveModel> for ExerciseEntityMapper {
         }
     }
 
-    fn from_model(e: Model) -> Exercise {
+    fn from_model(e: ExerciseEntity) -> Exercise {
         Exercise {
             id: Some(e.id),
             name: e.name,
@@ -76,64 +82,6 @@ impl EntityMapper<Exercise, Model, ActiveModel> for ExerciseEntityMapper {
             visibility: Visibility::from_string(e.visibility.unwrap().as_str()),
             created_at: Some(e.created_at.unwrap().naive_utc()),
             updated_at: Some(e.updated_at.unwrap().naive_utc()),
-        }
-    }
-}
-
-impl Exercise {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        name: String,
-        owner_id: i32,
-        owner_uuid: String,
-        owner_name: String,
-        description: Option<String>,
-        sets: i32,
-        reps_or_duration: i32,
-        category: Category,
-        visibility: Visibility,
-    ) -> Exercise {
-        Self::update(
-            None,
-            name,
-            owner_id,
-            owner_uuid,
-            owner_name,
-            description,
-            category,
-            sets,
-            reps_or_duration,
-            visibility,
-        )
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn update(
-        id: Option<i32>,
-        name: String,
-        owner_id: i32,
-        owner_uuid: String,
-        owner_name: String,
-        description: Option<String>,
-        category: Category,
-        sets: i32,
-        reps_or_duration: i32,
-        visibility: Visibility,
-    ) -> Exercise {
-        Exercise {
-            id,
-            name,
-            description,
-            owner_id,
-            owner_uuid,
-            owner_name,
-            sets,
-            reps_or_duration,
-            category,
-            uuid: None,
-            visibility,
-            created_at: None,
-            updated_at: None,
         }
     }
 }

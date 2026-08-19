@@ -1,9 +1,13 @@
+use chrono::Utc;
 use sea_orm::entity::prelude::*;
 use sea_orm::prelude::async_trait::async_trait;
 use sea_orm::Set;
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "person_media")]
+pub type ProfileEntity = Model;
+
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
+#[sea_orm(table_name = "profile")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
@@ -11,9 +15,8 @@ pub struct Model {
     pub uuid: Uuid,
     pub person_id: i32,
     pub person_uuid: Uuid,
-    pub mime_type: String,
-    pub album: String,
-    pub s3_key: String,
+    pub business_profile_id: i32,
+    pub business_profile_uuid: Uuid,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }
@@ -21,16 +24,28 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
-        belongs_to = "super::person::Entity",
+        belongs_to = "super::person_entity::Entity",
         from = "Column::PersonId",
-        to = "super::person::Column::Id"
+        to = "super::person_entity::Column::Id"
     )]
     Person,
+    #[sea_orm(
+        belongs_to = "super::business_profile_entity::Entity",
+        from = "Column::BusinessProfileId",
+        to = "super::business_profile_entity::Column::Id"
+    )]
+    BusinessProfile,
 }
 
-impl Related<super::person::Entity> for Entity {
+impl Related<super::person_entity::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Person.def()
+    }
+}
+
+impl Related<super::business_profile_entity::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::BusinessProfile.def()
     }
 }
 
@@ -42,9 +57,9 @@ impl ActiveModelBehavior for ActiveModel {
     {
         if insert {
             self.uuid = Set(Uuid::new_v4());
-            self.created_at = Set(chrono::Utc::now().to_utc());
+            self.created_at = Set(Utc::now());
         }
-        self.updated_at = Set(chrono::Utc::now().to_utc());
+        self.updated_at = Set(Utc::now());
         Ok(self)
     }
 }

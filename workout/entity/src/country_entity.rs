@@ -1,5 +1,7 @@
 use sea_orm::entity::prelude::*;
 
+pub type CountryEntity = Model;
+
 #[derive(Debug, Clone, PartialEq, Eq, DeriveEntityModel)]
 #[sea_orm(table_name = "country")]
 pub struct Model {

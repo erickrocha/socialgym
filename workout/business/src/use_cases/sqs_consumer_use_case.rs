@@ -300,7 +300,7 @@ impl SqsConsumerUseCase {
     /// When `album` is `"avatar"` or `"cover"`, updates the matching column on
     /// the `person` table so the existing image-delivery path keeps working.
     async fn maybe_sync_person_image(db: &DbConn, person_id: i32, album: &str, s3_key: &str) {
-        use entity::person;
+        use entity::person_entity as person;
         use sea_orm::{ActiveModelTrait, ActiveValue::Set};
 
         let update_result = match album {

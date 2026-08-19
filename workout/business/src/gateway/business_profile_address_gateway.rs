@@ -2,14 +2,14 @@ use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::business_profile_address::{
     BusinessProfileAddress, BusinessProfileAddressEntityMapper,
 };
-use entity::business_profile_address;
-use entity::prelude::BusinessProfileAddress as BusinessProfileAddressQuery;
+use entity::business_profile_address_entity as business_profile_address;
+use entity::prelude::BusinessProfileAddressEntity as BusinessProfileAddressQuery;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
 
 pub struct BusinessProfileAddressGateway {}
 
 impl BusinessProfileAddressGateway {
-    pub async fn find_all_by_business_profile_id(db: &DbConn,business_profile_id: i32) -> Result<Vec<business_profile_address::Model>, DbErr> {
+    pub async fn find_all_by_business_profile_id(db: &DbConn,business_profile_id: i32) -> Result<Vec<business_profile_address::BusinessProfileAddressEntity>, DbErr> {
         BusinessProfileAddressQuery::find()
             .filter(
                 business_profile_address::Column::BusinessProfileId.eq(business_profile_id),
@@ -23,7 +23,7 @@ impl BusinessProfileAddressGateway {
         active_model.save(db).await
     }
 
-    pub async fn find_by_id(db: &DbConn,id: i32) -> Result<Option<business_profile_address::Model>, DbErr> {
+    pub async fn find_by_id(db: &DbConn,id: i32) -> Result<Option<business_profile_address::BusinessProfileAddressEntity>, DbErr> {
         BusinessProfileAddressQuery::find()
             .filter(business_profile_address::Column::Id.eq(id))
             .one(db)
