@@ -83,7 +83,7 @@ impl Mapper<Exercise, ExerciseJson> for ExerciseMapper {
             exercise_name: entity.exercise_name,
             owner_id: entity.owner_id,
             owner_name: Some(entity.owner_name),
-            category: Some(entity.category.to_text()),
+            category: Some(entity.category.to_string()),
             visibility: Some(entity.visibility.to_string()),
             set_number: entity.set_number,
             reps_or_duration: entity.reps_or_duration,

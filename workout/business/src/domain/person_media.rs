@@ -24,7 +24,7 @@ impl EntityMapper<PersonMedia, PersonMediaEntity, ActiveModel> for PersonMediaEn
         ActiveModel {
             person_id: sea_orm::Set(d.person_id),
             person_uuid: sea_orm::Set(string_to_uuid(&d.person_uuid)),
-            mime_type: sea_orm::Set(d.mime_type.to_text()),
+            mime_type: sea_orm::Set(d.mime_type.to_string()),
             album: sea_orm::Set(d.album),
             s3_key: sea_orm::Set(d.s3_key),
             ..Default::default()

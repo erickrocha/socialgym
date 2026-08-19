@@ -38,7 +38,7 @@ impl EntityMapper<Settings, SettingsEntity, ActiveModel> for SettingsEntityMappe
             language: Set(d.language),
             theme: Set(d.theme),
             notifications_enabled: Set(d.notifications_enabled),
-            context_menu_position: Set(d.context_menu_position.to_text()),
+            context_menu_position: Set(d.context_menu_position.to_string()),
             home_page: Set(d.home_page),
             created_at: sea_orm::NotSet,
             updated_at: sea_orm::NotSet,

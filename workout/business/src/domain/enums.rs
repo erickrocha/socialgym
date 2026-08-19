@@ -48,13 +48,6 @@ impl ProfileType {
             _ => ProfileType::Professional,
         }
     }
-
-    pub fn to_text(&self) -> String {
-        match self {
-            ProfileType::Professional => "Professional".to_string(),
-            ProfileType::Company => "Company".to_string(),
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -98,18 +91,20 @@ pub enum Category {
     Speed,
 }
 
-impl Category {
-    pub fn to_text(&self) -> String {
+impl Display for Category {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Category::Force => "Force".to_string(),
-            Category::Cardio => "Cardio".to_string(),
-            Category::Hypertrophy => "Hypertrophy".to_string(),
-            Category::Endurance => "Endurance".to_string(),
-            Category::Power => "Power".to_string(),
-            Category::Speed => "Speed".to_string(),
+            Category::Force => write!(f, "Force"),
+            Category::Cardio => write!(f, "Cardio"),
+            Category::Hypertrophy => write!(f, "Hypertrophy"),
+            Category::Endurance => write!(f, "Endurance"),
+            Category::Power => write!(f, "Power"),
+            Category::Speed => write!(f, "Speed"),
         }
     }
+}
 
+impl Category {
     pub fn from_string(s: &str) -> Category {
         match s {
             "Force" => Category::Force,
@@ -137,6 +132,25 @@ pub enum MimeType {
     WebM(String),
     QuickTime(String),
     Unknow(String),
+}
+
+impl Display for MimeType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MimeType::Jpeg(_) => write!(f, "image/jpeg"),
+            MimeType::Png(_) => write!(f, "image/png"),
+            MimeType::Gif(_) => write!(f, "image/gif"),
+            MimeType::WebP(_) => write!(f, "image/webp"),
+            MimeType::Svg(_) => write!(f, "image/svg+xml"),
+            MimeType::Avif(_) => write!(f, "image/avif"),
+            MimeType::Mp4(_) => write!(f, "video/mp4"),
+            MimeType::WebM(_) => write!(f, "video/webm"),
+            MimeType::QuickTime(_) => write!(f, "video/quicktime"),
+            MimeType::Mpeg(_) => write!(f, "audio/mpeg"),
+            MimeType::Aac(_) => write!(f, "audio/aac"),
+            MimeType::Unknow(_) => write!(f, "application/octet-stream"),
+        }
+    }
 }
 
 impl MimeType {
@@ -191,29 +205,22 @@ impl MimeType {
             _ => MimeType::Unknow("application/octet-stream".to_string()),
         }
     }
-
-    pub fn to_text(&self) -> String {
-        match self {
-            MimeType::Jpeg(_) => "image/jpeg".to_string(),
-            MimeType::Png(_) => "image/png".to_string(),
-            MimeType::Gif(_) => "image/gif".to_string(),
-            MimeType::WebP(_) => "image/webp".to_string(),
-            MimeType::Svg(_) => "image/svg+xml".to_string(),
-            MimeType::Avif(_) => "image/avif".to_string(),
-            MimeType::Mp4(_) => "video/mp4".to_string(),
-            MimeType::WebM(_) => "video/webm".to_string(),
-            MimeType::QuickTime(_) => "video/quicktime".to_string(),
-            MimeType::Mpeg(_) => "audio/mpeg".to_string(),
-            MimeType::Aac(_) => "audio/aac".to_string(),
-            MimeType::Unknow(_) => "application/octet-stream".to_string(),
-        }
-    }
 }
 
 pub enum MediaType {
     Image,
     Video,
     Audio,
+}
+
+impl Display for MediaType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MediaType::Image => write!(f, "Image"),
+            MediaType::Video => write!(f, "Video"),
+            MediaType::Audio => write!(f, "Audio"),
+        }
+    }
 }
 
 impl MediaType {
@@ -223,14 +230,6 @@ impl MediaType {
             "Video" => MediaType::Video,
             "Audio" => MediaType::Audio,
             _ => MediaType::Image,
-        }
-    }
-
-    pub fn to_text(&self) -> String {
-        match self {
-            MediaType::Image => "Image".to_string(),
-            MediaType::Video => "Video".to_string(),
-            MediaType::Audio => "Audio".to_string(),
         }
     }
 }
@@ -243,6 +242,17 @@ pub enum Position {
     Right,
 }
 
+impl Display for Position {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Position::Left => write!(f, "Left"),
+            Position::Top => write!(f, "Top"),
+            Position::Bottom => write!(f, "Bottom"),
+            Position::Right => write!(f, "Right"),
+        }
+    }
+}
+
 impl Position {
     pub fn from_string(s: &str) -> Position {
         match s {
@@ -251,15 +261,6 @@ impl Position {
             "Bottom" => Position::Bottom,
             "Right" => Position::Right,
             _ => Position::Left,
-        }
-    }
-
-    pub fn to_text(&self) -> String {
-        match self {
-            Position::Left => "Left".to_string(),
-            Position::Top => "Top".to_string(),
-            Position::Bottom => "Bottom".to_string(),
-            Position::Right => "Right".to_string(),
         }
     }
 }

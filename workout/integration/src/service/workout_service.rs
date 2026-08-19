@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use hyper::StatusCode;
 use business::use_cases::workout_use_case::WorkoutUseCase;
 use crate::service::validate_uuid;
 use sea_orm::DatabaseConnection;

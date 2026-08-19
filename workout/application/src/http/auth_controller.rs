@@ -51,7 +51,7 @@ pub async fn sign_up(
     let person_uuid = person_domain.uuid.unwrap();
 
     log::info!("Creating default user settings when new person is created");
-    let settings = Settings::new(person_id, person_uuid.clone(), locale.to_text(), "default".to_string(), true, Position::Left, "Feed".to_string());
+    let settings = Settings::new(person_id, person_uuid.clone(), locale.to_string(), "default".to_string(), true, Position::Left, "Feed".to_string());
     let settings_use_case = SettingsUseCase::new(SettingsGateway::new((*state.conn).clone()));
     let settings_added = settings_use_case.persist(settings).await;
     if settings_added.is_err() {

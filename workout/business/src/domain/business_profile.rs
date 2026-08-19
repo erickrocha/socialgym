@@ -41,7 +41,7 @@ impl EntityMapper<BusinessProfile, BusinessProfileEntity, ActiveModel> for Busin
             owner_uuid: Set(string_to_uuid(d.owner_uuid.as_str())),
             tax_id: Set(d.tax_id),
             business_name: Set(d.business_name),
-            business_type: Set(d.business_type.to_text()),
+            business_type: Set(d.business_type.to_string()),
             social_name: Set(d.social_name),
             logo: Set(d.logo),
             cover_image: Set(d.cover_image),

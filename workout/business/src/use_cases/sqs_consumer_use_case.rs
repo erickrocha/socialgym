@@ -396,12 +396,12 @@ mod tests {
     #[test]
     fn mime_type_from_content_type_roundtrip() {
         let mime = MimeType::from_content_type("image/jpeg");
-        assert_eq!(mime.to_text(), "image/jpeg");
+        assert_eq!(mime.to_string(), "image/jpeg");
 
         let mime = MimeType::from_content_type("video/mp4");
-        assert_eq!(mime.to_text(), "video/mp4");
+        assert_eq!(mime.to_string(), "video/mp4");
 
         let mime = MimeType::from_content_type("application/octet-stream");
-        assert_eq!(mime.to_text(), "application/octet-stream");
+        assert_eq!(mime.to_string(), "application/octet-stream");
     }
 }

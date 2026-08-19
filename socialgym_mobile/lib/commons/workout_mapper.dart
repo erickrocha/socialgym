@@ -15,6 +15,8 @@ class WorkoutMapper implements Mapper<domain.Workout, $workout.Workout> {
       ownerUuid: domain.ownerUuid,
       name: domain.name,
       description: domain.description,
+      difficulty: _difficultyToProto(domain.difficulty),
+      muscleGroup: domain.muscleGroup,
       createdAt: domain.createdAt?.toIso8601String(),
       updatedAt: domain.updatedAt?.toIso8601String(),
     );
@@ -29,6 +31,7 @@ class WorkoutMapper implements Mapper<domain.Workout, $workout.Workout> {
       ownerUuid: proto.ownerUuid,
       name: proto.name,
       description: proto.description,
+      difficulty: _difficultyFromProto(proto.difficulty),
       createdAt: DateTime.parse(proto.createdAt),
       updatedAt: DateTime.parse(proto.updatedAt),
       exercises: ExerciseMapper().fromProtoList(proto.exercises),
@@ -46,5 +49,32 @@ class WorkoutMapper implements Mapper<domain.Workout, $workout.Workout> {
     return domainList.map((domain) => toProto(domain)).toList();
   }
 
+  String _difficultyToProto(String difficulty) {
+    switch (difficulty.toLowerCase()) {
+      case 'easy':
+        return 'Easy';
+      case 'medium':
+        return 'Medium';
+      case 'hard':
+        return 'Hard';
+      case 'strong':
+        return 'Strong';
+      case 'soft':
+      default:
+        return 'Soft';
+    }
+  }
 
+  String _difficultyFromProto(String difficulty) {
+    switch (difficulty.toLowerCase()) {
+      case 'easy':
+      case 'medium':
+      case 'hard':
+      case 'strong':
+        return difficulty.toLowerCase();
+      case 'soft':
+      default:
+        return 'soft';
+    }
+  }
 }

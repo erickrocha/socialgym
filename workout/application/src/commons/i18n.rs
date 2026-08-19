@@ -1,4 +1,5 @@
 use fluent_templates::{static_loader, Loader};
+use std::fmt::{Display, Formatter};
 use unic_langid::{langid, LanguageIdentifier};
 
 static_loader! {
@@ -16,6 +17,19 @@ pub enum Locale {
     Es,
     Fr,
     Dutch,
+}
+
+impl Display for Locale {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Locale::En => write!(f, "en"),
+            Locale::Pt => write!(f, "pt"),
+            Locale::PtBr => write!(f, "pt-BR"),
+            Locale::Es => write!(f, "es"),
+            Locale::Fr => write!(f, "fr"),
+            Locale::Dutch => write!(f, "nl"),
+        }
+    }
 }
 
 impl Locale {
@@ -51,17 +65,6 @@ impl Locale {
             Locale::Es => langid!("es"),
             Locale::Fr => langid!("fr"),
             Locale::Dutch => langid!("nl"),
-        }
-    }
-
-    pub fn to_text(self) -> String {
-        match self {
-            Locale::En => "en".to_string(),
-            Locale::Pt => "pt".to_string(),
-            Locale::PtBr => "pt-BR".to_string(),
-            Locale::Es => "es".to_string(),
-            Locale::Fr => "fr".to_string(),
-            Locale::Dutch => "nl".to_string(),
         }
     }
 }

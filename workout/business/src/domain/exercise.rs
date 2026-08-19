@@ -1,9 +1,9 @@
 use crate::commons::entity_mapper::EntityMapper;
-use crate::commons::functions::{parse_uuid, string_to_uuid, uuid_to_string};
+use crate::commons::functions::{string_to_uuid, uuid_to_string};
 pub use crate::domain::enums::{Category, Visibility};
 use chrono::NaiveDateTime;
 use entity::exercise_entity::{ActiveModel, ExerciseEntity};
-use sea_orm::{ActiveValue, NotSet, Set};
+use sea_orm::{NotSet, Set};
 
 #[derive(Debug, Clone)]
 pub struct Exercise {
@@ -41,7 +41,7 @@ impl EntityMapper<Exercise, ExerciseEntity, ActiveModel> for ExerciseEntityMappe
             owner_name: Set(d.owner_name),
             description: Set(d.description),
             sets: Set(d.sets),
-            category: Set(d.category.to_text()),
+            category: Set(d.category.to_string()),
             reps_or_duration: Set(d.reps_or_duration),
             visibility: Set(d.visibility.to_string()),
             created_at: NotSet,

@@ -583,8 +583,6 @@ mod tests {
     use crate::domain::friend::{Friend, FriendStatus};
     use chrono::Utc;
     use entity::person_address_entity as person_address;
-    use serde::de::Unexpected::Option;
-
     fn make_address(id: i32, person_id: i32) -> person_address::PersonAddressEntity {
         person_address::PersonAddressEntity {
             id,

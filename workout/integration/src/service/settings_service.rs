@@ -27,7 +27,7 @@ impl GrpcSettingService {
 			language: settings.language,
 			theme: settings.theme,
 			notifications_enabled: settings.notifications_enabled,
-			context_menu_position: settings.context_menu_position.to_text(),
+			context_menu_position: settings.context_menu_position.to_string(),
 			home_page: settings.home_page,
 			created_at: settings.created_at.map(|dt| dt.to_string()).unwrap_or_default(),
 			updated_at: settings.updated_at.map(|dt| dt.to_string()).unwrap_or_default(),

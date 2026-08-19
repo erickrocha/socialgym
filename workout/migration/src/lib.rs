@@ -18,6 +18,7 @@ mod m20260714_000001_create_table_profile;
 mod m20260811_000001_create_table_team_members;
 mod m20260813_000001_add_lockout_columns_to_user;
 mod m20260813_000002_create_table_revoked_token;
+mod m20260819_000001_seed_countries;
 
 pub struct Migrator;
 
@@ -43,6 +44,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260811_000001_create_table_team_members::Migration),
             Box::new(m20260813_000001_add_lockout_columns_to_user::Migration),
             Box::new(m20260813_000002_create_table_revoked_token::Migration),
+            Box::new(m20260819_000001_seed_countries::Migration),
         ]
     }
 }
