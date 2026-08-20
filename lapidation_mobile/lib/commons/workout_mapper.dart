@@ -17,6 +17,7 @@ class WorkoutMapper implements Mapper<domain.Workout, $workout.Workout> {
       description: domain.description,
       difficulty: _difficultyToProto(domain.difficulty),
       muscleGroup: domain.muscleGroup,
+      visibility: domain.visibility,
       createdAt: domain.createdAt?.toIso8601String(),
       updatedAt: domain.updatedAt?.toIso8601String(),
     );
@@ -36,6 +37,7 @@ class WorkoutMapper implements Mapper<domain.Workout, $workout.Workout> {
       updatedAt: DateTime.parse(proto.updatedAt),
       exercises: ExerciseMapper().fromProtoList(proto.exercises),
       muscleGroup: proto.muscleGroup,
+      visibility: proto.visibility,
     );
   }
 

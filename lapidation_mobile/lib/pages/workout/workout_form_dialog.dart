@@ -7,6 +7,7 @@ import '../../models/exercise.dart';
 import '../../models/workout.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/workout_provider.dart';
+import '../../widgets/difficulty_dropdown_field.dart';
 import '../../widgets/visibility_dropdown_field.dart';
 
 enum WorkoutFormMode { save, startSession }
@@ -16,6 +17,7 @@ class WorkoutFormDialog extends StatefulWidget {
   final List<Exercise> initialExercises;
   final String ownerUuid;
   final WorkoutFormMode mode;
+  final Workout? initialWorkout;
 
   const WorkoutFormDialog({
     super.key,
@@ -23,6 +25,7 @@ class WorkoutFormDialog extends StatefulWidget {
     required this.ownerUuid,
     this.initialExercises = const [],
     this.mode = WorkoutFormMode.save,
+    this.initialWorkout,
   });
 
   @override
@@ -40,6 +43,19 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
   final Set<String> _selectedMuscleGroups = {};
 
   @override
+  void initState() {
+    super.initState();
+    final initialWorkout = widget.initialWorkout;
+    if (initialWorkout != null) {
+      _nameController.text = initialWorkout.name;
+      _descriptionController.text = initialWorkout.description ?? '';
+      _difficulty = initialWorkout.difficulty;
+      _visibility = initialWorkout.visibility;
+      _selectedMuscleGroups.addAll(initialWorkout.muscleGroups);
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
@@ -54,6 +70,23 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
     final authProvider = context.read<AuthProvider>();
     final workoutProvider = context.read<WorkoutProvider>();
     final token = authProvider.auth?.accessToken ?? '';
+    final initialWorkout = widget.initialWorkout;
+
+    if (initialWorkout != null) {
+      final updatedWorkout = initialWorkout.copyWith(
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        difficulty: _difficulty,
+        muscleGroup: _selectedMuscleGroups.join('|'),
+        visibility: _visibility,
+      );
+
+      final success = await workoutProvider.updateWorkout(updatedWorkout);
+      if (success && mounted) {
+        Navigator.of(context).pop(true);
+      }
+      return;
+    }
 
     final workoutData = {
       'name': _nameController.text.trim(),
@@ -94,7 +127,10 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
     final l10n = AppLocalizations.of(context)!;
     final workoutProvider = context.watch<WorkoutProvider>();
     final isSaveMode = widget.mode == WorkoutFormMode.save;
-    final dialogTitle = isSaveMode ? l10n.workoutAddNew : l10n.workoutStartSessionTitle;
+    final isEditing = widget.initialWorkout != null;
+    final dialogTitle = isEditing
+        ? l10n.workoutEditTitle
+        : (isSaveMode ? l10n.workoutAddNew : l10n.workoutStartSessionTitle);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -201,22 +237,9 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
                       Row(
                         children: [
                           Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: _difficulty,
+                            child: DifficultyDropdownField(
+                              value: _difficulty,
                               decoration: _inputDecoration(l10n.workoutDifficulty, ''),
-                              items: [
-                                DropdownMenuItem(value: 'soft', child: Text(l10n.difficultySoft)),
-                                DropdownMenuItem(value: 'easy', child: Text(l10n.difficultyEasy)),
-                                DropdownMenuItem(
-                                  value: 'medium',
-                                  child: Text(l10n.difficultyMedium),
-                                ),
-                                DropdownMenuItem(value: 'hard', child: Text(l10n.difficultyHard)),
-                                DropdownMenuItem(
-                                  value: 'strong',
-                                  child: Text(l10n.difficultyStrong),
-                                ),
-                              ],
                               onChanged: (v) => setState(() => _difficulty = v ?? 'soft'),
                             ),
                           ),

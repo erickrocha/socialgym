@@ -657,11 +657,29 @@ abstract class AppLocalizations {
   /// **'Add Workout'**
   String get workoutAddNew;
 
+  /// No description provided for @workoutEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Workout'**
+  String get workoutEditTitle;
+
   /// No description provided for @workoutStartSessionTitle.
   ///
   /// In en, this message translates to:
   /// **'Start Workout Session'**
   String get workoutStartSessionTitle;
+
+  /// No description provided for @workoutDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Workout'**
+  String get workoutDeleteConfirmTitle;
+
+  /// No description provided for @workoutDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this workout?'**
+  String get workoutDeleteConfirm;
 
   /// No description provided for @workoutExercises.
   ///

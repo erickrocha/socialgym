@@ -11,8 +11,14 @@ import '../../widgets/visibility_dropdown_field.dart';
 class ExerciseFormDialog extends StatefulWidget {
   final String workoutUuid;
   final int? workoutId;
+  final String? workoutVisibility;
 
-  const ExerciseFormDialog({super.key, this.workoutId, required this.workoutUuid});
+  const ExerciseFormDialog({
+    super.key,
+    this.workoutId,
+    required this.workoutUuid,
+    this.workoutVisibility,
+  });
 
   @override
   State<ExerciseFormDialog> createState() => _ExerciseFormDialogState();
@@ -27,10 +33,16 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
   final _descriptionFocus = FocusNode();
   final _setsFocus = FocusNode();
   final _repsFocus = FocusNode();
-  String _visibility = 'Private';
+  late String _visibility;
   String _category = 'Force';
 
   final List<Exercise> _exercises = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _visibility = widget.workoutVisibility ?? 'Private';
+  }
 
   @override
   void dispose() {

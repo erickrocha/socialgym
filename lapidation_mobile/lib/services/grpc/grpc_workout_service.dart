@@ -89,6 +89,17 @@ class GrpcWorkoutService {
     }
   }
 
+  static Future<void> deleteWorkout({required String uuid}) async {
+    try {
+      await _ensureClient().deleteWorkout(
+        $workout.WorkoutRequest()..uuid = uuid,
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to delete workout');
+    }
+  }
+
   static Future<Workout> addExercisesToWorkout({required String workoutUuid, required List<Exercise> exercises}) async {
     try {
       final response = await _ensureClient().addExercisesToWorkout(

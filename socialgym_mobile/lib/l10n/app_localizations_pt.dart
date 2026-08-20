@@ -293,7 +293,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get workoutAddNew => 'Adicionar Treino';
 
   @override
+  String get workoutEditTitle => 'Editar Treino';
+
+  @override
   String get workoutStartSessionTitle => 'Iniciar sessão de treino';
+
+  @override
+  String get workoutDeleteConfirmTitle => 'Eliminar Treino';
+
+  @override
+  String get workoutDeleteConfirm =>
+      'Tem a certeza de que pretende eliminar este treino?';
 
   @override
   String get workoutExercises => 'exercícios';
@@ -1691,7 +1701,17 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get workoutAddNew => 'Adicionar Treino';
 
   @override
+  String get workoutEditTitle => 'Editar Treino';
+
+  @override
   String get workoutStartSessionTitle => 'Iniciar sessão de treino';
+
+  @override
+  String get workoutDeleteConfirmTitle => 'Excluir Treino';
+
+  @override
+  String get workoutDeleteConfirm =>
+      'Tem certeza de que deseja excluir este treino?';
 
   @override
   String get workoutExercises => 'exercícios';

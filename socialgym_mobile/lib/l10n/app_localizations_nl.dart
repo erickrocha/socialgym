@@ -290,7 +290,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get workoutAddNew => 'Training Toevoegen';
 
   @override
+  String get workoutEditTitle => 'Training Bewerken';
+
+  @override
   String get workoutStartSessionTitle => 'Trainingssessie starten';
+
+  @override
+  String get workoutDeleteConfirmTitle => 'Training Verwijderen';
+
+  @override
+  String get workoutDeleteConfirm =>
+      'Weet je zeker dat je deze training wilt verwijderen?';
 
   @override
   String get workoutExercises => 'oefeningen';

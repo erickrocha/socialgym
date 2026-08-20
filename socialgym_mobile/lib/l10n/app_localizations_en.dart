@@ -290,7 +290,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workoutAddNew => 'Add Workout';
 
   @override
+  String get workoutEditTitle => 'Edit Workout';
+
+  @override
   String get workoutStartSessionTitle => 'Start Workout Session';
+
+  @override
+  String get workoutDeleteConfirmTitle => 'Delete Workout';
+
+  @override
+  String get workoutDeleteConfirm =>
+      'Are you sure you want to delete this workout?';
 
   @override
   String get workoutExercises => 'exercises';

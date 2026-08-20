@@ -12,12 +12,14 @@ void main() {
         name: 'Upper body',
         difficulty: 'hard',
         muscleGroup: 'chest|arms',
+        visibility: 'Public',
       );
 
       final mapped = WorkoutMapper().toProto(workout);
 
       expect(mapped.difficulty, 'Hard');
       expect(mapped.muscleGroup, 'chest|arms');
+      expect(mapped.visibility, 'Public');
     });
 
     test('normalizes Rust difficulty when deserializing', () {
@@ -27,6 +29,7 @@ void main() {
         name: 'Leg day',
         difficulty: 'Strong',
         muscleGroup: 'legs|core',
+        visibility: 'Friends',
         createdAt: '2026-08-19T12:00:00.000Z',
         updatedAt: '2026-08-19T12:00:00.000Z',
       );
@@ -35,6 +38,7 @@ void main() {
 
       expect(mapped.difficulty, 'strong');
       expect(mapped.muscleGroup, 'legs|core');
+      expect(mapped.visibility, 'Friends');
     });
   });
 }

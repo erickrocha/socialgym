@@ -79,6 +79,60 @@ class WorkoutProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateWorkout(Workout workout) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final updated = await GrpcWorkoutService.update(workout: workout);
+      _workouts = _workouts.map((w) => w.id == updated.id ? updated : w).toList();
+      if (_selectedWorkout?.id == updated.id) {
+        _selectedWorkout = updated;
+      }
+      _loading = false;
+      notifyListeners();
+      return true;
+    } on AppException catch (e) {
+      _error = e.message;
+      _loading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'Connection error. Please try again.';
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteWorkout(String uuid) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await GrpcWorkoutService.deleteWorkout(uuid: uuid);
+      _workouts = _workouts.where((w) => w.uuid != uuid).toList();
+      if (_selectedWorkout?.uuid == uuid) {
+        _selectedWorkout = null;
+      }
+      _loading = false;
+      notifyListeners();
+      return true;
+    } on AppException catch (e) {
+      _error = e.message;
+      _loading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'Connection error. Please try again.';
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> addExercisesToWorkout(String workoutUuid,List<Exercise> exercises) async {
     _loading = true;
     _error = null;

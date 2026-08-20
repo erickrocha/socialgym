@@ -12,7 +12,9 @@ import '../../services/base_service.dart';
 import '../../widgets/visibility_dropdown_field.dart';
 
 class AddExerciseDialog extends StatefulWidget {
-  const AddExerciseDialog({super.key});
+  final String? workoutVisibility;
+
+  const AddExerciseDialog({super.key, this.workoutVisibility});
 
   @override
   State<AddExerciseDialog> createState() => _AddExerciseDialogState();
@@ -29,9 +31,15 @@ class _AddExerciseDialogState extends State<AddExerciseDialog> {
   final _repsFocus = FocusNode();
 
   String _category = 'Force';
-  String _visibility = 'Private';
+  late String _visibility;
   bool _isLoading = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _visibility = widget.workoutVisibility ?? 'Private';
+  }
 
   @override
   void dispose() {
