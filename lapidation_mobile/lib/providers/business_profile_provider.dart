@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../models/business_profile.dart';
 import '../models/business_profile_address.dart';
+import '../services/base_service.dart';
 import '../services/grpc/grpc_business_profile_service.dart';
 import '../services/upload_service.dart';
 
@@ -26,6 +27,11 @@ class BusinessProfileProvider extends ChangeNotifier {
       _loading = false;
       notifyListeners();
       return true;
+    } on AppException catch (e) {
+      _error = e.message;
+      _loading = false;
+      notifyListeners();
+      return false;
     } catch (_) {
       _error = 'Failed to load business profile.';
       _loading = false;
@@ -43,6 +49,11 @@ class BusinessProfileProvider extends ChangeNotifier {
       _updating = false;
       notifyListeners();
       return true;
+    } on AppException catch (e) {
+      _error = e.message;
+      _updating = false;
+      notifyListeners();
+      return false;
     } catch (_) {
       _error = 'Failed to update business profile.';
       _updating = false;
@@ -61,6 +72,11 @@ class BusinessProfileProvider extends ChangeNotifier {
       _updating = false;
       notifyListeners();
       return loadSuccess;
+    } on AppException catch (e) {
+      _error = e.message;
+      _updating = false;
+      notifyListeners();
+      return false;
     } catch (_) {
       _error = 'Failed to add address.';
       _updating = false;
@@ -79,6 +95,11 @@ class BusinessProfileProvider extends ChangeNotifier {
       _updating = false;
       notifyListeners();
       return loadSuccess;
+    } on AppException catch (e) {
+      _error = e.message;
+      _updating = false;
+      notifyListeners();
+      return false;
     } catch (_) {
       _error = 'Failed to update address.';
       _updating = false;
@@ -103,6 +124,11 @@ class BusinessProfileProvider extends ChangeNotifier {
       _updating = false;
       notifyListeners();
       return loadSuccess;
+    } on AppException catch (e) {
+      _error = e.message;
+      _updating = false;
+      notifyListeners();
+      return false;
     } catch (_) {
       _error = 'Failed to remove address.';
       _updating = false;

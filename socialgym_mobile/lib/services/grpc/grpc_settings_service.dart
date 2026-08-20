@@ -2,6 +2,7 @@ import 'package:grpc/grpc.dart' as grpc;
 import 'package:socialgym_mobile/commons/settings_mapper.dart';
 import 'package:socialgym_mobile/models/enums.dart';
 import 'package:socialgym_mobile/models/settings.dart';
+import 'package:socialgym_mobile/services/base_service.dart';
 import 'package:socialgym_mobile/services/grpc/grpc_channel_factory.dart';
 
 import '../../config/api_config.dart';
@@ -32,7 +33,7 @@ class GrpcSettingsService {
       return SettingsMapper().fromProto(response);
     } on grpc.GrpcError catch (e) {
       if (e.code == grpc.StatusCode.notFound) return null;
-      rethrow;
+      throw BaseService.handleGrpcError(e, 'Failed to load settings');
     }
   }
 
@@ -40,11 +41,15 @@ class GrpcSettingsService {
   /// server's copy. Callers must pass through the previously-loaded
   /// `id`/`uuid` (if any) or the backend will insert a duplicate row.
   static Future<Settings> persistSettings(Settings settings) async {
-    final response = await _ensureClient().persistSettings(
-      SettingsMapper().toProto(settings),
-      options: grpc.CallOptions(timeout: ApiConfig.timeout),
-    );
-    return SettingsMapper().fromProto(response);
+    try {
+      final response = await _ensureClient().persistSettings(
+        SettingsMapper().toProto(settings),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return SettingsMapper().fromProto(response);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to save settings');
+    }
   }
 
   /// The backend's `Position::from_string`

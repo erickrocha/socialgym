@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:grpc/grpc.dart' as grpc;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socialgym_mobile/models/business_profile.dart';
@@ -157,13 +156,6 @@ class PersonProvider extends ChangeNotifier {
       _updating = false;
       notifyListeners();
       return false;
-    } on grpc.GrpcError catch (e, stackTrace) {
-      _error = e.message ?? 'Failed to update profile. Please try again.';
-      debugPrint('Failed to update person via gRPC: $e');
-      debugPrintStack(stackTrace: stackTrace);
-      _updating = false;
-      notifyListeners();
-      return false;
     } catch (e, stackTrace) {
       _error = 'Failed to update profile. Please try again.';
       debugPrint('Unexpected error while updating person: $e');
@@ -193,13 +185,6 @@ class PersonProvider extends ChangeNotifier {
     } on AppException catch (e) {
       _error = e.message;
       debugPrint('Failed to update person info: $e');
-      _updating = false;
-      notifyListeners();
-      return false;
-    } on grpc.GrpcError catch (e, stackTrace) {
-      _error = e.message ?? 'Failed to update profile info. Please try again.';
-      debugPrint('Failed to update person info via gRPC: $e');
-      debugPrintStack(stackTrace: stackTrace);
       _updating = false;
       notifyListeners();
       return false;
@@ -441,6 +426,11 @@ class PersonProvider extends ChangeNotifier {
       _updating = false;
       notifyListeners();
       return newAuth;
+    } on AppException catch (e) {
+      _error = e.message;
+      _updating = false;
+      notifyListeners();
+      return null;
     } catch (e) {
       _error = 'Failed to switch profile.';
       _updating = false;

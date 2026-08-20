@@ -1,6 +1,7 @@
 import 'package:grpc/grpc.dart' as grpc;
 import 'package:lapidation_mobile/commons/country_mapper.dart';
 import 'package:lapidation_mobile/commons/settings_mapper.dart';
+import 'package:lapidation_mobile/services/base_service.dart';
 import 'package:lapidation_mobile/services/grpc/grpc_channel_factory.dart';
 import 'package:lapidation_mobile/src/generated/grpc/resource.pbgrpc.dart'
     as $resource;
@@ -35,12 +36,16 @@ class GrpcResourceService {
   }
 
   static Future<AppResources> fetchResources({required int id}) async {
-    final response = await _ensureClient().getResource(
-      $resource.ResourceRequest()..userId = id,
-      options: grpc.CallOptions(timeout: ApiConfig.timeout),
-    );
-    final countries = CountryMapper().fromProtoList(response.countries);
-    final settings = SettingsMapper().fromProto(response.setting);
-    return AppResources(countries: countries, settings: settings);
+    try {
+      final response = await _ensureClient().getResource(
+        $resource.ResourceRequest()..userId = id,
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      final countries = CountryMapper().fromProtoList(response.countries);
+      final settings = SettingsMapper().fromProto(response.setting);
+      return AppResources(countries: countries, settings: settings);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to load resources');
+    }
   }
 }

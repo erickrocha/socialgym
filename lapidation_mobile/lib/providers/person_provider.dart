@@ -411,6 +411,11 @@ class PersonProvider extends ChangeNotifier {
       _updating = false;
       notifyListeners();
       return newAuth;
+    } on AppException catch (e) {
+      _error = e.message;
+      _updating = false;
+      notifyListeners();
+      return null;
     } catch (e) {
       _error = 'Failed to switch profile.';
       _updating = false;

@@ -7,6 +7,7 @@ import 'package:socialgym_mobile/models/settings.dart';
 import 'package:socialgym_mobile/services/grpc/grpc_resource_service.dart';
 
 import '../models/resource.dart';
+import '../services/base_service.dart';
 
 class ResourceProvider extends ChangeNotifier {
   AppResources? _resources;
@@ -62,9 +63,14 @@ class ResourceProvider extends ChangeNotifier {
       _loading = false;
       notifyListeners();
       return true;
+    } on AppException catch (e) {
+      _loading = false;
+      _error = e.message;
+      notifyListeners();
+      return false;
     } catch (e) {
       _loading = false;
-      _error = e.toString();
+      _error = 'Connection error. Please try again.';
       notifyListeners();
       return false;
     }
