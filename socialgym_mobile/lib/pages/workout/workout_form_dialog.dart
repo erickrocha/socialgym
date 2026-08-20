@@ -5,7 +5,6 @@ import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../../models/workout.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/workout_provider.dart';
 import '../../widgets/difficulty_dropdown_field.dart';
 import '../../widgets/visibility_dropdown_field.dart';
@@ -67,9 +66,7 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
   Future<void> _handleSaveWorkout() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final authProvider = context.read<AuthProvider>();
     final workoutProvider = context.read<WorkoutProvider>();
-    final token = authProvider.auth?.accessToken ?? '';
     final initialWorkout = widget.initialWorkout;
 
     if (initialWorkout != null) {
@@ -88,18 +85,17 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
       return;
     }
 
-    final workoutData = {
-      'name': _nameController.text.trim(),
-      'description': _descriptionController.text.trim(),
-      'difficulty': _difficulty,
-      'muscleGroup': _selectedMuscleGroups.join('|'),
-      'visibility': _visibility,
-      'ownerId': widget.ownerId,
-      'ownerUuid': widget.ownerUuid,
-      'exercises': widget.initialExercises.map((e) => e.toJson()).toList(),
-    };
+    final workoutData = Workout(
+        ownerId: widget.ownerId,
+        ownerUuid: widget.ownerUuid,
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        difficulty: _difficulty,
+        muscleGroup: _selectedMuscleGroups.join('|'),
+        visibility: _visibility,
+        exercises: widget.initialExercises);
 
-    final success = await workoutProvider.addWorkout(workoutData, token);
+    final success = await workoutProvider.addWorkout(workoutData);
     if (success && mounted) {
       Navigator.of(context).pop(true);
     }

@@ -275,7 +275,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
         const SizedBox(width: 8),
         _SummaryCard(
           icon: Icons.bar_chart,
-          value: '${totalVolume.toStringAsFixed(0)} kg',
+          value: '${totalVolume.toStringAsFixed(3)} kg',
           label: l10n.executionTotalVolume,
           color: AppColors.secondary,
         ),
@@ -621,7 +621,7 @@ class _SessionCard extends StatelessWidget {
                 ),
                 _StatChip(
                   icon: Icons.fitness_center,
-                  label: '${session.totalVolume.toStringAsFixed(0)} kg',
+                  label: '${session.totalVolume.toStringAsFixed(3)} kg',
                   color: AppColors.third,
                 ),
               ],

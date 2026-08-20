@@ -25,8 +25,6 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   bool _isEditingReps = false;
   late double _editWeight;
   late int _editRepsOrDuration;
-  int _elapsedSeconds = 0;
-  Timer? _timer;
   late DateTime _startAt;
 
   late PageController _pageController;
@@ -39,20 +37,12 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     _editWeight = exercise?.weight ?? 0;
     _editRepsOrDuration = exercise?.repsOrDuration ?? 0;
     _startAt = DateTime.now();
-    _startTimer();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _pageController.dispose();
     super.dispose();
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _elapsedSeconds++);
-    });
   }
 
   List<dynamic> get _exercises => widget.workout.exercises;
@@ -67,12 +57,6 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     final totalSetsAll = _exercises.fold<int>(0, (acc, ex) => acc + (ex.sets as int));
     if (totalSetsAll == 0) return 0;
     return (_executedSets.length / totalSetsAll) * 100;
-  }
-
-  String _formatTime(int seconds) {
-    final mins = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
   int _completedSetsForExercise(int exerciseIdx) {
@@ -192,11 +176,10 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   }
 
   void _completeWorkout() {
-    _timer?.cancel();
     final session = {
       'workoutId': widget.workout.id,
       'workoutName': widget.workout.name,
-      'duration': _elapsedSeconds,
+      'duration': DateTime.now().difference(_startAt).inSeconds,
       'executedSets': _executedSets,
       'startedAt': _startAt.toIso8601String(),
     };
@@ -297,21 +280,14 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                 onPressed: () => _showExitConfirmation(l10n),
               ),
               Expanded(
-                child: Column(
-                  children: [
-                    Text(
-                      widget.workout.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '⏱️ ${_formatTime(_elapsedSeconds)}',
-                      style: TextStyle(color: Colors.white.withAlpha(204), fontSize: 14),
-                    ),
-                  ],
+                child: Text(
+                  widget.workout.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
               const SizedBox(width: 48),
@@ -878,7 +854,9 @@ class _ValueBoxState extends State<_ValueBox> {
   void didUpdateWidget(_ValueBox oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isEditMode != widget.isEditMode && widget.isEditMode) {
-      _controller.text = '';
+      _controller.text =
+          widget.value.toStringAsFixed(widget.value == widget.value.roundToDouble() ? 0 : 1);
+      _controller.selection = TextSelection(baseOffset: 0, extentOffset: _controller.text.length);
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted && _focusNode.canRequestFocus) {
           _focusNode.requestFocus();

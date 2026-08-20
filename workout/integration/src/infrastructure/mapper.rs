@@ -365,10 +365,10 @@ impl Mapper<DomainWorkout, proto::workout::Workout> for WorkoutMapper {
             owner_uuid: u.owner_uuid,
             name: u.name,
             description: Some(u.description),
-            difficulty: Difficulty::from_string(u.difficulty.as_str()),
+            difficulty: Difficulty::from_string(&u.difficulty.to_lowercase()),
             muscle_group: u.muscle_group,
             exercises: ExerciseMapper::domain_vec(u.exercises),
-            visibility: Visibility::from_string(&u.visibility),
+            visibility: Visibility::from_string(&u.visibility.to_lowercase()),
             created_at: NaiveDateTime::parse_from_str(&u.created_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
             updated_at: NaiveDateTime::parse_from_str(&u.updated_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
         }

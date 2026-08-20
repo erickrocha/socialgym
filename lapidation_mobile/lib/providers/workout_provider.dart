@@ -55,13 +55,13 @@ class WorkoutProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> addWorkout(Map<String, dynamic> workoutData, String token) async {
+  Future<bool> addWorkout(Workout workoutData) async {
     _loading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final workout = await GrpcWorkoutService.createWorkout(workout: Workout.fromJson(workoutData));
+      final workout = await GrpcWorkoutService.createWorkout(workout: workoutData);
       _workouts = [..._workouts, workout];
       _loading = false;
       notifyListeners();

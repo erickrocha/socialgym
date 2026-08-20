@@ -114,7 +114,7 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
     final name = widget.workoutSession['workoutName'] as String? ?? '';
     final duration = widget.workoutSession['duration'] as int? ?? 0;
     final sets = _getCompletedSets();
-    final volume = _getTotalVolume().toStringAsFixed(0);
+    final volume = _getTotalVolume().toStringAsFixed(3);
     return '💪 ${l10n.feedShareWorkoutSummary}\n'
         '🏋️ $name\n'
         '⏱️ ${l10n.executionDuration}: ${_formatDuration(duration)}\n'
@@ -213,7 +213,7 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                           Container(width: 1, height: 48, color: Colors.grey.withAlpha(50)),
                           _StatItem(
                             icon: '🏋️',
-                            value: _getTotalVolume().toStringAsFixed(0),
+                            value: _getTotalVolume().toStringAsFixed(3),
                             label: '${l10n.executionTotalVolume} (${l10n.workoutWeightUnit})',
                           ),
                         ],

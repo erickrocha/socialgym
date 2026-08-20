@@ -125,7 +125,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
                           _WhiteChip(icon: Icons.repeat, label: '${session.totalSets} sets'),
                           _WhiteChip(
                             icon: Icons.fitness_center,
-                            label: '${session.totalVolume.toStringAsFixed(0)} kg',
+                            label: '${session.totalVolume.toStringAsFixed(3)} kg',
                           ),
                         ],
                       ),
