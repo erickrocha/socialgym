@@ -75,8 +75,8 @@ class Settings {
     return Settings(
       id: id ?? this.id,
       uuid: uuid ?? this.uuid,
-      ownerId: personId ?? this.ownerId,
-      ownerUuid: personUuid ?? this.ownerUuid,
+      ownerId: personId ?? ownerId,
+      ownerUuid: personUuid ?? ownerUuid,
       language: language ?? this.language,
       theme: theme ?? this.theme,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,

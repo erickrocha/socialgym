@@ -6,9 +6,12 @@ services:
     ports:
       - '80:80'
       - '443:443'
+      # Listener cleartext h2c — upstream do ngrok (ver nginx.conf)
+      - '8080:8080'
     volumes:
       - ./certs:/etc/nginx/certs:ro
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./locations.conf:/etc/nginx/locations.conf:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
