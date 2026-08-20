@@ -68,8 +68,7 @@ class _SignInPageState extends State<SignInPage> {
       // Only fetch resources if settings are not already cached
       // This avoids redundant API calls when settings exist locally
       if (!settingsProvider.hasSettingsCached()) {
-        await resourceProvider.fetchResources(
-          token,
+        await resourceProvider.fetchResources(personProvider.ownerId,
           onSettingsReceived: (settings) async {
             await settingsProvider.applySettings(settings);
             if (settings.language != null) {
@@ -79,7 +78,7 @@ class _SignInPageState extends State<SignInPage> {
         );
       } else {
         // Settings already cached locally; fetch only resources (countries, etc)
-        await resourceProvider.fetchResources(token);
+        await resourceProvider.fetchResources(personProvider.ownerId);
       }
 
       if (mounted) {
@@ -127,8 +126,7 @@ class _SignInPageState extends State<SignInPage> {
       await personProvider.restoreActiveBusinessProfileFromToken(token);
 
       // Fetch resources and apply settings
-      await resourceProvider.fetchResources(
-        token,
+      await resourceProvider.fetchResources(personProvider.ownerId,
         onSettingsReceived: (settings) async {
           await settingsProvider.applySettings(settings);
           if (settings.language != null) {

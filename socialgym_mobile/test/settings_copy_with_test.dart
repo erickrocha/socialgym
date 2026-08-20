@@ -8,8 +8,8 @@ void main() {
       final original = Settings(
         id: 42,
         uuid: 'setting-uuid',
-        personId: 7,
-        personUuid: 'person-uuid',
+        ownerId: 7,
+        ownerUuid: 'person-uuid',
         language: 'en',
         theme: 'dark',
         notificationsEnabled: false,
@@ -21,8 +21,8 @@ void main() {
 
       expect(updated.id, 42);
       expect(updated.uuid, 'setting-uuid');
-      expect(updated.personId, 7);
-      expect(updated.personUuid, 'person-uuid');
+      expect(updated.ownerId, 7);
+      expect(updated.ownerUuid, 'person-uuid');
       expect(updated.theme, 'dark');
       expect(updated.notificationsEnabled, false);
       expect(updated.contextMenuPosition, ContextMenuPosition.right);

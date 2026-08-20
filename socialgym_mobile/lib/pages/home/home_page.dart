@@ -80,7 +80,7 @@ class _FeedPageState extends State<FeedPage> {
       personProvider.fetchMe();
     }
     if (resourceProvider.resources == null) {
-      resourceProvider.fetchResources(token);
+      resourceProvider.fetchResources(personProvider.ownerId);
     }
     final businessProfileUuid = personProvider.activeBusinessProfile?.uuid;
     feedProvider.fetchPostsForProfile(

@@ -10,7 +10,6 @@ import '../../providers/person_provider.dart';
 import '../../providers/resource_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/language_selector.dart';
-import '../../widgets/brand_logo.dart';
 import 'package:lapidation_mobile/pages/sign_up/sign_up_page.dart';
 
 class SignInPage extends StatefulWidget {
@@ -56,8 +55,7 @@ class _SignInPageState extends State<SignInPage> {
   Future<void> _handleAuthCheck() async {
     final authProvider = context.read<AuthProvider>();
 
-    if (authProvider.isAuthenticated &&
-        authProvider.auth?.accessToken != null) {
+    if (authProvider.isAuthenticated && authProvider.auth?.accessToken != null) {
       final personProvider = context.read<PersonProvider>();
       final resourceProvider = context.read<ResourceProvider>();
       final settingsProvider = context.read<SettingsProvider>();
@@ -70,8 +68,7 @@ class _SignInPageState extends State<SignInPage> {
       // Only fetch resources if settings are not already cached
       // This avoids redundant API calls when settings exist locally
       if (!settingsProvider.hasSettingsCached()) {
-        await resourceProvider.fetchResources(
-          token,
+        await resourceProvider.fetchResources(personProvider.ownerId,
           onSettingsReceived: (settings) async {
             await settingsProvider.applySettings(settings);
             if (settings.language != null) {
@@ -81,7 +78,7 @@ class _SignInPageState extends State<SignInPage> {
         );
       } else {
         // Settings already cached locally; fetch only resources (countries, etc)
-        await resourceProvider.fetchResources(token);
+        await resourceProvider.fetchResources(personProvider.ownerId);
       }
 
       if (mounted) {
@@ -129,8 +126,7 @@ class _SignInPageState extends State<SignInPage> {
       await personProvider.restoreActiveBusinessProfileFromToken(token);
 
       // Fetch resources and apply settings
-      await resourceProvider.fetchResources(
-        token,
+      await resourceProvider.fetchResources(personProvider.ownerId,
         onSettingsReceived: (settings) async {
           await settingsProvider.applySettings(settings);
           if (settings.language != null) {
@@ -180,9 +176,7 @@ class _SignInPageState extends State<SignInPage> {
                 builder: (context, constraints) {
                   return SingleChildScrollView(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
                       child: Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: isDesktop ? 48 : 24,
@@ -201,10 +195,7 @@ class _SignInPageState extends State<SignInPage> {
             ),
 
             // Footer with language selector
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
-              child: LanguageSelectorButton(),
-            ),
+            const Padding(padding: EdgeInsets.only(bottom: 8), child: LanguageSelectorButton()),
           ],
         ),
       ),
@@ -223,15 +214,12 @@ class _SignInPageState extends State<SignInPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Logo on the left
-            BrandLogo(size: logoWidth * .72),
+            Image.asset('assets/images/logo.png', width: logoWidth, height: logoWidth),
 
             const SizedBox(width: 32),
 
             // Form on the right
-            SizedBox(
-              width: screenWidth >= 1024 ? 450 : 400,
-              child: _buildFormCard(l10n),
-            ),
+            SizedBox(width: screenWidth >= 1024 ? 450 : 400, child: _buildFormCard(l10n)),
           ],
         ),
       ),
@@ -243,7 +231,7 @@ class _SignInPageState extends State<SignInPage> {
     return Column(
       children: [
         // Logo
-        const BrandLogo(size: 150),
+        Image.asset('assets/images/logo.png', width: 150, height: 150),
 
         const SizedBox(height: 32),
 
@@ -260,11 +248,7 @@ class _SignInPageState extends State<SignInPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(25),
-            blurRadius: 6,
-            offset: const Offset(0, 4),
-          ),
+          BoxShadow(color: Colors.black.withAlpha(25), blurRadius: 6, offset: const Offset(0, 4)),
         ],
       ),
       child: Consumer<AuthProvider>(
@@ -285,10 +269,7 @@ class _SignInPageState extends State<SignInPage> {
                     ),
                     child: Text(
                       authProvider.error!,
-                      style: const TextStyle(
-                        color: AppColors.danger,
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(color: AppColors.danger, fontSize: 14),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -302,8 +283,7 @@ class _SignInPageState extends State<SignInPage> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   decoration: _inputDecoration(l10n.signInEmail),
-                  onFieldSubmitted: (_) =>
-                      FocusScope.of(context).requestFocus(_passwordFocus),
+                  onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_passwordFocus),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return l10n.validationEmailRequired;
@@ -322,8 +302,7 @@ class _SignInPageState extends State<SignInPage> {
                   textInputAction: TextInputAction.done,
                   decoration: _inputDecoration(l10n.signInPassword),
                   onFieldSubmitted: (_) => {
-                    if (!context.read<AuthProvider>().loading)
-                      {_handleSignIn()},
+                    if (!context.read<AuthProvider>().loading) {_handleSignIn()},
                   },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -344,25 +323,17 @@ class _SignInPageState extends State<SignInPage> {
                       backgroundColor: AppColors.primary,
                       disabledBackgroundColor: AppColors.primaryDisabled,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     ),
                     child: authProvider.loading
                         ? const SizedBox(
                             width: 24,
                             height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
                         : Text(
                             l10n.signInSubmit,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                           ),
                   ),
                 ),
@@ -376,10 +347,7 @@ class _SignInPageState extends State<SignInPage> {
                   },
                   child: Text(
                     l10n.signInForgotPassword,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: AppColors.primary, fontSize: 14),
                   ),
                 ),
 
@@ -393,10 +361,7 @@ class _SignInPageState extends State<SignInPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         l10n.signInOr,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
+                        style: const TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                     ),
                     const Expanded(child: Divider()),
@@ -413,26 +378,19 @@ class _SignInPageState extends State<SignInPage> {
                         ? null
                         : () {
                             authProvider.clearError();
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const SignUpPage(),
-                              ),
-                            );
+                            Navigator.of(
+                              context,
+                            ).push(MaterialPageRoute(builder: (_) => const SignUpPage()));
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondary,
                       disabledBackgroundColor: AppColors.secondaryDisabled,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     ),
                     child: Text(
                       l10n.signInCreateAccount,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
