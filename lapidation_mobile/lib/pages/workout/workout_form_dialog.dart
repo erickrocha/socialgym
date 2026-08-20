@@ -5,7 +5,6 @@ import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../../models/workout.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/workout_provider.dart';
 import '../../widgets/difficulty_dropdown_field.dart';
 import '../../widgets/visibility_dropdown_field.dart';
