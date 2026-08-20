@@ -1,3 +1,4 @@
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let protoc = protoc_bin_vendored::protoc_bin_path()?;
     // SAFETY: build scripts are single-threaded during initialization here and need
@@ -20,6 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         proto_dir.join("settings.proto"),
         proto_dir.join("user.proto"),
         proto_dir.join("workout.proto"),
+        proto_dir.join("resource.proto"),
     ];
 
     for proto in &proto_files {

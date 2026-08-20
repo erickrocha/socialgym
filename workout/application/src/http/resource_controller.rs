@@ -27,29 +27,17 @@ use business::use_cases::setings_use_case::SettingsUseCase;
 		("bearer_auth" = [])
 	)
 )]
-pub async fn get_resource(
-    State(state): State<AppState>,
-    Extension(current_user): Extension<User>,
-    Extension(locale): Extension<Locale>,
-) -> HttpResponse<Json<ResourceJson>> {
+pub async fn get_resource(State(state): State<AppState>,Extension(current_user): Extension<User>,Extension(locale): Extension<Locale>) -> HttpResponse<Json<ResourceJson>> {
     let countries_response = ResourceUseCase::get_countries(state.conn.as_ref()).await;
 
     if countries_response.is_err() {
-        return Err(ExceptionResponse::NotFound(
-            locale,
-            ErrorKey::ResourcesNotFound,
-        ));
+        return Err(ExceptionResponse::NotFound(locale,ErrorKey::ResourcesNotFound));
     }
 
     let setting_use_case = SettingsUseCase::new(SettingsGateway::new((*state.conn).clone()));
-    let settings_response = setting_use_case
-        .get_by_owner_id(current_user.id.unwrap())
-        .await;
+    let settings_response = setting_use_case.get_by_owner_id(current_user.id.unwrap()).await;
     if settings_response.is_err() {
-        return Err(ExceptionResponse::NotFound(
-            locale,
-            ErrorKey::ResourcesNotFound,
-        ));
+        return Err(ExceptionResponse::NotFound(locale,ErrorKey::ResourcesNotFound));
     }
 
     let countries = CountryMapper::json_vec(countries_response.unwrap());

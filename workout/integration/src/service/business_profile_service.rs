@@ -8,11 +8,12 @@ use crate::proto::business_profile::{
     RemoveBusinessProfileAddressResponse,
 };
 use crate::proto::business_profile_address::BusinessProfileAddress;
-use crate::service::validate_uuid;
+
 use business::use_cases::business_profile_address_use_case::BusinessProfileAddressUseCase;
 use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
 use sea_orm::DatabaseConnection;
 use tonic::{Request, Response, Status};
+use crate::infrastructure::utils::validate_uuid;
 
 pub struct GrpcBusinessProfileService {
     conn: Arc<DatabaseConnection>,

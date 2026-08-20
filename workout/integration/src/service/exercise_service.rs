@@ -2,11 +2,11 @@ use crate::infrastructure::mapper::{ExerciseMapper, Mapper};
 use crate::proto::exercise::exercise_request::Identifier;
 use crate::proto::exercise::exercise_service_server::ExerciseService;
 use crate::proto::exercise::{Exercise, ExerciseParams, ExerciseRequest, PaginatedExercise};
-use crate::service::{business_status, validate_uuid, validate_uuids};
 use business::use_cases::exercise_use_case::ExerciseUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
+use crate::infrastructure::utils::{business_status, validate_uuid, validate_uuids};
 
 pub struct GrpcExerciseService {
     conn: Arc<DatabaseConnection>,

@@ -1,6 +1,5 @@
 use crate::proto::settings::settings_service_server::SettingsService;
 use crate::proto::settings::{Setting, SettingIdRequest, SettingOwnerIdRequest};
-use crate::service::validate_uuid;
 use business::domain::enums::Position;
 use business::domain::settings::Settings;
 use business::gateway::settings_gateway::SettingsGateway;
@@ -8,6 +7,7 @@ use business::use_cases::setings_use_case::SettingsUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
+use crate::infrastructure::utils::validate_uuid;
 
 pub struct GrpcSettingService {
     conn: Arc<DatabaseConnection>,
@@ -103,10 +103,7 @@ impl SettingsService for GrpcSettingService {
         }
     }
 
-    async fn get_by_uuid(
-        &self,
-        request: Request<SettingIdRequest>,
-    ) -> Result<Response<Setting>, Status> {
+    async fn get_by_uuid(&self,request: Request<SettingIdRequest>) -> Result<Response<Setting>, Status> {
         let req = request.into_inner();
         validate_uuid(&req.uuid, "uuid")?;
         let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
@@ -121,10 +118,7 @@ impl SettingsService for GrpcSettingService {
         }
     }
 
-    async fn get_by_owner_ids(
-        &self,
-        request: Request<SettingOwnerIdRequest>,
-    ) -> Result<Response<Setting>, Status> {
+    async fn get_by_owner_ids(&self,request: Request<SettingOwnerIdRequest>) -> Result<Response<Setting>, Status> {
         let req = request.into_inner();
         let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
 

@@ -36,3 +36,7 @@ pub mod settings {
     tonic::include_proto!("grpc.settings");
 }
 
+pub mod resource {
+    tonic::include_proto!("grpc.resource");
+}
+

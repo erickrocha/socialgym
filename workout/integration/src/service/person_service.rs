@@ -19,8 +19,8 @@ use business::use_cases::person_use_case::PersonUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
+use crate::infrastructure::utils::validate_uuid;
 use crate::proto::person::person_params::ParamIdentifier;
-use crate::service::validate_uuid;
 
 pub struct GrpcPersonService {
     conn: Arc<DatabaseConnection>,

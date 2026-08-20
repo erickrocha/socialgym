@@ -16,7 +16,7 @@ class GrpcWorkoutService {
   static Future<Workout> getWorkoutsById({required int id}) async {
     final response = await _ensureClient().getWorkout(
       $workout.WorkoutRequest()..id = id,
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return WorkoutMapper().fromProto(response);
   }
@@ -36,7 +36,7 @@ class GrpcWorkoutService {
   static Future<Workout> getWorkoutByUuid({required String uuid}) async {
     final response = await _ensureClient().getWorkout(
       $workout.WorkoutRequest()..uuid = uuid,
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return WorkoutMapper().fromProto(response);
   }
@@ -45,7 +45,7 @@ class GrpcWorkoutService {
       {required String ownerUuid}) async {
     final response = await _ensureClient().getWorkoutsByOwner(
       $workout.WorkoutListRequest()..ownerUuid = ownerUuid,
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return WorkoutMapper().fromProtoList(response.workouts);
   }
@@ -54,7 +54,7 @@ class GrpcWorkoutService {
     final mapper = WorkoutMapper();
     final response = await _ensureClient().addWorkout(
       $workout.Workout()..mergeFromMessage(mapper.toProto(workout)),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return mapper.fromProto(response);
   }
@@ -63,7 +63,7 @@ class GrpcWorkoutService {
     final mapper = WorkoutMapper();
     final response = await _ensureClient().updateWorkout(
       $workout.Workout()..mergeFromMessage(mapper.toProto(workout)),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return mapper.fromProto(response);
   }
@@ -73,7 +73,7 @@ class GrpcWorkoutService {
       $workout.WorkoutExercisesRequest()
         ..workoutUuid = workoutUuid
         ..exercises.addAll(exercises.map((e) => ExerciseMapper().toProto(e))),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return WorkoutMapper().fromProto(response);
   }

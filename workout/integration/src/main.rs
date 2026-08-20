@@ -14,6 +14,7 @@ use crate::proto::business_profile::business_profile_service_server::BusinessPro
 use crate::proto::exercise::exercise_service_server::ExerciseServiceServer;
 use crate::proto::friend::friend_service_server::FriendServiceServer;
 use crate::proto::person::person_service_server::PersonServiceServer;
+use crate::proto::resource::resource_service_server::ResourceServiceServer;
 use crate::proto::settings::settings_service_server::SettingsServiceServer;
 use crate::proto::team_member::team_member_service_server::TeamMemberServiceServer;
 use crate::proto::workout::workout_service_server::WorkoutServiceServer;
@@ -21,6 +22,7 @@ use crate::service::business_profile_service::GrpcBusinessProfileService;
 use crate::service::exercise_service::GrpcExerciseService;
 use crate::service::friend_service::GrpcFriendService;
 use crate::service::person_service::GrpcPersonService;
+use crate::service::resource_service::GrpcResourceService;
 use crate::service::settings_service::GrpcSettingService;
 use crate::service::team_member_service::GrpcTeamMemberService;
 use crate::service::workout_service::GrpcWorkoutService;
@@ -55,6 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let settings_service  = GrpcSettingService::new(Arc::clone(&conn));
     let exercise_service = GrpcExerciseService::new(Arc::clone(&conn));
     let team_member_service = GrpcTeamMemberService::new(Arc::clone(&conn));
+    let resource_service  = GrpcResourceService::new(Arc::clone(&conn));
     let reflection = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
         .build_v1()?;
@@ -82,6 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_service(auth_layer.clone().service(SettingsServiceServer::new(settings_service)))
         .add_service(auth_layer.clone().service(ExerciseServiceServer::new(exercise_service)))
         .add_service(auth_layer.clone().service(TeamMemberServiceServer::new(team_member_service)))
+        .add_service(auth_layer.clone().service(ResourceServiceServer::new(resource_service)))
         .serve(addr)
         .await?;
     log::info!("Server created and services registered");

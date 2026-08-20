@@ -48,7 +48,7 @@ class GrpcPersonService {
 
     final response = await _ensureClient().searchMentionableFriends(
       $person.SearchMentionableFriendsRequest(personId: personId, query: normalized, limit: limit),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
 
     return response.people
@@ -67,7 +67,7 @@ class GrpcPersonService {
   static Future<Person> getPerson({int? id,String? uuid}) async {
     final response = await _ensureClient().getPerson(
       $person.PersonIdRequest(id: id, uuid: uuid),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
 
     return PersonMapper().fromProto(response.person);
@@ -78,7 +78,7 @@ class GrpcPersonService {
   static Future<Person> getMe() async {
     final response = await _ensureClient().getMe(
       $person.GetMeRequest(),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return PersonMapper().fromProto(response.person);
   }
@@ -86,7 +86,7 @@ class GrpcPersonService {
   static Future<Person> updatePerson(Person domain) async {
     final response = await _ensureClient().updatePerson(
       PersonMapper().toProto(domain),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return PersonMapper().fromProto(response.person);
   }
@@ -94,7 +94,7 @@ class GrpcPersonService {
   static Future<PersonInfo> updatePersonInfo(PersonInfo domain) async {
     final response = await _ensureClient().updatePersonInfo(
       PersonInfoMapper().toProto(domain),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return PersonInfoMapper().fromProto(response);
   }
@@ -102,7 +102,7 @@ class GrpcPersonService {
   static Future<PersonAddress> addPersonAddress(PersonAddress domain) async {
     final response = await _ensureClient().addPersonAddress(
       PersonAddressMapper().toProto(domain),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return PersonAddressMapper().fromProto(response);
   }
@@ -110,7 +110,7 @@ class GrpcPersonService {
   static Future<PersonAddress> updatePersonAddress(PersonAddress domain) async {
     final response = await _ensureClient().updatePersonAddress(
       PersonAddressMapper().toProto(domain),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return PersonAddressMapper().fromProto(response);
   }
@@ -118,7 +118,7 @@ class GrpcPersonService {
   static Future<bool> removePersonAddress({int? id, String? uuid}) async {
     final response = await _ensureClient().removePersonAddress(
       $person.RemovePersonAddressRequest(id: id ?? 0, uuid: uuid ?? ''),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return response.success;
   }
@@ -129,7 +129,7 @@ class GrpcPersonService {
   }) async {
     final response = await _ensureClient().getPersonImageUploadUrl(
       $person.PersonImageUploadRequest(imageType: imageType, format: format),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return PersonImageUploadUrl(url: response.url, objectKey: response.objectKey);
   }
@@ -137,7 +137,7 @@ class GrpcPersonService {
   static Future<bool> deletePersonImage({required String imageType}) async {
     final response = await _ensureClient().deletePersonImage(
       $person.PersonImageRequest(imageType: imageType),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return response.success;
   }
@@ -165,7 +165,7 @@ class GrpcPersonService {
       $person.PersonParams()..uuid = uuid
         ..query = query
         ..limit = limit,
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return PersonMapper().fromProtoList(response.people);
   }

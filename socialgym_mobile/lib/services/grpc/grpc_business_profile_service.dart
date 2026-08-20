@@ -15,7 +15,7 @@ class GrpcBusinessProfileService {
   static Future<BusinessProfile> getBusinessProfileById({int? id, String? uuid}) async {
     final response = await _ensureClient().getBusinessProfileById(
       $bp.BusinessProfileRequestId(id: id ?? 0, uuid: uuid ?? ''),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return BusinessProfileMapper().fromProto(response);
   }
@@ -23,7 +23,7 @@ class GrpcBusinessProfileService {
   static Future<List<BusinessProfile>> getBusinessProfileByOwnerId({int? ownerId, String? ownerUuid}) async {
     final response = await _ensureClient().getBusinessProfileByOwnerId(
       $bp.BusinessProfileRequestOwnerId(ownerId: ownerId ?? 0, ownerUuid: ownerUuid ?? ''),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return BusinessProfileMapper().fromProtoList(response.businessProfiles);
   }
@@ -31,7 +31,7 @@ class GrpcBusinessProfileService {
   static Future<BusinessProfile> addBusinessProfile(BusinessProfile profile) async {
     final response = await _ensureClient().addBusinessProfile(
       BusinessProfileMapper().toProto(profile),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return BusinessProfileMapper().fromProto(response);
   }
@@ -39,7 +39,7 @@ class GrpcBusinessProfileService {
   static Future<BusinessProfile> updateBusinessProfile(BusinessProfile profile) async {
     final response = await _ensureClient().updateBusinessProfile(
         BusinessProfileMapper().toProto(profile),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return BusinessProfileMapper().fromProto(response);
   }
@@ -47,7 +47,7 @@ class GrpcBusinessProfileService {
   static Future<BusinessProfileAddress> addBusinessProfileAddress(BusinessProfileAddress address) async {
     final response = await _ensureClient().addBusinessProfileAddress(
       BusinessProfileAddressMapper().toProto(address),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return BusinessProfileAddressMapper().fromProto(response);
   }
@@ -55,7 +55,7 @@ class GrpcBusinessProfileService {
   static Future<BusinessProfileAddress> updateBusinessProfileAddress(BusinessProfileAddress address) async {
     final response = await _ensureClient().updateBusinessProfileAddress(
       BusinessProfileAddressMapper().toProto(address),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return BusinessProfileAddressMapper().fromProto(response);
   }
@@ -63,7 +63,7 @@ class GrpcBusinessProfileService {
   static Future<bool> removeBusinessProfileAddress({int? id, String? uuid}) async {
     final response = await _ensureClient().removeBusinessProfileAddress(
       $bp.RemoveBusinessProfileAddressRequest(id: id ?? 0, uuid: uuid ?? ''),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return response.success;
   }

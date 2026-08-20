@@ -405,7 +405,8 @@ pub struct CountryMapper {}
 impl Mapper<Country, CountryJson> for CountryMapper {
     fn json(t: Country) -> CountryJson {
         CountryJson {
-            id: Some(t.id),
+            id: t.id,
+            ddi: Some(t.ddi),
             name: Some(t.name),
             acronym: Some(t.acronym),
             currency: Some(t.currency),
@@ -414,7 +415,8 @@ impl Mapper<Country, CountryJson> for CountryMapper {
 
     fn domain(u: CountryJson) -> Country  {
         Country {
-            id: u.id.unwrap(),
+            id: u.id,
+            ddi: u.ddi.unwrap(),
             name: u.name.unwrap(),
             acronym: u.acronym.unwrap(),
             currency: u.currency.unwrap(),

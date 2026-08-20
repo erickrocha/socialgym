@@ -7,6 +7,7 @@ pub type CountryEntity = Model;
 pub struct Model {
 	#[sea_orm(primary_key)]
 	pub id: i32,
+	pub ddi: String,
 	pub name: String,
 	pub acronym: String,
 	pub currency: String,

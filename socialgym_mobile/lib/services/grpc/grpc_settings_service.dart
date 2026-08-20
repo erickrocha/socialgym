@@ -26,7 +26,7 @@ class GrpcSettingsService {
     try {
       final response = await _ensureClient().getByOwnerIds(
         $settings.SettingOwnerIdRequest(ownerId: ownerId, ownerUuid: ownerUuid),
-        options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
       );
       return toDomain(response);
     } on grpc.GrpcError catch (e) {
@@ -41,7 +41,7 @@ class GrpcSettingsService {
   static Future<Settings> persistSettings(Settings settings) async {
     final response = await _ensureClient().persistSettings(
       toProto(settings),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return toDomain(response);
   }

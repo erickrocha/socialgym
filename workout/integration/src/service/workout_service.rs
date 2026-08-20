@@ -5,13 +5,13 @@ use crate::proto::workout::workout_service_server::WorkoutService;
 use crate::proto::workout::{
     Workout, WorkoutExercisesRequest, WorkoutListRequest, WorkoutRequest, WorkoutResponse,
 };
-use crate::service::{business_status, validate_uuid};
 use business::domain::exercise::Exercise;
 use business::use_cases::exercise_use_case::ExerciseUseCase;
 use business::use_cases::workout_use_case::WorkoutUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
+use crate::infrastructure::utils::{business_status, validate_uuid};
 
 pub struct GrpcWorkoutService {
     conn: Arc<DatabaseConnection>,
@@ -25,10 +25,7 @@ impl GrpcWorkoutService {
 
 #[tonic::async_trait]
 impl WorkoutService for GrpcWorkoutService {
-    async fn get_workout(
-        &self,
-        request: Request<WorkoutRequest>,
-    ) -> Result<Response<Workout>, Status> {
+    async fn get_workout(&self,request: Request<WorkoutRequest>) -> Result<Response<Workout>, Status> {
         let req = request.into_inner();
         match req.identifier {
             Some(Identifier::Id(id)) => {
@@ -52,10 +49,7 @@ impl WorkoutService for GrpcWorkoutService {
         }
     }
 
-    async fn get_workouts_by_owner(
-        &self,
-        request: Request<WorkoutListRequest>,
-    ) -> Result<Response<WorkoutResponse>, Status> {
+    async fn get_workouts_by_owner(&self,request: Request<WorkoutListRequest>) -> Result<Response<WorkoutResponse>, Status> {
         let req = request.into_inner();
         match req.identifier {
             Some(OwnerIdentifier::OwnerId(owner_id)) => {
@@ -104,10 +98,7 @@ impl WorkoutService for GrpcWorkoutService {
         Ok(Response::new(grpc_workout))
     }
 
-    async fn delete_workout(
-        &self,
-        request: Request<WorkoutRequest>,
-    ) -> Result<Response<()>, Status> {
+    async fn delete_workout(&self,request: Request<WorkoutRequest>) -> Result<Response<()>, Status> {
         let payload = request.into_inner();
         match payload.identifier {
             Some(Identifier::Id(id)) => {
@@ -129,14 +120,10 @@ impl WorkoutService for GrpcWorkoutService {
         }
     }
 
-    async fn add_exercises_to_workout(
-        &self,
-        request: Request<WorkoutExercisesRequest>,
-    ) -> Result<Response<Workout>, Status> {
+    async fn add_exercises_to_workout(&self,request: Request<WorkoutExercisesRequest>) -> Result<Response<Workout>, Status> {
         let payload = request.into_inner();
         validate_uuid(&payload.workout_uuid, "workout_uuid")?;
-        let workout_result =
-            WorkoutUseCase::get_by_uuid(&self.conn, payload.workout_uuid.clone()).await;
+        let workout_result =WorkoutUseCase::get_by_uuid(&self.conn, payload.workout_uuid.clone()).await;
 
         let workout = workout_result.map_err(business_status)?;
 

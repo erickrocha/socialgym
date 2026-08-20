@@ -16,7 +16,7 @@ class GrpcTeamMemberService {
   static Future<TeamMemberPageData> getTeamMemberPage({int? businessProfileId, int? personId}) async {
     final response = await _ensureClient().getTeamMemberPage(
       $tm.TeamMemberPageRequest(businessProfileId: businessProfileId ?? 0, personId: personId ?? 0),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return TeamMemberPageMapper().fromProto(response);
   }
@@ -24,7 +24,7 @@ class GrpcTeamMemberService {
   static Future<TeamMember> getTeamMember({required int businessProfileId, required int personId}) async {
     final response = await _ensureClient().getTeamMember(
       $tm.TeamMemberRequest(businessProfileId: businessProfileId, personId: personId),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return TeamMemberMapper().fromProto(response);
   }
@@ -32,7 +32,7 @@ class GrpcTeamMemberService {
   static Future<TeamMember> sendTeamMemberRequest({required int businessProfileId, required int personId}) async {
     final response = await _ensureClient().sendTeamMemberRequest(
       $tm.TeamMemberRequest(businessProfileId: businessProfileId, personId: personId),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return TeamMemberMapper().fromProto(response);
   }
@@ -40,7 +40,7 @@ class GrpcTeamMemberService {
   static Future<TeamMember> acceptTeamMemberRequest({required int businessProfileId, required int personId}) async {
     final response = await _ensureClient().acceptTeamMemberRequest(
       $tm.TeamMemberRequest(businessProfileId: businessProfileId, personId: personId),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return TeamMemberMapper().fromProto(response);
   }
@@ -48,7 +48,7 @@ class GrpcTeamMemberService {
   static Future<TeamMember> denyTeamMemberRequest({required int businessProfileId, required int personId}) async {
     final response = await _ensureClient().denyTeamMemberRequest(
       $tm.TeamMemberRequest(businessProfileId: businessProfileId, personId: personId),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return TeamMemberMapper().fromProto(response);
   }
@@ -56,7 +56,7 @@ class GrpcTeamMemberService {
   static Future<TeamMember> cancelTeamMemberRequest({required int businessProfileId, required int personId}) async {
     final response = await _ensureClient().cancelTeamMemberRequest(
       $tm.TeamMemberRequest(businessProfileId: businessProfileId, personId: personId),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),
     );
     return TeamMemberMapper().fromProto(response);
   }

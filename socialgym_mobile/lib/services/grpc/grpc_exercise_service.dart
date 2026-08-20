@@ -31,28 +31,28 @@ class GrpcExerciseService {
   static Future<Exercise> getExercise({required int id}) async {
     final response = await _ensureClient().getExercise(
       $exercise.ExerciseRequest()..id = id,
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),);
+      options: grpc.CallOptions(timeout: ApiConfig.timeout));
     return ExerciseMapper().fromProto(response);
   }
 
   static Future<Exercise> getExerciseByUuid({required String uuid}) async {
     final response = await _ensureClient().getExercise(
       $exercise.ExerciseRequest()..uuid = uuid,
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),);
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),);
     return ExerciseMapper().fromProto(response);
   }
 
   static Future<Exercise> addExercise({required Exercise exercise}) async {
     final response = await _ensureClient().addExercise(
       ExerciseMapper().toProto(exercise),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),);
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),);
     return ExerciseMapper().fromProto(response);
   }
 
   static Future<Exercise> updateExercise({required Exercise exercise}) async {
     final response = await _ensureClient().updateExercise(
       ExerciseMapper().toProto(exercise),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),);
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),);
     return ExerciseMapper().fromProto(response);
   }
 
@@ -74,7 +74,7 @@ class GrpcExerciseService {
         ..pageNumber = Int64(pageNumber)
         ..pageSize = Int64(pageSize)
         ..sortBy = sortBy,
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),);
+      options: grpc.CallOptions(timeout: ApiConfig.timeout),);
     return fromProtoPaginated(response);
   }
 

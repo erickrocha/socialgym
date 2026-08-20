@@ -268,7 +268,8 @@ impl Mapper<DomainFriend, proto::friend::Friend> for FriendMapper {
 impl Mapper<DomainCountry, proto::country::Country> for CountryMapper {
     fn response(t: DomainCountry) -> proto::country::Country {
         proto::country::Country {
-            id: t.id,
+            id: t.id.unwrap(),
+            ddi: t.ddi,
             name: t.name,
             acronym: t.acronym,
             currency: t.currency,
@@ -277,7 +278,8 @@ impl Mapper<DomainCountry, proto::country::Country> for CountryMapper {
 
     fn domain(u: proto::country::Country) -> DomainCountry {
         DomainCountry {
-            id: u.id,
+            id: Some(u.id),
+            ddi: u.ddi,
             name: u.name,
             acronym: u.acronym,
             currency: u.currency,
