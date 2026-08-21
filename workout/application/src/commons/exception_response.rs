@@ -21,6 +21,8 @@ pub enum ExceptionResponse {
     Conflict(Locale, ErrorKey),
 
     InternalServerError(Locale, ErrorKey),
+
+    TooManyRequests(Locale, ErrorKey),
 }
 
 impl ExceptionResponse {
@@ -58,6 +60,9 @@ impl IntoResponse for ExceptionResponse {
             }
             ExceptionResponse::InternalServerError(locale, key) => {
                 (axum::http::StatusCode::INTERNAL_SERVER_ERROR, locale, key)
+            }
+            ExceptionResponse::TooManyRequests(locale, key) => {
+                (axum::http::StatusCode::TOO_MANY_REQUESTS, locale, key)
             }
         };
 

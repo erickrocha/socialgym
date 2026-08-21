@@ -4,7 +4,7 @@ use chrono::NaiveDateTime;
 use entity::user_entity::{ActiveModel, UserEntity};
 use sea_orm::{NotSet, Set};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct User {
     pub id: Option<i32>,
     pub uuid: Option<String>,
@@ -20,6 +20,29 @@ pub struct User {
     pub failed_login_attempts: i32,
     pub locked_until: Option<NaiveDateTime>,
     pub token_valid_after: Option<NaiveDateTime>,
+}
+
+/// Redacts `password` so `log::info!("{:?}", user)` can never leak a hash (or,
+/// worse, a plaintext password mid-signup) into logs.
+impl std::fmt::Debug for User {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("User")
+            .field("id", &self.id)
+            .field("uuid", &self.uuid)
+            .field("email", &self.email)
+            .field("name", &self.name)
+            .field("password", &"[redacted]")
+            .field("enabled", &self.enabled)
+            .field("first_login", &self.first_login)
+            .field("person_id", &self.person_id)
+            .field("person_uuid", &self.person_uuid)
+            .field("created_at", &self.created_at)
+            .field("updated_at", &self.updated_at)
+            .field("failed_login_attempts", &self.failed_login_attempts)
+            .field("locked_until", &self.locked_until)
+            .field("token_valid_after", &self.token_valid_after)
+            .finish()
+    }
 }
 
 pub struct UserEntityMapper {}

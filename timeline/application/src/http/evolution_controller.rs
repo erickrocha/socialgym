@@ -7,7 +7,7 @@ use crate::http::json::error_response_json::{
 use crate::http::json::evolution_check_in_json::EvolutionCheckInJson;
 use crate::infrastructure::data_tools::opt_naive_to_bson_datetime;
 use crate::infrastructure::mapper::{EvolutionCheckInMapper, Mapper};
-use axum::extract::{Query, Request, State};
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
 use business::gateway::evolution_check_in_gateway::EvolutionCheckInGateway;
@@ -42,6 +42,7 @@ pub struct EvolutionCheckInFilterParams {
 pub async fn add(
     state: State<AppState>,
     Extension(locale): Extension<Locale>,
+    Extension(current_user): Extension<User>,
     Json(payload): Json<EvolutionCheckInJson>,
 ) -> HttpResponse<(StatusCode, Json<EvolutionCheckInJson>)> {
     let domain = EvolutionCheckInMapper::domain(payload);
@@ -49,16 +50,13 @@ pub async fn add(
     let evolution_check_in_use_case =
         EvolutionCheckInUseCase::new(EvolutionCheckInGateway::new(&state.database.clone()));
 
-    let entity = evolution_check_in_use_case.add(domain).await;
+    let evolution_check_in = evolution_check_in_use_case
+        .add(domain, &current_user.person_uuid)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::EvolutionCheckInAddFailed)
+        })?;
 
-    if entity.is_err() {
-        return Err(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::EvolutionCheckInAddFailed,
-        ));
-    }
-
-    let evolution_check_in = entity.unwrap();
     let payload = EvolutionCheckInMapper::json(evolution_check_in);
     Ok((StatusCode::CREATED, Json(payload)))
 }
@@ -85,9 +83,8 @@ pub async fn add(
 pub async fn get_by_owner(
     state: State<AppState>,
     Query(params): Query<EvolutionCheckInFilterParams>,
-    req: Request,
+    Extension(current_user): Extension<User>,
 ) -> HttpResponse<Json<Vec<EvolutionCheckInJson>>> {
-    let current_user = req.extensions().get::<User>().unwrap();
     let person_uuid = current_user.person_uuid.clone();
     let end = params.end_date.unwrap_or_else(|| Utc::now().naive_utc());
     let start = params.start_date.unwrap_or_else(|| end - Duration::days(7));

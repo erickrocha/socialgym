@@ -123,7 +123,9 @@ pub enum ErrorKey {
 
     SettingsNotFound,
     SettingsAddedFailed,
-    SettingsUpdatedFailed
+    SettingsUpdatedFailed,
+
+    RateLimited,
 }
 
 impl ErrorKey {
@@ -171,6 +173,7 @@ impl ErrorKey {
             ErrorKey::SettingsNotFound => "SettingsNotFound",
             ErrorKey::SettingsAddedFailed => "SettingsAddedFailed",
             ErrorKey::SettingsUpdatedFailed => "SettingsUpdatedFailed",
+            ErrorKey::RateLimited => "RateLimited",
         }
     }
 
@@ -218,6 +221,7 @@ impl ErrorKey {
             ErrorKey::SettingsNotFound => "settings-not-found",
             ErrorKey::SettingsAddedFailed => "settings-added-failed",
             ErrorKey::SettingsUpdatedFailed => "settings-updated-failed",
+            ErrorKey::RateLimited => "rate-limited",
         }
     }
 }

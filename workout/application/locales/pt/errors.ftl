@@ -44,3 +44,4 @@ exercises-not-added = Falha ao adicionar exercícios
 settings-not-found = Configurações não encontradas
 settings-not-updated = Configurações não atualizadas
 settings-not-added = Configurações não adicionadas
+rate-limited = Muitas solicitações. Tente novamente mais tarde.

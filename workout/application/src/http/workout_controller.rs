@@ -11,6 +11,7 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
 use business::domain::exercise::Exercise;
+use business::domain::user::User;
 use business::use_cases::exercise_use_case::ExerciseUseCase;
 use business::use_cases::workout_use_case::WorkoutUseCase;
 
@@ -25,10 +26,13 @@ fn workout_error(
 pub async fn get_workout_by_id(
     State(state): State<AppState>,
     Path(id): Path<i32>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<WorkoutJson>> {
     let workout = WorkoutUseCase::get(&state.conn, id)
         .await
+        .map_err(|error| workout_error(error, locale))?;
+    WorkoutUseCase::ensure_readable(&workout, current_user.person_id)
         .map_err(|error| workout_error(error, locale))?;
     Ok(Json(WorkoutMapper::json(workout)))
 }
@@ -37,10 +41,13 @@ pub async fn get_workout_by_id(
 pub async fn get_workout_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<WorkoutJson>> {
     let workout = WorkoutUseCase::get_by_uuid(&state.conn, uuid)
         .await
+        .map_err(|error| workout_error(error, locale))?;
+    WorkoutUseCase::ensure_readable(&workout, current_user.person_id)
         .map_err(|error| workout_error(error, locale))?;
     Ok(Json(WorkoutMapper::json(workout)))
 }
@@ -60,10 +67,11 @@ pub async fn get_workouts_by_owner_uuid(
 #[utoipa::path(put, path = "/workout/api/workouts")]
 pub async fn update_workout(
     State(state): State<AppState>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<WorkoutJson>,
 ) -> HttpResponse<Json<WorkoutJson>> {
-    let workout = WorkoutUseCase::persist(&state.conn, WorkoutMapper::domain(payload))
+    let workout = WorkoutUseCase::persist(&state.conn, WorkoutMapper::domain(payload), &current_user)
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutAddFailed)
@@ -75,9 +83,10 @@ pub async fn update_workout(
 pub async fn delete_workout_by_id(
     State(state): State<AppState>,
     Path(id): Path<i32>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<StatusCode> {
-    WorkoutUseCase::delete_by_id(&state.conn, id)
+    WorkoutUseCase::delete_by_id(&state.conn, id, current_user.person_id)
         .await
         .map_err(|error| workout_error(error, locale))?;
     Ok(StatusCode::NO_CONTENT)
@@ -87,9 +96,10 @@ pub async fn delete_workout_by_id(
 pub async fn delete_workout_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<StatusCode> {
-    WorkoutUseCase::delete_by_uuid(&state.conn, uuid)
+    WorkoutUseCase::delete_by_uuid(&state.conn, uuid, current_user.person_id)
         .await
         .map_err(|error| workout_error(error, locale))?;
     Ok(StatusCode::NO_CONTENT)
@@ -99,16 +109,20 @@ pub async fn delete_workout_by_uuid(
 pub async fn add_exercises_by_workout_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(exercises): Json<Vec<ExerciseJson>>,
 ) -> HttpResponse<Json<WorkoutJson>> {
     let mut workout = WorkoutUseCase::get_by_uuid(&state.conn, uuid)
         .await
         .map_err(|error| workout_error(error, locale))?;
+    business::commons::authorization::ensure_owns(workout.owner_id, current_user.person_id)
+        .map_err(|error| workout_error(error, locale))?;
     workout.exercises = ExerciseUseCase::add_all_to_workout(
         &state.conn,
         workout.id.unwrap(),
         ExerciseMapper::domain_vec(exercises),
+        &current_user,
     )
     .await
     .map_err(|error| {
@@ -135,12 +149,13 @@ pub async fn add_exercises_by_workout_uuid(
 )]
 pub async fn add_workout(
     state: State<AppState>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<WorkoutJson>,
 ) -> HttpResponse<(StatusCode, Json<WorkoutJson>)> {
     let domain = WorkoutMapper::domain(payload);
 
-    let workout = WorkoutUseCase::persist(&state.conn, domain)
+    let workout = WorkoutUseCase::persist(&state.conn, domain, &current_user)
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutAddFailed)
@@ -201,18 +216,22 @@ pub async fn get_workouts(
 pub async fn add_exercises(
     state: State<AppState>,
     Path(workout_id): Path<i32>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(exercises): Json<Vec<ExerciseJson>>,
 ) -> HttpResponse<(StatusCode, Json<Vec<ExerciseJson>>)> {
-    WorkoutUseCase::get(&state.conn, workout_id)
+    let workout = WorkoutUseCase::get(&state.conn, workout_id)
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutNotFound)
         })?;
+    business::commons::authorization::ensure_owns(workout.owner_id, current_user.person_id)
+        .map_err(|error| workout_error(error, locale))?;
 
     let domain_exercises: Vec<Exercise> = ExerciseMapper::domain_vec(exercises);
     let result =
-        ExerciseUseCase::add_all_to_workout(&state.conn, workout_id, domain_exercises).await;
+        ExerciseUseCase::add_all_to_workout(&state.conn, workout_id, domain_exercises, &current_user)
+            .await;
     let added_exercises = result.map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesNotAdded)
     })?;
@@ -241,8 +260,15 @@ pub async fn add_exercises(
 pub async fn get_exercises(
     state: State<AppState>,
     Path(workout_id): Path<i32>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<ExerciseJson>>> {
+    let workout = WorkoutUseCase::get(&state.conn, workout_id)
+        .await
+        .map_err(|error| workout_error(error, locale))?;
+    WorkoutUseCase::ensure_readable(&workout, current_user.person_id)
+        .map_err(|error| workout_error(error, locale))?;
+
     let result = ExerciseUseCase::find_all_by_workout_id(&state.conn, workout_id).await;
     let exercises = result.map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesFetchFailed)

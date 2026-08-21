@@ -22,6 +22,19 @@ impl UserUseCase {
             return Err(UserUseCaseError::InvalidInput);
         }
 
+        // Matches the varchar(500) columns in migration m20260129_000004; the
+        // password cap also keeps bcrypt's per-hash cost from being driven up by
+        // an arbitrarily long input.
+        const MAX_FIELD_LEN: usize = 500;
+        const MAX_PASSWORD_LEN: usize = 128;
+        if user.email.len() > MAX_FIELD_LEN
+            || user.password.len() > MAX_PASSWORD_LEN
+            || user.name.as_deref().is_some_and(|n| n.len() > MAX_FIELD_LEN)
+        {
+            log::warn!("Email/name/password exceeds the allowed length");
+            return Err(UserUseCaseError::InvalidInput);
+        }
+
         if let Err(violations) = password_policy::validate(&user.password) {
             log::warn!("Password does not satisfy policy: {:?}", violations);
             return Err(UserUseCaseError::WeakPassword(violations));

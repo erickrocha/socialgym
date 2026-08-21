@@ -1,8 +1,10 @@
 #[cfg(feature = "mock")]
 mod tests {
     use business::commons::functions::uuid_to_string;
-    use business::domain::enums::{Category, Visibility};
-    use business::domain::exercise::Exercise;
+    use business::domain::enums::{Category, Difficulty, Visibility};
+    use business::commons::entity_mapper::EntityMapper;
+use business::domain::business_error::BusinessErrorKind;
+use business::domain::exercise::{Exercise, ExerciseEntityMapper};
     use business::domain::person::Person;
     use business::domain::person_address::PersonAddress;
     use business::domain::person_info::PersonInfo;
@@ -25,6 +27,68 @@ mod tests {
     use business::use_cases::user_use_case::{UserUseCase, UserUseCaseError};
     use business::use_cases::workout_use_case::WorkoutUseCase;
     use chrono::{DateTime, NaiveDate, Utc};
+
+    fn exercise_entity_owned_by(owner_id: i32) -> entity::exercise_entity::ExerciseEntity {
+        entity::exercise_entity::ExerciseEntity {
+            id: 1,
+            uuid: Uuid::new_v4(),
+            name: "Push Ups".to_string(),
+            description: Some("Standard push ups".to_string()),
+            owner_id,
+            owner_uuid: Uuid::new_v4(),
+            owner_name: "John Doe".to_string(),
+            sets: 3,
+            category: "Force".to_string(),
+            reps_or_duration: 20,
+            visibility: "Public".to_string(),
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+        }
+    }
+
+    fn person_address_entity_owned_by(
+        person_id: i32,
+    ) -> entity::person_address_entity::PersonAddressEntity {
+        entity::person_address_entity::PersonAddressEntity {
+            id: 1,
+            uuid: Uuid::new_v4(),
+            person_id,
+            address_line1: "456 Oak Ave".to_string(),
+            address_line2: None,
+            locality: "Boston".to_string(),
+            administrative_area: "MA".to_string(),
+            country_code: "USA".to_string(),
+            postal_code: Some("02101".to_string()),
+            current: true,
+            latitude: Some(42.3601),
+            longitude: Some(-71.0589),
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_person_address_use_case_delete_denied_for_non_owner() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![person_address_entity_owned_by(1)]])
+            .into_connection();
+
+        let result = PersonAddressUseCase::delete_person_address(&db, 1, 2).await;
+
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Forbidden);
+    }
+
+    /// The authenticated principal that owner-scoped use cases act on behalf of.
+    fn actor(person_id: i32, person_uuid: String) -> User {
+        User::new(
+            Some("Test Actor".to_string()),
+            "actor@example.com".to_string(),
+            "hashed".to_string(),
+            person_id,
+            person_uuid,
+        )
+    }
+
     use sea_orm::DbBackend;
     use std::env;
     use std::sync::Mutex;
@@ -459,6 +523,7 @@ mod tests {
     #[tokio::test]
     async fn test_person_address_use_case_update_person_address() {
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![person_address_entity_owned_by(1)]])
             .append_exec_results(vec![sea_orm::MockExecResult {
                 last_insert_id: 1,
                 rows_affected: 1,
@@ -495,7 +560,7 @@ mod tests {
         );
         address.id = Some(1);
 
-        let result = PersonAddressUseCase::update_person_address(&db, address).await;
+        let result = PersonAddressUseCase::update_person_address(&db, address, 1).await;
 
         assert!(result.is_ok());
         let updated = result.unwrap();
@@ -664,7 +729,7 @@ mod tests {
 
         let result = WorkoutUseCase::get(&db, 999).await;
 
-        assert!(result.is_none());
+        assert!(result.is_err());
     }
 
     // Note: Complex workout queries with exercises are better tested with integration tests
@@ -693,18 +758,23 @@ mod tests {
             }]])
             .into_connection();
 
-        let workout = Workout::new(
-            1,
-            uuid_to_string(person_uuid),
-            "Push ups".to_string(),
-            Some("Basic push ups".to_string()),
-            "Easy".to_string(),
-            "Chest".to_string(),
-            Vec::new(),
-            Visibility::Public,
-        );
+        let workout = Workout {
+            id: None,
+            uuid: None,
+            owner_id: 1,
+            owner_uuid: uuid_to_string(person_uuid),
+            name: "Push ups".to_string(),
+            description: Some("Basic push ups".to_string()),
+            difficulty: Difficulty::Easy,
+            muscle_group: "Chest".to_string(),
+            exercises: Vec::new(),
+            visibility: Visibility::Public,
+            created_at: None,
+            updated_at: None,
+        };
 
-        let result = WorkoutUseCase::persist(&db, workout).await;
+        let result =
+            WorkoutUseCase::persist(&db, workout, &actor(1, uuid_to_string(person_uuid))).await;
 
         assert!(result.is_ok());
         let saved = result.unwrap();
@@ -741,21 +811,26 @@ mod tests {
             }]])
             .into_connection();
 
-        let exercise = Exercise::new(
-            "Push Ups".to_string(),
-            1,
-            uuid_to_string(owner_uuid),
-            "John Doe".to_string(),
-            Some("Standard push ups".to_string()),
-            3,
-            20,
-            Category::Force,
-            Visibility::Public,
-        );
+        let exercise = Exercise {
+            id: None,
+            uuid: None,
+            name: "Push Ups".to_string(),
+            description: Some("Standard push ups".to_string()),
+            sets: 3,
+            owner_id: 1,
+            owner_uuid: uuid_to_string(owner_uuid),
+            owner_name: "John Doe".to_string(),
+            category: Category::Force,
+            reps_or_duration: 20,
+            visibility: Visibility::Public,
+            created_at: None,
+            updated_at: None,
+        };
 
-        let result = ExerciseUseCase::persist(&db, exercise).await;
+        let result =
+            ExerciseUseCase::persist(&db, exercise, &actor(1, uuid_to_string(owner_uuid))).await;
 
-        assert!(result.is_some());
+        assert!(result.is_ok());
         let saved = result.unwrap();
         assert_eq!(saved.name, "Push Ups");
         assert_eq!(saved.owner_id, 1);
@@ -785,7 +860,7 @@ mod tests {
 
         let result = ExerciseUseCase::get(&db, 1).await;
 
-        assert!(result.is_some());
+        assert!(result.is_ok());
         let exercise = result.unwrap();
         assert_eq!(exercise.name, "Push Ups");
         assert_eq!(exercise.sets, 3);
@@ -824,15 +899,64 @@ mod tests {
     #[tokio::test]
     async fn test_exercise_use_case_delete_exercise() {
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![exercise_entity_owned_by(1)]])
             .append_exec_results(vec![sea_orm::MockExecResult {
                 last_insert_id: 1,
                 rows_affected: 1,
             }])
             .into_connection();
 
-        let result = ExerciseUseCase::delete_by_id(&db, 1).await;
+        let result = ExerciseUseCase::delete_by_id(&db, 1, 1).await;
 
         assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_exercise_use_case_delete_denied_for_non_owner() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![exercise_entity_owned_by(1)]])
+            .into_connection();
+
+        // person 2 asking to delete person 1's exercise
+        let result = ExerciseUseCase::delete_by_id(&db, 1, 2).await;
+
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Forbidden);
+    }
+
+    #[tokio::test]
+    async fn test_exercise_use_case_persist_ignores_client_supplied_owner() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_exec_results(vec![sea_orm::MockExecResult {
+                last_insert_id: 1,
+                rows_affected: 1,
+            }])
+            .append_query_results(vec![vec![exercise_entity_owned_by(7)]])
+            .into_connection();
+
+        let mut exercise = ExerciseEntityMapper::from_model(exercise_entity_owned_by(1));
+        exercise.id = None;
+        exercise.uuid = None;
+        // client claims to be person 1; the actor is person 7
+        let saved = ExerciseUseCase::persist(&db, exercise, &actor(7, uuid_to_string(Uuid::new_v4())))
+            .await
+            .unwrap();
+
+        assert_eq!(saved.owner_id, 7);
+    }
+
+    #[tokio::test]
+    async fn test_exercise_use_case_private_exercise_not_readable_by_others() {
+        let mut private = ExerciseEntityMapper::from_model(exercise_entity_owned_by(1));
+        private.visibility = Visibility::Private;
+
+        assert!(ExerciseUseCase::ensure_readable(&private, 1).is_ok());
+        assert_eq!(
+            ExerciseUseCase::ensure_readable(&private, 2).unwrap_err().kind,
+            BusinessErrorKind::Forbidden
+        );
+        // public exercises stay readable by anyone
+        private.visibility = Visibility::Public;
+        assert!(ExerciseUseCase::ensure_readable(&private, 2).is_ok());
     }
 
     // ========================

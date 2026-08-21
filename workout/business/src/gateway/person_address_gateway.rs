@@ -31,6 +31,14 @@ impl PersonAddressGateway {
             .await
     }
 
+    pub async fn find_by_uuid(db: &DbConn, uuid: String) -> Result<Option<PersonAddressEntity>, DbErr> {
+        let uuid = parse_uuid(&uuid).map_err(|error| DbErr::Type(error.to_string()))?;
+        PersonAddressQuery::find()
+            .filter(person_address::Column::Uuid.eq(uuid))
+            .one(db)
+            .await
+    }
+
     pub async fn find_all_by_person_id(db: &DbConn, person_id: i32) -> Vec<PersonAddressEntity> {
         PersonAddressQuery::find()
             .filter(person_address::Column::PersonId.eq(person_id))

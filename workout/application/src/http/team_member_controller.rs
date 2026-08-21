@@ -49,7 +49,11 @@ pub async fn get_team_members(
     state: State<AppState>,
     req: Request,
 ) -> HttpResponse<Json<TeamMemberPageJson>> {
-    let current_user = req.extensions().get::<User>().unwrap();
+    let locale = req.extensions().get::<Locale>().copied().unwrap_or(Locale::En);
+    let current_user = req
+        .extensions()
+        .get::<User>()
+        .ok_or(ExceptionResponse::Unauthorized(locale, ErrorKey::AuthHeaderMissing))?;
     let active_profile = req.extensions().get::<BusinessProfile>();
 
     // With an active business profile the caller is the team owner and sees its people; without

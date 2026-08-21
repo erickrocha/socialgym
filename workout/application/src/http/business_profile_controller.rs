@@ -73,10 +73,15 @@ pub async fn get_profiles_by_owner_uuid(
 
 pub async fn add_profile(
     State(state): State<AppState>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<BusinessProfileJson>,
 ) -> HttpResponse<(StatusCode, Json<BusinessProfileJson>)> {
-    let profile = BusinessProfileUseCase::add(&state.conn, BusinessProfileMapper::domain(payload))
+    let profile = BusinessProfileUseCase::add(
+        &state.conn,
+        BusinessProfileMapper::domain(payload),
+        &current_user,
+    )
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
@@ -89,11 +94,12 @@ pub async fn add_profile(
 
 pub async fn update_profile(
     State(state): State<AppState>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<BusinessProfileJson>,
 ) -> HttpResponse<Json<BusinessProfileJson>> {
     let profile =
-        BusinessProfileUseCase::update(&state.conn, BusinessProfileMapper::domain(payload))
+        BusinessProfileUseCase::update(&state.conn, BusinessProfileMapper::domain(payload), &current_user)
             .await
             .map_err(|error| {
                 ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
@@ -103,12 +109,14 @@ pub async fn update_profile(
 
 pub async fn save_address(
     State(state): State<AppState>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<BusinessProfileAddressJson>,
 ) -> HttpResponse<Json<BusinessProfileAddressJson>> {
     let address = BusinessProfileAddressUseCase::save(
         &state.conn,
         BusinessProfileAddressMapper::domain(payload),
+        current_user.person_id,
     )
     .await
     .map_err(|error| {
@@ -120,9 +128,10 @@ pub async fn save_address(
 pub async fn delete_address_by_id(
     State(state): State<AppState>,
     Path(id): Path<i32>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<StatusCode> {
-    BusinessProfileAddressUseCase::delete_by_id(&state.conn, id)
+    BusinessProfileAddressUseCase::delete_by_id(&state.conn, id, current_user.person_id)
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
@@ -133,9 +142,10 @@ pub async fn delete_address_by_id(
 pub async fn delete_address_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<StatusCode> {
-    BusinessProfileAddressUseCase::delete_by_uuid(&state.conn, uuid)
+    BusinessProfileAddressUseCase::delete_by_uuid(&state.conn, uuid, current_user.person_id)
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
@@ -162,7 +172,7 @@ pub async fn get_by_owner_id(
     Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<BusinessProfileJson>>> {
-    let owner_id = current_user.id.unwrap();
+    let owner_id = current_user.person_id;
 
     let result = BusinessProfileUseCase::get_by_owner_id(&state.conn, owner_id).await;
 

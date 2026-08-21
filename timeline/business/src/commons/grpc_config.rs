@@ -42,9 +42,12 @@ impl GrpcConfig {
 
 	pub async fn create_channel(endpoint: &str) -> Result<Channel,BusinessError> {
 		log::info!("Creating channel {}", endpoint);
+		// Fail closed: an unset GRPC_USE_TLS must not silently downgrade to
+		// plaintext, even though the endpoint URL defaults to `https`. Only an
+		// explicit "false" opts out (for local dev against a plaintext gRPC server).
 		let use_tls = std::env::var("GRPC_USE_TLS")
-			.unwrap_or_else(|_| "false".to_string())
-			.to_lowercase() == "true";
+			.unwrap_or_else(|_| "true".to_string())
+			.to_lowercase() != "false";
 
 		let uri = endpoint
 			.parse()

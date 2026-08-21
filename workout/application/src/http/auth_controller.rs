@@ -74,7 +74,7 @@ pub async fn sign_up(
         "Feed".to_string(),
     );
     let settings_use_case = SettingsUseCase::new(SettingsGateway::new((*state.conn).clone()));
-    let settings_added = settings_use_case.persist(settings).await;
+    let settings_added = settings_use_case.bootstrap_for_person(settings).await;
     if settings_added.is_err() {
         return Err(ExceptionResponse::BadRequest(
             locale,

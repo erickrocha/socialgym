@@ -82,7 +82,8 @@ pub async fn update_person_address(
     address.id = Some(person_address_id);
     address.person_id = person_id;
 
-    let result = PersonAddressUseCase::update_person_address(&state.conn, address).await;
+    let result =
+        PersonAddressUseCase::update_person_address(&state.conn, address, person_id).await;
 
     match result {
         Ok(address) => Ok(Json(PersonAddressMapper::json(address))),
@@ -111,23 +112,28 @@ pub async fn delete_person_address(
     state: State<AppState>,
     Path(person_address_id): Path<i32>,
     Extension(locale): Extension<Locale>,
-    Extension(_current_user): Extension<User>,
+    Extension(current_user): Extension<User>,
 ) -> HttpResponse<Json<()>> {
-    let result = PersonAddressUseCase::delete_person_address(&state.conn, person_address_id).await;
-
-    match result {
-        Ok(_) => Ok(Json(())),
-        Err(_) => Err(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::PersonAddressNotDeleted,
-        )),
-    }
+    PersonAddressUseCase::delete_person_address(
+        &state.conn,
+        person_address_id,
+        current_user.person_id,
+    )
+    .await
+    .map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::PersonAddressNotDeleted)
+    })?;
+    Ok(Json(()))
 }
 
 pub async fn delete_person_address_by_uuid(
-    State(state): State<AppState>, Path(uuid): Path<String>, Extension(locale): Extension<Locale>,
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+    Extension(locale): Extension<Locale>,
+    Extension(current_user): Extension<User>,
 ) -> HttpResponse<Json<()>> {
-    PersonAddressUseCase::delete_person_address_by_uuid(&state.conn, uuid).await
+    PersonAddressUseCase::delete_person_address_by_uuid(&state.conn, uuid, current_user.person_id)
+        .await
         .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::PersonAddressNotDeleted))?;
     Ok(Json(()))
 }

@@ -3,7 +3,9 @@ use crate::gateway::friend_gateway::FriendGateway;
 use crate::gateway::post_gateway::PostGateway;
 use crate::repositories::repository::Repository;
 use crate::use_cases::media_use_case::MediaUseCase;
+use crate::commons::authorization::ensure_owns;
 use domain::business_error::BusinessError;
+use domain::user::User;
 use domain::comment::Comment;
 use domain::post::Post;
 use domain::reaction::Reaction;
@@ -16,7 +18,24 @@ pub struct PostUseCase {}
 const DEFAULT_FEED_PAGE_SIZE: u64 = 20;
 
 impl PostUseCase {
-    pub async fn create(db: &Database, author_person_id: i32, post: Post) -> Result<Post, BusinessError> {
+    /// Publish a post authored by `author`. Author identity comes from the
+    /// authenticated principal, never from the request body — otherwise content
+    /// could be attributed to anyone.
+    /// MongoDB imposes no column width, so unlike the Postgres side this is the
+    /// only thing standing between a client and an unbounded post/comment.
+    const MAX_CONTENT_LEN: usize = 5000;
+
+    pub async fn create(db: &Database, author: &User, mut post: Post) -> Result<Post, BusinessError> {
+        if post.content.len() > Self::MAX_CONTENT_LEN {
+            return Err(BusinessError::validation(format!(
+                "content must be at most {} characters",
+                Self::MAX_CONTENT_LEN
+            )));
+        }
+        let author_person_id = author.person_id;
+        post.author_id = author_person_id;
+        post.author_uuid = author.person_uuid.clone();
+        post.author_name = author.name.clone();
         log::info!("Creating post by author: {}", post.author_id);
         let persisted = PostGateway::new(db).persist(post).await?;
 
@@ -75,7 +94,16 @@ impl PostUseCase {
     }
 
 
-    pub async fn add_comment(db: &Database, author_person_id: i32, post_id: String, comment: Comment) -> Result<Post, BusinessError> {
+    pub async fn add_comment(db: &Database, author: &User, post_id: String, mut comment: Comment) -> Result<Post, BusinessError> {
+        if comment.content.len() > Self::MAX_CONTENT_LEN {
+            return Err(BusinessError::validation(format!(
+                "content must be at most {} characters",
+                Self::MAX_CONTENT_LEN
+            )));
+        }
+        let author_person_id = author.person_id;
+        comment.author_uuid = author.person_uuid.clone();
+        comment.author_name = author.name.clone();
         log::info!("Adding comment to post: {}", post_id);
         let uuid = comment.uuid.clone();
         let persisted_post = PostGateway::new(db).add_comment(&post_id, comment).await?;
@@ -90,13 +118,24 @@ impl PostUseCase {
         }
         Ok(persisted_post)
     }
-    pub async fn add_reaction(db: &Database, post_id: String, reaction: Reaction) -> Result<Post, BusinessError> {
+    pub async fn add_reaction(db: &Database, author: &User, post_id: String, mut reaction: Reaction) -> Result<Post, BusinessError> {
+        reaction.author_id = author.person_uuid.clone();
+        reaction.author_name = author.name.clone();
         log::info!("Adding reaction to post: {}", post_id);
         PostGateway::new(db).add_reaction(&post_id, reaction).await
     }
-    pub async fn remove_reaction(db: &Database, post_id: String, person_id: String) -> Result<Post, BusinessError> {
+    pub async fn remove_reaction(db: &Database, post_id: String, person_uuid: String) -> Result<Post, BusinessError> {
         log::info!("Removing reaction from post: {}", post_id);
-        PostGateway::new(db).remove_reaction(&post_id, &person_id).await
+        PostGateway::new(db).remove_reaction(&post_id, &person_uuid).await
+    }
+
+    /// Only the author may delete their own post.
+    pub async fn delete_owned(db: &Database, uuid: String, acting_person_uuid: &str) -> Result<(), BusinessError> {
+        let post = Self::find_by_id(db, uuid.clone())
+            .await
+            .ok_or_else(|| BusinessError::not_found("Post not found"))?;
+        ensure_owns(&post.author_uuid, acting_person_uuid)?;
+        PostGateway::new(db).delete(uuid).await.map(|_| ())
     }
 
     async fn fill_posts(posts: Vec<Post>) -> Vec<Post> {

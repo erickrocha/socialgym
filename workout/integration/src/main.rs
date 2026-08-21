@@ -6,7 +6,6 @@ pub mod auth;
 use std::sync::Arc;
 use std::{env, fs};
 use std::path::Path;
-use sea_orm::Database;
 use tonic::transport::{Identity, Server, ServerTlsConfig};
 use tower::ServiceBuilder;
 use crate::auth::grpc_auth_layer::GrpcAuthLayer;
@@ -45,7 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let conn = Arc::new(
-        Database::connect(&db_url)
+        business::commons::db_pool::connect(&db_url, "workout-integration")
             .await
             .expect("Failed to connect to database"),
     );

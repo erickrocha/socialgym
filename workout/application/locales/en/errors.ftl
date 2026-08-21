@@ -44,3 +44,4 @@ exercises-not-added = Failed to add exercises
 settings-not-found = Settings not found
 settings-updated-failed = Failed to update settings
 settings-added-failed = Failed to add settings
+rate-limited = Too many requests. Please try again later.

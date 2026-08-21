@@ -75,7 +75,11 @@ pub async fn get_friends(
     Query(params): Query<HashMap<String, String>>,
     req: Request,
 ) -> HttpResponse<Json<FriendPageJson>> {
-    let current_user = req.extensions().get::<User>().unwrap();
+    let locale = req.extensions().get::<Locale>().copied().unwrap_or(Locale::En);
+    let current_user = req
+        .extensions()
+        .get::<User>()
+        .ok_or(ExceptionResponse::Unauthorized(locale, ErrorKey::AuthHeaderMissing))?;
     let person_id = current_user.person_id;
 
     let km = params

@@ -13,7 +13,7 @@ use business::use_cases::business_profile_address_use_case::BusinessProfileAddre
 use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
 use sea_orm::DatabaseConnection;
 use tonic::{Request, Response, Status};
-use crate::infrastructure::utils::validate_uuid;
+use crate::infrastructure::utils::{business_status, require_actor, require_person_id, validate_uuid};
 
 pub struct GrpcBusinessProfileService {
     conn: Arc<DatabaseConnection>,
@@ -94,11 +94,12 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         &self,
         request: Request<BusinessProfile>,
     ) -> Result<Response<BusinessProfile>, Status> {
+        let actor = require_actor(&request)?;
         let payload = request.into_inner();
         let domain_profile = BusinessProfileMapper::domain(payload);
-        let added_profile = BusinessProfileUseCase::add(&self.conn, domain_profile)
+        let added_profile = BusinessProfileUseCase::add(&self.conn, domain_profile, &actor)
             .await
-            .map_err(|e| Status::internal(e.message))?;
+            .map_err(business_status)?;
         let grpc_profile = BusinessProfileMapper::response(added_profile);
         Ok(Response::new(grpc_profile))
     }
@@ -107,11 +108,12 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         &self,
         request: Request<BusinessProfile>,
     ) -> Result<Response<BusinessProfile>, Status> {
+        let actor = require_actor(&request)?;
         let payload = request.into_inner();
         let domain_profile = BusinessProfileMapper::domain(payload);
-        let updated_profile = BusinessProfileUseCase::update(&self.conn, domain_profile)
+        let updated_profile = BusinessProfileUseCase::update(&self.conn, domain_profile, &actor)
             .await
-            .map_err(|e| Status::internal(e.message))?;
+            .map_err(business_status)?;
         let grpc_profile = BusinessProfileMapper::response(updated_profile);
         Ok(Response::new(grpc_profile))
     }
@@ -120,11 +122,13 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         &self,
         request: Request<BusinessProfileAddress>,
     ) -> Result<Response<BusinessProfileAddress>, Status> {
+        let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
         let domain_address = BusinessProfileAddressMapper::domain(payload);
-        let added_address = BusinessProfileAddressUseCase::save(&self.conn, domain_address)
-            .await
-            .map_err(|e| Status::internal(e.message))?;
+        let added_address =
+            BusinessProfileAddressUseCase::save(&self.conn, domain_address, person_id)
+                .await
+                .map_err(business_status)?;
         let grpc_address = BusinessProfileAddressMapper::response(added_address);
         Ok(Response::new(grpc_address))
     }
@@ -133,11 +137,13 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         &self,
         request: Request<BusinessProfileAddress>,
     ) -> Result<Response<BusinessProfileAddress>, Status> {
+        let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
         let domain_address = BusinessProfileAddressMapper::domain(payload);
-        let updated_address = BusinessProfileAddressUseCase::save(&self.conn, domain_address)
-            .await
-            .map_err(|e| Status::internal(e.message))?;
+        let updated_address =
+            BusinessProfileAddressUseCase::save(&self.conn, domain_address, person_id)
+                .await
+                .map_err(business_status)?;
         let grpc_address = BusinessProfileAddressMapper::response(updated_address);
         Ok(Response::new(grpc_address))
     }
@@ -146,10 +152,11 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         &self,
         request: Request<RemoveBusinessProfileAddressRequest>,
     ) -> Result<Response<RemoveBusinessProfileAddressResponse>, Status> {
+        let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
-        BusinessProfileAddressUseCase::delete_by_id(&self.conn, payload.id)
+        BusinessProfileAddressUseCase::delete_by_id(&self.conn, payload.id, person_id)
             .await
-            .map_err(|e| Status::internal(e.message))?;
+            .map_err(business_status)?;
         Ok(Response::new(RemoveBusinessProfileAddressResponse {
             success: true,
         }))

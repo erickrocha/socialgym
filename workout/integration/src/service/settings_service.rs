@@ -7,7 +7,8 @@ use business::use_cases::setings_use_case::SettingsUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
-use crate::infrastructure::utils::validate_uuid;
+use crate::infrastructure::utils::{business_status, require_actor, require_person_id, validate_uuid};
+use business::commons::authorization::ensure_owns;
 
 pub struct GrpcSettingService {
     conn: Arc<DatabaseConnection>,
@@ -71,28 +72,28 @@ impl SettingsService for GrpcSettingService {
         &self,
         request: Request<SettingIdRequest>,
     ) -> Result<Response<Setting>, Status> {
+        let person_id = require_person_id(&request)?;
         let req = request.into_inner();
         let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
 
-        let result = use_case.get_by_id(req.id).await;
-        match result {
-            Ok(settings) => {
-                let proto_setting = Self::domain_to_proto(settings);
-                Ok(Response::new(proto_setting))
-            }
-            Err(_e) => Err(Status::not_found("Settings not found")),
-        }
+        let settings = use_case
+            .get_by_id(req.id)
+            .await
+            .map_err(|_| Status::not_found("Settings not found"))?;
+        ensure_owns(settings.person_id, person_id).map_err(business_status)?;
+        Ok(Response::new(Self::domain_to_proto(settings)))
     }
 
     async fn persist_settings(
         &self,
         request: Request<Setting>,
     ) -> Result<Response<Setting>, Status> {
+        let actor = require_actor(&request)?;
         let setting = request.into_inner();
         let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
 
         let domain_settings = Self::proto_to_domain(setting);
-        let result = use_case.persist(domain_settings).await;
+        let result = use_case.persist(domain_settings, &actor).await;
 
         match result {
             Ok(settings) => {
@@ -104,31 +105,29 @@ impl SettingsService for GrpcSettingService {
     }
 
     async fn get_by_uuid(&self,request: Request<SettingIdRequest>) -> Result<Response<Setting>, Status> {
+        let person_id = require_person_id(&request)?;
         let req = request.into_inner();
         validate_uuid(&req.uuid, "uuid")?;
         let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
 
-        let result = use_case.get_by_uuid(req.uuid).await;
-        match result {
-            Ok(settings) => {
-                let proto_setting = Self::domain_to_proto(settings);
-                Ok(Response::new(proto_setting))
-            }
-            Err(_e) => Err(Status::not_found("Settings not found")),
-        }
+        let settings = use_case
+            .get_by_uuid(req.uuid)
+            .await
+            .map_err(|_| Status::not_found("Settings not found"))?;
+        ensure_owns(settings.person_id, person_id).map_err(business_status)?;
+        Ok(Response::new(Self::domain_to_proto(settings)))
     }
 
     async fn get_by_owner_ids(&self,request: Request<SettingOwnerIdRequest>) -> Result<Response<Setting>, Status> {
+        let person_id = require_person_id(&request)?;
         let req = request.into_inner();
+        ensure_owns(req.owner_id, person_id).map_err(business_status)?;
         let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
 
-        let result = use_case.get_by_owner_id(req.owner_id).await;
-        match result {
-            Ok(settings) => {
-                let proto_setting = Self::domain_to_proto(settings);
-                Ok(Response::new(proto_setting))
-            }
-            Err(_e) => Err(Status::not_found("Settings not found")),
-        }
+        let settings = use_case
+            .get_by_owner_id(req.owner_id)
+            .await
+            .map_err(|_| Status::not_found("Settings not found"))?;
+        Ok(Response::new(Self::domain_to_proto(settings)))
     }
 }

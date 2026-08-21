@@ -1,3 +1,5 @@
+use crate::commons::authorization::ensure_owns;
+use crate::domain::user::User;
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapper};
@@ -149,8 +151,16 @@ impl BusinessProfileUseCase {
         }
     }
 
-    pub async fn add(db: &DbConn, domain: BusinessProfile) -> Result<BusinessProfile, BusinessError> {
-        log::info!("Adding new business profile for owner_id: {:?}", domain.owner_id);
+    /// Create a business profile owned by `actor`. A client-supplied owner id is
+    /// ignored: ownership is always the authenticated person.
+    pub async fn add(
+        db: &DbConn,
+        mut domain: BusinessProfile,
+        actor: &User,
+    ) -> Result<BusinessProfile, BusinessError> {
+        log::info!("Adding new business profile for owner_id: {}", actor.person_id);
+        domain.owner_id = actor.person_id;
+        domain.owner_uuid = actor.person_uuid.clone();
         let added_profile = BusinessProfileGateway::persist(db, domain)
             .await
             .map_err(|e| {
@@ -166,8 +176,21 @@ impl BusinessProfileUseCase {
         Ok(entity)
     }
 
-    pub async fn update(db: &DbConn, domain: BusinessProfile) -> Result<BusinessProfile, BusinessError> {
+    pub async fn update(
+        db: &DbConn,
+        mut domain: BusinessProfile,
+        actor: &User,
+    ) -> Result<BusinessProfile, BusinessError> {
         log::info!("Updating business profile for owner_id: {:?}", domain.owner_id);
+        let id = domain
+            .id
+            .ok_or_else(|| BusinessError::validation("Business profile id is required"))?;
+        let existing = Self::get_by_id(db, id)
+            .await
+            .ok_or_else(|| BusinessError::not_found("Business profile not found"))?;
+        ensure_owns(existing.owner_id, actor.person_id)?;
+        domain.owner_id = existing.owner_id;
+        domain.owner_uuid = existing.owner_uuid.clone();
         let updated_profile = BusinessProfileGateway::persist(db, domain)
             .await
             .map_err(|e| {

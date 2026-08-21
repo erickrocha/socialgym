@@ -38,10 +38,13 @@ fn exercise_error(
 pub async fn get_exercise_by_id(
     State(state): State<AppState>,
     Path(id): Path<i32>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<ExerciseJson>> {
     let exercise = ExerciseUseCase::get(&state.conn, id)
         .await
+        .map_err(|error| exercise_error(error, locale))?;
+    ExerciseUseCase::ensure_readable(&exercise, current_user.person_id)
         .map_err(|error| exercise_error(error, locale))?;
     Ok(Json(ExerciseMapper::json(exercise)))
 }
@@ -50,10 +53,13 @@ pub async fn get_exercise_by_id(
 pub async fn get_exercise_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<ExerciseJson>> {
     let exercise = ExerciseUseCase::get_by_uuid(&state.conn, uuid)
         .await
+        .map_err(|error| exercise_error(error, locale))?;
+    ExerciseUseCase::ensure_readable(&exercise, current_user.person_id)
         .map_err(|error| exercise_error(error, locale))?;
     Ok(Json(ExerciseMapper::json(exercise)))
 }
@@ -61,10 +67,12 @@ pub async fn get_exercise_by_uuid(
 #[utoipa::path(put, path = "/workout/api/exercises")]
 pub async fn update_exercise(
     State(state): State<AppState>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<ExerciseJson>,
 ) -> HttpResponse<Json<ExerciseJson>> {
-    let exercise = ExerciseUseCase::persist(&state.conn, ExerciseMapper::domain(payload))
+    let exercise =
+        ExerciseUseCase::persist(&state.conn, ExerciseMapper::domain(payload), &current_user)
         .await
         .map_err(|error| exercise_error(error, locale))?;
     Ok(Json(ExerciseMapper::json(exercise)))
@@ -74,9 +82,10 @@ pub async fn update_exercise(
 pub async fn delete_exercise_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<StatusCode> {
-    ExerciseUseCase::delete_by_uuid(&state.conn, uuid)
+    ExerciseUseCase::delete_by_uuid(&state.conn, uuid, current_user.person_id)
         .await
         .map_err(|error| exercise_error(error, locale))?;
     Ok(StatusCode::NO_CONTENT)
@@ -100,13 +109,14 @@ pub async fn delete_exercise_by_uuid(
 )]
 pub async fn add_exercise(
     state: State<AppState>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<ExerciseJson>,
 ) -> HttpResponse<(StatusCode, Json<ExerciseJson>)> {
     let exercise = ExerciseMapper::domain(payload);
 
     // Add exercise via use case
-    let result = ExerciseUseCase::persist(&state.conn, exercise).await;
+    let result = ExerciseUseCase::persist(&state.conn, exercise, &current_user).await;
 
     let created_exercise = result.map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesNotAdded)
@@ -136,15 +146,14 @@ pub async fn add_exercise(
 pub async fn delete_exercise(
     state: State<AppState>,
     Path(exercise_id): Path<i32>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<StatusCode> {
-    let result = ExerciseUseCase::delete_by_id(&state.conn, exercise_id).await;
-    if result.is_err() {
-        return Err(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::ExercisesNotAdded,
-        ));
-    }
+    ExerciseUseCase::delete_by_id(&state.conn, exercise_id, current_user.person_id)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesNotAdded)
+        })?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -169,7 +178,10 @@ pub async fn query_exercises(
     Extension(locale): Extension<Locale>,
     Json(payload): Json<ExerciseParams>,
 ) -> HttpResponse<Json<PaginatedExerciseJson>> {
-    if let Some(owner_uuid) = payload.owner_uuid.clone() {
+    // `ownerUuid` only selects the uuid-keyed query shape; the identity it runs
+    // as is always the caller's, never the one in the body.
+    if payload.owner_uuid.is_some() {
+        let owner_uuid = current_user.person_uuid.clone();
         let page_number = payload.page_number.unwrap_or(1);
         let page_size = payload.page_size.unwrap_or(20).min(100);
         if page_number == 0 || page_size == 0 {

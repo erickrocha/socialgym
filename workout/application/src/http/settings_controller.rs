@@ -8,6 +8,7 @@ use crate::infrastructure::mapper::{Mapper, SettingsMapper};
 use crate::AppState;
 use axum::extract::{Path, State};
 use axum::{Extension, Json};
+use business::commons::authorization::ensure_owns;
 use business::commons::functions::parse_uuid;
 use business::domain::user::User;
 use business::gateway::settings_gateway::SettingsGateway;
@@ -33,7 +34,7 @@ use business::use_cases::setings_use_case::SettingsUseCase;
 )]
 pub async fn get_settings_by_id(
     State(state): State<AppState>,
-    Extension(_current_user): Extension<User>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Path(id): Path<i32>,
 ) -> HttpResponse<Json<SettingsJson>> {
@@ -42,6 +43,8 @@ pub async fn get_settings_by_id(
     let result = use_case.get_by_id(id).await;
     match result {
         Ok(settings) => {
+            ensure_owns(settings.person_id, current_user.person_id)
+                .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::SettingsNotFound))?;
             let json = SettingsMapper::json(settings);
             Ok(Json(json))
         }
@@ -72,7 +75,7 @@ pub async fn get_settings_by_id(
 )]
 pub async fn get_settings_by_uuid(
     State(state): State<AppState>,
-    Extension(_current_user): Extension<User>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Path(uuid): Path<String>,
 ) -> HttpResponse<Json<SettingsJson>> {
@@ -87,6 +90,8 @@ pub async fn get_settings_by_uuid(
     let result = use_case.get_by_uuid(uuid.clone()).await;
     match result {
         Ok(settings) => {
+            ensure_owns(settings.person_id, current_user.person_id)
+                .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::SettingsNotFound))?;
             let json = SettingsMapper::json(settings);
             Ok(Json(json))
         }
@@ -119,7 +124,7 @@ pub async fn get_my_settings(
 ) -> HttpResponse<Json<SettingsJson>> {
     let use_case = SettingsUseCase::new(SettingsGateway::new((*state.conn).clone()));
 
-    let result = use_case.get_by_owner_id(current_user.id.unwrap()).await;
+    let result = use_case.get_by_owner_id(current_user.person_id).await;
     match result {
         Ok(settings) => {
             let json = SettingsMapper::json(settings);
@@ -150,7 +155,7 @@ pub async fn get_my_settings(
 )]
 pub async fn update_my_settings(
     State(state): State<AppState>,
-    Extension(_current_user): Extension<User>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<SettingsJson>,
 ) -> HttpResponse<Json<SettingsJson>> {
@@ -158,7 +163,7 @@ pub async fn update_my_settings(
 
     let settings = SettingsMapper::domain(payload);
 
-    let result = use_case.persist(settings).await;
+    let result = use_case.persist(settings, &current_user).await;
     match result {
         Ok(saved_settings) => {
             let json = SettingsMapper::json(saved_settings);
@@ -188,7 +193,7 @@ pub async fn update_my_settings(
 )]
 pub async fn create_settings(
     State(state): State<AppState>,
-    Extension(_current_user): Extension<User>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<SettingsJson>,
 ) -> HttpResponse<Json<SettingsJson>> {
@@ -196,7 +201,7 @@ pub async fn create_settings(
 
     let settings = SettingsMapper::domain(payload);
 
-    let result = use_case.persist(settings).await;
+    let result = use_case.persist(settings, &current_user).await;
     match result {
         Ok(saved_settings) => {
             let json = SettingsMapper::json(saved_settings);
@@ -211,9 +216,13 @@ pub async fn create_settings(
 
 pub async fn get_settings_by_owner_id(
     State(state): State<AppState>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Path(id): Path<i32>,
 ) -> HttpResponse<Json<SettingsJson>> {
+    ensure_owns(id, current_user.person_id).map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::SettingsNotFound)
+    })?;
     let use_case = SettingsUseCase::new(SettingsGateway::new((*state.conn).clone()));
     let settings = use_case.get_by_owner_id(id).await.map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::SettingsNotFound)
@@ -223,9 +232,13 @@ pub async fn get_settings_by_owner_id(
 
 pub async fn get_settings_by_owner_uuid(
     State(state): State<AppState>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Path(uuid): Path<String>,
 ) -> HttpResponse<Json<SettingsJson>> {
+    if uuid != current_user.person_uuid {
+        return Err(ExceptionResponse::Forbidden(locale, ErrorKey::SettingsNotFound));
+    }
     let use_case = SettingsUseCase::new(SettingsGateway::new((*state.conn).clone()));
     let settings = use_case.get_by_owner_uuid(uuid).await.map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::SettingsNotFound)

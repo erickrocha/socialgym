@@ -44,3 +44,4 @@ exercises-not-added = Fout bij het toevoegen van oefeningen
 settings-not-found = Instellingen niet gevonden
 settings-not-updated = Instellingen niet bijgewerkt
 settings-not-added = Instellingen niet toegevoegd
+rate-limited = Te veel verzoeken. Probeer het later opnieuw.

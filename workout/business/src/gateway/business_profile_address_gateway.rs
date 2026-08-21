@@ -38,6 +38,17 @@ impl BusinessProfileAddressGateway {
             .await
     }
 
+    pub async fn find_by_uuid(
+        db: &DbConn,
+        uuid: String,
+    ) -> Result<Option<business_profile_address::BusinessProfileAddressEntity>, DbErr> {
+        let uuid = parse_uuid(&uuid).map_err(|error| DbErr::Type(error.to_string()))?;
+        BusinessProfileAddressQuery::find()
+            .filter(business_profile_address::Column::Uuid.eq(uuid))
+            .one(db)
+            .await
+    }
+
     pub async fn delete_by_id(db: &DbConn, id: i32) -> Result<(), DbErr> {
         let address = BusinessProfileAddressQuery::find_by_id(id).one(db).await?;
         if let Some(address) = address {

@@ -4,11 +4,11 @@ use axum::{
     routing::get,
     Router,
 };
-use business::sea_orm::{Database, DatabaseConnection};
+use business::sea_orm::DatabaseConnection;
 use migration::{Migrator, MigratorTrait};
 use std::env;
 use std::sync::Arc;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::{Modify, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
@@ -18,6 +18,49 @@ mod commons;
 mod http;
 mod infrastructure;
 pub mod routes;
+
+/// CORS origins this API accepts: a comma-separated `CORS_ALLOWED_ORIGINS` env
+/// var, or localhost dev origins when unset — mobile clients don't send an
+/// `Origin` header at all, so this only ever gates the web app.
+fn allowed_origins() -> AllowOrigin {
+    let configured = env::var("CORS_ALLOWED_ORIGINS").ok().filter(|s| !s.is_empty());
+    let origins: Vec<axum::http::HeaderValue> = match configured {
+        Some(raw) => raw
+            .split(',')
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .filter_map(|origin| axum::http::HeaderValue::from_str(origin).ok())
+            .collect(),
+        None => {
+            log::warn!(
+                "CORS_ALLOWED_ORIGINS is not set; falling back to localhost dev origins. \
+                 Set it explicitly in production."
+            );
+            ["http://localhost:5173", "http://localhost:3000"]
+                .into_iter()
+                .filter_map(|origin| axum::http::HeaderValue::from_str(origin).ok())
+                .collect()
+        }
+    };
+    AllowOrigin::list(origins)
+}
+
+/// `AUTH_RULES_ENABLED=false` silently turns off password policy, login
+/// lockout and token revocation together. Make that loud at boot so a
+/// copy-pasted dev `.env` can't disable it unnoticed.
+fn warn_if_auth_rules_disabled() {
+    let master_disabled = env::var("AUTH_RULES_ENABLED")
+        .ok()
+        .and_then(|s| s.parse::<bool>().ok())
+        .map(|enabled| !enabled)
+        .unwrap_or(false);
+    if master_disabled {
+        log::warn!(
+            "AUTH_RULES_ENABLED=false: password policy, login lockout and token \
+             revocation are ALL disabled. This must never be set in production."
+        );
+    }
+}
 
 use crate::authentication::authentication_middleware::authentication;
 use crate::http::image_controller::generate_media_upload_url;
@@ -185,7 +228,7 @@ async fn start() -> anyhow::Result<()> {
     let port = env::var("PORT").expect("PORT is not set in .env file");
     let server_url = format!("{host}:{port}");
 
-    let connection = Database::connect(&db_url)
+    let connection = business::commons::db_pool::connect(&db_url, "workout-application")
         .await
         .expect("Failed to connect to database");
     Migrator::up(&connection, None).await?;
@@ -200,6 +243,8 @@ async fn start() -> anyhow::Result<()> {
 
     log::info!("Starting server...");
 
+    warn_if_auth_rules_disabled();
+
     let cors = CorsLayer::new()
         .allow_methods([
             Method::GET,
@@ -209,7 +254,7 @@ async fn start() -> anyhow::Result<()> {
             Method::DELETE,
             Method::HEAD,
         ])
-        .allow_origin(Any)
+        .allow_origin(allowed_origins())
         .allow_headers([
             header::CONTENT_TYPE,
             header::AUTHORIZATION,
@@ -240,6 +285,9 @@ async fn start() -> anyhow::Result<()> {
                 .nest("/media", media_routes(state.clone()))
                 .merge(resource_routes(state.clone())),
         )
+        // 10 MiB cap: generous enough for exercise/workout JSON payloads with
+        // several media/exercise entries, small enough to bound abuse.
+        .layer(axum::extract::DefaultBodyLimit::max(10 * 1024 * 1024))
         .layer(cors)
         .with_state(state);
 

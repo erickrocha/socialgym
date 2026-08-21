@@ -163,12 +163,14 @@ impl PostGateway {
     pub async fn remove_reaction(
         &self,
         post_id: &str,
-        person_id: &str,
+        person_uuid: &str,
     ) -> Result<Post, BusinessError> {
         self.collection
             .update_one(
                 doc! { "_id": post_id },
-                doc! { "$pull": { "reactions": { "personId": person_id } } },
+                // `Reaction` serialises the reactor as `authorId`; matching on
+                // `personId` here never removed anything.
+                doc! { "$pull": { "reactions": { "authorId": person_uuid } } },
             )
             .await
             .map_err(|e| {

@@ -14,3 +14,4 @@ reaction-remove-failed = Reactie verwijderen mislukt
 evolution-checkin-add-failed = Evolutie check-in opslaan mislukt
 evolution-checkin-find-failed = Evolutie check-in zoeken mislukt
 unknown-error = Onverwachte interne fout
+rate-limited = Te veel verzoeken. Probeer het later opnieuw.

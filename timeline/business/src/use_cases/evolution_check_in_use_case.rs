@@ -1,3 +1,4 @@
+use crate::commons::authorization::ensure_owns;
 use crate::gateway::evolution_check_in_gateway::EvolutionCheckInGateway;
 use crate::repositories::repository::Repository;
 use domain::business_error::BusinessError;
@@ -13,10 +14,14 @@ impl EvolutionCheckInUseCase {
         Self { gateway }
     }
 
+    /// Record a check-in for `acting_person_uuid`. A `personUuid` in the request
+    /// body is ignored: the check-in always belongs to the caller.
     pub async fn add(
         &self,
-        evolution: EvolutionCheckIn,
+        mut evolution: EvolutionCheckIn,
+        acting_person_uuid: &str,
     ) -> Result<EvolutionCheckIn, BusinessError> {
+        evolution.person_uuid = acting_person_uuid.to_string();
         log::info!("Adding evolution check-in: {:?}", evolution);
         let persisted = self.gateway.persist(evolution).await;
         if persisted.is_err() {
@@ -31,13 +36,19 @@ impl EvolutionCheckInUseCase {
         persisted
     }
 
-    pub async fn find(&self, id: String) -> Option<EvolutionCheckIn> {
+    pub async fn find(
+        &self,
+        id: String,
+        acting_person_uuid: &str,
+    ) -> Result<EvolutionCheckIn, BusinessError> {
         log::info!("Finding evolution check-in: {:?}", id);
-        let result = self.gateway.find_by_id(id.clone()).await;
-        if result.is_none() {
-            log::warn!("Evolution check-in not found: {:?}", id);
-        }
-        result
+        let check_in = self
+            .gateway
+            .find_by_id(id.clone())
+            .await
+            .ok_or_else(|| BusinessError::not_found("Evolution check-in not found"))?;
+        ensure_owns(&check_in.person_uuid, acting_person_uuid)?;
+        Ok(check_in)
     }
 
     pub async fn find_all_by_owner(&self,person_uuid: String,start: DateTime, end: DateTime) -> Vec<EvolutionCheckIn> {

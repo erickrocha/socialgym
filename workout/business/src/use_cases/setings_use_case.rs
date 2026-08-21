@@ -1,7 +1,9 @@
+use crate::commons::authorization::ensure_owns;
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::gateway::Gateway;
 use crate::domain::business_error::BusinessError;
 use crate::domain::settings::{Settings, SettingsEntityMapper};
+use crate::domain::user::User;
 use crate::gateway::settings_gateway::SettingsGateway;
 
 pub struct SettingsUseCase {
@@ -31,8 +33,31 @@ impl SettingsUseCase {
         }
     }
 
-    pub async fn persist(&self, domain: Settings) -> Result<Settings, BusinessError> {
-        log::info!("Persisting settings: {:?}", domain);
+    /// Signup-only path: creates the default settings row for a person that has
+    /// just been created, before any user exists to authenticate as. Every other
+    /// caller must go through [`Self::persist`], which enforces ownership.
+    pub async fn bootstrap_for_person(&self, domain: Settings) -> Result<Settings, BusinessError> {
+        log::info!("Bootstrapping settings for person_id={}", domain.person_id);
+        let settings = self.gateway.persist(domain).await.map_err(|error| {
+            log::error!("Error bootstrapping settings: {:?}", error);
+            BusinessError::infrastructure("Error persisting settings")
+        })?;
+        Ok(SettingsEntityMapper::from_active_model(settings))
+    }
+
+    /// Create or update settings on behalf of `actor`. Settings belong to exactly
+    /// one person, so the owner is always taken from `actor`, never the payload.
+    pub async fn persist(&self, mut domain: Settings, actor: &User) -> Result<Settings, BusinessError> {
+        log::info!("Persisting settings for person_id={}", actor.person_id);
+
+        if let Some(id) = domain.id {
+            let existing = self.get_by_id(id).await?;
+            ensure_owns(existing.person_id, actor.person_id)?;
+        }
+
+        domain.person_id = actor.person_id;
+        domain.person_uuid = actor.person_uuid.clone();
+
         let result = self.gateway.persist(domain).await;
         if result.is_err() {
             log::error!("Error persisting settings: {:?}", result.err());

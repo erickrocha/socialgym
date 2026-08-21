@@ -1,4 +1,5 @@
 use crate::authentication::authentication_middleware::authentication;
+use crate::authentication::rate_limit::{content_limiter, rate_limit};
 use crate::{http, AppState};
 use axum::routing::{get, post};
 use axum::{middleware, Router};
@@ -19,8 +20,8 @@ pub fn workout_session_routes(state: AppState) -> Router<AppState> {
         )
         .route(
             "/",
-            post(http::workout_session_controller::create_workout_session).route_layer(
-                middleware::from_fn_with_state(state.clone(), authentication),
-            ),
+            post(http::workout_session_controller::create_workout_session)
+                .route_layer(middleware::from_fn_with_state(state.clone(), authentication))
+                .route_layer(middleware::from_fn_with_state(content_limiter(), rate_limit)),
         )
 }

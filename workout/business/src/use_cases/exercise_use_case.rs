@@ -1,7 +1,9 @@
+use crate::commons::authorization::ensure_owns;
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::business_error::BusinessError;
 use crate::domain::enums::Visibility;
 use crate::domain::exercise::{Exercise, ExerciseEntityMapper};
+use crate::domain::user::User;
 use crate::domain::workout_exercise::{WorkoutExercise, WorkoutExerciseEntityMapper};
 use crate::gateway::exercise_gateway::ExerciseGateway;
 use crate::gateway::friend_gateway::FriendGateway;
@@ -11,32 +13,16 @@ use sea_orm::DbConn;
 pub struct ExerciseUseCase {}
 
 impl ExerciseUseCase {
-    pub async fn add_all(
-        db: &DbConn,
-        exercises: Vec<Exercise>,
-    ) -> Result<Vec<Exercise>, BusinessError> {
-        log::info!("Adding exercises: {:?}", exercises);
-
-        let mut added_exercises = Vec::new();
-
-        for exercise in exercises {
-            let domain = ExerciseGateway::persist(db, exercise.clone()).await;
-            if domain.is_err() {
-                log::error!("Error adding exercise: {}", domain.as_ref().err().unwrap());
-                return Err(BusinessError::new("Error adding exercises".to_string()));
-            }
-
-            let model = domain.unwrap();
-            added_exercises.push(ExerciseEntityMapper::from_active_model(model));
-        }
-
-        Ok(added_exercises)
-    }
-
+    /// Attach exercises to a workout on behalf of `actor`.
+    ///
+    /// New exercises are created owned by `actor`; an entry that references an
+    /// existing exercise must be one `actor` is allowed to read, so a workout
+    /// cannot be used to pull somebody else's private exercise into view.
     pub async fn add_all_to_workout(
         db: &DbConn,
         workout_id: i32,
         exercises: Vec<Exercise>,
+        actor: &User,
     ) -> Result<Vec<Exercise>, BusinessError> {
         log::info!(
             "Adding {} exercises to workout_id {}",
@@ -49,10 +35,14 @@ impl ExerciseUseCase {
         }
 
         let mut resolved: Vec<Exercise> = Vec::with_capacity(exercises.len());
-        for exercise in exercises {
-            if exercise.id.is_some() {
-                resolved.push(exercise);
+        for mut exercise in exercises {
+            if let Some(id) = exercise.id {
+                let existing = Self::get(db, id).await?;
+                Self::ensure_readable(&existing, actor.person_id)?;
+                resolved.push(existing);
             } else {
+                exercise.owner_id = actor.person_id;
+                exercise.owner_uuid = actor.person_uuid.clone();
                 let model = ExerciseGateway::persist(db, exercise).await.map_err(|e| {
                     log::error!("Error persisting new exercise: {}", e);
                     BusinessError::new("Error adding exercises".to_string())
@@ -127,11 +117,38 @@ impl ExerciseUseCase {
         Ok(())
     }
 
-    pub async fn persist(db: &DbConn, exercise: Exercise) -> Result<Exercise, BusinessError> {
+    /// Create or update an exercise on behalf of `actor`.
+    ///
+    /// The owner is always taken from `actor` — a client-supplied owner id is
+    /// ignored — and updating an existing exercise requires owning it.
+    pub async fn persist(
+        db: &DbConn,
+        mut exercise: Exercise,
+        actor: &User,
+    ) -> Result<Exercise, BusinessError> {
         log::info!(
-            "[ExerciseUseCase::persist] Executing for owner_id={:?}",
-            exercise.owner_id
+            "[ExerciseUseCase::persist] Executing for actor person_id={}",
+            actor.person_id
         );
+
+        if let Some(id) = exercise.id {
+            let existing = Self::get(db, id).await?;
+            ensure_owns(existing.owner_id, actor.person_id)?;
+        }
+
+        // Matches the varchar(255) column (migration m20260129_000008); Postgres
+        // would reject this anyway, but a validation error is friendlier than a
+        // raw DB error surfacing to the client.
+        const MAX_DESCRIPTION_LEN: usize = 255;
+        if exercise.description.as_deref().is_some_and(|d| d.len() > MAX_DESCRIPTION_LEN) {
+            return Err(BusinessError::validation(format!(
+                "description must be at most {MAX_DESCRIPTION_LEN} characters"
+            )));
+        }
+
+        exercise.owner_id = actor.person_id;
+        exercise.owner_uuid = actor.person_uuid.clone();
+
         let model = ExerciseGateway::persist(db, exercise)
             .await
             .map_err(|error| {
@@ -139,6 +156,16 @@ impl ExerciseUseCase {
                 BusinessError::infrastructure("Error adding exercise")
             })?;
         Ok(ExerciseEntityMapper::from_active_model(model))
+    }
+
+    /// Read guard: an exercise is readable by its owner, or by anyone when
+    /// public. `Visibility::Friends`/`Professional` stay owner-only until the
+    /// permission model that can resolve their audience exists.
+    pub fn ensure_readable(exercise: &Exercise, acting_person_id: i32) -> Result<(), BusinessError> {
+        if matches!(exercise.visibility, Visibility::Public) {
+            return Ok(());
+        }
+        ensure_owns(exercise.owner_id, acting_person_id)
     }
 
     pub async fn get(db: &DbConn, exercise_id: i32) -> Result<Exercise, BusinessError> {
@@ -226,8 +253,15 @@ impl ExerciseUseCase {
         Ok(exercises)
     }
 
-    pub async fn delete_by_id(db: &DbConn, exercise_id: i32) -> Result<(), BusinessError> {
+    pub async fn delete_by_id(
+        db: &DbConn,
+        exercise_id: i32,
+        acting_person_id: i32,
+    ) -> Result<(), BusinessError> {
         log::info!("Deleting exercise for exercise_id: {}", exercise_id);
+
+        let existing = Self::get(db, exercise_id).await?;
+        ensure_owns(existing.owner_id, acting_person_id)?;
 
         let delete_result = ExerciseGateway::delete_by_id(db, exercise_id)
             .await
@@ -242,8 +276,15 @@ impl ExerciseUseCase {
         Ok(())
     }
 
-    pub async fn delete_by_uuid(db: &DbConn, uuid: String) -> Result<(), BusinessError> {
+    pub async fn delete_by_uuid(
+        db: &DbConn,
+        uuid: String,
+        acting_person_id: i32,
+    ) -> Result<(), BusinessError> {
         log::info!("Deleting exercise for uuid: {}", uuid);
+
+        let existing = Self::get_by_uuid(db, uuid.clone()).await?;
+        ensure_owns(existing.owner_id, acting_person_id)?;
 
         let delete_result = ExerciseGateway::delete_by_uuid(db, uuid.clone())
             .await

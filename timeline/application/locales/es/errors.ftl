@@ -14,3 +14,4 @@ reaction-remove-failed = No se pudo quitar la reaccion
 evolution-checkin-add-failed = No se pudo guardar el check-in de evolucion
 evolution-checkin-find-failed = No se pudo buscar el check-in de evolucion
 unknown-error = Error interno inesperado
+rate-limited = Demasiadas solicitudes. Inténtalo de nuevo más tarde.

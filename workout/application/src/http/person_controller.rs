@@ -76,17 +76,12 @@ pub async fn search_mentionable_friends(
 )]
 pub async fn update_person(
     state: State<AppState>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<PersonJson>,
 ) -> HttpResponse<Json<PersonJson>> {
-    if payload.id.is_none() {
-        return Err(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::PersonNotUpdated,
-        ));
-    }
-
-    let person_id = payload.id.unwrap();
+    // `/people/me`: the person updated is always the caller, never `payload.id`.
+    let person_id = current_user.person_id;
 
     let person_result = PersonUseCase::get(&state.conn, person_id).await;
     if person_result.is_err() {

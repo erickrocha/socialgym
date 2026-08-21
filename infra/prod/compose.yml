@@ -176,7 +176,7 @@ services:
       mongo:
         condition: service_healthy
       integration-app:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     deploy:
       resources:

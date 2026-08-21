@@ -73,8 +73,13 @@ where
 
         Box::pin(async move {
             match authenticate_request(&mut req, conn).await {
-                Ok(user) => {
+                // Insert each value under its own type: services look these up as
+                // `User` / `BusinessProfile`, which a tuple extension never matches.
+                Ok((user, business_profile)) => {
                     req.extensions_mut().insert(user);
+                    if let Some(business_profile) = business_profile {
+                        req.extensions_mut().insert(business_profile);
+                    }
                     inner.call(req).await
                 }
                 Err(response) => Ok(response),

@@ -4,7 +4,8 @@ use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::notification_json::{MarkNotificationReadJson, NotificationJson};
 use crate::infrastructure::mapper::{Mapper, NotificationMapper};
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::{Extension, Path, Query, State};
+use domain::user::User;
 use business::use_cases::mention_notification_use_case::MentionNotificationUseCase;
 use serde::Deserialize;
 
@@ -32,8 +33,13 @@ pub struct NotificationQuery {
 pub async fn list_notifications(
     state: State<AppState>,
     Query(query): Query<NotificationQuery>,
+    Extension(current_user): Extension<User>,
     Path(owner_uuid): Path<String>,
 ) -> HttpResponse<Json<Vec<NotificationJson>>> {
+    business::commons::authorization::ensure_owns(&owner_uuid, &current_user.person_uuid)
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, Locale::En, ErrorKey::Unknown)
+        })?;
     let unread_only = query.unread_only.unwrap_or(false);
     let limit = query.limit.unwrap_or(50).clamp(1, 100);
 
@@ -72,8 +78,13 @@ pub async fn list_notifications(
 )]
 pub async fn mark_notification_read(
     state: State<AppState>,
+    Extension(current_user): Extension<User>,
     Path((owner_uuid, idempotency_key)): Path<(String, String)>,
 ) -> HttpResponse<Json<MarkNotificationReadJson>> {
+    business::commons::authorization::ensure_owns(&owner_uuid, &current_user.person_uuid)
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, Locale::En, ErrorKey::Unknown)
+        })?;
     let updated =
         MentionNotificationUseCase::mark_as_read(&state.database, &owner_uuid, &idempotency_key)
             .await

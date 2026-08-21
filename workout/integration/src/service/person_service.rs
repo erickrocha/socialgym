@@ -7,9 +7,7 @@ use crate::proto::person::{
     PersonResponse, RemovePersonAddressRequest, RemovePersonAddressResponse,
     SearchMentionableFriendsRequest,
 };
-use business::domain::business_profile::BusinessProfile;
 use business::domain::person::Person as DomainPerson;
-use business::domain::user::User;
 use business::gateway::person_address_gateway::PersonAddressGateway;
 use business::gateway::person_info_gateway::PersonInfoGateway;
 use business::use_cases::common_use_case::choose_image_type;
@@ -19,7 +17,7 @@ use business::use_cases::person_use_case::PersonUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
-use crate::infrastructure::utils::validate_uuid;
+use crate::infrastructure::utils::{require_person_id, validate_uuid};
 use crate::proto::person::person_params::ParamIdentifier;
 
 pub struct GrpcPersonService {
@@ -36,14 +34,6 @@ impl GrpcPersonService {
 /// inserted by `GrpcAuthLayer`. Every RPC on this service runs behind that
 /// layer, which either populates this extension on success or short-circuits
 /// the request with `UNAUTHENTICATED` before the handler ever runs.
-fn require_person_id<T>(request: &Request<T>) -> Result<i32, Status> {
-    request
-        .extensions()
-        .get::<(User, Option<BusinessProfile>)>()
-        .map(|(user, _)| user.person_id)
-        .ok_or_else(|| Status::unauthenticated("missing authenticated user"))
-}
-
 #[tonic::async_trait]
 impl PersonService for GrpcPersonService {
     async fn get_person(&self,request: Request<PersonIdRequest>) -> Result<Response<PersonResponse>, Status> {
@@ -220,7 +210,7 @@ impl PersonService for GrpcPersonService {
         address.id = Some(existing.id);
         address.person_id = person_id;
 
-        let updated = PersonAddressUseCase::update_person_address(&self.conn, address)
+        let updated = PersonAddressUseCase::update_person_address(&self.conn, address, person_id)
             .await
             .map_err(|e| Status::internal(e.message))?;
 
@@ -244,7 +234,7 @@ impl PersonService for GrpcPersonService {
             return Err(Status::permission_denied("address does not belong to the authenticated person"));
         }
 
-        PersonAddressUseCase::delete_person_address(&self.conn, existing.id)
+        PersonAddressUseCase::delete_person_address(&self.conn, existing.id, person_id)
             .await
             .map_err(|e| Status::internal(e.message))?;
 

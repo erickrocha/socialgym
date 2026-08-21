@@ -151,6 +151,18 @@ impl PersonUseCase {
                 "Person and User information are required".to_string(),
             ));
         }
+        // Matches the column widths in migration m20260129_000003 (varchar(255)
+        // firstname/surname/gender) — reject oversized input before it ever
+        // reaches the DB layer as a truncation/constraint error.
+        const MAX_NAME_LEN: usize = 255;
+        if person.firstname.len() > MAX_NAME_LEN
+            || person.surname.len() > MAX_NAME_LEN
+            || person.gender.len() > MAX_NAME_LEN
+        {
+            return Err(BusinessError::validation(format!(
+                "firstname/surname/gender must be at most {MAX_NAME_LEN} characters"
+            )));
+        }
         Ok(())
     }
 

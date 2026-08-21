@@ -43,10 +43,12 @@ pub async fn create_post(
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
     let post = PostMapper::domain(payload);
 
-    PostUseCase::create(&state.database, current_user.person_id, post)
+    PostUseCase::create(&state.database, &current_user, post)
         .await
         .map(|p| (StatusCode::CREATED, Json(PostMapper::json(p))))
-        .map_err(|_e| ExceptionResponse::BadRequest(locale, ErrorKey::PostCreateFailed))
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::PostCreateFailed)
+        })
 }
 
 // ── Add comment / reply ───────────────────────────────────────────────────────
@@ -76,11 +78,13 @@ pub async fn add_comment(
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
     let comment = CommentMapper::domain(payload);
     let post_response =
-        PostUseCase::add_comment(&state.database, current_user.person_id, post_id, comment).await;
+        PostUseCase::add_comment(&state.database, &current_user, post_id, comment).await;
 
     post_response
         .map(|p| (StatusCode::CREATED, Json(PostMapper::json(p))))
-        .map_err(|_e| ExceptionResponse::BadRequest(locale, ErrorKey::CommentAddFailed))
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::CommentAddFailed)
+        })
 }
 // ── Add / update reaction ─────────────────────────────────────────────────────
 #[utoipa::path(
@@ -103,13 +107,16 @@ pub async fn add_reaction(
     state: State<AppState>,
     Path(post_id): Path<String>,
     Extension(locale): Extension<Locale>,
+    Extension(current_user): Extension<User>,
     Json(payload): Json<ReactionJson>,
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
     let reaction = ReactionMapper::domain(payload);
-    PostUseCase::add_reaction(&state.database, post_id, reaction)
+    PostUseCase::add_reaction(&state.database, &current_user, post_id, reaction)
         .await
         .map(|p| (StatusCode::CREATED, Json(PostMapper::json(p))))
-        .map_err(|_e| ExceptionResponse::BadRequest(locale, ErrorKey::ReactionAddFailed))
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::ReactionAddFailed)
+        })
 }
 // ── Remove reaction ───────────────────────────────────────────────────────────
 #[utoipa::path(
@@ -137,5 +144,7 @@ pub async fn remove_reaction(
     PostUseCase::remove_reaction(&state.database, post_id, current_user.person_uuid)
         .await
         .map(|p| (StatusCode::OK, Json(PostMapper::json(p))))
-        .map_err(|_e| ExceptionResponse::BadRequest(locale, ErrorKey::ReactionRemoveFailed))
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::ReactionRemoveFailed)
+        })
 }

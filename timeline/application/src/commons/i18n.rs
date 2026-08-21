@@ -73,6 +73,8 @@ pub enum ErrorKey {
 
     EvolutionCheckInAddFailed,
 
+    RateLimited,
+
     Unknown,
 }
 
@@ -91,6 +93,7 @@ impl ErrorKey {
             ErrorKey::ReactionAddFailed => "REACTION_ADD_FAILED",
             ErrorKey::ReactionRemoveFailed => "REACTION_REMOVE_FAILED",
             ErrorKey::EvolutionCheckInAddFailed => "EVOLUTION_CHECKIN_ADD_FAILED",
+            ErrorKey::RateLimited => "RATE_LIMITED",
             ErrorKey::Unknown => "UNKNOWN_ERROR",
         }
     }
@@ -109,6 +112,7 @@ impl ErrorKey {
             ErrorKey::ReactionAddFailed => "reaction-add-failed",
             ErrorKey::ReactionRemoveFailed => "reaction-remove-failed",
             ErrorKey::EvolutionCheckInAddFailed => "evolution-checkin-add-failed",
+            ErrorKey::RateLimited => "rate-limited",
             ErrorKey::Unknown => "unknown-error",
         }
     }

@@ -1,7 +1,21 @@
 
 use business::commons::functions::parse_uuid;
 use business::domain::business_error::{BusinessError, BusinessErrorKind};
-use tonic::Status;
+use business::domain::user::User;
+use tonic::{Request, Status};
+
+/// The authenticated principal, as injected by `GrpcAuthLayer`.
+pub(crate) fn require_actor<T>(request: &Request<T>) -> Result<User, Status> {
+    request
+        .extensions()
+        .get::<User>()
+        .cloned()
+        .ok_or_else(|| Status::unauthenticated("missing authenticated user"))
+}
+
+pub(crate) fn require_person_id<T>(request: &Request<T>) -> Result<i32, Status> {
+    require_actor(request).map(|user| user.person_id)
+}
 
 pub(crate) fn business_status(error: BusinessError) -> Status {
     match error.kind {
