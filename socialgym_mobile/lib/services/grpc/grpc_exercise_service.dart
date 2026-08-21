@@ -29,6 +29,13 @@ class GrpcExerciseService {
     return _client!;
   }
 
+  /// Drops the cached client. Call after the underlying channel has been
+  /// shut down (e.g. on sign-out) so the next call rebuilds against a
+  /// fresh channel instead of reusing one that is closing/closed.
+  static Future<void> shutdown() async {
+    _client = null;
+  }
+
   static Future<Exercise> getExercise({required int id}) async {
     try {
       final response = await _ensureClient().getExercise(

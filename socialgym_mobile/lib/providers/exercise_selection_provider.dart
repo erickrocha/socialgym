@@ -2,9 +2,11 @@ import 'package:flutter/foundation.dart';
 import '../models/exercise.dart';
 
 class ExerciseSelectionProvider with ChangeNotifier {
-  // Selected exercises state
-  final Set<int> _selectedExerciseIds = {};
-  final Map<int, Exercise> _selectedExercisesMap = {};
+  // Selected exercises state, keyed by uuid: exercises loaded from the
+  // paginated gRPC endpoint (ExerciseMapper.fromProto) never populate the
+  // numeric `id` field, only `uuid`.
+  final Set<String> _selectedExerciseIds = {};
+  final Map<String, Exercise> _selectedExercisesMap = {};
 
   // Pagination state
   List<Exercise> _allExercises = [];
@@ -19,7 +21,7 @@ class ExerciseSelectionProvider with ChangeNotifier {
   String _sortBy = 'created_at_desc';
 
   // Getters
-  Set<int> get selectedExerciseIds => _selectedExerciseIds;
+  Set<String> get selectedExerciseIds => _selectedExerciseIds;
   List<Exercise> get selectedExercises => _selectedExercisesMap.values.toList();
   List<Exercise> get allExercises => _allExercises;
   int get selectionCount => _selectedExerciseIds.length;
@@ -35,12 +37,12 @@ class ExerciseSelectionProvider with ChangeNotifier {
 
   /// Add exercise to selection (toggle)
   void toggleSelection(Exercise exercise) {
-    if (_selectedExerciseIds.contains(exercise.id)) {
-      _selectedExerciseIds.remove(exercise.id);
-      _selectedExercisesMap.remove(exercise.id);
+    if (_selectedExerciseIds.contains(exercise.uuid)) {
+      _selectedExerciseIds.remove(exercise.uuid);
+      _selectedExercisesMap.remove(exercise.uuid);
     } else {
-      _selectedExerciseIds.add(exercise.id!);
-      _selectedExercisesMap[exercise.id!] = exercise;
+      _selectedExerciseIds.add(exercise.uuid!);
+      _selectedExercisesMap[exercise.uuid!] = exercise;
     }
     notifyListeners();
   }
@@ -48,24 +50,24 @@ class ExerciseSelectionProvider with ChangeNotifier {
   /// Move exercise from the all-exercises list into the selected list.
   /// Called when the user swipes an item in the exercises list (startToEnd).
   void moveToSelected(Exercise exercise) {
-    _allExercises.removeWhere((e) => e.id == exercise.id);
-    _selectedExerciseIds.add(exercise.id!);
-    _selectedExercisesMap[exercise.id!] = exercise;
+    _allExercises.removeWhere((e) => e.uuid == exercise.uuid);
+    _selectedExerciseIds.add(exercise.uuid!);
+    _selectedExercisesMap[exercise.uuid!] = exercise;
     notifyListeners();
   }
 
   /// Move exercise back from the selected list into the all-exercises list.
   /// Called when the user swipes an item in the selected list (endToStart).
   void moveBackToList(Exercise exercise) {
-    _selectedExerciseIds.remove(exercise.id);
-    _selectedExercisesMap.remove(exercise.id);
+    _selectedExerciseIds.remove(exercise.uuid);
+    _selectedExercisesMap.remove(exercise.uuid);
     _allExercises.insert(0, exercise);
     notifyListeners();
   }
 
   /// Check if exercise is selected
-  bool isExerciseSelected(int exerciseId) {
-    return _selectedExerciseIds.contains(exerciseId);
+  bool isExerciseSelected(String exerciseUuid) {
+    return _selectedExerciseIds.contains(exerciseUuid);
   }
 
   /// Clear all selections

@@ -468,7 +468,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
                 final exercise = provider.allExercises[index];
 
                 return Dismissible(
-                  key: ValueKey(exercise.id),
+                  key: ValueKey(exercise.uuid),
                   direction: DismissDirection.startToEnd,
                   onDismissed: (_) {
                     provider.moveToSelected(exercise);
@@ -569,7 +569,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
                 final exercise = provider.selectedExercises[index];
 
                 return Dismissible(
-                  key: ValueKey(exercise.id),
+                  key: ValueKey(exercise.uuid),
                   direction: DismissDirection.endToStart,
                   onDismissed: (_) => provider.moveBackToList(exercise),
                   background: Container(

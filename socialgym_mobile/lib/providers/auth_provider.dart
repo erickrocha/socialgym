@@ -7,7 +7,14 @@ import '../models/auth_response.dart';
 import '../models/sign_up_request.dart';
 import '../services/auth_service.dart';
 import '../services/base_service.dart';
+import '../services/grpc/grpc_business_profile_service.dart';
 import '../services/grpc/grpc_channel_factory.dart';
+import '../services/grpc/grpc_exercise_service.dart';
+import '../services/grpc/grpc_person_service.dart';
+import '../services/grpc/grpc_resource_service.dart';
+import '../services/grpc/grpc_settings_service.dart';
+import '../services/grpc/grpc_team_member_service.dart';
+import '../services/grpc/grpc_workout_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   AuthResponse? _auth;
@@ -110,6 +117,19 @@ class AuthProvider extends ChangeNotifier {
   Future<void> signOut() async {
     _auth = null;
     await _clearStorage();
+    // Drop each service's cached client *before* tearing down the shared
+    // channels: otherwise a client left pointing at an already-shut-down
+    // channel gets reused on the next sign-in and every call fails locally
+    // with UNAVAILABLE ("Channel shutting down") before reaching the server.
+    await Future.wait([
+      GrpcPersonService.shutdown(),
+      GrpcBusinessProfileService.shutdown(),
+      GrpcSettingsService.shutdown(),
+      GrpcTeamMemberService.shutdown(),
+      GrpcResourceService.shutdown(),
+      GrpcWorkoutService.shutdown(),
+      GrpcExerciseService.shutdown(),
+    ]);
     await GrpcChannelFactory.shutdownAll();
     notifyListeners();
   }
