@@ -1111,7 +1111,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tooltipSwipeToView =>
-      'Glissez vers la gauche pour ajouter des exercices';
+      'Revenez en arrière et glissez un exercice vers la droite pour l\'ajouter';
+
+  @override
+  String get tooltipBackToExercises => 'Retour aux exercices';
 
   @override
   String get sortCreatedAtDesc => 'Plus récent';

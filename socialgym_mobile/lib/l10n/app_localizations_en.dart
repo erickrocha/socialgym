@@ -1092,7 +1092,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Start workout feature coming soon';
 
   @override
-  String get tooltipSwipeToView => 'Swipe left to add exercises';
+  String get tooltipSwipeToView =>
+      'Go back and swipe an exercise right to add it';
+
+  @override
+  String get tooltipBackToExercises => 'Back to exercises';
 
   @override
   String get sortCreatedAtDesc => 'Newest First';

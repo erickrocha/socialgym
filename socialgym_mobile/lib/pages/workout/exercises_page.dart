@@ -311,6 +311,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
             Expanded(
               child: PageView(
                 controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
                 children: [_buildExercisesPage(l10n), _buildSelectedPage(l10n)],
               ),
             ),
@@ -336,13 +337,29 @@ class _ExercisesPageState extends State<ExercisesPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                l10n.labelFilterExercises,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF666666),
-                ),
+              Row(
+                children: [
+                  if (_currentPage == 1)
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {
+                        _pageController.animateToPage(
+                          0,
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      tooltip: l10n.tooltipBackToExercises,
+                    ),
+                  Text(
+                    l10n.labelFilterExercises,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF666666),
+                    ),
+                  ),
+                ],
               ),
               Row(
                 children: [

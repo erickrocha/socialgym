@@ -2244,8 +2244,14 @@ abstract class AppLocalizations {
   /// No description provided for @tooltipSwipeToView.
   ///
   /// In en, this message translates to:
-  /// **'Swipe left to add exercises'**
+  /// **'Go back and swipe an exercise right to add it'**
   String get tooltipSwipeToView;
+
+  /// No description provided for @tooltipBackToExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to exercises'**
+  String get tooltipBackToExercises;
 
   /// No description provided for @sortCreatedAtDesc.
   ///

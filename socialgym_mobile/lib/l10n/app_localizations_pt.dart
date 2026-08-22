@@ -1106,7 +1106,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tooltipSwipeToView =>
-      'Desliza para a esquerda para adicionar exercícios';
+      'Volta atrás e desliza um exercício para a direita para adicioná-lo';
+
+  @override
+  String get tooltipBackToExercises => 'Voltar aos exercícios';
 
   @override
   String get sortCreatedAtDesc => 'Mais Recente';
@@ -2514,7 +2517,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get tooltipSwipeToView =>
-      'Deslize para a esquerda para adicionar exercícios';
+      'Volte e deslize um exercício para a direita para adicioná-lo';
+
+  @override
+  String get tooltipBackToExercises => 'Voltar para exercícios';
 
   @override
   String get sortCreatedAtDesc => 'Mais Recente';

@@ -1103,7 +1103,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tooltipSwipeToView =>
-      'Veeg naar links om oefeningen toe te voegen';
+      'Ga terug en veeg een oefening naar rechts om deze toe te voegen';
+
+  @override
+  String get tooltipBackToExercises => 'Terug naar oefeningen';
 
   @override
   String get sortCreatedAtDesc => 'Nieuwste Eerst';
