@@ -229,10 +229,7 @@ pub async fn activate(
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<AccessTokenJson>> {
     if parse_uuid(&business_profile_uuid).is_err() {
-        return Err(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::InvalidParameterValue,
-        ));
+        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::InvalidParameterValue,));
     }
 
     let result = SwitchBusinessProfile::activate(

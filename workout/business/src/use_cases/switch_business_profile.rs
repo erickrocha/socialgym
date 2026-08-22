@@ -28,12 +28,13 @@ impl SwitchBusinessProfile {
             .ok_or(SwitchBusinessProfileError::NotFound)?;
         let business_profile = BusinessProfileEntityMapper::from_model(model);
 
-        if business_profile.owner_id != user.id.unwrap() {
-            log::warn!("User_id={:?} is not the owner of business profile uuid={}",user.id,business_profile_uuid);
+        let person = Self::load_person(db, user).await;
+
+        if business_profile.owner_id != person.id.unwrap() {
+            log::warn!("Person_id={:?} is not the owner of business profile uuid={}",user.id,business_profile_uuid);
             return Err(SwitchBusinessProfileError::Forbidden);
         }
 
-        let person = Self::load_person(db, user).await;
         let access_token = Authentication::generate_access_token(user,&person,Some(&business_profile),true);
         Self::revoke_previous_token(db, user, current_jti, current_exp).await;
         Ok(access_token)
