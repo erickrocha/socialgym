@@ -17,6 +17,11 @@ message Workout {
   repeated grpc.exercise.Exercise exercises = 10;
   string created_at = 11;
   string updated_at = 12;
+  // Only used on AddWorkout, by a caller acting as a business profile, to
+  // create the workout owned by this team member instead of the profile
+  // itself. Requires an Accepted `team_members` relationship. Empty = normal
+  // ownership (the acting identity).
+  string target_person_uuid = 13;
 }
 
 service WorkoutService {

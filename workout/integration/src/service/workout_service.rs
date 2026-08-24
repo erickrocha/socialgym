@@ -12,7 +12,9 @@ use business::use_cases::workout_use_case::WorkoutUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
-use crate::infrastructure::utils::{business_status, require_actor, validate_uuid};
+use crate::infrastructure::utils::{
+    business_status, require_active_profile, require_actor, validate_uuid,
+};
 
 pub struct GrpcWorkoutService {
     conn: Arc<DatabaseConnection>,
@@ -74,21 +76,35 @@ impl WorkoutService for GrpcWorkoutService {
 
     async fn add_workout(&self, request: Request<Workout>) -> Result<Response<Workout>, Status> {
         let actor = require_actor(&request)?;
+        let active_profile = require_active_profile(&request);
         let payload = request.into_inner();
+        let assign_to_person_uuid = if payload.target_person_uuid.is_empty() {
+            None
+        } else {
+            Some(payload.target_person_uuid.clone())
+        };
         let workout = WorkoutMapper::domain(payload);
-        let created_workout = WorkoutUseCase::persist(&self.conn, workout, &actor)
-            .await
-            .map_err(business_status)?;
+        let created_workout = WorkoutUseCase::persist(
+            &self.conn,
+            workout,
+            &actor,
+            active_profile.as_ref(),
+            assign_to_person_uuid.as_deref(),
+        )
+        .await
+        .map_err(business_status)?;
         Ok(Response::new(WorkoutMapper::response(created_workout)))
     }
 
     async fn update_workout(&self, request: Request<Workout>) -> Result<Response<Workout>, Status> {
         let actor = require_actor(&request)?;
+        let active_profile = require_active_profile(&request);
         let payload = request.into_inner();
         let workout = WorkoutMapper::domain(payload);
-        let updated_workout = WorkoutUseCase::persist(&self.conn, workout, &actor)
-            .await
-            .map_err(business_status)?;
+        let updated_workout =
+            WorkoutUseCase::persist(&self.conn, workout, &actor, active_profile.as_ref(), None)
+                .await
+                .map_err(business_status)?;
         Ok(Response::new(WorkoutMapper::response(updated_workout)))
     }
 
@@ -115,12 +131,14 @@ impl WorkoutService for GrpcWorkoutService {
 
     async fn add_exercises_to_workout(&self,request: Request<WorkoutExercisesRequest>) -> Result<Response<Workout>, Status> {
         let actor = require_actor(&request)?;
+        let active_profile = require_active_profile(&request);
         let payload = request.into_inner();
         validate_uuid(&payload.workout_uuid, "workout_uuid")?;
         let workout_result =WorkoutUseCase::get_by_uuid(&self.conn, payload.workout_uuid.clone()).await;
 
         let workout = workout_result.map_err(business_status)?;
-        ensure_owns(workout.owner_id, actor.person_id).map_err(business_status)?;
+        let acting_owner_id = active_profile.as_ref().and_then(|p| p.id).unwrap_or(actor.person_id);
+        ensure_owns(workout.owner_id, acting_owner_id).map_err(business_status)?;
 
         let domain_exercises: Vec<Exercise> = ExerciseMapper::domain_vec(payload.exercises);
         let result = ExerciseUseCase::add_all_to_workout(
@@ -128,6 +146,7 @@ impl WorkoutService for GrpcWorkoutService {
             workout.id.unwrap(),
             domain_exercises,
             &actor,
+            active_profile.as_ref(),
         )
         .await;
         let added_exercises = result.map_err(business_status)?;

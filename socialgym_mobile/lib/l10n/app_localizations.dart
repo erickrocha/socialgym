@@ -759,6 +759,30 @@ abstract class AppLocalizations {
   /// **'Muscle Groups'**
   String get workoutMuscleGroups;
 
+  /// No description provided for @workoutAssignToTeamMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Create for'**
+  String get workoutAssignToTeamMember;
+
+  /// No description provided for @workoutAssignToMyself.
+  ///
+  /// In en, this message translates to:
+  /// **'Myself'**
+  String get workoutAssignToMyself;
+
+  /// No description provided for @workoutSelectTeamMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Select team member'**
+  String get workoutSelectTeamMember;
+
+  /// No description provided for @workoutNoTeamMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no accepted team members yet'**
+  String get workoutNoTeamMembers;
+
   /// No description provided for @workoutSets.
   ///
   /// In en, this message translates to:

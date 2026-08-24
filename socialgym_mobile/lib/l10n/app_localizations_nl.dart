@@ -343,6 +343,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get workoutMuscleGroups => 'Spiergroepen';
 
   @override
+  String get workoutAssignToTeamMember => 'Aanmaken voor';
+
+  @override
+  String get workoutAssignToMyself => 'Mezelf';
+
+  @override
+  String get workoutSelectTeamMember => 'Teamlid selecteren';
+
+  @override
+  String get workoutNoTeamMembers => 'Je hebt nog geen geaccepteerde teamleden';
+
+  @override
   String get workoutSets => 'Sets';
 
   @override

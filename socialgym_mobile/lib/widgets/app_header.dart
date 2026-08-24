@@ -121,6 +121,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                                 isActive: s == currentSection,
                                 showLabel: isDesktop,
                                 label: _sectionLabel(s, l10n),
+                                isProfessional: isProfessional,
                               ),
                             )
                             .toList(),
@@ -172,12 +173,14 @@ class _SectionTab extends StatelessWidget {
   final bool isActive;
   final bool showLabel; // true on desktop
   final String label;
+  final bool isProfessional;
 
   const _SectionTab({
     required this.section,
     required this.isActive,
     required this.showLabel,
     required this.label,
+    required this.isProfessional,
   });
 
   @override
@@ -189,7 +192,7 @@ class _SectionTab extends StatelessWidget {
 
     return InkWell(
       onTap: () => Navigator.of(context).pushNamedAndRemoveUntil(
-        section.rootRoute,
+        section.rootRouteFor(isProfessional),
         (route) => false,
       ),
       borderRadius: BorderRadius.circular(4),

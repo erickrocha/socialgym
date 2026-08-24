@@ -64,9 +64,9 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
       return;
     }
     final personProvider = context.read<PersonProvider>();
-    final ownerId = personProvider.ownerId;
-    final ownerUuid = personProvider.ownerUuid;
-    final ownerName = personProvider.ownerName;
+    final ownerId = personProvider.activeAuthorId;
+    final ownerUuid = personProvider.activeAuthorUuid;
+    final ownerName = personProvider.activeAuthorName;
 
     setState(() {
       _exercises.add(Exercise(

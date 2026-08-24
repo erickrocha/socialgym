@@ -218,6 +218,33 @@ impl TeamMemberUseCase {
             .ok_or_else(|| BusinessError::new("Team member not found".to_string()))
     }
 
+    /// Authorization guard for creating something on a person's behalf: the
+    /// business profile may only act for a person who has an Accepted team
+    /// membership with it — consent already granted via the invite/accept flow.
+    pub async fn ensure_accepted_member(
+        db: &DbConn,
+        business_profile_id: i32,
+        person_id: i32,
+    ) -> Result<(), BusinessError> {
+        let membership = TeamMemberGateway::find_membership(db, business_profile_id, person_id)
+            .await
+            .map_err(|e| {
+                log::error!("Error checking team membership: {:?}", e);
+                BusinessError::infrastructure("Error checking team membership")
+            })?;
+
+        let is_accepted = membership
+            .map(|m| TeamMemberStatus::from_string(&m.status) == TeamMemberStatus::Accepted)
+            .unwrap_or(false);
+
+        if !is_accepted {
+            return Err(BusinessError::forbidden(
+                "Person is not an accepted team member",
+            ));
+        }
+        Ok(())
+    }
+
     /// Persons of a business profile's team, by membership status.
     pub async fn find_all_persons(
         db: &DbConn,

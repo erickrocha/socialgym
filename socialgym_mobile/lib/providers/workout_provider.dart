@@ -55,13 +55,16 @@ class WorkoutProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> addWorkout(Workout workoutData) async {
+  Future<bool> addWorkout(Workout workoutData, {String? targetPersonUuid}) async {
     _loading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final workout = await GrpcWorkoutService.createWorkout(workout: workoutData);
+      final workout = await GrpcWorkoutService.createWorkout(
+        workout: workoutData,
+        targetPersonUuid: targetPersonUuid,
+      );
       _workouts = [..._workouts, workout];
       _loading = false;
       notifyListeners();

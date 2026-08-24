@@ -70,11 +70,18 @@ class GrpcWorkoutService {
     }
   }
 
-  static Future<Workout> createWorkout({required Workout workout}) async {
+  static Future<Workout> createWorkout({
+    required Workout workout,
+    String? targetPersonUuid,
+  }) async {
     try {
       final mapper = WorkoutMapper();
+      final proto = $workout.Workout()..mergeFromMessage(mapper.toProto(workout));
+      if (targetPersonUuid != null && targetPersonUuid.isNotEmpty) {
+        proto.targetPersonUuid = targetPersonUuid;
+      }
       final response = await _ensureClient().addWorkout(
-        $workout.Workout()..mergeFromMessage(mapper.toProto(workout)),
+        proto,
         options: grpc.CallOptions(timeout: ApiConfig.timeout),
       );
       return mapper.fromProto(response);

@@ -1,35 +1,91 @@
 use crate::commons::authorization::ensure_owns;
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::business_error::BusinessError;
+use crate::domain::business_profile::BusinessProfile;
 use crate::domain::exercise::ExerciseEntityMapper;
 use crate::domain::workout::{Workout, WorkoutEntityMapper};
 use crate::gateway::exercise_gateway::ExerciseGateway;
+use crate::gateway::person_gateway::PersonGateway;
 use crate::gateway::workout_exercise_gateway::WorkoutExerciseGateway;
 use crate::gateway::workout_gateway::WorkoutGateway;
+use crate::domain::person::PersonEntityMapper;
 use crate::domain::user::User;
 use crate::use_cases::exercise_use_case::ExerciseUseCase;
+use crate::use_cases::team_member_use_case::TeamMemberUseCase;
 use sea_orm::DbConn;
 
 pub struct WorkoutUseCase {}
 
 impl WorkoutUseCase {
-    /// Create or update a workout on behalf of `actor`.
+    /// Create or update a workout on behalf of `actor` (acting as
+    /// `active_profile` when a business profile is active).
     ///
-    /// The owner is always taken from `actor` — a client-supplied owner id is
-    /// ignored — and updating an existing workout requires owning it.
+    /// The owner is normally taken from the acting identity — a
+    /// client-supplied owner id is ignored — and updating an existing
+    /// workout requires owning it. When `assign_to_person_uuid` is given (new
+    /// workouts only), ownership instead transfers to that person, provided
+    /// the caller is acting as a business profile with an Accepted
+    /// `team_members` relationship with them.
     pub async fn persist(
         db: &DbConn,
         mut workout: Workout,
         actor: &User,
+        active_profile: Option<&BusinessProfile>,
+        assign_to_person_uuid: Option<&str>,
     ) -> Result<Workout, BusinessError> {
         log::info!(
             "[WorkoutUseCase::persist] Executing for actor person_id={}",
             actor.person_id
         );
 
+        if assign_to_person_uuid.is_some() && workout.id.is_some() {
+            return Err(BusinessError::validation(
+                "Cannot assign an existing workout to a team member",
+            ));
+        }
+
+        let (acting_owner_id, acting_owner_uuid) = match assign_to_person_uuid {
+            Some(target_uuid) => {
+                let profile = active_profile.ok_or_else(|| {
+                    BusinessError::validation(
+                        "Only a business profile can assign a workout to a team member",
+                    )
+                })?;
+                let profile_id = profile
+                    .id
+                    .ok_or_else(|| BusinessError::infrastructure("Business profile missing id"))?;
+
+                let target_model = PersonGateway::find_by_uuid(db, target_uuid)
+                    .await
+                    .map_err(|e| {
+                        log::error!("[WorkoutUseCase::persist] Failed to find target person: {}", e);
+                        BusinessError::infrastructure("Error finding person")
+                    })?
+                    .ok_or_else(|| BusinessError::not_found("Person not found"))?;
+                let target = PersonEntityMapper::from_model(target_model);
+                let target_id = target
+                    .id
+                    .ok_or_else(|| BusinessError::infrastructure("Person missing id"))?;
+                let target_uuid = target
+                    .uuid
+                    .clone()
+                    .ok_or_else(|| BusinessError::infrastructure("Person missing uuid"))?;
+
+                TeamMemberUseCase::ensure_accepted_member(db, profile_id, target_id).await?;
+
+                (target_id, target_uuid)
+            }
+            None => (
+                active_profile.and_then(|p| p.id).unwrap_or(actor.person_id),
+                active_profile
+                    .and_then(|p| p.uuid.clone())
+                    .unwrap_or_else(|| actor.person_uuid.clone()),
+            ),
+        };
+
         if let Some(id) = workout.id {
             let existing = Self::find_entity_by_id(db, id).await?;
-            ensure_owns(existing.owner_id, actor.person_id)?;
+            ensure_owns(existing.owner_id, acting_owner_id)?;
         }
 
         // `description` is a `text` column (migration m20260129_000007), so
@@ -41,8 +97,8 @@ impl WorkoutUseCase {
             )));
         }
 
-        workout.owner_id = actor.person_id;
-        workout.owner_uuid = actor.person_uuid.clone();
+        workout.owner_id = acting_owner_id;
+        workout.owner_uuid = acting_owner_uuid;
 
         let exercises = workout.exercises.clone();
         let domain = WorkoutGateway::persist(db, workout).await;
@@ -56,7 +112,7 @@ impl WorkoutUseCase {
         let workout_id = model.id.clone().unwrap();
 
         let exercise_result =
-            ExerciseUseCase::add_all_to_workout(db, workout_id, exercises, actor).await;
+            ExerciseUseCase::add_all_to_workout(db, workout_id, exercises, actor, active_profile).await;
 
         if exercise_result.is_err() {
             log::error!("Error adding exercise: {}", exercise_result.err().unwrap());

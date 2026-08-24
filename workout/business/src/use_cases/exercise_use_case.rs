@@ -1,6 +1,7 @@
 use crate::commons::authorization::ensure_owns;
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::business_error::BusinessError;
+use crate::domain::business_profile::BusinessProfile;
 use crate::domain::enums::Visibility;
 use crate::domain::exercise::{Exercise, ExerciseEntityMapper};
 use crate::domain::user::User;
@@ -13,16 +14,19 @@ use sea_orm::DbConn;
 pub struct ExerciseUseCase {}
 
 impl ExerciseUseCase {
-    /// Attach exercises to a workout on behalf of `actor`.
+    /// Attach exercises to a workout on behalf of `actor` (acting as
+    /// `active_profile` when a business profile is active).
     ///
-    /// New exercises are created owned by `actor`; an entry that references an
-    /// existing exercise must be one `actor` is allowed to read, so a workout
-    /// cannot be used to pull somebody else's private exercise into view.
+    /// New exercises are created owned by the acting identity; an entry that
+    /// references an existing exercise must be one the acting identity is
+    /// allowed to read, so a workout cannot be used to pull somebody else's
+    /// private exercise into view.
     pub async fn add_all_to_workout(
         db: &DbConn,
         workout_id: i32,
         exercises: Vec<Exercise>,
         actor: &User,
+        active_profile: Option<&BusinessProfile>,
     ) -> Result<Vec<Exercise>, BusinessError> {
         log::info!(
             "Adding {} exercises to workout_id {}",
@@ -34,15 +38,20 @@ impl ExerciseUseCase {
             return Ok(Vec::new());
         }
 
+        let acting_owner_id = active_profile.and_then(|p| p.id).unwrap_or(actor.person_id);
+        let acting_owner_uuid = active_profile
+            .and_then(|p| p.uuid.clone())
+            .unwrap_or_else(|| actor.person_uuid.clone());
+
         let mut resolved: Vec<Exercise> = Vec::with_capacity(exercises.len());
         for mut exercise in exercises {
             if let Some(id) = exercise.id {
                 let existing = Self::get(db, id).await?;
-                Self::ensure_readable(&existing, actor.person_id)?;
+                Self::ensure_readable(&existing, acting_owner_id)?;
                 resolved.push(existing);
             } else {
-                exercise.owner_id = actor.person_id;
-                exercise.owner_uuid = actor.person_uuid.clone();
+                exercise.owner_id = acting_owner_id;
+                exercise.owner_uuid = acting_owner_uuid.clone();
                 let model = ExerciseGateway::persist(db, exercise).await.map_err(|e| {
                     log::error!("Error persisting new exercise: {}", e);
                     BusinessError::new("Error adding exercises".to_string())
@@ -117,23 +126,31 @@ impl ExerciseUseCase {
         Ok(())
     }
 
-    /// Create or update an exercise on behalf of `actor`.
+    /// Create or update an exercise on behalf of `actor` (acting as
+    /// `active_profile` when a business profile is active).
     ///
-    /// The owner is always taken from `actor` — a client-supplied owner id is
-    /// ignored — and updating an existing exercise requires owning it.
+    /// The owner is always taken from the acting identity — a client-supplied
+    /// owner id is ignored — and updating an existing exercise requires
+    /// owning it.
     pub async fn persist(
         db: &DbConn,
         mut exercise: Exercise,
         actor: &User,
+        active_profile: Option<&BusinessProfile>,
     ) -> Result<Exercise, BusinessError> {
         log::info!(
             "[ExerciseUseCase::persist] Executing for actor person_id={}",
             actor.person_id
         );
 
+        let acting_owner_id = active_profile.and_then(|p| p.id).unwrap_or(actor.person_id);
+        let acting_owner_uuid = active_profile
+            .and_then(|p| p.uuid.clone())
+            .unwrap_or_else(|| actor.person_uuid.clone());
+
         if let Some(id) = exercise.id {
             let existing = Self::get(db, id).await?;
-            ensure_owns(existing.owner_id, actor.person_id)?;
+            ensure_owns(existing.owner_id, acting_owner_id)?;
         }
 
         // Matches the varchar(255) column (migration m20260129_000008); Postgres
@@ -146,8 +163,8 @@ impl ExerciseUseCase {
             )));
         }
 
-        exercise.owner_id = actor.person_id;
-        exercise.owner_uuid = actor.person_uuid.clone();
+        exercise.owner_id = acting_owner_id;
+        exercise.owner_uuid = acting_owner_uuid;
 
         let model = ExerciseGateway::persist(db, exercise)
             .await

@@ -346,6 +346,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get workoutMuscleGroups => 'Grupos Musculares';
 
   @override
+  String get workoutAssignToTeamMember => 'Criar para';
+
+  @override
+  String get workoutAssignToMyself => 'Eu mesmo';
+
+  @override
+  String get workoutSelectTeamMember => 'Selecionar membro da equipa';
+
+  @override
+  String get workoutNoTeamMembers => 'Ainda não tem membros de equipa aceites';
+
+  @override
   String get workoutSets => 'Séries';
 
   @override
@@ -1755,6 +1767,19 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get workoutMuscleGroups => 'Grupos Musculares';
+
+  @override
+  String get workoutAssignToTeamMember => 'Criar para';
+
+  @override
+  String get workoutAssignToMyself => 'Eu mesmo';
+
+  @override
+  String get workoutSelectTeamMember => 'Selecionar membro da equipe';
+
+  @override
+  String get workoutNoTeamMembers =>
+      'Você ainda não tem membros de equipe aceitos';
 
   @override
   String get workoutSets => 'Séries';

@@ -346,6 +346,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get workoutMuscleGroups => 'Groupes Musculaires';
 
   @override
+  String get workoutAssignToTeamMember => 'Créer pour';
+
+  @override
+  String get workoutAssignToMyself => 'Moi-même';
+
+  @override
+  String get workoutSelectTeamMember => 'Sélectionner un membre de l\'équipe';
+
+  @override
+  String get workoutNoTeamMembers =>
+      'Vous n\'avez encore aucun membre d\'équipe accepté';
+
+  @override
   String get workoutSets => 'Séries';
 
   @override

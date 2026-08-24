@@ -16,6 +16,7 @@ import '../../widgets/workout_card.dart';
 import 'exercise_form_dialog.dart';
 import 'workout_execution_page.dart';
 import 'workout_form_dialog.dart';
+import 'workout_form_page.dart';
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -45,19 +46,22 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
-  void _showAddWorkoutDialog() {
+  void _navigateToAddWorkoutPage() {
     final personProvider = context.read<PersonProvider>();
     final ownerId = personProvider.activeAuthorId;
     final ownerUuid = personProvider.activeAuthorUuid;
 
-    showDialog(
-      context: context,
-      builder: (_) => WorkoutFormDialog(ownerId: ownerId, ownerUuid: ownerUuid),
-    ).then((result) {
-      if (result == true) {
-        _fetchWorkouts();
-      }
-    });
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) => WorkoutFormPage(ownerId: ownerId, ownerUuid: ownerUuid),
+          ),
+        )
+        .then((result) {
+          if (result == true) {
+            _fetchWorkouts();
+          }
+        });
   }
 
   void _showAddExerciseDialog(Workout workout) {
@@ -157,7 +161,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       navSection: NavSection.workout,
       currentRoute: '/workouts',
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddWorkoutDialog,
+        onPressed: _navigateToAddWorkoutPage,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         tooltip: l10n.workoutAddNew,

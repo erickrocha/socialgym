@@ -773,8 +773,14 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
             updated_at: None,
         };
 
-        let result =
-            WorkoutUseCase::persist(&db, workout, &actor(1, uuid_to_string(person_uuid))).await;
+        let result = WorkoutUseCase::persist(
+            &db,
+            workout,
+            &actor(1, uuid_to_string(person_uuid)),
+            None,
+            None,
+        )
+        .await;
 
         assert!(result.is_ok());
         let saved = result.unwrap();
@@ -828,7 +834,8 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
         };
 
         let result =
-            ExerciseUseCase::persist(&db, exercise, &actor(1, uuid_to_string(owner_uuid))).await;
+            ExerciseUseCase::persist(&db, exercise, &actor(1, uuid_to_string(owner_uuid)), None)
+                .await;
 
         assert!(result.is_ok());
         let saved = result.unwrap();
@@ -937,9 +944,14 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
         exercise.id = None;
         exercise.uuid = None;
         // client claims to be person 1; the actor is person 7
-        let saved = ExerciseUseCase::persist(&db, exercise, &actor(7, uuid_to_string(Uuid::new_v4())))
-            .await
-            .unwrap();
+        let saved = ExerciseUseCase::persist(
+            &db,
+            exercise,
+            &actor(7, uuid_to_string(Uuid::new_v4())),
+            None,
+        )
+        .await
+        .unwrap();
 
         assert_eq!(saved.owner_id, 7);
     }

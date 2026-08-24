@@ -9,6 +9,7 @@ use crate::AppState;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use business::domain::business_profile::BusinessProfile;
 use business::domain::user::User;
 use business::use_cases::exercise_use_case::ExerciseUseCase;
 use serde::Deserialize;
@@ -68,11 +69,16 @@ pub async fn get_exercise_by_uuid(
 pub async fn update_exercise(
     State(state): State<AppState>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<ExerciseJson>,
 ) -> HttpResponse<Json<ExerciseJson>> {
-    let exercise =
-        ExerciseUseCase::persist(&state.conn, ExerciseMapper::domain(payload), &current_user)
+    let exercise = ExerciseUseCase::persist(
+        &state.conn,
+        ExerciseMapper::domain(payload),
+        &current_user,
+        active_profile.as_deref(),
+    )
         .await
         .map_err(|error| exercise_error(error, locale))?;
     Ok(Json(ExerciseMapper::json(exercise)))
@@ -110,13 +116,16 @@ pub async fn delete_exercise_by_uuid(
 pub async fn add_exercise(
     state: State<AppState>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<ExerciseJson>,
 ) -> HttpResponse<(StatusCode, Json<ExerciseJson>)> {
     let exercise = ExerciseMapper::domain(payload);
 
     // Add exercise via use case
-    let result = ExerciseUseCase::persist(&state.conn, exercise, &current_user).await;
+    let result =
+        ExerciseUseCase::persist(&state.conn, exercise, &current_user, active_profile.as_deref())
+            .await;
 
     let created_exercise = result.map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesNotAdded)
@@ -175,13 +184,18 @@ pub async fn delete_exercise(
 pub async fn query_exercises(
     state: State<AppState>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<ExerciseParams>,
 ) -> HttpResponse<Json<PaginatedExerciseJson>> {
     // `ownerUuid` only selects the uuid-keyed query shape; the identity it runs
-    // as is always the caller's, never the one in the body.
+    // as is always the caller's acting identity (their active business
+    // profile, if any, else themself), never the one in the body.
     if payload.owner_uuid.is_some() {
-        let owner_uuid = current_user.person_uuid.clone();
+        let owner_uuid = active_profile
+            .as_deref()
+            .and_then(|p| p.uuid.clone())
+            .unwrap_or_else(|| current_user.person_uuid.clone());
         let page_number = payload.page_number.unwrap_or(1);
         let page_size = payload.page_size.unwrap_or(20).min(100);
         if page_number == 0 || page_size == 0 {

@@ -16,7 +16,7 @@ import '../../providers/exercise_selection_provider.dart';
 import '../../providers/person_provider.dart';
 import '../../widgets/exercise_item_paginated_widget.dart';
 import '../../widgets/main_layout.dart';
-import 'add_exercise_dialog.dart';
+import 'add_exercise_page.dart';
 import 'workout_execution_page.dart';
 import 'workout_form_dialog.dart';
 
@@ -85,7 +85,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
 
   Future<void> _loadExercises() async {
     final provider = context.read<ExerciseSelectionProvider>();
-    final ownerUuid = context.read<PersonProvider>().ownerUuid;
+    final ownerUuid = context.read<PersonProvider>().activeAuthorUuid;
     if (ownerUuid.isEmpty) return;
 
     provider.setLoading(true);
@@ -149,7 +149,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
   }
 
   void _showFiltersModal() {
-    final ownerUuid = context.read<PersonProvider>().ownerUuid;
+    final ownerUuid = context.read<PersonProvider>().activeAuthorUuid;
     final authProvider = context.read<AuthProvider>();
     final token = authProvider.auth?.accessToken ?? '';
     if (ownerUuid.isEmpty && token.isEmpty) return;
@@ -257,10 +257,9 @@ class _ExercisesPageState extends State<ExercisesPage> {
     });
   }
 
-  void _showAddExerciseDialog() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => const AddExerciseDialog(),
+  void _navigateToAddExercisePage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AddExercisePage()),
     );
   }
 
@@ -365,7 +364,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.add),
-                    onPressed: _showAddExerciseDialog,
+                    onPressed: _navigateToAddExercisePage,
                     tooltip: l10n.tooltipAddExercise,
                   ),
                   IconButton(
@@ -857,7 +856,7 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final personProvider = context.read<PersonProvider>();
-    final ownerUuid = personProvider.ownerUuid;
+    final ownerUuid = personProvider.activeAuthorUuid;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

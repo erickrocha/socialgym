@@ -6,7 +6,9 @@ use business::use_cases::exercise_use_case::ExerciseUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
-use crate::infrastructure::utils::{business_status, require_actor, validate_uuid, validate_uuids};
+use crate::infrastructure::utils::{
+    business_status, require_active_profile, require_actor, validate_uuid, validate_uuids,
+};
 
 pub struct GrpcExerciseService {
     conn: Arc<DatabaseConnection>,
@@ -47,6 +49,7 @@ impl ExerciseService for GrpcExerciseService {
         request: Request<ExerciseParams>,
     ) -> Result<Response<PaginatedExercise>, Status> {
         let actor = require_actor(&request)?;
+        let active_profile = require_active_profile(&request);
         let req = request.into_inner();
         let page_number = req.page_number;
         let page_size = req.page_size;
@@ -73,10 +76,15 @@ impl ExerciseService for GrpcExerciseService {
 
         // Get public_owner_ids, default to empty if not provided
         let public_owner_uuids = req.owners.iter().cloned().collect::<Vec<String>>();
-        // The query always runs as the caller; `owner_uuid` in the request is ignored.
+        // The query always runs as the caller's acting identity (their active
+        // business profile, if any, else themself); `owner_uuid` in the
+        // request is ignored.
+        let acting_owner_uuid = active_profile
+            .and_then(|p| p.uuid)
+            .unwrap_or_else(|| actor.person_uuid.clone());
         let result = ExerciseUseCase::find_by_complex_filters_paginated_uuid(
             &self.conn,
-            actor.person_uuid.clone(),
+            acting_owner_uuid,
             public_owner_uuids,
             category,
             visibility,
@@ -96,9 +104,11 @@ impl ExerciseService for GrpcExerciseService {
 
     async fn add_exercise(&self, request: Request<Exercise>) -> Result<Response<Exercise>, Status> {
         let actor = require_actor(&request)?;
+        let active_profile = require_active_profile(&request);
         let payload = request.into_inner();
         let exercise = ExerciseMapper::domain(payload);
-        let persisted = ExerciseUseCase::persist(&self.conn, exercise, &actor).await;
+        let persisted =
+            ExerciseUseCase::persist(&self.conn, exercise, &actor, active_profile.as_ref()).await;
         let grpc_exercise = ExerciseMapper::response(persisted.map_err(business_status)?);
         Ok(Response::new(grpc_exercise))
     }
@@ -108,9 +118,11 @@ impl ExerciseService for GrpcExerciseService {
         request: Request<Exercise>,
     ) -> Result<Response<Exercise>, Status> {
         let actor = require_actor(&request)?;
+        let active_profile = require_active_profile(&request);
         let payload = request.into_inner();
         let exercise = ExerciseMapper::domain(payload);
-        let persisted = ExerciseUseCase::persist(&self.conn, exercise, &actor).await;
+        let persisted =
+            ExerciseUseCase::persist(&self.conn, exercise, &actor, active_profile.as_ref()).await;
         let grpc_exercise = ExerciseMapper::response(persisted.map_err(business_status)?);
         Ok(Response::new(grpc_exercise))
     }

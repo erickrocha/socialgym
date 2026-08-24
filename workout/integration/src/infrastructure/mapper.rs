@@ -351,6 +351,7 @@ impl Mapper<DomainWorkout, proto::workout::Workout> for WorkoutMapper {
             exercises: ExerciseMapper::response_vec(t.exercises),
             created_at: t.created_at.map(|d| d.to_string()).unwrap_or_default(),
             updated_at: t.updated_at.map(|d| d.to_string()).unwrap_or_default(),
+            target_person_uuid: String::new(),
         }
     }
 

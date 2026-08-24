@@ -261,6 +261,7 @@ impl Mapper<Workout, WorkoutJson> for WorkoutMapper {
             visibility: workout.visibility.to_string(),
             created_at: workout.created_at,
             updated_at: workout.updated_at,
+            target_person_uuid: None,
         }
     }
 

@@ -10,6 +10,7 @@ use crate::AppState;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use business::domain::business_profile::BusinessProfile;
 use business::domain::exercise::Exercise;
 use business::domain::user::User;
 use business::use_cases::exercise_use_case::ExerciseUseCase;
@@ -68,10 +69,17 @@ pub async fn get_workouts_by_owner_uuid(
 pub async fn update_workout(
     State(state): State<AppState>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<WorkoutJson>,
 ) -> HttpResponse<Json<WorkoutJson>> {
-    let workout = WorkoutUseCase::persist(&state.conn, WorkoutMapper::domain(payload), &current_user)
+    let workout = WorkoutUseCase::persist(
+        &state.conn,
+        WorkoutMapper::domain(payload),
+        &current_user,
+        active_profile.as_deref(),
+        None,
+    )
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutAddFailed)
@@ -110,19 +118,25 @@ pub async fn add_exercises_by_workout_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
     Json(exercises): Json<Vec<ExerciseJson>>,
 ) -> HttpResponse<Json<WorkoutJson>> {
     let mut workout = WorkoutUseCase::get_by_uuid(&state.conn, uuid)
         .await
         .map_err(|error| workout_error(error, locale))?;
-    business::commons::authorization::ensure_owns(workout.owner_id, current_user.person_id)
+    let acting_owner_id = active_profile
+        .as_deref()
+        .and_then(|p| p.id)
+        .unwrap_or(current_user.person_id);
+    business::commons::authorization::ensure_owns(workout.owner_id, acting_owner_id)
         .map_err(|error| workout_error(error, locale))?;
     workout.exercises = ExerciseUseCase::add_all_to_workout(
         &state.conn,
         workout.id.unwrap(),
         ExerciseMapper::domain_vec(exercises),
         &current_user,
+        active_profile.as_deref(),
     )
     .await
     .map_err(|error| {
@@ -150,12 +164,20 @@ pub async fn add_exercises_by_workout_uuid(
 pub async fn add_workout(
     state: State<AppState>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<WorkoutJson>,
 ) -> HttpResponse<(StatusCode, Json<WorkoutJson>)> {
+    let assign_to_person_uuid = payload.target_person_uuid.clone();
     let domain = WorkoutMapper::domain(payload);
 
-    let workout = WorkoutUseCase::persist(&state.conn, domain, &current_user)
+    let workout = WorkoutUseCase::persist(
+        &state.conn,
+        domain,
+        &current_user,
+        active_profile.as_deref(),
+        assign_to_person_uuid.as_deref(),
+    )
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutAddFailed)
@@ -217,6 +239,7 @@ pub async fn add_exercises(
     state: State<AppState>,
     Path(workout_id): Path<i32>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
     Json(exercises): Json<Vec<ExerciseJson>>,
 ) -> HttpResponse<(StatusCode, Json<Vec<ExerciseJson>>)> {
@@ -225,13 +248,22 @@ pub async fn add_exercises(
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutNotFound)
         })?;
-    business::commons::authorization::ensure_owns(workout.owner_id, current_user.person_id)
+    let acting_owner_id = active_profile
+        .as_deref()
+        .and_then(|p| p.id)
+        .unwrap_or(current_user.person_id);
+    business::commons::authorization::ensure_owns(workout.owner_id, acting_owner_id)
         .map_err(|error| workout_error(error, locale))?;
 
     let domain_exercises: Vec<Exercise> = ExerciseMapper::domain_vec(exercises);
-    let result =
-        ExerciseUseCase::add_all_to_workout(&state.conn, workout_id, domain_exercises, &current_user)
-            .await;
+    let result = ExerciseUseCase::add_all_to_workout(
+        &state.conn,
+        workout_id,
+        domain_exercises,
+        &current_user,
+        active_profile.as_deref(),
+    )
+    .await;
     let added_exercises = result.map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesNotAdded)
     })?;

@@ -18,4 +18,9 @@ pub struct WorkoutJson {
     pub exercises: Vec<ExerciseJson>,
     pub created_at: Option<chrono::NaiveDateTime>,
     pub updated_at: Option<chrono::NaiveDateTime>,
+    /// Only used on create, by a caller acting as a business profile, to
+    /// create the workout owned by this team member instead of the profile
+    /// itself. Requires an Accepted `team_members` relationship.
+    #[serde(default)]
+    pub target_person_uuid: Option<String>,
 }

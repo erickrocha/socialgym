@@ -7,14 +7,16 @@ enum NavSection { home, gallery, workout }
 
 extension NavSectionExt on NavSection {
   /// The root route navigated to when this section tab is tapped.
-  String get rootRoute {
+  /// Evolution Check-in is person-only, so business profiles land on
+  /// the Workouts page instead when tapping the workout section.
+  String rootRouteFor(bool isProfessional) {
     switch (this) {
       case NavSection.home:
         return '/feed';
       case NavSection.gallery:
         return '/gallery';
       case NavSection.workout:
-        return '/evolution';
+        return isProfessional ? '/workouts' : '/evolution';
     }
   }
 

@@ -298,14 +298,15 @@ class SidebarContent extends StatelessWidget {
     PersonProvider personProvider,
   ) {
     return [
-      _SidebarItem(
-        icon: Icons.trending_up_outlined,
-        activeIcon: Icons.trending_up,
-        label: l10n.menuEvolution,
-        isActive: currentRoute == '/evolution',
-        isCollapsed: isCollapsed,
-        onTap: () => _go(context, '/evolution'),
-      ),
+      if (!personProvider.isProfessional)
+        _SidebarItem(
+          icon: Icons.trending_up_outlined,
+          activeIcon: Icons.trending_up,
+          label: l10n.menuEvolution,
+          isActive: currentRoute == '/evolution',
+          isCollapsed: isCollapsed,
+          onTap: () => _go(context, '/evolution'),
+        ),
       _SidebarItem(
         icon: Icons.fitness_center_outlined,
         activeIcon: Icons.fitness_center,

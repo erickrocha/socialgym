@@ -41,6 +41,8 @@ class PersonProvider extends ChangeNotifier {
   int get activeAuthorId => _activeBusinessProfile?.id ?? _person?.id ?? 0;
   String get activeAuthorUuid =>
       _activeBusinessProfile?.uuid ?? _person?.uuid ?? '';
+  String get activeAuthorName =>
+      _activeBusinessProfile?.businessName ?? _person?.fullName ?? 'Unknow';
 
   /// Avatar/logo image reference of whichever account is currently active.
   String? get activeAuthorObjectKeyOrLogo =>
