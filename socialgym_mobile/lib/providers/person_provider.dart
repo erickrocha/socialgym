@@ -398,7 +398,16 @@ class PersonProvider extends ChangeNotifier {
   /// Switch to a profile by index. Activates the business profile on the
   /// backend (reissuing the JWT scoped to it) and returns the new token, or
   /// null on failure.
-  Future<AuthResponse?> switchProfile(int profileIndex, String token) async {
+  ///
+  /// The backend revokes the token used to authenticate the activate call as
+  /// part of rotating it, so [onTokenIssued] (if given) is invoked with the
+  /// new token immediately, before the follow-up gRPC call, so that call
+  /// authenticates with the new token rather than the just-revoked one.
+  Future<AuthResponse?> switchProfile(
+    int profileIndex,
+    String token, {
+    Future<void> Function(AuthResponse)? onTokenIssued,
+  }) async {
     if (_person == null ||
         profileIndex < 0 ||
         profileIndex >= _person!.businessProfiles.length) {
@@ -418,6 +427,9 @@ class PersonProvider extends ChangeNotifier {
         businessProfileUuid: selectedProfile.uuid!,
         token: token,
       );
+      if (onTokenIssued != null) {
+        await onTokenIssued(newAuth);
+      }
       _activeBusinessProfile =
           await GrpcBusinessProfileService.getBusinessProfileById(
             uuid: selectedProfile.uuid!,
@@ -442,12 +454,18 @@ class PersonProvider extends ChangeNotifier {
   /// Deactivate the current business profile on the backend (reissuing the
   /// JWT back in personal context) and returns the new token, or null on
   /// failure.
-  Future<AuthResponse?> switchToPersonal(String token) async {
+  Future<AuthResponse?> switchToPersonal(
+    String token, {
+    Future<void> Function(AuthResponse)? onTokenIssued,
+  }) async {
     _updating = true;
     _error = null;
     notifyListeners();
     try {
       final newAuth = await BusinessProfileRestService.deactivate(token: token);
+      if (onTokenIssued != null) {
+        await onTokenIssued(newAuth);
+      }
       _activeBusinessProfile = null;
       await _saveActiveBusinessProfileToStorage(null);
       _updating = false;

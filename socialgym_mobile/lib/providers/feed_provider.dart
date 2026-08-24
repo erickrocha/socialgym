@@ -14,6 +14,7 @@ class FeedProvider extends ChangeNotifier {
   bool _hasMore = true;
   String? _error;
   int _currentPage = 0;
+  int _requestGeneration = 0;
 
   List<FeedPost> get posts => List.unmodifiable(_posts);
   bool get loading => _loading;
@@ -29,6 +30,7 @@ class FeedProvider extends ChangeNotifier {
     String token, {
     String? businessProfileUuid,
   }) async {
+    final generation = ++_requestGeneration;
     _loading = true;
     _error = null;
     _posts = [];
@@ -42,16 +44,19 @@ class FeedProvider extends ChangeNotifier {
               businessProfileUuid,
               page: 0,
             );
+      if (generation != _requestGeneration) return;
       _posts = fetchedPosts;
       _currentPage = 0;
       _hasMore = fetchedPosts.length == _pageSize;
       _loading = false;
       notifyListeners();
     } on AppException catch (e) {
+      if (generation != _requestGeneration) return;
       _error = e.message;
       _loading = false;
       notifyListeners();
     } catch (_) {
+      if (generation != _requestGeneration) return;
       _error = 'Failed to load feed. Please try again.';
       _loading = false;
       notifyListeners();
@@ -64,6 +69,7 @@ class FeedProvider extends ChangeNotifier {
   }) async {
     if (_loading || _loadingMore || !_hasMore || token.isEmpty) return;
 
+    final generation = _requestGeneration;
     _loadingMore = true;
     _error = null;
     notifyListeners();
@@ -77,6 +83,7 @@ class FeedProvider extends ChangeNotifier {
               businessProfileUuid,
               page: nextPage,
             );
+      if (generation != _requestGeneration) return;
       final existingIds = _posts.map((post) => post.uuid).toSet();
       final uniquePosts = fetchedPosts
           .where((post) => !existingIds.contains(post.uuid))
@@ -88,10 +95,12 @@ class FeedProvider extends ChangeNotifier {
       _loadingMore = false;
       notifyListeners();
     } on AppException catch (e) {
+      if (generation != _requestGeneration) return;
       _error = e.message;
       _loadingMore = false;
       notifyListeners();
     } catch (_) {
+      if (generation != _requestGeneration) return;
       _error = 'Failed to load more posts. Please try again.';
       _loadingMore = false;
       notifyListeners();

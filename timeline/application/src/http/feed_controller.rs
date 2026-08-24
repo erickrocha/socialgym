@@ -83,7 +83,8 @@ pub async fn get_feed(
 
             Ok(Json(result))
         }
-        Err(_e) => Err(ExceptionResponse::InternalServerError(
+        Err(e) => Err(ExceptionResponse::from_business(
+            e,
             locale,
             ErrorKey::FeedFetchFailed,
         )),
@@ -151,7 +152,8 @@ pub async fn get_feed_by_uuid(
 
             Ok(Json(result))
         }
-        Err(_e) => Err(ExceptionResponse::InternalServerError(
+        Err(e) => Err(ExceptionResponse::from_business(
+            e,
             locale,
             ErrorKey::FeedFetchFailed,
         )),

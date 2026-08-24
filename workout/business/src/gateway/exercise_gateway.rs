@@ -1,5 +1,6 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{parse_uuid, parse_uuids};
+use crate::domain::enums::Visibility;
 use crate::domain::exercise::{Exercise, ExerciseEntityMapper};
 use entity::exercise_entity as exercise;
 use entity::exercise_entity::{Column, Entity};
@@ -193,14 +194,14 @@ impl ExerciseGateway {
                         .add(Column::OwnerId.is_in(friend_ids.clone()))
                         .add(
                             Condition::any()
-                                .add(Column::Visibility.eq("FriendsOnly"))
-                                .add(Column::Visibility.eq("Public")),
+                                .add(Column::Visibility.eq(Visibility::Friends.to_string()))
+                                .add(Column::Visibility.eq(Visibility::Public.to_string())),
                         ),
                 )
                 .add(
                     Condition::all()
                         .add(Column::OwnerId.is_in(public_owner_ids))
-                        .add(Column::Visibility.eq("Public")),
+                        .add(Column::Visibility.eq(Visibility::Public.to_string())),
                 ),
         );
 
@@ -209,11 +210,7 @@ impl ExerciseGateway {
         }
 
         if let Some(vis) = visibility {
-            query = query.filter(
-                Condition::any()
-                    .add(Column::OwnerId.eq(current_user_owner_id))
-                    .add(Column::Visibility.eq(vis)),
-            );
+            query = query.filter(Column::Visibility.eq(Visibility::from_string(&vis).to_string()));
         }
 
         let sort = sort_by.unwrap_or_else(|| "created_at_desc".to_string());
@@ -256,14 +253,14 @@ impl ExerciseGateway {
                         .add(Column::OwnerUuid.is_in(friend_uuids.clone()))
                         .add(
                             Condition::any()
-                                .add(Column::Visibility.eq("FriendsOnly"))
-                                .add(Column::Visibility.eq("Public")),
+                                .add(Column::Visibility.eq(Visibility::Friends.to_string()))
+                                .add(Column::Visibility.eq(Visibility::Public.to_string())),
                         ),
                 )
                 .add(
                     Condition::all()
                         .add(Column::OwnerUuid.is_in(public_owner_uuids.clone()))
-                        .add(Column::Visibility.eq("Public")),
+                        .add(Column::Visibility.eq(Visibility::Public.to_string())),
                 ),
         );
 
@@ -272,11 +269,7 @@ impl ExerciseGateway {
         }
 
         if let Some(vis) = visibility {
-            query = query.filter(
-                Condition::any()
-                    .add(Column::OwnerUuid.eq(current_user_owner_uuid))
-                    .add(Column::Visibility.eq(vis)),
-            );
+            query = query.filter(Column::Visibility.eq(Visibility::from_string(&vis).to_string()));
         }
 
         let sort = sort_by.unwrap_or_else(|| "created_at_desc".to_string());

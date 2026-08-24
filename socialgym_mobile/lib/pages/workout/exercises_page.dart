@@ -34,7 +34,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
 
   // Applied filter states
   String _selectedCategory = 'Force';
-  String _selectedVisibility = VisibilityOption.publicAccess.apiValue;
+  String _selectedVisibility = VisibilityOption.privateAccess.apiValue;
   String _selectedSort = 'created_at_desc';
   List<Person> _selectedOwnerPersons = [];
 

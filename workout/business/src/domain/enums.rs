@@ -71,10 +71,10 @@ impl Display for Visibility {
 
 impl Visibility {
     pub fn from_string(s: &str) -> Visibility {
-        match s {
+        match s.to_lowercase().as_str() {
             "public" => Visibility::Public,
             "private" => Visibility::Private,
-            "friends" => Visibility::Friends,
+            "friends" | "friendsonly" => Visibility::Friends,
             "professional" => Visibility::Professional,
             _ => Visibility::Public,
         }

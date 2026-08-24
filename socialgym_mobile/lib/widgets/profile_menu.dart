@@ -110,10 +110,17 @@ class _ProfileMenuState extends State<ProfileMenu> {
           final authProvider = context.read<AuthProvider>();
           final personProvider = context.read<PersonProvider>();
           final navigator = Navigator.of(context);
-          final newAuth = await personProvider.switchProfile(index, token);
+          final newAuth = await personProvider.switchProfile(
+            index,
+            token,
+            onTokenIssued: authProvider.applySwitchedToken,
+          );
           if (newAuth != null) {
-            await authProvider.applySwitchedToken(newAuth);
             navigator.pushNamedAndRemoveUntil('/feed', (route) => false);
+          } else if (context.mounted && personProvider.error != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(personProvider.error!)),
+            );
           }
         }
       }
@@ -126,10 +133,16 @@ class _ProfileMenuState extends State<ProfileMenu> {
         final authProvider = context.read<AuthProvider>();
         final personProvider = context.read<PersonProvider>();
         final navigator = Navigator.of(context);
-        final newAuth = await personProvider.switchToPersonal(token);
+        final newAuth = await personProvider.switchToPersonal(
+          token,
+          onTokenIssued: authProvider.applySwitchedToken,
+        );
         if (newAuth != null) {
-          await authProvider.applySwitchedToken(newAuth);
           navigator.pushNamedAndRemoveUntil('/feed', (route) => false);
+        } else if (context.mounted && personProvider.error != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(personProvider.error!)),
+          );
         }
         break;
       case 'add_profile':

@@ -91,10 +91,11 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
         throw Exception('Created business profile not found in refreshed profile list');
       }
 
-      final newAuth = await personProvider.switchProfile(index, token);
-      if (newAuth != null) {
-        await authProvider.applySwitchedToken(newAuth);
-      }
+      await personProvider.switchProfile(
+        index,
+        token,
+        onTokenIssued: authProvider.applySwitchedToken,
+      );
       await businessProfileProvider.load(uuid: created.uuid);
 
       if (!mounted) return;

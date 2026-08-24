@@ -29,7 +29,11 @@ impl FriendGateway {
             .await
             .map_err(|e| {
                 log::error!("Error fetching friends for '{}': {:?}", person_uuid, e);
-                BusinessError::new("Failed to fetch friends".to_string())
+                if e.code() == tonic::Code::Unauthenticated {
+                    BusinessError::unauthorized("Failed to fetch friends".to_string())
+                } else {
+                    BusinessError::new("Failed to fetch friends".to_string())
+                }
             })?;
 
         Ok(friend_uuids_from_response(

@@ -16,7 +16,7 @@ class ExerciseSelectionProvider with ChangeNotifier {
 
   // Filter state
   String _filterCategory = 'Force';
-  String _filterVisibility = 'Public';
+  String _filterVisibility = 'Private';
   List<int> _filterOwnerIds = [];
   String _sortBy = 'created_at_desc';
 
@@ -129,7 +129,7 @@ class ExerciseSelectionProvider with ChangeNotifier {
     _hasNextPage = false;
     _isLoading = false;
     _filterCategory = 'Force';
-    _filterVisibility = 'Public';
+    _filterVisibility = 'Private';
     _filterOwnerIds = [];
     _sortBy = 'created_at_desc';
     notifyListeners();
