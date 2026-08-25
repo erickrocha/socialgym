@@ -96,8 +96,10 @@ class SocialGymApp extends StatelessWidget {
               fontFamilyFallback: _fontFamilyFallbacks,
               colorScheme: ColorScheme.fromSeed(
                 seedColor: personProvider.isProfessional
-                    ? AppColors.professionalSecondary
-                    : AppColors.primary,
+                    ? AppColors.professionalPrimary
+                    : AppColors.primaryFor(
+                        personProvider.activeBusinessProfile?.businessType,
+                      ),
                 surface: AppColors.background,
               ),
               useMaterial3: true,

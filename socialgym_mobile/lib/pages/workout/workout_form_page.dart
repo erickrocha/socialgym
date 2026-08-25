@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_colors.dart';
+import '../../config/nav_section.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/person.dart';
 import '../../models/workout.dart';
 import '../../providers/person_provider.dart';
 import '../../providers/workout_provider.dart';
 import '../../widgets/difficulty_dropdown_field.dart';
+import '../../widgets/main_layout.dart';
 import '../../widgets/team/team_member_picker_field.dart';
 import '../../widgets/visibility_dropdown_field.dart';
 
@@ -75,13 +77,11 @@ class _WorkoutFormPageState extends State<WorkoutFormPage> {
     final workoutProvider = context.watch<WorkoutProvider>();
     final personProvider = context.watch<PersonProvider>();
     final businessProfileId = personProvider.activeBusinessProfile?.id;
+    final businessType = personProvider.activeBusinessProfile?.businessType;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.workoutAddNew),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
+    return MainLayout(
+      navSection: NavSection.workout,
+      currentRoute: '/workouts',
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -90,6 +90,19 @@ class _WorkoutFormPageState extends State<WorkoutFormPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    Text(
+                      l10n.workoutAddNew,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 if (workoutProvider.error != null) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -114,6 +127,7 @@ class _WorkoutFormPageState extends State<WorkoutFormPage> {
                   decoration: _inputDecoration(
                     l10n.workoutFormName,
                     l10n.workoutFormNamePlaceholder,
+                    businessType,
                   ),
                   onFieldSubmitted: (_) {
                     FocusScope.of(context).requestFocus(_descriptionFocus);
@@ -130,6 +144,7 @@ class _WorkoutFormPageState extends State<WorkoutFormPage> {
                   decoration: _inputDecoration(
                     l10n.workoutFormDescription,
                     l10n.workoutFormDescriptionPlaceholder,
+                    businessType,
                   ),
                   maxLines: 2,
                   onFieldSubmitted: (_) {
@@ -143,7 +158,7 @@ class _WorkoutFormPageState extends State<WorkoutFormPage> {
                     Expanded(
                       child: DifficultyDropdownField(
                         value: _difficulty,
-                        decoration: _inputDecoration(l10n.workoutDifficulty, ''),
+                        decoration: _inputDecoration(l10n.workoutDifficulty, '', businessType),
                         onChanged: (v) => setState(() => _difficulty = v ?? 'soft'),
                       ),
                     ),
@@ -151,7 +166,7 @@ class _WorkoutFormPageState extends State<WorkoutFormPage> {
                     Expanded(
                       child: VisibilityDropdownField(
                         value: _visibility,
-                        decoration: _inputDecoration(l10n.workoutVisibility, ''),
+                        decoration: _inputDecoration(l10n.workoutVisibility, '', businessType),
                         onChanged: (v) => setState(() => _visibility = v ?? 'Private'),
                       ),
                     ),
@@ -164,7 +179,7 @@ class _WorkoutFormPageState extends State<WorkoutFormPage> {
                     businessProfileId: businessProfileId,
                     selected: _assignTo,
                     onChanged: (person) => setState(() => _assignTo = person),
-                    decoration: _inputDecoration(l10n.workoutAssignToTeamMember, ''),
+                    decoration: _inputDecoration(l10n.workoutAssignToTeamMember, '', businessType),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -178,15 +193,15 @@ class _WorkoutFormPageState extends State<WorkoutFormPage> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Wrap(spacing: 8, runSpacing: 4, children: _buildMuscleGroupChips(l10n)),
+                Wrap(spacing: 8, runSpacing: 4, children: _buildMuscleGroupChips(l10n, businessType)),
                 const SizedBox(height: 24),
 
                 ElevatedButton(
                   onPressed: workoutProvider.loading ? null : _handleSave,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: AppColors.primaryFor(businessType),
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.primaryDisabled,
+                    disabledBackgroundColor: AppColors.primaryDisabledFor(businessType),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
@@ -206,7 +221,7 @@ class _WorkoutFormPageState extends State<WorkoutFormPage> {
     );
   }
 
-  List<Widget> _buildMuscleGroupChips(AppLocalizations l10n) {
+  List<Widget> _buildMuscleGroupChips(AppLocalizations l10n, String? businessType) {
     final groups = {
       'chest': l10n.muscleGroupChest,
       'legs': l10n.muscleGroupLegs,
@@ -231,33 +246,33 @@ class _WorkoutFormPageState extends State<WorkoutFormPage> {
             }
           });
         },
-        selectedColor: AppColors.primary.withAlpha(40),
-        checkmarkColor: AppColors.primary,
+        selectedColor: AppColors.primaryFor(businessType).withAlpha(40),
+        checkmarkColor: AppColors.primaryFor(businessType),
         labelStyle: TextStyle(
           fontSize: 12,
-          color: isSelected ? AppColors.primary : const Color(0xFF555555),
+          color: isSelected ? AppColors.primaryFor(businessType) : const Color(0xFF555555),
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       );
     }).toList();
   }
 
-  InputDecoration _inputDecoration(String label, String hint) {
+  InputDecoration _inputDecoration(String label, String hint, String? businessType) {
     return InputDecoration(
       labelText: label,
       hintText: hint.isNotEmpty ? hint : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primaryHover, width: 2),
+        borderSide: BorderSide(color: AppColors.primaryHoverFor(businessType), width: 2),
       ),
       isDense: true,
     );

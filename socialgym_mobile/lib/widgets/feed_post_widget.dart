@@ -266,6 +266,8 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
       },
       builder: (context, post, _) {
         final currentPost = post ?? widget.post;
+        final businessType =
+            context.watch<PersonProvider>().activeBusinessProfile?.businessType;
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
           shape: const RoundedRectangleBorder(),
@@ -275,7 +277,7 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Header ──
-              _PostHeader(post: currentPost),
+              _PostHeader(post: currentPost, businessType: businessType),
 
               // ── Content ──
               if (currentPost.content.isNotEmpty)
@@ -304,6 +306,7 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
                 showReactionPicker: _showReactionPicker,
                 onReactionToggle: _toggleReactionPicker,
                 onCommentTap: () {}, // Comments are always visible
+                businessType: businessType,
               ),
 
               // ── Reaction picker ──
@@ -317,7 +320,11 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
               // ── Comments section ──
               if (currentPost.comments.isNotEmpty) ...[
                 const Divider(height: 1, thickness: 0.5),
-                _CommentsSection(post: currentPost, onLongPress: _onReplyLongPress),
+                _CommentsSection(
+                  post: currentPost,
+                  onLongPress: _onReplyLongPress,
+                  businessType: businessType,
+                ),
                 const Divider(height: 1, thickness: 0.5),
               ],
 
@@ -331,6 +338,7 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
                 mentionSuggestions: _mentionSuggestions,
                 searchingMentions: _isSearchingMentions,
                 onMentionSelected: _selectMentionFromComment,
+                businessType: businessType,
               ),
             ],
           ),
@@ -346,8 +354,9 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
 
 class _PostHeader extends StatelessWidget {
   final FeedPost post;
+  final String? businessType;
 
-  const _PostHeader({required this.post});
+  const _PostHeader({required this.post, this.businessType});
 
   @override
   Widget build(BuildContext context) {
@@ -359,6 +368,7 @@ class _PostHeader extends StatelessWidget {
             avatarUrl: post.authorAvatar,
             cacheKey: post.authorObjectKey,
             name: post.authorName ?? '',
+            businessType: businessType,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -406,8 +416,14 @@ class _AuthorAvatar extends StatelessWidget {
   final String? avatarUrl;
   final String? cacheKey;
   final String name;
+  final String? businessType;
 
-  const _AuthorAvatar({required this.avatarUrl, required this.name, this.cacheKey});
+  const _AuthorAvatar({
+    required this.avatarUrl,
+    required this.name,
+    this.cacheKey,
+    this.businessType,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -422,7 +438,7 @@ class _AuthorAvatar extends StatelessWidget {
             height: 40,
             fit: BoxFit.cover,
             placeholder: (_, _) =>
-                const CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryFor(businessType)),
             errorWidget: (_, _, _) => _initials(name),
           ),
         ),
@@ -430,7 +446,7 @@ class _AuthorAvatar extends StatelessWidget {
     }
     return CircleAvatar(
       radius: 20,
-      backgroundColor: AppColors.primary.withAlpha(40),
+      backgroundColor: AppColors.primaryFor(businessType).withAlpha(40),
       child: _initials(name),
     );
   }
@@ -446,7 +462,11 @@ class _AuthorAvatar extends StatelessWidget {
       child: Text(
         initials,
         textAlign: TextAlign.center,
-        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 14),
+        style: TextStyle(
+          color: AppColors.primaryFor(businessType),
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
       ),
     );
   }
@@ -690,12 +710,14 @@ class _ActionBar extends StatelessWidget {
   final bool showReactionPicker;
   final VoidCallback onReactionToggle;
   final VoidCallback onCommentTap;
+  final String? businessType;
 
   const _ActionBar({
     required this.post,
     required this.showReactionPicker,
     required this.onReactionToggle,
     required this.onCommentTap,
+    this.businessType,
   });
 
   @override
@@ -709,12 +731,12 @@ class _ActionBar extends StatelessWidget {
             icon: Icon(
               showReactionPicker ? Icons.thumb_up : Icons.thumb_up_outlined,
               size: 18,
-              color: showReactionPicker ? AppColors.primary : Colors.grey[700],
+              color: showReactionPicker ? AppColors.primaryFor(businessType) : Colors.grey[700],
             ),
             label: Text(
               l10n.feedLike,
               style: TextStyle(
-                color: showReactionPicker ? AppColors.primary : Colors.grey[700],
+                color: showReactionPicker ? AppColors.primaryFor(businessType) : Colors.grey[700],
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -786,8 +808,9 @@ class _ReactionPicker extends StatelessWidget {
 class _CommentsSection extends StatelessWidget {
   final FeedPost post;
   final void Function(FeedComment)? onLongPress;
+  final String? businessType;
 
-  const _CommentsSection({required this.post, this.onLongPress});
+  const _CommentsSection({required this.post, this.onLongPress, this.businessType});
 
   @override
   Widget build(BuildContext context) {
@@ -802,7 +825,9 @@ class _CommentsSection extends StatelessWidget {
     }
     return Column(
       children: post.comments
-          .map((c) => _CommentItem(comment: c, onLongPress: onLongPress))
+          .map(
+            (c) => _CommentItem(comment: c, onLongPress: onLongPress, businessType: businessType),
+          )
           .toList(),
     );
   }
@@ -811,8 +836,9 @@ class _CommentsSection extends StatelessWidget {
 class _CommentItem extends StatelessWidget {
   final FeedComment comment;
   final void Function(FeedComment)? onLongPress;
+  final String? businessType;
 
-  const _CommentItem({required this.comment, this.onLongPress});
+  const _CommentItem({required this.comment, this.onLongPress, this.businessType});
 
   @override
   Widget build(BuildContext context) {
@@ -827,6 +853,7 @@ class _CommentItem extends StatelessWidget {
               avatarUrl: comment.authorAvatar,
               cacheKey: comment.authorObjectKey,
               name: comment.authorName ?? comment.authorUuid,
+              businessType: businessType,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -869,6 +896,7 @@ class _AddCommentRow extends StatelessWidget {
   final List<MentionableFriend> mentionSuggestions;
   final bool searchingMentions;
   final ValueChanged<MentionableFriend> onMentionSelected;
+  final String? businessType;
 
   const _AddCommentRow({
     required this.controller,
@@ -879,6 +907,7 @@ class _AddCommentRow extends StatelessWidget {
     required this.mentionSuggestions,
     required this.searchingMentions,
     required this.onMentionSelected,
+    this.businessType,
   });
 
   @override
@@ -932,10 +961,13 @@ class _AddCommentRow extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               if (submitting)
-                const SizedBox(
+                SizedBox(
                   width: 32,
                   height: 32,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primaryFor(businessType),
+                  ),
                 )
               else
                 InkWell(
@@ -944,8 +976,8 @@ class _AddCommentRow extends StatelessWidget {
                   child: Container(
                     width: 36,
                     height: 36,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryFor(businessType),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.send, color: Colors.white, size: 18),
@@ -959,6 +991,7 @@ class _AddCommentRow extends StatelessWidget {
               searching: searchingMentions,
               suggestions: mentionSuggestions,
               onSelected: onMentionSelected,
+              businessType: businessType,
             ),
           ],
         ],
@@ -971,11 +1004,13 @@ class _CommentMentionSuggestions extends StatelessWidget {
   final bool searching;
   final List<MentionableFriend> suggestions;
   final ValueChanged<MentionableFriend> onSelected;
+  final String? businessType;
 
   const _CommentMentionSuggestions({
     required this.searching,
     required this.suggestions,
     required this.onSelected,
+    this.businessType,
   });
 
   @override
@@ -1009,14 +1044,17 @@ class _CommentMentionSuggestions extends StatelessWidget {
             dense: true,
             leading: CircleAvatar(
               radius: 16,
-              backgroundColor: AppColors.primary.withAlpha(25),
+              backgroundColor: AppColors.primaryFor(businessType).withAlpha(25),
               backgroundImage: item.avatar != null && item.avatar!.isNotEmpty
                   ? NetworkImage(item.avatar!)
                   : null,
               child: item.avatar == null || item.avatar!.isEmpty
                   ? Text(
                       item.fullName.isNotEmpty ? item.fullName[0].toUpperCase() : '?',
-                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: AppColors.primaryFor(businessType),
+                        fontWeight: FontWeight.w700,
+                      ),
                     )
                   : null,
             ),

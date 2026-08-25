@@ -5,6 +5,7 @@ import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../../models/workout.dart';
+import '../../providers/person_provider.dart';
 import '../../providers/workout_provider.dart';
 import '../../widgets/difficulty_dropdown_field.dart';
 import '../../widgets/visibility_dropdown_field.dart';
@@ -122,6 +123,7 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final workoutProvider = context.watch<WorkoutProvider>();
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
     final isSaveMode = widget.mode == WorkoutFormMode.save;
     final isEditing = widget.initialWorkout != null;
     final dialogTitle = isEditing
@@ -198,6 +200,7 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
                         decoration: _inputDecoration(
                           l10n.workoutFormName,
                           l10n.workoutFormNamePlaceholder,
+                          businessType,
                         ),
                         onFieldSubmitted: (_) {
                           FocusScope.of(context).requestFocus(_descriptionFocus);
@@ -215,6 +218,7 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
                         decoration: _inputDecoration(
                           l10n.workoutFormDescription,
                           l10n.workoutFormDescriptionPlaceholder,
+                          businessType,
                         ),
                         maxLines: 2,
                         onFieldSubmitted: (_) {
@@ -235,7 +239,7 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
                           Expanded(
                             child: DifficultyDropdownField(
                               value: _difficulty,
-                              decoration: _inputDecoration(l10n.workoutDifficulty, ''),
+                              decoration: _inputDecoration(l10n.workoutDifficulty, '', businessType),
                               onChanged: (v) => setState(() => _difficulty = v ?? 'soft'),
                             ),
                           ),
@@ -243,7 +247,7 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
                           Expanded(
                             child: VisibilityDropdownField(
                               value: _visibility,
-                              decoration: _inputDecoration(l10n.workoutVisibility, ''),
+                              decoration: _inputDecoration(l10n.workoutVisibility, '', businessType),
                               onChanged: (v) => setState(() => _visibility = v ?? 'Private'),
                             ),
                           ),
@@ -261,7 +265,7 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Wrap(spacing: 8, runSpacing: 4, children: _buildMuscleGroupChips(l10n)),
+                      Wrap(spacing: 8, runSpacing: 4, children: _buildMuscleGroupChips(l10n, businessType)),
                     ],
                   ),
                 ),
@@ -277,8 +281,8 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
+                        foregroundColor: AppColors.primaryFor(businessType),
+                        side: BorderSide(color: AppColors.primaryFor(businessType)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -292,9 +296,11 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
                           ? (workoutProvider.loading ? null : _handleSaveWorkout)
                           : _handleStartSession,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isSaveMode ? AppColors.primary : AppColors.success,
+                        backgroundColor: isSaveMode
+                            ? AppColors.primaryFor(businessType)
+                            : AppColors.success,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor: AppColors.primaryDisabled,
+                        disabledBackgroundColor: AppColors.primaryDisabledFor(businessType),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -321,7 +327,7 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
     );
   }
 
-  List<Widget> _buildMuscleGroupChips(AppLocalizations l10n) {
+  List<Widget> _buildMuscleGroupChips(AppLocalizations l10n, String? businessType) {
     final groups = {
       'chest': l10n.muscleGroupChest,
       'legs': l10n.muscleGroupLegs,
@@ -346,33 +352,33 @@ class _WorkoutFormDialogState extends State<WorkoutFormDialog> {
             }
           });
         },
-        selectedColor: AppColors.primary.withAlpha(40),
-        checkmarkColor: AppColors.primary,
+        selectedColor: AppColors.primaryFor(businessType).withAlpha(40),
+        checkmarkColor: AppColors.primaryFor(businessType),
         labelStyle: TextStyle(
           fontSize: 12,
-          color: isSelected ? AppColors.primary : const Color(0xFF555555),
+          color: isSelected ? AppColors.primaryFor(businessType) : const Color(0xFF555555),
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       );
     }).toList();
   }
 
-  InputDecoration _inputDecoration(String label, String hint) {
+  InputDecoration _inputDecoration(String label, String hint, String? businessType) {
     return InputDecoration(
       labelText: label,
       hintText: hint.isNotEmpty ? hint : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primaryHover, width: 2),
+        borderSide: BorderSide(color: AppColors.primaryHoverFor(businessType), width: 2),
       ),
       isDense: true,
     );

@@ -279,6 +279,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _showImageSourceDialog({required bool isAvatar}) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context.read<PersonProvider>().activeBusinessProfile?.businessType;
 
     showModalBottomSheet(
       context: context,
@@ -300,9 +301,9 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.camera_alt,
-                  color: AppColors.primary,
+                  color: AppColors.primaryFor(businessType),
                 ),
                 title: Text(l10n.profileTakePhoto),
                 onTap: () {
@@ -311,9 +312,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.photo_library,
-                  color: AppColors.primary,
+                  color: AppColors.primaryFor(businessType),
                 ),
                 title: Text(l10n.profileChooseFromGallery),
                 onTap: () {
@@ -507,13 +508,15 @@ class _ProfilePageState extends State<ProfilePage> {
             return Center(child: Text(l10n.profileUpdateError));
           }
 
+          final businessType = personProvider.activeBusinessProfile?.businessType;
+
           return Stack(
             children: [
               SingleChildScrollView(
                 child: Column(
                   children: [
-                    _buildHeader(person, l10n),
-                    _buildProfileContent(person, l10n),
+                    _buildHeader(person, l10n, businessType),
+                    _buildProfileContent(person, l10n, businessType),
                   ],
                 ),
               ),
@@ -529,7 +532,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildHeader(Person person, AppLocalizations l10n) {
+  Widget _buildHeader(Person person, AppLocalizations l10n, String? businessType) {
     final screenWidth = MediaQuery.of(context).size.width;
     final coverHeight = screenWidth > 600 ? 250.0 : 180.0;
     final avatarSize = screenWidth > 600 ? 140.0 : 100.0;
@@ -620,7 +623,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               imageUrl: person.avatar!,
                               fit: BoxFit.cover,
                               placeholder: (context, url) => Container(
-                                color: AppColors.primary,
+                                color: AppColors.primaryFor(businessType),
                                 child: const Center(
                                   child: CircularProgressIndicator(
                                     color: Colors.white,
@@ -655,7 +658,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: AppColors.primaryFor(businessType),
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
@@ -676,7 +679,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProfileContent(Person person, AppLocalizations l10n) {
+  Widget _buildProfileContent(Person person, AppLocalizations l10n, String? businessType) {
     return Padding(
       padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 80),
       child: Form(
@@ -709,6 +712,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: _buildSectionHeader(
                     l10n.profilePersonalInfo,
                     Icons.person_outline,
+                    businessType,
                   ),
                 ),
                 if (!_isEditing)
@@ -720,7 +724,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       });
                     },
                     icon: const Icon(Icons.edit, size: 20),
-                    color: AppColors.primary,
+                    color: AppColors.primaryFor(businessType),
                     tooltip: l10n.profileEditProfile,
                   )
                 else
@@ -741,7 +745,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       IconButton(
                         onPressed: _saveChanges,
                         icon: const Icon(Icons.save, size: 20),
-                        color: AppColors.primary,
+                        color: AppColors.primaryFor(businessType),
                         tooltip: l10n.profileSaveChanges,
                       ),
                     ],
@@ -755,6 +759,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 controller: _firstNameController,
                 label: l10n.profileFirstName,
                 icon: Icons.person_outline,
+                businessType: businessType,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.validationFirstNameRequired;
@@ -767,6 +772,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 controller: _surnameController,
                 label: l10n.profileSurname,
                 icon: Icons.person_outline,
+                businessType: businessType,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.validationSurnameRequired;
@@ -788,6 +794,7 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icons.description_outlined,
               maxLines: 3,
               enabled: _isEditing,
+              businessType: businessType,
             ),
             const SizedBox(height: 16),
 
@@ -797,6 +804,7 @@ class _ProfilePageState extends State<ProfilePage> {
               hint: l10n.profileJobHint,
               icon: Icons.work_outline,
               enabled: _isEditing,
+              businessType: businessType,
             ),
             const SizedBox(height: 16),
 
@@ -807,6 +815,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Icons.favorite_outline,
                 l10n.profileRelationship,
                 _getRelationshipLabel(person.personInfo!.relationship!, l10n),
+                businessType,
               ),
 
             const SizedBox(height: 16),
@@ -816,6 +825,7 @@ class _ProfilePageState extends State<ProfilePage> {
               label: l10n.profileHomeTown,
               icon: Icons.home_outlined,
               enabled: _isEditing,
+              businessType: businessType,
             ),
             const SizedBox(height: 16),
 
@@ -824,6 +834,7 @@ class _ProfilePageState extends State<ProfilePage> {
               label: l10n.profileCurrentCity,
               icon: Icons.location_city_outlined,
               enabled: _isEditing,
+              businessType: businessType,
             ),
 
             const SizedBox(height: 32),
@@ -832,6 +843,7 @@ class _ProfilePageState extends State<ProfilePage> {
             _buildSectionHeader(
               l10n.profilePhysicalStats,
               Icons.fitness_center_outlined,
+              businessType,
             ),
             const SizedBox(height: 16),
 
@@ -844,6 +856,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     icon: Icons.monitor_weight_outlined,
                     keyboardType: TextInputType.number,
                     enabled: _isEditing,
+                    businessType: businessType,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -854,6 +867,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     icon: Icons.height,
                     keyboardType: TextInputType.number,
                     enabled: _isEditing,
+                    businessType: businessType,
                   ),
                 ),
               ],
@@ -862,14 +876,14 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 32),
 
             // Addresses Section
-            _buildAddressesSection(person, l10n),
+            _buildAddressesSection(person, l10n, businessType),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAddressesSection(Person person, AppLocalizations l10n) {
+  Widget _buildAddressesSection(Person person, AppLocalizations l10n, String? businessType) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -880,13 +894,14 @@ class _ProfilePageState extends State<ProfilePage> {
               child: _buildSectionHeader(
                 l10n.addressSection,
                 Icons.location_on_outlined,
+                businessType,
               ),
             ),
             if (!_isAddressFormExpanded)
               IconButton(
                 onPressed: () => _openAddressForm(null),
                 icon: const Icon(Icons.add_circle_outline),
-                color: AppColors.primary,
+                color: AppColors.primaryFor(businessType),
                 tooltip: l10n.addressAdd,
               ),
           ],
@@ -899,7 +914,7 @@ class _ProfilePageState extends State<ProfilePage> {
           crossFadeState: _isAddressFormExpanded
               ? CrossFadeState.showFirst
               : CrossFadeState.showSecond,
-          firstChild: _buildAddressForm(l10n),
+          firstChild: _buildAddressForm(l10n, businessType),
           secondChild: const SizedBox.shrink(),
         ),
 
@@ -938,7 +953,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: const Icon(Icons.add),
                   label: Text(l10n.addressAdd),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: AppColors.primaryFor(businessType),
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -948,7 +963,7 @@ class _ProfilePageState extends State<ProfilePage> {
         else if (!_isAddressFormExpanded)
           ...(person.addresses
                 ..sort((a, b) => b.current ? -1 : (a.current ? 1 : 0)))
-              .map((address) => _buildAddressCard(address, l10n)),
+              .map((address) => _buildAddressCard(address, l10n, businessType)),
       ],
     );
   }
@@ -997,7 +1012,7 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
-  Widget _buildAddressForm(AppLocalizations l10n) {
+  Widget _buildAddressForm(AppLocalizations l10n, String? businessType) {
     final isEditing = _editingAddress != null;
 
     return Container(
@@ -1006,10 +1021,10 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withAlpha(100)),
+        border: Border.all(color: AppColors.primaryFor(businessType).withAlpha(100)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withAlpha(20),
+            color: AppColors.primaryFor(businessType).withAlpha(20),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1023,7 +1038,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Icon(
                 isEditing ? Icons.edit_location_alt : Icons.add_location_alt,
-                color: AppColors.primary,
+                color: AppColors.primaryFor(businessType),
               ),
               const SizedBox(width: 8),
               Text(
@@ -1180,7 +1195,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 icon: const Icon(Icons.save),
                 label: Text(l10n.buttonSave),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.primaryFor(businessType),
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -1239,15 +1254,17 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Widget _buildAddressCard(PersonAddress address, AppLocalizations l10n) {
+  Widget _buildAddressCard(PersonAddress address, AppLocalizations l10n, String? businessType) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: address.current ? AppColors.primary.withAlpha(20) : Colors.white,
+        color: address.current
+            ? AppColors.primaryFor(businessType).withAlpha(20)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: address.current ? AppColors.primary : Colors.grey[300]!,
+          color: address.current ? AppColors.primaryFor(businessType) : Colors.grey[300]!,
           width: address.current ? 2 : 1,
         ),
         boxShadow: [
@@ -1265,7 +1282,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Icon(
                 Icons.location_on,
-                color: address.current ? AppColors.primary : Colors.grey[600],
+                color: address.current ? AppColors.primaryFor(businessType) : Colors.grey[600],
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -1285,7 +1302,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: AppColors.primaryFor(businessType),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -1451,10 +1468,10 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Widget _buildSectionHeader(String title, IconData icon) {
+  Widget _buildSectionHeader(String title, IconData icon, String? businessType) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.primary),
+        Icon(icon, color: AppColors.primaryFor(businessType)),
         const SizedBox(width: 8),
         Text(
           title,
@@ -1473,6 +1490,7 @@ class _ProfilePageState extends State<ProfilePage> {
     TextInputType? keyboardType,
     bool enabled = true,
     String? Function(String?)? validator,
+    String? businessType,
   }) {
     return TextFormField(
       controller: controller,
@@ -1491,7 +1509,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: AppColors.primaryFor(businessType), width: 2),
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1587,10 +1605,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String value, String? businessType) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.primary, size: 20),
+        Icon(icon, color: AppColors.primaryFor(businessType), size: 20),
         const SizedBox(width: 8),
         Text(
           '$label: ',

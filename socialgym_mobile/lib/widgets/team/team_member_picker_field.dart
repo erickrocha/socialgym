@@ -1,9 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/person.dart';
+import '../../providers/person_provider.dart';
 import '../../services/grpc/grpc_team_member_service.dart';
 
 /// Sentinel popped by the picker sheet when the user explicitly chooses
@@ -163,9 +165,10 @@ class CircleIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
     return CircleAvatar(
-      backgroundColor: AppColors.primary.withAlpha(40),
-      child: Icon(icon, color: AppColors.primary),
+      backgroundColor: AppColors.primaryFor(businessType).withAlpha(40),
+      child: Icon(icon, color: AppColors.primaryFor(businessType)),
     );
   }
 }
@@ -176,10 +179,13 @@ class _PersonAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
     return CircleAvatar(
-      backgroundColor: AppColors.primary.withAlpha(40),
+      backgroundColor: AppColors.primaryFor(businessType).withAlpha(40),
       backgroundImage: person.avatar != null ? CachedNetworkImageProvider(person.avatar!) : null,
-      child: person.avatar == null ? const Icon(Icons.person, color: AppColors.primary) : null,
+      child: person.avatar == null
+          ? Icon(Icons.person, color: AppColors.primaryFor(businessType))
+          : null,
     );
   }
 }

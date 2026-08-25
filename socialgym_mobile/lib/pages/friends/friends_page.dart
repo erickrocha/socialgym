@@ -8,6 +8,7 @@ import '../../models/person.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/friends_provider.dart';
 import '../../config/nav_section.dart';
+import '../../providers/person_provider.dart';
 import '../../widgets/main_layout.dart';
 import '../profile/person_profile_page.dart';
 
@@ -150,6 +151,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return MainLayout(
       navSection: NavSection.home,
@@ -164,7 +166,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.people, color: AppColors.primary, size: 28),
+                    Icon(Icons.people, color: AppColors.primaryFor(businessType), size: 28),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -199,9 +201,9 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
             ),
             child: TabBar(
               controller: _tabController,
-              labelColor: AppColors.primary,
+              labelColor: AppColors.primaryFor(businessType),
               unselectedLabelColor: Colors.grey[600],
-              indicatorColor: AppColors.primary,
+              indicatorColor: AppColors.primaryFor(businessType),
               tabs: [
                 Tab(text: l10n.friendsTabAll),
                 Consumer<FriendsProvider>(
@@ -253,9 +255,9 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
                     TabBarView(
                       controller: _tabController,
                       children: [
-                        _buildFriendsTab(provider, l10n),
-                        _buildRequestsTab(provider, l10n),
-                        _buildSuggestionsTab(provider, l10n),
+                        _buildFriendsTab(provider, l10n, businessType),
+                        _buildRequestsTab(provider, l10n, businessType),
+                        _buildSuggestionsTab(provider, l10n, businessType),
                       ],
                     ),
                     if (provider.actionLoading)
@@ -273,7 +275,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildFriendsTab(FriendsProvider provider, AppLocalizations l10n) {
+  Widget _buildFriendsTab(FriendsProvider provider, AppLocalizations l10n, String? businessType) {
     if (provider.friends.isEmpty) {
       return _buildEmptyState(
         icon: Icons.people_outline,
@@ -291,6 +293,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
           final friend = provider.friends[index];
           return _buildPersonCard(
             person: friend,
+            businessType: businessType,
             trailing: PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               onSelected: (value) {
@@ -317,7 +320,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildRequestsTab(FriendsProvider provider, AppLocalizations l10n) {
+  Widget _buildRequestsTab(FriendsProvider provider, AppLocalizations l10n, String? businessType) {
     final hasReceived = provider.receiveRequests.isNotEmpty;
     final hasSent = provider.sentRequests.isNotEmpty;
 
@@ -336,11 +339,16 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
         children: [
           // Received Requests
           if (hasReceived) ...[
-            _buildSectionHeader(l10n.friendsReceivedRequests, provider.receiveRequests.length),
+            _buildSectionHeader(
+              l10n.friendsReceivedRequests,
+              provider.receiveRequests.length,
+              businessType,
+            ),
             const SizedBox(height: 8),
             ...provider.receiveRequests.map(
               (person) => _buildPersonCard(
                 person: person,
+                businessType: businessType,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -365,11 +373,16 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
 
           // Sent Requests
           if (hasSent) ...[
-            _buildSectionHeader(l10n.friendsSentRequests, provider.sentRequests.length),
+            _buildSectionHeader(
+              l10n.friendsSentRequests,
+              provider.sentRequests.length,
+              businessType,
+            ),
             const SizedBox(height: 8),
             ...provider.sentRequests.map(
               (person) => _buildPersonCard(
                 person: person,
+                businessType: businessType,
                 trailing: OutlinedButton(
                   onPressed: () => _cancelRequest(person),
                   style: OutlinedButton.styleFrom(
@@ -388,7 +401,11 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildSuggestionsTab(FriendsProvider provider, AppLocalizations l10n) {
+  Widget _buildSuggestionsTab(
+    FriendsProvider provider,
+    AppLocalizations l10n,
+    String? businessType,
+  ) {
     if (provider.suggestions.isEmpty) {
       return _buildEmptyState(
         icon: Icons.person_search,
@@ -406,10 +423,11 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
           final person = provider.suggestions[index];
           return _buildPersonCard(
             person: person,
+            businessType: businessType,
             trailing: IconButton(
               onPressed: () => _sendFriendRequest(person),
               icon: const Icon(Icons.person_add),
-              color: AppColors.primary,
+              color: AppColors.primaryFor(businessType),
               tooltip: l10n.friendsAddFriend,
             ),
           );
@@ -418,7 +436,11 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildPersonCard({required Person person, required Widget trailing}) {
+  Widget _buildPersonCard({
+    required Person person,
+    required Widget trailing,
+    required String? businessType,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 1,
@@ -433,7 +455,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
           child: Row(
             children: [
               // Avatar
-              _buildAvatar(person),
+              _buildAvatar(person, businessType),
               const SizedBox(width: 12),
               // Name and info
               Expanded(
@@ -461,13 +483,13 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildAvatar(Person person) {
+  Widget _buildAvatar(Person person, String? businessType) {
     return Container(
       width: 50,
       height: 50,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.primary.withAlpha(51), width: 2),
+        border: Border.all(color: AppColors.primaryFor(businessType).withAlpha(51), width: 2),
       ),
       child: ClipOval(
         child: person.avatar != null
@@ -475,7 +497,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
                 imageUrl: person.avatar!,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
-                  color: AppColors.primary.withAlpha(51),
+                  color: AppColors.primaryFor(businessType).withAlpha(51),
                   child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                 ),
                 errorWidget: (context, url, error) => _buildDefaultAvatar(person),
@@ -494,7 +516,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildSectionHeader(String title, int count) {
+  Widget _buildSectionHeader(String title, int count, String? businessType) {
     return Row(
       children: [
         Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -502,15 +524,15 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: AppColors.primary.withAlpha(51),
+            color: AppColors.primaryFor(businessType).withAlpha(51),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
             '$count',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: AppColors.primaryFor(businessType),
             ),
           ),
         ),

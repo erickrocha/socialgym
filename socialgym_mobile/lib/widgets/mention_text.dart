@@ -1,8 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../config/app_colors.dart';
 import '../models/feed_post.dart';
+import '../providers/person_provider.dart';
 import '../utils/mention_parser.dart';
 
 /// Widget to display text with clickable mention links
@@ -32,6 +34,8 @@ class MentionText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
+
     // Parse mentions from content
     final spans = MentionParser.parseMentions(content, mentions);
 
@@ -60,7 +64,7 @@ class MentionText extends StatelessWidget {
           TextSpan(
             text: span.text,
             style: baseStyleWithColor.copyWith(
-              color: AppColors.primary,
+              color: AppColors.primaryFor(businessType),
               fontWeight: FontWeight.w600,
             ),
             recognizer: TapGestureRecognizer()

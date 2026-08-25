@@ -103,6 +103,7 @@ class _InvitePersonSheetState extends State<_InvitePersonSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
     final showNoResults = _results.isEmpty && !_searching && _controller.text.trim().length >= 2;
 
     return SafeArea(
@@ -125,7 +126,7 @@ class _InvitePersonSheetState extends State<_InvitePersonSheet> {
               onChanged: _onChanged,
               decoration: InputDecoration(
                 hintText: l10n.teamInviteSearchHint,
-                prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                prefixIcon: Icon(Icons.search, color: AppColors.primaryFor(businessType)),
                 suffixIcon: _searching
                     ? const Padding(
                         padding: EdgeInsets.all(12),

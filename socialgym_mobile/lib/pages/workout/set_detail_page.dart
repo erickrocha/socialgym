@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/person_provider.dart';
 
 /// Page to view and edit a single executed set from a workout session
 class SetDetailPage extends StatefulWidget {
@@ -105,11 +107,12 @@ class _SetDetailPageState extends State<SetDetailPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryFor(businessType),
         title: Text('${l10n.executionSet} ${l10n.menuSettings}'),
         elevation: 0,
       ),
@@ -253,7 +256,7 @@ class _SetDetailPageState extends State<SetDetailPage> {
                 icon: const Icon(Icons.save, size: 20),
                 label: Text(l10n.buttonSave),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.primaryFor(businessType),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

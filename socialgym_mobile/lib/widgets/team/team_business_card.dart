@@ -54,7 +54,7 @@ class TeamBusinessCard extends StatelessWidget {
       height: 50,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.professionalSecondary.withAlpha(51), width: 2),
+        border: Border.all(color: AppColors.professionalPrimary.withAlpha(51), width: 2),
       ),
       child: ClipOval(
         child: business.logo != null
@@ -62,7 +62,7 @@ class TeamBusinessCard extends StatelessWidget {
                 imageUrl: business.logo!,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
-                  color: AppColors.professionalSecondary.withAlpha(51),
+                  color: AppColors.professionalPrimary.withAlpha(51),
                   child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                 ),
                 errorWidget: (context, url, error) => _buildDefaultLogo(),

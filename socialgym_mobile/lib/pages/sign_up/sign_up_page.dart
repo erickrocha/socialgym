@@ -5,6 +5,7 @@ import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/sign_up_request.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/person_provider.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -114,21 +115,21 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _inputDecoration(String hint, String? businessType) {
     return InputDecoration(
       hintText: hint,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: AppColors.primaryHover, width: 2),
+        borderSide: BorderSide(color: AppColors.primaryHoverFor(businessType), width: 2),
       ),
     );
   }
@@ -139,6 +140,8 @@ class _SignUpPageState extends State<SignUpPage> {
     final months = _getMonths(l10n);
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 640;
+    final businessType =
+        context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return Scaffold(
       body: Container(
@@ -155,8 +158,8 @@ class _SignUpPageState extends State<SignUpPage> {
                     padding: EdgeInsets.symmetric(vertical: 24, horizontal: isDesktop ? 48 : 0),
                     child: Center(
                       child: isDesktop
-                          ? _buildDesktopLayout(l10n, months, screenWidth)
-                          : _buildMobileLayout(l10n, months),
+                          ? _buildDesktopLayout(l10n, months, screenWidth, businessType)
+                          : _buildMobileLayout(l10n, months, businessType),
                     ),
                   ),
                 ),
@@ -173,6 +176,7 @@ class _SignUpPageState extends State<SignUpPage> {
     AppLocalizations l10n,
     List<Map<String, String>> months,
     double screenWidth,
+    String? businessType,
   ) {
     final logoWidth = screenWidth >= 1024 ? 250.0 : 180.0;
 
@@ -192,7 +196,7 @@ class _SignUpPageState extends State<SignUpPage> {
             Expanded(
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: screenWidth >= 1024 ? 500 : 450),
-                child: _buildFormCard(l10n, months),
+                child: _buildFormCard(l10n, months, businessType),
               ),
             ),
           ],
@@ -202,7 +206,11 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   /// Mobile: Logo on top, form below
-  Widget _buildMobileLayout(AppLocalizations l10n, List<Map<String, String>> months) {
+  Widget _buildMobileLayout(
+    AppLocalizations l10n,
+    List<Map<String, String>> months,
+    String? businessType,
+  ) {
     return Column(
       children: [
         // Logo
@@ -213,7 +221,7 @@ class _SignUpPageState extends State<SignUpPage> {
         // Form Card
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: _buildFormCard(l10n, months),
+          child: _buildFormCard(l10n, months, businessType),
         ),
 
         const SizedBox(height: 32),
@@ -221,7 +229,11 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  Widget _buildFormCard(AppLocalizations l10n, List<Map<String, String>> months) {
+  Widget _buildFormCard(
+    AppLocalizations l10n,
+    List<Map<String, String>> months,
+    String? businessType,
+  ) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -274,7 +286,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   controller: _firstnameController,
                   focusNode: _firstnameFocus,
                   textInputAction: TextInputAction.next,
-                  decoration: _inputDecoration(l10n.signUpFirstName),
+                  decoration: _inputDecoration(l10n.signUpFirstName, businessType),
                   onFieldSubmitted: (_) {
                     FocusScope.of(context).requestFocus(_surnameFocus);
                   },
@@ -293,7 +305,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   controller: _surnameController,
                   focusNode: _surnameFocus,
                   textInputAction: TextInputAction.next,
-                  decoration: _inputDecoration(l10n.signUpSurname),
+                  decoration: _inputDecoration(l10n.signUpSurname, businessType),
                   onFieldSubmitted: (_) {
                     final nextFocus = _selectedGender == 'Custom'
                         ? _customGenderFocus
@@ -320,7 +332,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         initialValue: _selectedMonth,
                         hint: Text(l10n.signUpBirthdayMonth, style: const TextStyle(fontSize: 14)),
                         isExpanded: true,
-                        decoration: _inputDecoration(''),
+                        decoration: _inputDecoration('', businessType),
                         items: months.map((m) {
                           return DropdownMenuItem(
                             value: m['value'],
@@ -342,7 +354,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         initialValue: _selectedDay,
                         hint: Text(l10n.signUpBirthdayDay, style: const TextStyle(fontSize: 14)),
                         isExpanded: true,
-                        decoration: _inputDecoration(''),
+                        decoration: _inputDecoration('', businessType),
                         items: _days.map((d) {
                           return DropdownMenuItem(
                             value: d,
@@ -364,7 +376,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         initialValue: _selectedYear,
                         hint: Text(l10n.signUpBirthdayYear, style: const TextStyle(fontSize: 14)),
                         isExpanded: true,
-                        decoration: _inputDecoration(''),
+                        decoration: _inputDecoration('', businessType),
                         items: _years.map((y) {
                           return DropdownMenuItem(
                             value: y,
@@ -395,9 +407,9 @@ class _SignUpPageState extends State<SignUpPage> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _genderRadio('Female', l10n.signUpGenderFemale),
-                    _genderRadio('Male', l10n.signUpGenderMale),
-                    _genderRadio('Custom', l10n.signUpGenderCustom),
+                    _genderRadio('Female', l10n.signUpGenderFemale, businessType),
+                    _genderRadio('Male', l10n.signUpGenderMale, businessType),
+                    _genderRadio('Custom', l10n.signUpGenderCustom, businessType),
                   ],
                 ),
 
@@ -408,7 +420,10 @@ class _SignUpPageState extends State<SignUpPage> {
                     controller: _customGenderController,
                     focusNode: _customGenderFocus,
                     textInputAction: TextInputAction.next,
-                    decoration: _inputDecoration(l10n.signUpGenderCustomPlaceholder),
+                    decoration: _inputDecoration(
+                      l10n.signUpGenderCustomPlaceholder,
+                      businessType,
+                    ),
                     onFieldSubmitted: (_) {
                       FocusScope.of(context).requestFocus(_emailFocus);
                     },
@@ -423,7 +438,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   focusNode: _emailFocus,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: _inputDecoration(l10n.signUpMobileOrEmail),
+                  decoration: _inputDecoration(l10n.signUpMobileOrEmail, businessType),
                   onFieldSubmitted: (_) {
                     FocusScope.of(context).requestFocus(_passwordFocus);
                   },
@@ -443,11 +458,11 @@ class _SignUpPageState extends State<SignUpPage> {
                   focusNode: _passwordFocus,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.done,
-                  decoration: _inputDecoration(l10n.signUpPassword).copyWith(
+                  decoration: _inputDecoration(l10n.signUpPassword, businessType).copyWith(
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                        color: AppColors.primary,
+                        color: AppColors.primaryFor(businessType),
                       ),
                       onPressed: () {
                         setState(() {
@@ -491,8 +506,8 @@ class _SignUpPageState extends State<SignUpPage> {
                   child: ElevatedButton(
                     onPressed: authProvider.loading ? null : _handleSignUp,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      disabledBackgroundColor: AppColors.primaryDisabled,
+                      backgroundColor: AppColors.primaryFor(businessType),
+                      disabledBackgroundColor: AppColors.primaryDisabledFor(businessType),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     ),
@@ -537,7 +552,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     },
                     child: Text(
                       l10n.signUpAlreadyHaveAccount,
-                      style: const TextStyle(color: AppColors.primary, fontSize: 14),
+                      style: TextStyle(color: AppColors.primaryFor(businessType), fontSize: 14),
                     ),
                   ),
                 ),
@@ -549,7 +564,7 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  Widget _genderRadio(String value, String label) {
+  Widget _genderRadio(String value, String label, String? businessType) {
     return Expanded(
       child: InkWell(
         onTap: () {
@@ -562,10 +577,14 @@ class _SignUpPageState extends State<SignUpPage> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             border: Border.all(
-              color: _selectedGender == value ? AppColors.primary : Colors.grey.shade300,
+              color: _selectedGender == value
+                  ? AppColors.primaryFor(businessType)
+                  : Colors.grey.shade300,
             ),
             borderRadius: BorderRadius.circular(4),
-            color: _selectedGender == value ? AppColors.primary.withAlpha(25) : null,
+            color: _selectedGender == value
+                ? AppColors.primaryFor(businessType).withAlpha(25)
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -574,7 +593,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 _selectedGender == value
                     ? Icons.radio_button_checked
                     : Icons.radio_button_unchecked,
-                color: _selectedGender == value ? AppColors.primary : Colors.grey,
+                color: _selectedGender == value ? AppColors.primaryFor(businessType) : Colors.grey,
                 size: 20,
               ),
               const SizedBox(width: 4),
@@ -582,7 +601,9 @@ class _SignUpPageState extends State<SignUpPage> {
                 label,
                 style: TextStyle(
                   fontSize: 13,
-                  color: _selectedGender == value ? AppColors.primary : const Color(0xFF333333),
+                  color: _selectedGender == value
+                      ? AppColors.primaryFor(businessType)
+                      : const Color(0xFF333333),
                 ),
               ),
             ],

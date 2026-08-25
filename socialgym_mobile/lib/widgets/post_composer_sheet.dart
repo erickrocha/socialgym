@@ -425,6 +425,7 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
     final personProvider = context.watch<PersonProvider>();
     final isBusinessMode = personProvider.isProfessional;
     final activeBusinessProfile = personProvider.activeBusinessProfile;
+    final businessType = activeBusinessProfile?.businessType;
     final businessProfileLogo = activeBusinessProfile?.logo;
     final businessProfileName = activeBusinessProfile != null
         ? DisplayNameHelper.getBusinessProfileDisplayName(activeBusinessProfile)
@@ -486,9 +487,9 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _submit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: AppColors.primaryFor(businessType),
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: AppColors.primaryDisabled,
+                          disabledBackgroundColor: AppColors.primaryDisabledFor(businessType),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -569,6 +570,7 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
                           searching: _isSearchingMentions,
                           suggestions: _mentionSuggestions,
                           onSelected: _selectMention,
+                          businessType: businessType,
                         ),
                       ],
 
@@ -577,19 +579,19 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            const SizedBox(
+                            SizedBox(
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: AppColors.primary,
+                                color: AppColors.primaryFor(businessType),
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               l10n.feedUploading,
-                              style: const TextStyle(
-                                color: AppColors.primary,
+                              style: TextStyle(
+                                color: AppColors.primaryFor(businessType),
                                 fontSize: 13,
                               ),
                             ),
@@ -658,6 +660,7 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
                         onPickCameraPhoto: _pickImageFromCamera,
                         onPickGalleryVideo: _pickVideo,
                         onPickCameraVideo: _recordVideo,
+                        businessType: businessType,
                       ),
                     ],
                   ),
@@ -879,6 +882,7 @@ class _MediaPickerMenu extends StatefulWidget {
   final VoidCallback onPickCameraPhoto;
   final VoidCallback onPickGalleryVideo;
   final VoidCallback onPickCameraVideo;
+  final String? businessType;
 
   const _MediaPickerMenu({
     required this.enabled,
@@ -886,6 +890,7 @@ class _MediaPickerMenu extends StatefulWidget {
     required this.onPickCameraPhoto,
     required this.onPickGalleryVideo,
     required this.onPickCameraVideo,
+    this.businessType,
   });
 
   @override
@@ -935,9 +940,9 @@ class _MediaPickerMenuState extends State<_MediaPickerMenu> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.photo_camera_outlined,
-                color: AppColors.primary,
+                color: AppColors.primaryFor(widget.businessType),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -983,7 +988,9 @@ class _MediaPickerMenuState extends State<_MediaPickerMenu> {
           children: [
             Icon(
               Icons.attach_file,
-              color: widget.enabled ? AppColors.primary : Colors.grey[400],
+              color: widget.enabled
+                  ? AppColors.primaryFor(widget.businessType)
+                  : Colors.grey[400],
               size: 22,
             ),
             const SizedBox(width: 6),
@@ -1006,11 +1013,13 @@ class _MentionSuggestionsList extends StatelessWidget {
   final bool searching;
   final List<MentionableFriend> suggestions;
   final ValueChanged<MentionableFriend> onSelected;
+  final String? businessType;
 
   const _MentionSuggestionsList({
     required this.searching,
     required this.suggestions,
     required this.onSelected,
+    this.businessType,
   });
 
   @override
@@ -1050,7 +1059,7 @@ class _MentionSuggestionsList extends StatelessWidget {
             dense: true,
             leading: CircleAvatar(
               radius: 16,
-              backgroundColor: AppColors.primary.withAlpha(25),
+              backgroundColor: AppColors.primaryFor(businessType).withAlpha(25),
               backgroundImage: item.avatar != null && item.avatar!.isNotEmpty
                   ? NetworkImage(item.avatar!)
                   : null,
@@ -1059,8 +1068,8 @@ class _MentionSuggestionsList extends StatelessWidget {
                       item.fullName.isNotEmpty
                           ? item.fullName[0].toUpperCase()
                           : '?',
-                      style: const TextStyle(
-                        color: AppColors.primary,
+                      style: TextStyle(
+                        color: AppColors.primaryFor(businessType),
                         fontWeight: FontWeight.w700,
                       ),
                     )

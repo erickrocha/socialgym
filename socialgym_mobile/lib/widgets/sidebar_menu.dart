@@ -121,7 +121,11 @@ class SidebarContent extends StatelessWidget {
               children: [
                 ..._buildSectionItems(context, l10n, personProvider),
                 const Divider(indent: 16, endIndent: 16),
-                ..._buildAlwaysItems(context, l10n),
+                ..._buildAlwaysItems(
+                  context,
+                  l10n,
+                  personProvider.activeBusinessProfile?.businessType,
+                ),
               ],
             ),
 
@@ -336,7 +340,11 @@ class SidebarContent extends StatelessWidget {
 
   // ── Always-visible items (settings + language) ───────────────────────────
 
-  List<Widget> _buildAlwaysItems(BuildContext context, AppLocalizations l10n) {
+  List<Widget> _buildAlwaysItems(
+    BuildContext context,
+    AppLocalizations l10n,
+    String? businessType,
+  ) {
     return [
       _SidebarItem(
         icon: Icons.settings_outlined,
@@ -351,7 +359,7 @@ class SidebarContent extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              const Icon(Icons.language, color: AppColors.primary, size: 24),
+              Icon(Icons.language, color: AppColors.primaryFor(businessType), size: 24),
               const SizedBox(width: 16),
               Flexible(
                 child: Text(
@@ -373,9 +381,9 @@ class SidebarContent extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Center(
             child: IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.language,
-                color: AppColors.primary,
+                color: AppColors.primaryFor(businessType),
                 size: 24,
               ),
               tooltip: l10n.menuLanguage,
@@ -604,10 +612,11 @@ class _SidebarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
     final effectiveIconColor =
-        iconColor ?? (isActive ? AppColors.primary : const Color(0xFF555555));
+        iconColor ?? (isActive ? AppColors.primaryFor(businessType) : const Color(0xFF555555));
     final effectiveTextColor =
-        textColor ?? (isActive ? AppColors.primary : const Color(0xFF333333));
+        textColor ?? (isActive ? AppColors.primaryFor(businessType) : const Color(0xFF333333));
 
     if (isCollapsed) {
       return Tooltip(
@@ -615,7 +624,7 @@ class _SidebarItem extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(8),
-          hoverColor: AppColors.primary.withAlpha(20),
+          hoverColor: AppColors.primaryFor(businessType).withAlpha(20),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Center(
@@ -650,8 +659,8 @@ class _SidebarItem extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       horizontalTitleGap: 16,
-      hoverColor: AppColors.primary.withAlpha(20),
-      selectedTileColor: AppColors.primary.withAlpha(25),
+      hoverColor: AppColors.primaryFor(businessType).withAlpha(20),
+      selectedTileColor: AppColors.primaryFor(businessType).withAlpha(25),
       selected: isActive,
       dense: true,
       visualDensity: VisualDensity.compact,

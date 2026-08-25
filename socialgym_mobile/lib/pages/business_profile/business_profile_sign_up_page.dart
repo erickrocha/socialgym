@@ -33,22 +33,22 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
     super.dispose();
   }
 
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _inputDecoration(String hint, String? businessType) {
     return InputDecoration(
       hintText: hint,
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: AppColors.primaryHover, width: 2),
+        borderSide: BorderSide(color: AppColors.primaryHoverFor(businessType), width: 2),
       ),
     );
   }
@@ -114,6 +114,8 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final businessType = ModalRoute.of(context)!.settings.arguments as String;
+    final activeBusinessType =
+        context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return Scaffold(
       body: Container(
@@ -157,7 +159,10 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
                           TextFormField(
                             key: const ValueKey('business_name_field'),
                             controller: _businessNameController,
-                            decoration: _inputDecoration(l10n.businessProfileFormBusinessName),
+                            decoration: _inputDecoration(
+                              l10n.businessProfileFormBusinessName,
+                              activeBusinessType,
+                            ),
                             validator: (value) => (value == null || value.trim().isEmpty)
                                 ? l10n.businessProfileFormBusinessNameRequired
                                 : null,
@@ -166,7 +171,10 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
                           TextFormField(
                             key: const ValueKey('social_name_field'),
                             controller: _socialNameController,
-                            decoration: _inputDecoration(l10n.businessProfileFormSocialName),
+                            decoration: _inputDecoration(
+                              l10n.businessProfileFormSocialName,
+                              activeBusinessType,
+                            ),
                             validator: (value) => (value == null || value.trim().isEmpty)
                                 ? l10n.businessProfileFormSocialNameRequired
                                 : null,
@@ -175,7 +183,10 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
                           TextFormField(
                             key: const ValueKey('tax_id_field'),
                             controller: _taxIdController,
-                            decoration: _inputDecoration(l10n.businessProfileFormTaxId),
+                            decoration: _inputDecoration(
+                              l10n.businessProfileFormTaxId,
+                              activeBusinessType,
+                            ),
                             validator: (value) => (value == null || value.trim().isEmpty)
                                 ? l10n.businessProfileFormTaxIdRequired
                                 : null,
@@ -186,8 +197,10 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
                             child: ElevatedButton(
                               onPressed: _submitting ? null : () => _handleSubmit(businessType),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                disabledBackgroundColor: AppColors.primaryDisabled,
+                                backgroundColor: AppColors.primaryFor(activeBusinessType),
+                                disabledBackgroundColor: AppColors.primaryDisabledFor(
+                                  activeBusinessType,
+                                ),
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),

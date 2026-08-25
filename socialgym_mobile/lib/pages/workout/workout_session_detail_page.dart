@@ -65,6 +65,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
     final personProvider = context.read<PersonProvider>();
     final ownerId = personProvider.activeAuthorId;
     final ownerUuid = personProvider.activeAuthorUuid;
+    final businessType = personProvider.activeBusinessProfile?.businessType;
 
     // Group sets by exercise uuid for display, preserving order
     final Map<String, List<Map<String, dynamic>>> grouped = <String, List<Map<String, dynamic>>>{};
@@ -175,7 +176,7 @@ class WorkoutSessionDetailPage extends StatelessWidget {
             context,
           ).push(MaterialPageRoute(builder: (_) => WorkoutExecutionPage(workout: workout)));
         },
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryFor(businessType),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.replay),
         label: Text(l10n.sessionDetailStartAgain),
@@ -204,6 +205,7 @@ class _ExerciseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCardio = category.toLowerCase() == 'cardio';
+    final businessType = context.read<PersonProvider>().activeBusinessProfile?.businessType;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -221,32 +223,32 @@ class _ExerciseCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(15),
+              color: AppColors.primaryFor(businessType).withAlpha(15),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.fitness_center, size: 16, color: AppColors.primary),
+                Icon(Icons.fitness_center, size: 16, color: AppColors.primaryFor(businessType)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     exerciseName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: AppColors.primaryFor(businessType),
                     ),
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withAlpha(30),
+                    color: AppColors.primaryFor(businessType).withAlpha(30),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     category,
-                    style: const TextStyle(fontSize: 11, color: AppColors.primary),
+                    style: TextStyle(fontSize: 11, color: AppColors.primaryFor(businessType)),
                   ),
                 ),
               ],
@@ -310,8 +312,8 @@ class _ExerciseCard extends StatelessWidget {
                     child: Container(
                       width: 24,
                       height: 24,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryFor(businessType),
                         shape: BoxShape.circle,
                       ),
                       child: Center(

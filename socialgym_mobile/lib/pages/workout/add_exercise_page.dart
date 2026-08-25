@@ -135,11 +135,12 @@ class _AddExercisePageState extends State<AddExercisePage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.workoutAddExercise),
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryFor(businessType),
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
@@ -172,7 +173,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                     child: DropdownButtonFormField<String>(
                       isExpanded: true,
                       initialValue: _category,
-                      decoration: _inputDecoration(l10n.exerciseCategory, ''),
+                      decoration: _inputDecoration(l10n.exerciseCategory, '', businessType),
                       items: [
                         DropdownMenuItem(
                           value: 'Force',
@@ -192,7 +193,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                       value: _visibility,
                       isExpanded: true,
                       useFriendsOnlyAlias: true,
-                      decoration: _inputDecoration(l10n.workoutVisibility, ''),
+                      decoration: _inputDecoration(l10n.workoutVisibility, '', businessType),
                       onChanged: (v) => setState(() => _visibility = v ?? 'Private'),
                     ),
                   ),
@@ -208,6 +209,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                 decoration: _inputDecoration(
                   l10n.workoutExerciseName,
                   l10n.workoutExerciseNamePlaceholder,
+                  businessType,
                 ),
                 enabled: !_isLoading,
                 onChanged: (_) => setState(() {}),
@@ -225,6 +227,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                 decoration: _inputDecoration(
                   l10n.workoutExerciseDescription,
                   l10n.workoutExerciseDescriptionPlaceholder,
+                  businessType,
                 ).copyWith(
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -250,7 +253,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                       focusNode: _setsFocus,
                       keyboardType: TextInputType.number,
                       textInputAction: TextInputAction.next,
-                      decoration: _inputDecoration(l10n.workoutSets, ''),
+                      decoration: _inputDecoration(l10n.workoutSets, '', businessType),
                       enabled: !_isLoading,
                       onChanged: (_) => setState(() {}),
                       onFieldSubmitted: (_) {
@@ -264,7 +267,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
                       focusNode: _repsFocus,
                       keyboardType: TextInputType.number,
                       textInputAction: TextInputAction.done,
-                      decoration: _inputDecoration(_getRepOrDurationLabel(l10n), ''),
+                      decoration: _inputDecoration(_getRepOrDurationLabel(l10n), '', businessType),
                       enabled: !_isLoading,
                       onChanged: (_) => setState(() {}),
                       onFieldSubmitted: (_) {
@@ -281,9 +284,9 @@ class _AddExercisePageState extends State<AddExercisePage> {
               ElevatedButton(
                 onPressed: !_isFormValid || _isLoading ? null : _handleSave,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.primaryFor(businessType),
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppColors.primaryDisabled,
+                  disabledBackgroundColor: AppColors.primaryDisabledFor(businessType),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -302,18 +305,18 @@ class _AddExercisePageState extends State<AddExercisePage> {
     );
   }
 
-  InputDecoration _inputDecoration(String label, String hint) {
+  InputDecoration _inputDecoration(String label, String hint, String? businessType) {
     return InputDecoration(
       labelText: label,
       hintText: hint.isNotEmpty ? hint : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -321,7 +324,7 @@ class _AddExercisePageState extends State<AddExercisePage> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primaryHover, width: 2),
+        borderSide: BorderSide(color: AppColors.primaryHoverFor(businessType), width: 2),
       ),
       isDense: true,
     );

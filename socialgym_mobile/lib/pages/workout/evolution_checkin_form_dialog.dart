@@ -189,6 +189,7 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<EvolutionProvider>();
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -252,6 +253,7 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
                         decoration: _inputDecoration(
                           l10n.evolutionFormNote,
                           l10n.evolutionFormNotePlaceholder,
+                          businessType,
                         ),
                         maxLines: 2,
                         textInputAction: TextInputAction.next,
@@ -260,7 +262,7 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
                       const SizedBox(height: 12),
                       VisibilityDropdownField(
                         value: _visibility,
-                        decoration: _inputDecoration(l10n.evolutionFormVisibility, ''),
+                        decoration: _inputDecoration(l10n.evolutionFormVisibility, '', businessType),
                         onChanged: (value) => setState(() => _visibility = value ?? 'Private'),
                       ),
                       const SizedBox(height: 16),
@@ -277,24 +279,28 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
                         label: '${l10n.evolutionCompositionWeight} (kg)',
                         focusNode: _weightFocus,
                         nextFocus: _bodyFatFocus,
+                        businessType: businessType,
                       ),
                       _buildNumberField(
                         controller: _bodyFatController,
                         label: '${l10n.evolutionCompositionBodyFat} (%)',
                         focusNode: _bodyFatFocus,
                         nextFocus: _muscleMassFocus,
+                        businessType: businessType,
                       ),
                       _buildNumberField(
                         controller: _muscleMassController,
                         label: '${l10n.evolutionCompositionMuscleMass} (%)',
                         focusNode: _muscleMassFocus,
                         nextFocus: _visceralFatFocus,
+                        businessType: businessType,
                       ),
                       _buildNumberField(
                         controller: _visceralFatController,
                         label: '${l10n.evolutionCompositionVisceralFat} (%)',
                         focusNode: _visceralFatFocus,
                         nextFocus: _neckFocus,
+                        businessType: businessType,
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -310,53 +316,62 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
                         label: '${l10n.evolutionCircumferenceNeck} (cm)',
                         focusNode: _neckFocus,
                         nextFocus: _chestFocus,
+                        businessType: businessType,
                       ),
                       _buildNumberField(
                         controller: _chestController,
                         label: '${l10n.evolutionCircumferenceChest} (cm)',
                         focusNode: _chestFocus,
                         nextFocus: _waistFocus,
+                        businessType: businessType,
                       ),
                       _buildNumberField(
                         controller: _waistController,
                         label: '${l10n.evolutionCircumferenceWaist} (cm)',
                         focusNode: _waistFocus,
                         nextFocus: _abdomenFocus,
+                        businessType: businessType,
                       ),
                       _buildNumberField(
                         controller: _abdomenController,
                         label: '${l10n.evolutionCircumferenceAbdomen} (cm)',
                         focusNode: _abdomenFocus,
                         nextFocus: _hipFocus,
+                        businessType: businessType,
                       ),
                       _buildNumberField(
                         controller: _hipController,
                         label: '${l10n.evolutionCircumferenceHip} (cm)',
                         focusNode: _hipFocus,
                         nextFocus: _bicepsRightFocus,
+                        businessType: businessType,
                       ),
                       _buildNumberField(
                         controller: _bicepsRightController,
                         label: '${l10n.evolutionCircumferenceBicepsRight} (cm)',
                         focusNode: _bicepsRightFocus,
                         nextFocus: _bicepsLeftFocus,
+                        businessType: businessType,
                       ),
                       _buildNumberField(
                         controller: _bicepsLeftController,
                         label: '${l10n.evolutionCircumferenceBicepsLeft} (cm)',
                         focusNode: _bicepsLeftFocus,
                         nextFocus: _thighRightFocus,
+                        businessType: businessType,
                       ),
                       _buildNumberField(
                         controller: _thighRightController,
                         label: '${l10n.evolutionCircumferenceThighRight} (cm)',
                         focusNode: _thighRightFocus,
                         nextFocus: _thighLeftFocus,
+                        businessType: businessType,
                       ),
                       _buildNumberField(
                         controller: _thighLeftController,
                         label: '${l10n.evolutionCircumferenceThighLeft} (cm)',
                         focusNode: _thighLeftFocus,
+                        businessType: businessType,
                       ),
                     ],
                   ),
@@ -371,8 +386,8 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
                     child: OutlinedButton(
                       onPressed: provider.submitting ? null : () => Navigator.of(context).pop(),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
+                        foregroundColor: AppColors.primaryFor(businessType),
+                        side: BorderSide(color: AppColors.primaryFor(businessType)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -384,9 +399,9 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
                     child: ElevatedButton(
                       onPressed: provider.submitting ? null : _handleSave,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.primaryFor(businessType),
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor: AppColors.primaryDisabled,
+                        disabledBackgroundColor: AppColors.primaryDisabledFor(businessType),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -413,6 +428,7 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
     required String label,
     required FocusNode focusNode,
     FocusNode? nextFocus,
+    String? businessType,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -420,7 +436,7 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
         controller: controller,
         focusNode: focusNode,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: _inputDecoration(label, ''),
+        decoration: _inputDecoration(label, '', businessType),
         textInputAction: nextFocus != null ? TextInputAction.next : TextInputAction.done,
         onFieldSubmitted: (_) {
           if (nextFocus != null) {
@@ -437,22 +453,22 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
     );
   }
 
-  InputDecoration _inputDecoration(String label, String hint) {
+  InputDecoration _inputDecoration(String label, String hint, String? businessType) {
     return InputDecoration(
       labelText: label,
       hintText: hint.isNotEmpty ? hint : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primaryHover, width: 2),
+        borderSide: BorderSide(color: AppColors.primaryHoverFor(businessType), width: 2),
       ),
       isDense: true,
     );

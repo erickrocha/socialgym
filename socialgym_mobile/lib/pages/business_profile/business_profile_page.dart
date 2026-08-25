@@ -264,7 +264,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
           width: double.infinity,
           child: profile.coverImage != null
               ? CachedNetworkImage(imageUrl: profile.coverImage!, fit: BoxFit.cover)
-              : Container(color: AppColors.professionalSecondaryDisabled),
+              : Container(color: AppColors.professionalPrimaryDisabled),
         ),
         Positioned(
           top: 8,
@@ -289,7 +289,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                     height: 88,
                     child: profile.logo != null
                         ? CachedNetworkImage(imageUrl: profile.logo!, fit: BoxFit.cover)
-                        : const Icon(Icons.storefront, size: 40, color: AppColors.professionalSecondary),
+                        : const Icon(Icons.storefront, size: 40, color: AppColors.professionalPrimary),
                   ),
                 ),
               ),
@@ -297,7 +297,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                 right: 0,
                 bottom: 0,
                 child: IconButton(
-                  style: IconButton.styleFrom(backgroundColor: AppColors.professionalSecondary),
+                  style: IconButton.styleFrom(backgroundColor: AppColors.professionalPrimary),
                   icon: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
                   onPressed: () => _showImageSourceDialog(isLogo: true),
                 ),
@@ -369,7 +369,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
           children: [
             Text(l10n.businessProfilePageAddresses, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             IconButton(
-              icon: const Icon(Icons.add_circle_outline, color: AppColors.professionalSecondary),
+              icon: const Icon(Icons.add_circle_outline, color: AppColors.professionalPrimary),
               onPressed: () => _openAddressForm(null),
             ),
           ],
@@ -440,7 +440,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: _saveAddress,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.professionalSecondary),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.professionalPrimary),
                   child: const Text('Save', style: TextStyle(color: Colors.white)),
                 ),
               ],

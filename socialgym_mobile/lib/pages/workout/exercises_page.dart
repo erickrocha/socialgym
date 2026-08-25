@@ -298,6 +298,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context.read<PersonProvider>().activeBusinessProfile?.businessType;
 
     return MainLayout(
       navSection: NavSection.workout,
@@ -306,7 +307,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
         backgroundColor: AppColors.background,
         body: Column(
           children: [
-            _buildFiltersHeader(l10n),
+            _buildFiltersHeader(l10n, businessType),
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -316,12 +317,12 @@ class _ExercisesPageState extends State<ExercisesPage> {
             ),
           ],
         ),
-        bottomNavigationBar: _buildBottomBar(l10n),
+        bottomNavigationBar: _buildBottomBar(l10n, businessType),
       ),
     );
   }
 
-  Widget _buildFiltersHeader(AppLocalizations l10n) {
+  Widget _buildFiltersHeader(AppLocalizations l10n, String? businessType) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -386,7 +387,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
                 _buildFilterChip(
                   icon: _getCategoryIcon(_selectedCategory),
                   label: _selectedCategory,
-                  color: AppColors.primary,
+                  color: AppColors.primaryFor(businessType),
                 ),
                 // Visibility chip
                 _buildFilterChip(
@@ -621,7 +622,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     );
   }
 
-  Widget _buildBottomBar(AppLocalizations l10n) {
+  Widget _buildBottomBar(AppLocalizations l10n, String? businessType) {
     return Consumer<ExerciseSelectionProvider>(
       builder: (context, provider, _) {
         if (_currentPage == 0) {
@@ -654,7 +655,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.primaryFor(businessType),
                   disabledBackgroundColor: Colors.grey[300],
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -691,7 +692,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
                       ? null
                       : _showSaveWorkoutDialog,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: AppColors.primaryFor(businessType),
                     disabledBackgroundColor: Colors.grey[300],
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -857,6 +858,7 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
     final l10n = AppLocalizations.of(context)!;
     final personProvider = context.read<PersonProvider>();
     final ownerUuid = personProvider.activeAuthorUuid;
+    final businessType = personProvider.activeBusinessProfile?.businessType;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -903,9 +905,9 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
                 onChanged: (query) => _onSearchChanged(ownerUuid, query),
                 decoration: InputDecoration(
                   hintText: l10n.messageSearchHint,
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.search,
-                    color: AppColors.primary,
+                    color: AppColors.primaryFor(businessType),
                   ),
                   suffixIcon: _isSearching
                       ? const SizedBox(
@@ -946,17 +948,17 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
                         dense: true,
                         leading: CircleAvatar(
                           radius: 18,
-                          backgroundColor: AppColors.primary.withValues(
-                            alpha: 0.1,
-                          ),
+                          backgroundColor: AppColors.primaryFor(
+                            businessType,
+                          ).withValues(alpha: 0.1),
                           backgroundImage: person.avatar != null
                               ? NetworkImage(person.avatar!)
                               : null,
                           child: person.avatar == null
                               ? Text(
                                   person.firstname[0].toUpperCase(),
-                                  style: const TextStyle(
-                                    color: AppColors.primary,
+                                  style: TextStyle(
+                                    color: AppColors.primaryFor(businessType),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
                                   ),
@@ -968,9 +970,9 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
                           style: const TextStyle(fontSize: 13),
                         ),
                         trailing: selected
-                            ? const Icon(
+                            ? Icon(
                                 Icons.check_circle,
-                                color: AppColors.primary,
+                                color: AppColors.primaryFor(businessType),
                                 size: 20,
                               )
                             : const Icon(
@@ -979,7 +981,9 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
                                 size: 20,
                               ),
                         tileColor: selected
-                            ? AppColors.primary.withValues(alpha: 0.05)
+                            ? AppColors.primaryFor(
+                                businessType,
+                              ).withValues(alpha: 0.05)
                             : null,
                         onTap: () => _togglePerson(person),
                       );
@@ -1017,13 +1021,13 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
                   children: _selectedPersons.map((person) {
                     return Chip(
                       avatar: CircleAvatar(
-                        backgroundColor: AppColors.primary.withValues(
-                          alpha: 0.1,
-                        ),
+                        backgroundColor: AppColors.primaryFor(
+                          businessType,
+                        ).withValues(alpha: 0.1),
                         child: Text(
                           person.firstname[0].toUpperCase(),
-                          style: const TextStyle(
-                            color: AppColors.primary,
+                          style: TextStyle(
+                            color: AppColors.primaryFor(businessType),
                             fontSize: 10,
                           ),
                         ),
@@ -1034,11 +1038,13 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
                       ),
                       deleteIcon: const Icon(Icons.close, size: 14),
                       onDeleted: () => _togglePerson(person),
-                      backgroundColor: AppColors.primary.withValues(
-                        alpha: 0.05,
-                      ),
+                      backgroundColor: AppColors.primaryFor(
+                        businessType,
+                      ).withValues(alpha: 0.05),
                       side: BorderSide(
-                        color: AppColors.primary.withValues(alpha: 0.3),
+                        color: AppColors.primaryFor(
+                          businessType,
+                        ).withValues(alpha: 0.3),
                       ),
                     );
                   }).toList(),
@@ -1061,6 +1067,7 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
                 icons: [Icons.fitness_center, Icons.directions_run],
                 selectedValue: _category,
                 onSelected: (value) => setState(() => _category = value),
+                businessType: businessType,
               ),
               const SizedBox(height: 20),
 
@@ -1097,6 +1104,7 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
                   value,
                   fallback: VisibilityOption.publicAccess,
                 ).label(l10n),
+                businessType: businessType,
               ),
               const SizedBox(height: 20),
 
@@ -1144,15 +1152,17 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
                       onPressed: widget.onCancel,
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: const BorderSide(color: AppColors.primary),
+                        side: BorderSide(
+                          color: AppColors.primaryFor(businessType),
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: Text(
                         l10n.buttonCancel,
-                        style: const TextStyle(
-                          color: AppColors.primary,
+                        style: TextStyle(
+                          color: AppColors.primaryFor(businessType),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1167,7 +1177,7 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
                         _selectedPersons,
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.primaryFor(businessType),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -1197,6 +1207,7 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
     required String selectedValue,
     required void Function(String) onSelected,
     String Function(String option)? labelBuilder,
+    required String? businessType,
   }) {
     return Row(
       spacing: 12,
@@ -1208,6 +1219,7 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
               label: labelBuilder?.call(options[i]) ?? options[i],
               isSelected: selectedValue == options[i],
               onPressed: () => onSelected(options[i]),
+              businessType: businessType,
             ),
           ),
       ],
@@ -1219,6 +1231,7 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
     required String label,
     required bool isSelected,
     required VoidCallback onPressed,
+    required String? businessType,
   }) {
     return InkWell(
       onTap: onPressed,
@@ -1227,11 +1240,13 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withAlpha(25) // ~10%
+              ? AppColors.primaryFor(businessType).withAlpha(25) // ~10%
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey[300]!,
+            color: isSelected
+                ? AppColors.primaryFor(businessType)
+                : Colors.grey[300]!,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -1241,7 +1256,9 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppColors.primary : Colors.grey[600],
+              color: isSelected
+                  ? AppColors.primaryFor(businessType)
+                  : Colors.grey[600],
               size: 24,
             ),
             Text(
@@ -1250,7 +1267,9 @@ class _ExerciseFilterModalState extends State<_ExerciseFilterModal> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? AppColors.primary : Colors.grey[600],
+                color: isSelected
+                    ? AppColors.primaryFor(businessType)
+                    : Colors.grey[600],
               ),
             ),
           ],

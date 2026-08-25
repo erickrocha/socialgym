@@ -156,13 +156,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return MainLayout(
       navSection: NavSection.workout,
       currentRoute: '/workouts',
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToAddWorkoutPage,
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryFor(businessType),
         foregroundColor: Colors.white,
         tooltip: l10n.workoutAddNew,
         child: const Icon(Icons.add),
@@ -170,7 +171,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       body: Consumer<WorkoutProvider>(
         builder: (context, workoutProvider, _) {
           if (workoutProvider.loading && workoutProvider.workouts.isEmpty) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return Center(child: CircularProgressIndicator(color: AppColors.primaryFor(businessType)));
           }
 
           return Column(
@@ -232,7 +233,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
               Expanded(
                 child: workoutProvider.workouts.isEmpty
                     ? _buildEmpty(l10n)
-                    : _buildWorkoutList(workoutProvider, l10n),
+                    : _buildWorkoutList(workoutProvider, l10n, businessType),
               ),
             ],
           );
@@ -257,9 +258,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
     );
   }
 
-  Widget _buildWorkoutList(WorkoutProvider workoutProvider, AppLocalizations l10n) {
+  Widget _buildWorkoutList(
+    WorkoutProvider workoutProvider,
+    AppLocalizations l10n,
+    String? businessType,
+  ) {
     return RefreshIndicator(
-      color: AppColors.primary,
+      color: AppColors.primaryFor(businessType),
       onRefresh: () async => _fetchWorkouts(),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -285,7 +290,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   },
                   background: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: AppColors.primaryFor(businessType),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     alignment: Alignment.centerLeft,
