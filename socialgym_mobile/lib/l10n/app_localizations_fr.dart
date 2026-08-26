@@ -688,34 +688,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addressDelete => 'Supprimer l\'Adresse';
 
   @override
-  String get addressSetCurrent => 'Définir comme Actuelle';
-
-  @override
   String get addressCurrent => 'Adresse Actuelle';
 
   @override
-  String get addressStreet => 'Rue';
-
-  @override
-  String get addressNumber => 'Numéro';
-
-  @override
-  String get addressComplement => 'Complément';
-
-  @override
-  String get addressNeighborhood => 'Quartier';
-
-  @override
-  String get addressCity => 'Ville';
-
-  @override
-  String get addressState => 'État/Province';
-
-  @override
   String get addressCountry => 'Pays';
-
-  @override
-  String get addressZipCode => 'Code Postal';
 
   @override
   String get addressPostalCode => 'Code Postal';
@@ -733,28 +709,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addressAdministrativeArea => 'État/Province';
 
   @override
-  String get addressMarkCurrent => 'Marquer comme adresse actuelle';
-
-  @override
   String get addressSelectCountry => 'Sélectionner le pays';
-
-  @override
-  String get addressSelectState => 'Sélectionner l\'état';
-
-  @override
-  String get addressSelectCountryFirst => 'Sélectionnez d\'abord le pays';
-
-  @override
-  String get addressLatitude => 'Latitude';
-
-  @override
-  String get addressLongitude => 'Longitude';
-
-  @override
-  String get addressGpsLocation => 'Localisation GPS';
-
-  @override
-  String get addressGetCurrentLocation => 'Obtenir la localisation actuelle';
 
   @override
   String get addressLocationServicesDisabled =>

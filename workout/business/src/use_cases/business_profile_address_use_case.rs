@@ -15,6 +15,8 @@ impl BusinessProfileAddressUseCase {
         db: &DbConn,
         domain: BusinessProfileAddress,
         acting_person_id: i32,
+        latitude: Option<f64>,
+        longitude: Option<f64>,
     ) -> Result<BusinessProfileAddress, BusinessError> {
         log::info!(
             "Adding BusinessProfileAddress for business_profile_id={}",
@@ -25,7 +27,7 @@ impl BusinessProfileAddressUseCase {
             let existing = Self::find_by_id(db, id).await?;
             Self::ensure_owns_profile(db, existing.business_profile_id, acting_person_id).await?;
         }
-        let domain_saved = BusinessProfileAddressGateway::persist(db, domain)
+        let domain_saved = BusinessProfileAddressGateway::persist(db, domain, latitude, longitude)
             .await
             .map_err(|e| {
                 log::error!("Error adding BusinessProfileAddress: {:?}", e);

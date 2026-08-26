@@ -11,6 +11,8 @@ impl PersonAddressUseCase {
     pub async fn add_person_address(
         db: &DbConn,
         mut address: PersonAddress,
+        latitude: Option<f64>,
+        longitude: Option<f64>,
     ) -> Result<PersonAddress, BusinessError> {
         log::info!("Adding person address: {:?}", address);
 
@@ -26,7 +28,7 @@ impl PersonAddressUseCase {
 
         address.current = true;
 
-        let address_result = PersonAddressGateway::persist(db, address).await;
+        let address_result = PersonAddressGateway::persist(db, address, latitude, longitude).await;
         match address_result {
             Ok(persisted) => {
                 log::info!("Person address saved successfully");
@@ -64,6 +66,8 @@ impl PersonAddressUseCase {
         db: &DbConn,
         mut address: PersonAddress,
         acting_person_id: i32,
+        latitude: Option<f64>,
+        longitude: Option<f64>,
     ) -> Result<PersonAddress, BusinessError> {
         log::info!("Updating person address: {:?}", address);
 
@@ -73,7 +77,7 @@ impl PersonAddressUseCase {
         }
         address.person_id = acting_person_id;
 
-        let update_result = PersonAddressGateway::persist(db, address).await;
+        let update_result = PersonAddressGateway::persist(db, address, latitude, longitude).await;
         match update_result {
             Ok(updated) => {
                 log::info!("Person address updated successfully");

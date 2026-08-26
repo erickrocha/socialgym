@@ -113,10 +113,13 @@ pub async fn save_address(
     Extension(locale): Extension<Locale>,
     Json(payload): Json<BusinessProfileAddressJson>,
 ) -> HttpResponse<Json<BusinessProfileAddressJson>> {
+    let (latitude, longitude) = (payload.latitude, payload.longitude);
     let address = BusinessProfileAddressUseCase::save(
         &state.conn,
         BusinessProfileAddressMapper::domain(payload),
         current_user.person_id,
+        latitude,
+        longitude,
     )
     .await
     .map_err(|error| {

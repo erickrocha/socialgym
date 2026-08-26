@@ -11,7 +11,6 @@ pub mod business_profile_address_entity;
 pub mod person_address_entity;
 pub mod person_media_entity;
 pub mod country_entity;
-pub mod province_entity;
 pub mod settings_entity;
 pub mod profile_entity;
 pub mod team_member_entity;

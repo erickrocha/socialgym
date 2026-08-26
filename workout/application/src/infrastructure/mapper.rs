@@ -2,7 +2,6 @@ use crate::http::json::access_token_json::{AccessTokenJson, PendingAccountDeleti
 use crate::http::json::business_profile_address_json::BusinessProfileAddressJson;
 use crate::http::json::business_profile_json::BusinessProfileJson;
 use crate::http::json::country_json::CountryJson;
-use crate::http::json::province_json::ProvinceJson;
 use crate::http::json::address_candidate_json::AddressCandidateJson;
 use crate::http::json::exercise_json::ExerciseJson;
 use crate::http::json::person_address_json::PersonAddressJson;
@@ -15,7 +14,6 @@ use business::domain::access_token::AccessToken;
 use business::domain::business_profile::BusinessProfile;
 use business::domain::business_profile_address::BusinessProfileAddress;
 use business::domain::country::Country;
-use business::domain::province::Province;
 use business::domain::address_candidate::AddressCandidate;
 use business::domain::enums::{Difficulty, Position, ProfileType};
 use business::domain::exercise::{Category, Exercise};
@@ -230,8 +228,8 @@ impl Mapper<PersonAddress, PersonAddressJson> for PersonAddressMapper {
             postal_code: address.postal_code,
             country_code: address.country_code,
             current: address.current,
-            latitude: address.latitude,
-            longitude: address.longitude,
+            latitude: None,
+            longitude: None,
             created_at: address.created_at,
             updated_at: address.updated_at,
         }
@@ -249,8 +247,6 @@ impl Mapper<PersonAddress, PersonAddressJson> for PersonAddressMapper {
             postal_code: u.postal_code,
             country_code: u.country_code,
             current: u.current,
-            latitude: u.latitude,
-            longitude: u.longitude,
             created_at: u.created_at,
             updated_at: u.updated_at,
         }
@@ -350,8 +346,8 @@ impl Mapper<BusinessProfileAddress, BusinessProfileAddressJson> for BusinessProf
             postal_code: address.postal_code,
             locality: address.locality,
             country_code: address.country_code,
-            longitude: address.longitude,
-            latitude: address.latitude,
+            longitude: None,
+            latitude: None,
         }
     }
 
@@ -366,8 +362,6 @@ impl Mapper<BusinessProfileAddress, BusinessProfileAddressJson> for BusinessProf
             postal_code: u.postal_code,
             locality: u.locality,
             country_code: u.country_code,
-            latitude: u.latitude,
-            longitude: u.longitude,
             created_at: None,
             updated_at: None,
         }
@@ -434,28 +428,6 @@ impl Mapper<Country, CountryJson> for CountryMapper {
             name: u.name.unwrap(),
             acronym: u.acronym.unwrap(),
             currency: u.currency.unwrap(),
-        }
-    }
-}
-
-pub struct ProvinceMapper {}
-
-impl Mapper<Province, ProvinceJson> for ProvinceMapper {
-    fn json(t: Province) -> ProvinceJson {
-        ProvinceJson {
-            id: t.id,
-            name: Some(t.name),
-            acronym: Some(t.acronym),
-            country_id: Some(t.country_id),
-        }
-    }
-
-    fn domain(u: ProvinceJson) -> Province {
-        Province {
-            id: u.id,
-            name: u.name.unwrap(),
-            acronym: u.acronym.unwrap(),
-            country_id: u.country_id.unwrap(),
         }
     }
 }

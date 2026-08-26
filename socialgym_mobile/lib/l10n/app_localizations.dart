@@ -1413,65 +1413,17 @@ abstract class AppLocalizations {
   /// **'Delete Address'**
   String get addressDelete;
 
-  /// No description provided for @addressSetCurrent.
-  ///
-  /// In en, this message translates to:
-  /// **'Set as Current'**
-  String get addressSetCurrent;
-
   /// No description provided for @addressCurrent.
   ///
   /// In en, this message translates to:
   /// **'Current Address'**
   String get addressCurrent;
 
-  /// No description provided for @addressStreet.
-  ///
-  /// In en, this message translates to:
-  /// **'Street'**
-  String get addressStreet;
-
-  /// No description provided for @addressNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'Number'**
-  String get addressNumber;
-
-  /// No description provided for @addressComplement.
-  ///
-  /// In en, this message translates to:
-  /// **'Complement'**
-  String get addressComplement;
-
-  /// No description provided for @addressNeighborhood.
-  ///
-  /// In en, this message translates to:
-  /// **'Neighborhood'**
-  String get addressNeighborhood;
-
-  /// No description provided for @addressCity.
-  ///
-  /// In en, this message translates to:
-  /// **'City'**
-  String get addressCity;
-
-  /// No description provided for @addressState.
-  ///
-  /// In en, this message translates to:
-  /// **'State/Province'**
-  String get addressState;
-
   /// No description provided for @addressCountry.
   ///
   /// In en, this message translates to:
   /// **'Country'**
   String get addressCountry;
-
-  /// No description provided for @addressZipCode.
-  ///
-  /// In en, this message translates to:
-  /// **'ZIP Code'**
-  String get addressZipCode;
 
   /// No description provided for @addressPostalCode.
   ///
@@ -1503,53 +1455,11 @@ abstract class AppLocalizations {
   /// **'State/Province'**
   String get addressAdministrativeArea;
 
-  /// No description provided for @addressMarkCurrent.
-  ///
-  /// In en, this message translates to:
-  /// **'Mark as current address'**
-  String get addressMarkCurrent;
-
   /// No description provided for @addressSelectCountry.
   ///
   /// In en, this message translates to:
   /// **'Select country'**
   String get addressSelectCountry;
-
-  /// No description provided for @addressSelectState.
-  ///
-  /// In en, this message translates to:
-  /// **'Select state'**
-  String get addressSelectState;
-
-  /// No description provided for @addressSelectCountryFirst.
-  ///
-  /// In en, this message translates to:
-  /// **'Select country first'**
-  String get addressSelectCountryFirst;
-
-  /// No description provided for @addressLatitude.
-  ///
-  /// In en, this message translates to:
-  /// **'Latitude'**
-  String get addressLatitude;
-
-  /// No description provided for @addressLongitude.
-  ///
-  /// In en, this message translates to:
-  /// **'Longitude'**
-  String get addressLongitude;
-
-  /// No description provided for @addressGpsLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'GPS Location'**
-  String get addressGpsLocation;
-
-  /// No description provided for @addressGetCurrentLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'Get Current Location'**
-  String get addressGetCurrentLocation;
 
   /// No description provided for @addressLocationServicesDisabled.
   ///

@@ -52,14 +52,6 @@ const ResourceResponse$json = {
       '6': '.grpc.settings.Setting',
       '10': 'setting'
     },
-    {
-      '1': 'provinces',
-      '3': 3,
-      '4': 3,
-      '5': 11,
-      '6': '.grpc.province.Province',
-      '10': 'provinces'
-    },
   ],
 };
 
@@ -67,5 +59,4 @@ const ResourceResponse$json = {
 final $typed_data.Uint8List resourceResponseDescriptor = $convert.base64Decode(
     'ChBSZXNvdXJjZVJlc3BvbnNlEjMKCWNvdW50cmllcxgBIAMoCzIVLmdycGMuY291bnRyeS5Db3'
     'VudHJ5Ugljb3VudHJpZXMSMAoHc2V0dGluZxgCIAEoCzIWLmdycGMuc2V0dGluZ3MuU2V0dGlu'
-    'Z1IHc2V0dGluZxI1Cglwcm92aW5jZXMYAyADKAsyFy5ncnBjLnByb3ZpbmNlLlByb3ZpbmNlUg'
-    'lwcm92aW5jZXM=');
+    'Z1IHc2V0dGluZw==');

@@ -684,34 +684,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addressDelete => 'Adres Verwijderen';
 
   @override
-  String get addressSetCurrent => 'Instellen als Huidig';
-
-  @override
   String get addressCurrent => 'Huidig Adres';
 
   @override
-  String get addressStreet => 'Straat';
-
-  @override
-  String get addressNumber => 'Nummer';
-
-  @override
-  String get addressComplement => 'Aanvulling';
-
-  @override
-  String get addressNeighborhood => 'Buurt';
-
-  @override
-  String get addressCity => 'Stad';
-
-  @override
-  String get addressState => 'Staat/Provincie';
-
-  @override
   String get addressCountry => 'Land';
-
-  @override
-  String get addressZipCode => 'Postcode';
 
   @override
   String get addressPostalCode => 'Postcode';
@@ -729,28 +705,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addressAdministrativeArea => 'Staat/Provincie';
 
   @override
-  String get addressMarkCurrent => 'Markeren als huidig adres';
-
-  @override
   String get addressSelectCountry => 'Selecteer land';
-
-  @override
-  String get addressSelectState => 'Selecteer staat';
-
-  @override
-  String get addressSelectCountryFirst => 'Selecteer eerst het land';
-
-  @override
-  String get addressLatitude => 'Breedtegraad';
-
-  @override
-  String get addressLongitude => 'Lengtegraad';
-
-  @override
-  String get addressGpsLocation => 'GPS-locatie';
-
-  @override
-  String get addressGetCurrentLocation => 'Huidige locatie ophalen';
 
   @override
   String get addressLocationServicesDisabled =>

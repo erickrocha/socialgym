@@ -1,7 +1,6 @@
 syntax = "proto3";
 package grpc.resource;
 import "country.proto";
-import "province.proto";
 import "settings.proto";
 service ResourceService{
   rpc GetResource(ResourceRequest) returns (ResourceResponse);
@@ -17,7 +16,5 @@ message ResourceRequest {
 message ResourceResponse {
   repeated country.Country countries = 1;
   settings.Setting setting = 2;
-  repeated province.Province provinces = 3;
 }
-
 

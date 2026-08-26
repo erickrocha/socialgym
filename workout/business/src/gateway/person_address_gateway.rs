@@ -47,15 +47,33 @@ impl PersonAddressGateway {
             .unwrap_or_else(|_| Vec::new())
     }
 
-    pub async fn persist(db: &DbConn, domain: PersonAddress) -> Result<ActiveModel, DbErr> {
+    pub async fn persist(
+        db: &DbConn,
+        domain: PersonAddress,
+        latitude: Option<f64>,
+        longitude: Option<f64>,
+    ) -> Result<ActiveModel, DbErr> {
         let active_model = PersonAddressEntityMapper::build_active_model(domain);
-        active_model.save(db).await
+        let saved = active_model.save(db).await?;
+
+        if let (Some(latitude), Some(longitude)) = (latitude, longitude) {
+            let id: i32 = saved.id.clone().unwrap();
+            db.execute_raw(Statement::from_sql_and_values(
+                DbBackend::Postgres,
+                r#"UPDATE person_address
+                   SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+                   WHERE id = $3"#,
+                [longitude.into(), latitude.into(), id.into()],
+            ))
+            .await?;
+        }
+
+        Ok(saved)
     }
 
     pub async fn find_all_within_radius(
         db: &DbConn,
-        latitude: f64,
-        longitude: f64,
+        person_id: i32,
         radius_km: f64,
     ) -> Result<Vec<person_address::PersonAddressEntity>, DbErr> {
         PersonAddressQuery::find()
@@ -63,18 +81,13 @@ impl PersonAddressGateway {
                 DbBackend::Postgres,
                 r#"SELECT pa.*
                    FROM person_address AS pa
+                   JOIN person_address AS me
+                     ON me.person_id = $1 AND me.current = TRUE
                    WHERE pa.current = TRUE
                      AND pa.location IS NOT NULL
-                     AND ST_DWithin(
-                         pa.location,
-                         ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-                         $3
-                     )"#,
-                [
-                    longitude.into(),
-                    latitude.into(),
-                    (radius_km * 1_000.0).into(),
-                ],
+                     AND me.location IS NOT NULL
+                     AND ST_DWithin(pa.location, me.location, $2)"#,
+                [person_id.into(), (radius_km * 1_000.0).into()],
             ))
             .all(db)
             .await

@@ -4,7 +4,7 @@ use crate::http::json::error_response_json::{
     BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,
 };
 use crate::http::json::resource_json::ResourceJson;
-use crate::infrastructure::mapper::{CountryMapper, Mapper, ProvinceMapper, SettingsMapper};
+use crate::infrastructure::mapper::{CountryMapper, Mapper, SettingsMapper};
 use crate::AppState;
 use axum::extract::State;
 use axum::{Extension, Json};
@@ -17,7 +17,7 @@ use business::use_cases::setings_use_case::SettingsUseCase;
 	get,
 	path = "/workout/api/resource",
 	responses(
-		(status = 200, description = "Static resources such as countries and provinces", body = ResourceJson),
+		(status = 200, description = "Static resources such as countries", body = ResourceJson),
         (status = 400, description = "Bad request", body = BadRequestErrorJson),
         (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
         (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
@@ -34,12 +34,6 @@ pub async fn get_resource(State(state): State<AppState>,Extension(current_user):
         return Err(ExceptionResponse::NotFound(locale,ErrorKey::ResourcesNotFound));
     }
 
-    let provinces_response = ResourceUseCase::get_provinces(state.conn.as_ref()).await;
-
-    if provinces_response.is_err() {
-        return Err(ExceptionResponse::NotFound(locale,ErrorKey::ResourcesNotFound));
-    }
-
     let setting_use_case = SettingsUseCase::new(SettingsGateway::new((*state.conn).clone()));
     let settings_response = setting_use_case.get_by_owner_id(current_user.id.unwrap()).await;
     if settings_response.is_err() {
@@ -47,12 +41,10 @@ pub async fn get_resource(State(state): State<AppState>,Extension(current_user):
     }
 
     let countries = CountryMapper::json_vec(countries_response.unwrap());
-    let provinces = ProvinceMapper::json_vec(provinces_response.unwrap());
     let settings = SettingsMapper::json_opt(Some(settings_response.unwrap()));
     Ok(ResourceJson::builder()
         .countries(countries)
         .settings(settings)
-        .provinces(provinces)
         .build()
         .into())
 }

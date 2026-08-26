@@ -12,7 +12,6 @@ pub mod business_profile_gateway;
 pub mod business_profile_address_gateway;
 pub mod person_media_gateway;
 pub mod country_gateway;
-pub mod province_gateway;
 pub mod google_places_gateway;
 pub mod timeline_deletion_gateway;
 pub mod settings_gateway;

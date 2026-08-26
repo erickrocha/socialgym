@@ -222,18 +222,11 @@ impl PersonUseCase {
             .await
             .unwrap_or_else(|_| Vec::new());
 
-        let current_address = current_address.unwrap();
-        let (Some(person_lat), Some(person_lon)) =
-            (current_address.latitude, current_address.longitude)
-        else {
-            return Vec::new();
-        };
         if !radius_km.is_finite() || radius_km < 0.0 {
             return Vec::new();
         }
         let nearby_addresses =
-            PersonAddressGateway::find_all_within_radius(db, person_lat, person_lon, radius_km)
-                .await;
+            PersonAddressGateway::find_all_within_radius(db, person_id, radius_km).await;
         let neighbor_ids = Self::extract_neighbor_ids(
             nearby_addresses.unwrap_or_else(|_| Vec::new()),
             person_id,
@@ -607,8 +600,6 @@ mod tests {
             postal_code: Some("88058573".to_string()),
             country_code: "BR".to_string(),
             current: true,
-            latitude: Some(0.0),
-            longitude: Some(0.0),
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }

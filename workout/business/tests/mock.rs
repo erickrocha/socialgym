@@ -60,8 +60,6 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
             country_code: "USA".to_string(),
             postal_code: Some("02101".to_string()),
             current: true,
-            latitude: Some(42.3601),
-            longitude: Some(-71.0589),
             created_at: chrono::Utc::now(),
             updated_at: chrono::Utc::now(),
         }
@@ -142,6 +140,8 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
             failed_login_attempts,
             locked_until,
             token_valid_after,
+            deletion_requested_at: None,
+            deletion_scheduled_at: None,
         }
     }
 
@@ -488,8 +488,6 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
                 postal_code: Some("88058573".to_string()),
                 current: true,
                 locality: "Santa Catarina".to_string(),
-                latitude: Some(40.7128),
-                longitude: Some(-74.0060),
                 uuid: Uuid::new_v4(),
                 created_at: chrono::Utc::now(),
                 updated_at: chrono::Utc::now(),
@@ -505,11 +503,9 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
             Some("88058573".to_string()),
             "BR".to_string(),
             true,
-            Some(40.7128),
-            Some(-74.0060),
         );
 
-        let result = PersonAddressUseCase::add_person_address(&db, address).await;
+        let result = PersonAddressUseCase::add_person_address(&db, address, None, None).await;
 
         assert!(result.is_ok());
         let saved_address = result.unwrap();
@@ -539,8 +535,6 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
                 country_code: "USA".to_string(),
                 postal_code: Some("02101".to_string()),
                 current: true,
-                latitude: Some(42.3601),
-                longitude: Some(-71.0589),
                 created_at: chrono::Utc::now(),
                 updated_at: chrono::Utc::now(),
             }]])
@@ -555,12 +549,11 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
             Some("02101".to_string()),
             "MA".to_string(),
             true,
-            Some(42.3601),
-            Some(-71.0589),
         );
         address.id = Some(1);
 
-        let result = PersonAddressUseCase::update_person_address(&db, address, 1).await;
+        let result =
+            PersonAddressUseCase::update_person_address(&db, address, 1, None, None).await;
 
         assert!(result.is_ok());
         let updated = result.unwrap();

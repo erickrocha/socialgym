@@ -178,13 +178,15 @@ impl PersonService for GrpcPersonService {
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
 
+        let (latitude, longitude) = (payload.latitude, payload.longitude);
         let mut address = PersonAddressMapper::domain(payload);
         address.id = None;
         address.person_id = person_id;
 
-        let added = PersonAddressUseCase::add_person_address(&self.conn, address)
-            .await
-            .map_err(|e| Status::internal(e.message))?;
+        let added =
+            PersonAddressUseCase::add_person_address(&self.conn, address, latitude, longitude)
+                .await
+                .map_err(|e| Status::internal(e.message))?;
 
         Ok(Response::new(PersonAddressMapper::response(added)))
     }
@@ -206,13 +208,20 @@ impl PersonService for GrpcPersonService {
             return Err(Status::permission_denied("address does not belong to the authenticated person"));
         }
 
+        let (latitude, longitude) = (payload.latitude, payload.longitude);
         let mut address = PersonAddressMapper::domain(payload);
         address.id = Some(existing.id);
         address.person_id = person_id;
 
-        let updated = PersonAddressUseCase::update_person_address(&self.conn, address, person_id)
-            .await
-            .map_err(|e| Status::internal(e.message))?;
+        let updated = PersonAddressUseCase::update_person_address(
+            &self.conn,
+            address,
+            person_id,
+            latitude,
+            longitude,
+        )
+        .await
+        .map_err(|e| Status::internal(e.message))?;
 
         Ok(Response::new(PersonAddressMapper::response(updated)))
     }

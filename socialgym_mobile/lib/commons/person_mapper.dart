@@ -137,8 +137,8 @@ class PersonAddressMapper implements Mapper<PersonAddress,$person_address.Person
       administrativeArea: proto.administrativeArea,
       countryCode: proto.countryCode,
       postalCode: proto.postalCode,
-      latitude: proto.latitude,
-      longitude: proto.longitude,
+      latitude: proto.hasLatitude() ? proto.latitude : null,
+      longitude: proto.hasLongitude() ? proto.longitude : null,
       current: proto.current,
       uuid: proto.uuid,
       createdAt: proto.hasCreatedAt()

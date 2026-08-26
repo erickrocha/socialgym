@@ -19,8 +19,6 @@ pub struct Model {
     pub postal_code: Option<String>,
     pub country_code: String,
     pub current: bool,
-    pub latitude: Option<f64>,
-    pub longitude: Option<f64>,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }

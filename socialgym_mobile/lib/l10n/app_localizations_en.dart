@@ -681,34 +681,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addressDelete => 'Delete Address';
 
   @override
-  String get addressSetCurrent => 'Set as Current';
-
-  @override
   String get addressCurrent => 'Current Address';
 
   @override
-  String get addressStreet => 'Street';
-
-  @override
-  String get addressNumber => 'Number';
-
-  @override
-  String get addressComplement => 'Complement';
-
-  @override
-  String get addressNeighborhood => 'Neighborhood';
-
-  @override
-  String get addressCity => 'City';
-
-  @override
-  String get addressState => 'State/Province';
-
-  @override
   String get addressCountry => 'Country';
-
-  @override
-  String get addressZipCode => 'ZIP Code';
 
   @override
   String get addressPostalCode => 'Postal Code';
@@ -726,28 +702,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addressAdministrativeArea => 'State/Province';
 
   @override
-  String get addressMarkCurrent => 'Mark as current address';
-
-  @override
   String get addressSelectCountry => 'Select country';
-
-  @override
-  String get addressSelectState => 'Select state';
-
-  @override
-  String get addressSelectCountryFirst => 'Select country first';
-
-  @override
-  String get addressLatitude => 'Latitude';
-
-  @override
-  String get addressLongitude => 'Longitude';
-
-  @override
-  String get addressGpsLocation => 'GPS Location';
-
-  @override
-  String get addressGetCurrentLocation => 'Get Current Location';
 
   @override
   String get addressLocationServicesDisabled =>

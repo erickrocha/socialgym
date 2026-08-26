@@ -14,7 +14,6 @@ pub mod business_profile_address;
 pub mod enums;
 pub mod person_media;
 pub mod country;
-pub mod province;
 pub mod address_candidate;
 pub mod settings;
 pub mod profile;

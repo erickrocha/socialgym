@@ -18,8 +18,6 @@ pub struct Model {
     pub administrative_area: String,
     pub postal_code: Option<String>,
     pub country_code: String,
-    pub latitude: Option<f64>,
-    pub longitude: Option<f64>,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }

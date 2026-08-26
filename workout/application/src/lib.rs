@@ -172,7 +172,6 @@ impl Modify for SecurityAddon {
 			http::json::logout_request::LogoutRequest,
 			http::json::resource_json::ResourceJson,
 			http::json::country_json::CountryJson,
-			http::json::province_json::ProvinceJson,
 			http::json::address_candidate_json::AddressCandidateJson,
 			http::json::account_deletion_json::AccountDeletionRequestJson,
 			http::json::account_deletion_json::AccountDeletionStatusJson,

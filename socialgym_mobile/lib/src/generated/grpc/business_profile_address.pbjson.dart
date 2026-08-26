@@ -40,10 +40,30 @@ const BusinessProfileAddress$json = {
     },
     {'1': 'postal_code', '3': 8, '4': 1, '5': 9, '10': 'postalCode'},
     {'1': 'country_code', '3': 9, '4': 1, '5': 9, '10': 'countryCode'},
-    {'1': 'latitude', '3': 10, '4': 1, '5': 1, '10': 'latitude'},
-    {'1': 'longitude', '3': 11, '4': 1, '5': 1, '10': 'longitude'},
+    {
+      '1': 'latitude',
+      '3': 10,
+      '4': 1,
+      '5': 1,
+      '9': 0,
+      '10': 'latitude',
+      '17': true
+    },
+    {
+      '1': 'longitude',
+      '3': 11,
+      '4': 1,
+      '5': 1,
+      '9': 1,
+      '10': 'longitude',
+      '17': true
+    },
     {'1': 'created_at', '3': 12, '4': 1, '5': 9, '10': 'createdAt'},
     {'1': 'updated_at', '3': 13, '4': 1, '5': 9, '10': 'updatedAt'},
+  ],
+  '8': [
+    {'1': '_latitude'},
+    {'1': '_longitude'},
   ],
 };
 
@@ -54,7 +74,7 @@ final $typed_data.Uint8List businessProfileAddressDescriptor = $convert.base64De
     'DmFkZHJlc3NfbGluZV8xGAQgASgJUgxhZGRyZXNzTGluZTESJAoOYWRkcmVzc19saW5lXzIYBS'
     'ABKAlSDGFkZHJlc3NMaW5lMhIaCghsb2NhbGl0eRgGIAEoCVIIbG9jYWxpdHkSLwoTYWRtaW5p'
     'c3RyYXRpdmVfYXJlYRgHIAEoCVISYWRtaW5pc3RyYXRpdmVBcmVhEh8KC3Bvc3RhbF9jb2RlGA'
-    'ggASgJUgpwb3N0YWxDb2RlEiEKDGNvdW50cnlfY29kZRgJIAEoCVILY291bnRyeUNvZGUSGgoI'
-    'bGF0aXR1ZGUYCiABKAFSCGxhdGl0dWRlEhwKCWxvbmdpdHVkZRgLIAEoAVIJbG9uZ2l0dWRlEh'
-    '0KCmNyZWF0ZWRfYXQYDCABKAlSCWNyZWF0ZWRBdBIdCgp1cGRhdGVkX2F0GA0gASgJUgl1cGRh'
-    'dGVkQXQ=');
+    'ggASgJUgpwb3N0YWxDb2RlEiEKDGNvdW50cnlfY29kZRgJIAEoCVILY291bnRyeUNvZGUSHwoI'
+    'bGF0aXR1ZGUYCiABKAFIAFIIbGF0aXR1ZGWIAQESIQoJbG9uZ2l0dWRlGAsgASgBSAFSCWxvbm'
+    'dpdHVkZYgBARIdCgpjcmVhdGVkX2F0GAwgASgJUgljcmVhdGVkQXQSHQoKdXBkYXRlZF9hdBgN'
+    'IAEoCVIJdXBkYXRlZEF0QgsKCV9sYXRpdHVkZUIMCgpfbG9uZ2l0dWRl');

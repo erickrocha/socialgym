@@ -11,8 +11,8 @@ message BusinessProfileAddress {
   string administrative_area = 7;
   string postal_code = 8;
   string country_code = 9;
-  double latitude = 10;
-  double longitude = 11;
+  optional double latitude = 10;
+  optional double longitude = 11;
   string created_at = 12;
   string updated_at = 13;
 }

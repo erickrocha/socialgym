@@ -2,7 +2,6 @@ use business::domain::{
     business_profile::BusinessProfile as DomainBusinessProfile,
     business_profile_address::BusinessProfileAddress as DomainBusinessProfileAddress,
     country::Country as DomainCountry, exercise::Exercise as DomainExercise,
-    province::Province as DomainProvince,
     friend::Friend as DomainFriend, person::Person as DomainPerson,
     person_address::PersonAddress as DomainPersonAddress,
     person_info::PersonInfo as DomainPersonInfo,
@@ -50,7 +49,6 @@ pub struct PersonInfoMapper;
 pub struct PersonAddressMapper;
 pub struct PersonMapper;
 pub struct FriendMapper;
-pub struct ProvinceMapper;
 pub struct CountryMapper;
 pub struct ExerciseMapper;
 pub struct WorkoutMapper;
@@ -158,8 +156,8 @@ impl Mapper<DomainPersonAddress, proto::person_address::PersonAddress> for Perso
             administrative_area: t.administrative_area,
             postal_code: t.postal_code.unwrap_or_default(),
             country_code: t.country_code,
-            latitude: t.latitude.unwrap_or(0.0),
-            longitude: t.longitude.unwrap_or(0.0),
+            latitude: None,
+            longitude: None,
             current: t.current,
             uuid: t.uuid.unwrap_or_default(),
             created_at: t.created_at.map(|d| d.to_string()).unwrap_or_default(),
@@ -173,8 +171,6 @@ impl Mapper<DomainPersonAddress, proto::person_address::PersonAddress> for Perso
             uuid: if u.uuid.is_empty() { None } else { Some(u.uuid) },
             person_id: u.person_id,
             current: u.current,
-            latitude: Some(u.latitude),
-            longitude: Some(u.longitude),
             address_line1: u.address_line_1,
             address_line2: if u.address_line_2.is_empty() { None } else { Some(u.address_line_2) },
             locality: u.locality,
@@ -291,30 +287,6 @@ impl Mapper<DomainCountry, proto::country::Country> for CountryMapper {
 }
 
 // ---------------------------------------------------------------------------
-// ProvinceMapper
-// ---------------------------------------------------------------------------
-
-impl Mapper<DomainProvince, proto::province::Province> for ProvinceMapper {
-    fn response(t: DomainProvince) -> proto::province::Province {
-        proto::province::Province {
-            id: t.id.unwrap(),
-            name: t.name,
-            acronym: t.acronym,
-            country_id: t.country_id,
-        }
-    }
-
-    fn domain(u: proto::province::Province) -> DomainProvince {
-        DomainProvince {
-            id: Some(u.id),
-            name: u.name,
-            acronym: u.acronym,
-            country_id: u.country_id,
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
 // ExerciseMapper
 // ---------------------------------------------------------------------------
 
@@ -423,8 +395,8 @@ impl Mapper<DomainBusinessProfileAddress, proto::business_profile_address::Busin
             locality: t.locality,
             postal_code: t.postal_code.unwrap_or_default(),
             country_code: t.country_code,
-            latitude: t.latitude.unwrap_or(0.0),
-            longitude: t.longitude.unwrap_or(0.0),
+            latitude: None,
+            longitude: None,
             created_at: t.created_at.map(|d| d.to_string()).unwrap_or_default(),
             updated_at: t.updated_at.map(|d| d.to_string()).unwrap_or_default(),
         }
@@ -445,8 +417,6 @@ impl Mapper<DomainBusinessProfileAddress, proto::business_profile_address::Busin
             administrative_area: u.administrative_area,
             postal_code: Some(u.postal_code),
             country_code: u.country_code,
-            latitude: Some(u.latitude),
-            longitude: Some(u.longitude),
             created_at: NaiveDateTime::parse_from_str(&u.created_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
             updated_at: NaiveDateTime::parse_from_str(&u.updated_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
         }

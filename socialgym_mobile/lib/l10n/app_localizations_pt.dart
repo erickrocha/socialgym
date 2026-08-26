@@ -686,34 +686,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addressDelete => 'Eliminar Morada';
 
   @override
-  String get addressSetCurrent => 'Definir como Atual';
-
-  @override
   String get addressCurrent => 'Morada Atual';
 
   @override
-  String get addressStreet => 'Rua';
-
-  @override
-  String get addressNumber => 'Número';
-
-  @override
-  String get addressComplement => 'Complemento';
-
-  @override
-  String get addressNeighborhood => 'Bairro';
-
-  @override
-  String get addressCity => 'Cidade';
-
-  @override
-  String get addressState => 'Estado/Província';
-
-  @override
   String get addressCountry => 'País';
-
-  @override
-  String get addressZipCode => 'Código Postal';
 
   @override
   String get addressPostalCode => 'Código Postal';
@@ -731,28 +707,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addressAdministrativeArea => 'Estado/Província';
 
   @override
-  String get addressMarkCurrent => 'Marcar como morada atual';
-
-  @override
   String get addressSelectCountry => 'Selecionar país';
-
-  @override
-  String get addressSelectState => 'Selecionar estado';
-
-  @override
-  String get addressSelectCountryFirst => 'Selecione primeiro o país';
-
-  @override
-  String get addressLatitude => 'Latitude';
-
-  @override
-  String get addressLongitude => 'Longitude';
-
-  @override
-  String get addressGpsLocation => 'Localização GPS';
-
-  @override
-  String get addressGetCurrentLocation => 'Obter localização atual';
 
   @override
   String get addressLocationServicesDisabled =>
@@ -2171,34 +2126,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get addressDelete => 'Excluir Endereço';
 
   @override
-  String get addressSetCurrent => 'Definir como Atual';
-
-  @override
   String get addressCurrent => 'Endereço Atual';
 
   @override
-  String get addressStreet => 'Rua';
-
-  @override
-  String get addressNumber => 'Número';
-
-  @override
-  String get addressComplement => 'Complemento';
-
-  @override
-  String get addressNeighborhood => 'Bairro';
-
-  @override
-  String get addressCity => 'Cidade';
-
-  @override
-  String get addressState => 'Estado';
-
-  @override
   String get addressCountry => 'País';
-
-  @override
-  String get addressZipCode => 'CEP';
 
   @override
   String get addressPostalCode => 'CEP';
@@ -2216,28 +2147,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get addressAdministrativeArea => 'Estado';
 
   @override
-  String get addressMarkCurrent => 'Marcar como endereço atual';
-
-  @override
   String get addressSelectCountry => 'Selecionar país';
-
-  @override
-  String get addressSelectState => 'Selecionar estado';
-
-  @override
-  String get addressSelectCountryFirst => 'Selecione primeiro o país';
-
-  @override
-  String get addressLatitude => 'Latitude';
-
-  @override
-  String get addressLongitude => 'Longitude';
-
-  @override
-  String get addressGpsLocation => 'Localização GPS';
-
-  @override
-  String get addressGetCurrentLocation => 'Obter localização atual';
 
   @override
   String get addressLocationServicesDisabled =>

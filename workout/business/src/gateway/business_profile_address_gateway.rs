@@ -5,7 +5,10 @@ use crate::domain::business_profile_address::{
 };
 use entity::business_profile_address_entity as business_profile_address;
 use entity::prelude::BusinessProfileAddressEntity as BusinessProfileAddressQuery;
-use sea_orm::{ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbBackend, DbConn, DbErr, EntityTrait,
+    QueryFilter, Statement,
+};
 
 pub struct BusinessProfileAddressGateway {}
 
@@ -23,9 +26,25 @@ impl BusinessProfileAddressGateway {
     pub async fn persist(
         db: &DbConn,
         domain: BusinessProfileAddress,
+        latitude: Option<f64>,
+        longitude: Option<f64>,
     ) -> Result<business_profile_address::ActiveModel, DbErr> {
         let active_model = BusinessProfileAddressEntityMapper::build_active_model(domain);
-        active_model.save(db).await
+        let saved = active_model.save(db).await?;
+
+        if let (Some(latitude), Some(longitude)) = (latitude, longitude) {
+            let id: i32 = saved.id.clone().unwrap();
+            db.execute_raw(Statement::from_sql_and_values(
+                DbBackend::Postgres,
+                r#"UPDATE business_profile_address
+                   SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+                   WHERE id = $3"#,
+                [longitude.into(), latitude.into(), id.into()],
+            ))
+            .await?;
+        }
+
+        Ok(saved)
     }
 
     pub async fn find_by_id(

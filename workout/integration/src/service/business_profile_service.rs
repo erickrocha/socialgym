@@ -124,11 +124,17 @@ impl BusinessProfileService for GrpcBusinessProfileService {
     ) -> Result<Response<BusinessProfileAddress>, Status> {
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
+        let (latitude, longitude) = (payload.latitude, payload.longitude);
         let domain_address = BusinessProfileAddressMapper::domain(payload);
-        let added_address =
-            BusinessProfileAddressUseCase::save(&self.conn, domain_address, person_id)
-                .await
-                .map_err(business_status)?;
+        let added_address = BusinessProfileAddressUseCase::save(
+            &self.conn,
+            domain_address,
+            person_id,
+            latitude,
+            longitude,
+        )
+        .await
+        .map_err(business_status)?;
         let grpc_address = BusinessProfileAddressMapper::response(added_address);
         Ok(Response::new(grpc_address))
     }
@@ -139,11 +145,17 @@ impl BusinessProfileService for GrpcBusinessProfileService {
     ) -> Result<Response<BusinessProfileAddress>, Status> {
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
+        let (latitude, longitude) = (payload.latitude, payload.longitude);
         let domain_address = BusinessProfileAddressMapper::domain(payload);
-        let updated_address =
-            BusinessProfileAddressUseCase::save(&self.conn, domain_address, person_id)
-                .await
-                .map_err(business_status)?;
+        let updated_address = BusinessProfileAddressUseCase::save(
+            &self.conn,
+            domain_address,
+            person_id,
+            latitude,
+            longitude,
+        )
+        .await
+        .map_err(business_status)?;
         let grpc_address = BusinessProfileAddressMapper::response(updated_address);
         Ok(Response::new(grpc_address))
     }

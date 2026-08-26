@@ -34,10 +34,12 @@ pub async fn add_person_address(
     Json(payload): Json<PersonAddressJson>,
 ) -> HttpResponse<(StatusCode, Json<PersonAddressJson>)> {
     let person_id = current_user.person_id;
+    let (latitude, longitude) = (payload.latitude, payload.longitude);
     let mut address = PersonAddressMapper::domain(payload);
     address.person_id = person_id;
 
-    let result = PersonAddressUseCase::add_person_address(&state.conn, address).await;
+    let result =
+        PersonAddressUseCase::add_person_address(&state.conn, address, latitude, longitude).await;
 
     match result {
         Ok(address) => Ok((
@@ -77,13 +79,20 @@ pub async fn update_person_address(
     Json(payload): Json<PersonAddressJson>,
 ) -> HttpResponse<Json<PersonAddressJson>> {
     let person_id = current_user.person_id;
+    let (latitude, longitude) = (payload.latitude, payload.longitude);
 
     let mut address = PersonAddressMapper::domain(payload);
     address.id = Some(person_address_id);
     address.person_id = person_id;
 
-    let result =
-        PersonAddressUseCase::update_person_address(&state.conn, address, person_id).await;
+    let result = PersonAddressUseCase::update_person_address(
+        &state.conn,
+        address,
+        person_id,
+        latitude,
+        longitude,
+    )
+    .await;
 
     match result {
         Ok(address) => Ok(Json(PersonAddressMapper::json(address))),
