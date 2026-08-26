@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/account_deletion_status.dart';
 import '../models/auth_response.dart';
 import '../models/sign_up_request.dart';
+import '../services/account_deletion_service.dart';
 import '../services/auth_service.dart';
 import '../services/base_service.dart';
 import '../services/grpc/grpc_business_profile_service.dart';
@@ -137,5 +139,53 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  /// Requests account deletion (immediate, or after the server's grace
+  /// period). The backend revokes every session as part of this call either
+  /// way — the caller is responsible for signing out afterward once it has
+  /// shown the user the resulting dates.
+  Future<AccountDeletionStatus?> requestAccountDeletion({
+    required bool immediate,
+  }) async {
+    if (_auth == null) return null;
+    _error = null;
+    try {
+      final status = await AccountDeletionService.requestDeletion(
+        immediate: immediate,
+        token: _auth!.accessToken,
+      );
+      return status;
+    } on AppException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      _error = 'Failed to delete account. Please try again.';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Cancels a pending account deletion (surfaced via [auth]'s
+  /// `pendingAccountDeletion` after a fresh login).
+  Future<bool> cancelAccountDeletion() async {
+    if (_auth == null) return false;
+    _error = null;
+    try {
+      await AccountDeletionService.cancelDeletion(token: _auth!.accessToken);
+      _auth = _auth!.withoutPendingAccountDeletion();
+      await _saveToStorage(_auth!);
+      notifyListeners();
+      return true;
+    } on AppException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'Failed to cancel account deletion. Please try again.';
+      notifyListeners();
+      return false;
+    }
   }
 }

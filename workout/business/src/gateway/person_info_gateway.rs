@@ -3,7 +3,10 @@ use crate::domain::person_info::{PersonInfo, PersonInfoEntityMapper};
 use entity::person_info_entity as person_info;
 use entity::person_info_entity::PersonInfoEntity;
 use entity::prelude::PersonInfoEntity as PersonInfoQuery;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, DeleteResult, EntityTrait,
+    QueryFilter,
+};
 
 pub struct PersonInfoGateway {}
 
@@ -35,6 +38,14 @@ impl PersonInfoGateway {
         PersonInfoQuery::find()
             .filter(person_info::Column::PersonId.eq(person_id))
             .one(db)
+            .await
+    }
+
+    /// Bulk-deletes the person-info row for a person (account-purge cascade).
+    pub async fn delete_by_person_id<C: ConnectionTrait>(db: &C, person_id: i32) -> Result<DeleteResult, DbErr> {
+        PersonInfoQuery::delete_many()
+            .filter(person_info::Column::PersonId.eq(person_id))
+            .exec(db)
             .await
     }
 }

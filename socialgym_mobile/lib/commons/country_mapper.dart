@@ -11,7 +11,7 @@ class CountryMapper implements Mapper<Country,$country.Country> {
     return $country.Country(
       id: domain.id,
       ddi: domain.ddi,
-      name: domain.ddi,
+      name: domain.name,
       acronym: domain.acronym,
       currency: domain.currency
     );
@@ -27,7 +27,7 @@ class CountryMapper implements Mapper<Country,$country.Country> {
     return Country(
         id: proto.id,
         ddi: proto.ddi,
-        name: proto.ddi,
+        name: proto.name,
         acronym: proto.acronym,
         currency: proto.currency
     );

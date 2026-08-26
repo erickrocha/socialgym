@@ -1,3 +1,24 @@
+class PendingAccountDeletion {
+  final DateTime requestedAt;
+  final DateTime scheduledAt;
+
+  PendingAccountDeletion({required this.requestedAt, required this.scheduledAt});
+
+  factory PendingAccountDeletion.fromJson(Map<String, dynamic> json) {
+    return PendingAccountDeletion(
+      requestedAt: DateTime.parse(json['requestedAt'] as String),
+      scheduledAt: DateTime.parse(json['scheduledAt'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'requestedAt': requestedAt.toIso8601String(),
+      'scheduledAt': scheduledAt.toIso8601String(),
+    };
+  }
+}
+
 class AuthResponse {
   final String accessToken;
   final String tokenType;
@@ -12,6 +33,7 @@ class AuthResponse {
   final String? personObjectKey;
   final int? activeBusinessProfileId;
   final String? activeBusinessProfileUuid;
+  final PendingAccountDeletion? pendingAccountDeletion;
 
   AuthResponse({
     required this.accessToken,
@@ -27,6 +49,7 @@ class AuthResponse {
     this.personObjectKey,
     this.activeBusinessProfileId,
     this.activeBusinessProfileUuid,
+    this.pendingAccountDeletion,
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
@@ -44,6 +67,11 @@ class AuthResponse {
       personObjectKey: json['personObjectKey'],
       activeBusinessProfileId: json['activeBusinessProfileId'],
       activeBusinessProfileUuid: json['activeBusinessProfileUuid'],
+      pendingAccountDeletion: json['pendingAccountDeletion'] != null
+          ? PendingAccountDeletion.fromJson(
+              json['pendingAccountDeletion'] as Map<String, dynamic>,
+            )
+          : null,
     );
   }
 
@@ -62,6 +90,7 @@ class AuthResponse {
       'personObjectKey': personObjectKey,
       'activeBusinessProfileId': activeBusinessProfileId,
       'activeBusinessProfileUuid': activeBusinessProfileUuid,
+      'pendingAccountDeletion': pendingAccountDeletion?.toJson(),
     };
   }
 
@@ -80,6 +109,28 @@ class AuthResponse {
       personObjectKey: personObjectKey,
       activeBusinessProfileId: activeBusinessProfileId,
       activeBusinessProfileUuid: activeBusinessProfileUuid,
+      pendingAccountDeletion: pendingAccountDeletion,
+    );
+  }
+
+  /// Returns a copy with [pendingAccountDeletion] cleared, used after a
+  /// successful cancel-deletion call.
+  AuthResponse withoutPendingAccountDeletion() {
+    return AuthResponse(
+      accessToken: accessToken,
+      tokenType: tokenType,
+      expireIn: expireIn,
+      refreshToken: refreshToken,
+      username: username,
+      uuid: uuid,
+      name: name,
+      personId: personId,
+      personAvatar: personAvatar,
+      personUuid: personUuid,
+      personObjectKey: personObjectKey,
+      activeBusinessProfileId: activeBusinessProfileId,
+      activeBusinessProfileUuid: activeBusinessProfileUuid,
+      pendingAccountDeletion: null,
     );
   }
 }

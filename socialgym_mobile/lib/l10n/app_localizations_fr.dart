@@ -282,6 +282,68 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d\'actualiser les paramètres depuis le serveur';
 
   @override
+  String get settingsDangerZoneTitle => 'Zone de Danger';
+
+  @override
+  String get settingsDeleteAccountDescription =>
+      'La suppression de votre compte supprime votre profil, vos entraînements, vos publications et toutes les données associées.';
+
+  @override
+  String get settingsDeleteAccountButton => 'Supprimer le Compte';
+
+  @override
+  String get settingsDeleteAccountConfirmTitle => 'Supprimer le Compte';
+
+  @override
+  String get settingsDeleteAccountConfirmBody =>
+      'Cette action est irréversible une fois terminée. Choisissez quand vous souhaitez que cela se produise :';
+
+  @override
+  String get settingsDeleteAccountOptionGracePeriod =>
+      'Supprimer après 30 jours (vous pouvez annuler en vous reconnectant)';
+
+  @override
+  String get settingsDeleteAccountOptionImmediate => 'Supprimer immédiatement';
+
+  @override
+  String get settingsDeleteAccountConfirmButton => 'Supprimer le Compte';
+
+  @override
+  String get settingsDeleteAccountScheduledTitle =>
+      'Suppression du Compte Planifiée';
+
+  @override
+  String settingsDeleteAccountScheduledBody(String date) {
+    return 'Votre compte sera définitivement supprimé le $date. Vous avez été déconnecté.';
+  }
+
+  @override
+  String get settingsDeleteAccountError =>
+      'Échec de la suppression du compte. Veuillez réessayer.';
+
+  @override
+  String get signInPendingDeletionTitle => 'Compte Programmé pour Suppression';
+
+  @override
+  String signInPendingDeletionBody(String date) {
+    return 'Votre compte est programmé pour être définitivement supprimé le $date. Souhaitez-vous conserver votre compte ?';
+  }
+
+  @override
+  String get signInPendingDeletionKeepButton => 'Conserver Mon Compte';
+
+  @override
+  String get signInPendingDeletionDismissButton => 'Pas Maintenant';
+
+  @override
+  String get signInPendingDeletionCancelSuccess =>
+      'Suppression du compte annulée. Bon retour !';
+
+  @override
+  String get signInPendingDeletionCancelError =>
+      'Échec de l\'annulation de la suppression du compte. Veuillez réessayer.';
+
+  @override
   String get workoutTitle => 'Mes Entraînements';
 
   @override

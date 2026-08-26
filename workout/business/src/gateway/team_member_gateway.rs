@@ -3,7 +3,10 @@ use crate::domain::team_member::{TeamMember, TeamMemberMapper, TeamMemberStatus}
 use entity::prelude::TeamMemberEntity as TeamMemberQuery;
 use entity::team_member_entity as team_member;
 use entity::team_member_entity::Column;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, DeleteResult, EntityTrait,
+    QueryFilter,
+};
 
 pub struct TeamMemberGateway {}
 
@@ -56,6 +59,27 @@ impl TeamMemberGateway {
             .filter(Column::PersonId.eq(person_id))
             .filter(Column::Status.eq(status.as_str()))
             .all(db)
+            .await
+    }
+
+    /// Bulk-deletes every membership row for a business profile (account-purge
+    /// cascade, when the business profile itself is being deleted).
+    pub async fn delete_all_by_business_profile_id<C: ConnectionTrait>(
+        db: &C,
+        business_profile_id: i32,
+    ) -> Result<DeleteResult, DbErr> {
+        TeamMemberQuery::delete_many()
+            .filter(Column::BusinessProfileId.eq(business_profile_id))
+            .exec(db)
+            .await
+    }
+
+    /// Bulk-deletes every membership row for a person — covers memberships at
+    /// *other* people's businesses, not just their own (account-purge cascade).
+    pub async fn delete_all_by_person_id<C: ConnectionTrait>(db: &C, person_id: i32) -> Result<DeleteResult, DbErr> {
+        TeamMemberQuery::delete_many()
+            .filter(Column::PersonId.eq(person_id))
+            .exec(db)
             .await
     }
 }

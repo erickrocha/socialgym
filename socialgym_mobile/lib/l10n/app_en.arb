@@ -100,6 +100,35 @@
   "settingsSaveError": "Could not save settings",
   "settingsLoadError": "Could not refresh settings from the server",
 
+  "settingsDangerZoneTitle": "Danger Zone",
+  "settingsDeleteAccountDescription": "Deleting your account removes your profile, workouts, posts, and all associated data.",
+  "settingsDeleteAccountButton": "Delete Account",
+  "settingsDeleteAccountConfirmTitle": "Delete Account",
+  "settingsDeleteAccountConfirmBody": "This can't be undone once completed. Choose when you'd like this to happen:",
+  "settingsDeleteAccountOptionGracePeriod": "Delete after 30 days (you can cancel by logging back in)",
+  "settingsDeleteAccountOptionImmediate": "Delete immediately",
+  "settingsDeleteAccountConfirmButton": "Delete Account",
+  "settingsDeleteAccountScheduledTitle": "Account Deletion Scheduled",
+  "settingsDeleteAccountScheduledBody": "Your account will be permanently deleted on {date}. You've been signed out.",
+  "@settingsDeleteAccountScheduledBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "settingsDeleteAccountError": "Failed to delete account. Please try again.",
+
+  "signInPendingDeletionTitle": "Account Scheduled for Deletion",
+  "signInPendingDeletionBody": "Your account is scheduled to be permanently deleted on {date}. Would you like to keep your account?",
+  "@signInPendingDeletionBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "signInPendingDeletionKeepButton": "Keep My Account",
+  "signInPendingDeletionDismissButton": "Not Now",
+  "signInPendingDeletionCancelSuccess": "Account deletion cancelled. Welcome back!",
+  "signInPendingDeletionCancelError": "Failed to cancel account deletion. Please try again.",
+
   "workoutTitle": "My Workouts",
   "workoutDescription": "Manage your workout routines and exercises",
   "workoutAddNew": "Add Workout",

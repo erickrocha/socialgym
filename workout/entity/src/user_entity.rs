@@ -26,6 +26,8 @@ pub struct Model {
     pub failed_login_attempts: i32,
     pub locked_until: Option<DateTimeUtc>,
     pub token_valid_after: Option<DateTimeUtc>,
+    pub deletion_requested_at: Option<DateTimeUtc>,
+    pub deletion_scheduled_at: Option<DateTimeUtc>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

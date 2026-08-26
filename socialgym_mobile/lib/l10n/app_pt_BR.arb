@@ -100,6 +100,35 @@
   "settingsSaveError": "Não foi possível salvar as configurações",
   "settingsLoadError": "Não foi possível atualizar as configurações do servidor",
 
+  "settingsDangerZoneTitle": "Zona de Perigo",
+  "settingsDeleteAccountDescription": "Excluir sua conta remove seu perfil, treinos, posts e todos os dados associados.",
+  "settingsDeleteAccountButton": "Excluir Conta",
+  "settingsDeleteAccountConfirmTitle": "Excluir Conta",
+  "settingsDeleteAccountConfirmBody": "Isso não pode ser desfeito depois de concluído. Escolha quando você quer que isso aconteça:",
+  "settingsDeleteAccountOptionGracePeriod": "Excluir após 30 dias (você pode cancelar fazendo login novamente)",
+  "settingsDeleteAccountOptionImmediate": "Excluir imediatamente",
+  "settingsDeleteAccountConfirmButton": "Excluir Conta",
+  "settingsDeleteAccountScheduledTitle": "Exclusão de Conta Agendada",
+  "settingsDeleteAccountScheduledBody": "Sua conta será excluída permanentemente em {date}. Você foi desconectado.",
+  "@settingsDeleteAccountScheduledBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "settingsDeleteAccountError": "Falha ao excluir a conta. Tente novamente.",
+
+  "signInPendingDeletionTitle": "Conta Agendada para Exclusão",
+  "signInPendingDeletionBody": "Sua conta está agendada para ser excluída permanentemente em {date}. Você gostaria de manter sua conta?",
+  "@signInPendingDeletionBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "signInPendingDeletionKeepButton": "Manter Minha Conta",
+  "signInPendingDeletionDismissButton": "Agora Não",
+  "signInPendingDeletionCancelSuccess": "Exclusão de conta cancelada. Bem-vindo de volta!",
+  "signInPendingDeletionCancelError": "Falha ao cancelar a exclusão da conta. Tente novamente.",
+
   "workoutTitle": "Meus Treinos",
   "workoutDescription": "Gerencie suas rotinas de treino e exercícios",
   "workoutAddNew": "Adicionar Treino",

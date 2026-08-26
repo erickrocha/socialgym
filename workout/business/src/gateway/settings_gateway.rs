@@ -5,7 +5,10 @@ use crate::domain::settings::{Settings, SettingsEntityMapper};
 use entity::prelude::SettingsEntity as SettingsQuery;
 use entity::settings_entity::{ActiveModel, SettingsEntity};
 use sea_orm::prelude::async_trait::async_trait;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, DeleteResult, EntityTrait,
+    QueryFilter,
+};
 
 pub struct SettingsGateway {
     db: DbConn,
@@ -36,6 +39,14 @@ impl SettingsGateway {
         let mut query = SettingsQuery::find();
         query = query.filter(entity::settings_entity::Column::PersonId.eq(owner_id));
         query.one(&self.db).await
+    }
+
+    /// Bulk-deletes the settings row for a person (account-purge cascade).
+    pub async fn delete_by_person_id<C: ConnectionTrait>(db: &C, person_id: i32) -> Result<DeleteResult, DbErr> {
+        SettingsQuery::delete_many()
+            .filter(entity::settings_entity::Column::PersonId.eq(person_id))
+            .exec(db)
+            .await
     }
 }
 

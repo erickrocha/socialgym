@@ -20,6 +20,8 @@ pub struct User {
     pub failed_login_attempts: i32,
     pub locked_until: Option<NaiveDateTime>,
     pub token_valid_after: Option<NaiveDateTime>,
+    pub deletion_requested_at: Option<NaiveDateTime>,
+    pub deletion_scheduled_at: Option<NaiveDateTime>,
 }
 
 /// Redacts `password` so `log::info!("{:?}", user)` can never leak a hash (or,
@@ -41,6 +43,8 @@ impl std::fmt::Debug for User {
             .field("failed_login_attempts", &self.failed_login_attempts)
             .field("locked_until", &self.locked_until)
             .field("token_valid_after", &self.token_valid_after)
+            .field("deletion_requested_at", &self.deletion_requested_at)
+            .field("deletion_scheduled_at", &self.deletion_scheduled_at)
             .finish()
     }
 }
@@ -69,6 +73,8 @@ impl EntityMapper<User, UserEntity, ActiveModel> for UserEntityMapper {
             failed_login_attempts: Set(d.failed_login_attempts),
             locked_until: Set(d.locked_until.map(|dt| dt.and_utc())),
             token_valid_after: Set(d.token_valid_after.map(|dt| dt.and_utc())),
+            deletion_requested_at: Set(d.deletion_requested_at.map(|dt| dt.and_utc())),
+            deletion_scheduled_at: Set(d.deletion_scheduled_at.map(|dt| dt.and_utc())),
         }
     }
 
@@ -88,6 +94,8 @@ impl EntityMapper<User, UserEntity, ActiveModel> for UserEntityMapper {
             failed_login_attempts: e.failed_login_attempts,
             locked_until: e.locked_until.map(|dt| dt.naive_utc()),
             token_valid_after: e.token_valid_after.map(|dt| dt.naive_utc()),
+            deletion_requested_at: e.deletion_requested_at.map(|dt| dt.naive_utc()),
+            deletion_scheduled_at: e.deletion_scheduled_at.map(|dt| dt.naive_utc()),
         }
     }
 
@@ -107,6 +115,8 @@ impl EntityMapper<User, UserEntity, ActiveModel> for UserEntityMapper {
             failed_login_attempts: e.failed_login_attempts.unwrap(),
             locked_until: e.locked_until.unwrap().map(|dt| dt.naive_utc()),
             token_valid_after: e.token_valid_after.unwrap().map(|dt| dt.naive_utc()),
+            deletion_requested_at: e.deletion_requested_at.unwrap().map(|dt| dt.naive_utc()),
+            deletion_scheduled_at: e.deletion_scheduled_at.unwrap().map(|dt| dt.naive_utc()),
         }
     }
 }
@@ -159,6 +169,8 @@ impl User {
             failed_login_attempts: 0,
             locked_until: None,
             token_valid_after: None,
+            deletion_requested_at: None,
+            deletion_scheduled_at: None,
         }
     }
 }

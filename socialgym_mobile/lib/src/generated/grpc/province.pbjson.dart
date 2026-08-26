@@ -22,10 +22,11 @@ const Province$json = {
     {'1': 'id', '3': 1, '4': 1, '5': 5, '10': 'id'},
     {'1': 'name', '3': 2, '4': 1, '5': 9, '10': 'name'},
     {'1': 'acronym', '3': 3, '4': 1, '5': 9, '10': 'acronym'},
+    {'1': 'country_id', '3': 4, '4': 1, '5': 5, '10': 'countryId'},
   ],
 };
 
 /// Descriptor for `Province`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List provinceDescriptor = $convert.base64Decode(
     'CghQcm92aW5jZRIOCgJpZBgBIAEoBVICaWQSEgoEbmFtZRgCIAEoCVIEbmFtZRIYCgdhY3Jvbn'
-    'ltGAMgASgJUgdhY3Jvbnlt');
+    'ltGAMgASgJUgdhY3JvbnltEh0KCmNvdW50cnlfaWQYBCABKAVSCWNvdW50cnlJZA==');

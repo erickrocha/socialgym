@@ -100,6 +100,35 @@
   "settingsSaveError": "Impossible d'enregistrer les paramètres",
   "settingsLoadError": "Impossible d'actualiser les paramètres depuis le serveur",
 
+  "settingsDangerZoneTitle": "Zone de Danger",
+  "settingsDeleteAccountDescription": "La suppression de votre compte supprime votre profil, vos entraînements, vos publications et toutes les données associées.",
+  "settingsDeleteAccountButton": "Supprimer le Compte",
+  "settingsDeleteAccountConfirmTitle": "Supprimer le Compte",
+  "settingsDeleteAccountConfirmBody": "Cette action est irréversible une fois terminée. Choisissez quand vous souhaitez que cela se produise :",
+  "settingsDeleteAccountOptionGracePeriod": "Supprimer après 30 jours (vous pouvez annuler en vous reconnectant)",
+  "settingsDeleteAccountOptionImmediate": "Supprimer immédiatement",
+  "settingsDeleteAccountConfirmButton": "Supprimer le Compte",
+  "settingsDeleteAccountScheduledTitle": "Suppression du Compte Planifiée",
+  "settingsDeleteAccountScheduledBody": "Votre compte sera définitivement supprimé le {date}. Vous avez été déconnecté.",
+  "@settingsDeleteAccountScheduledBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "settingsDeleteAccountError": "Échec de la suppression du compte. Veuillez réessayer.",
+
+  "signInPendingDeletionTitle": "Compte Programmé pour Suppression",
+  "signInPendingDeletionBody": "Votre compte est programmé pour être définitivement supprimé le {date}. Souhaitez-vous conserver votre compte ?",
+  "@signInPendingDeletionBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "signInPendingDeletionKeepButton": "Conserver Mon Compte",
+  "signInPendingDeletionDismissButton": "Pas Maintenant",
+  "signInPendingDeletionCancelSuccess": "Suppression du compte annulée. Bon retour !",
+  "signInPendingDeletionCancelError": "Échec de l'annulation de la suppression du compte. Veuillez réessayer.",
+
   "workoutTitle": "Mes Entraînements",
   "workoutDescription": "Gérez vos routines d'entraînement et exercices",
   "workoutAddNew": "Ajouter un Entraînement",

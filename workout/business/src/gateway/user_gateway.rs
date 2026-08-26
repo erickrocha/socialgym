@@ -3,7 +3,9 @@ use crate::domain::user::{User, UserEntityMapper};
 use chrono::{DateTime, Utc};
 use entity::prelude::UserEntity as UserQuery;
 use entity::user_entity as user;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, EntityTrait, QueryFilter, Set,
+};
 
 pub struct UserGateway {}
 
@@ -58,6 +60,57 @@ impl UserGateway {
             ..Default::default()
         };
         active_model.update(db).await
+    }
+
+    /// Disables the account and schedules the cascade purge: `enabled = false`,
+    /// `deletion_requested_at = now`, `deletion_scheduled_at = requested_at` (immediate)
+    /// or `requested_at + grace period` (30-day path).
+    pub async fn schedule_deletion(
+        db: &DbConn,
+        user_id: i32,
+        requested_at: DateTime<Utc>,
+        scheduled_at: DateTime<Utc>,
+    ) -> Result<user::UserEntity, DbErr> {
+        let active_model = user::ActiveModel {
+            id: Set(user_id),
+            enabled: Set(false),
+            deletion_requested_at: Set(Some(requested_at)),
+            deletion_scheduled_at: Set(Some(scheduled_at)),
+            ..Default::default()
+        };
+        active_model.update(db).await
+    }
+
+    /// Cancels a pending deletion: re-enables the account and clears both timestamps.
+    pub async fn cancel_deletion(db: &DbConn, user_id: i32) -> Result<user::UserEntity, DbErr> {
+        let active_model = user::ActiveModel {
+            id: Set(user_id),
+            enabled: Set(true),
+            deletion_requested_at: Set(None),
+            deletion_scheduled_at: Set(None),
+            ..Default::default()
+        };
+        active_model.update(db).await
+    }
+
+    /// Accounts whose grace period (or immediate-deletion request) has elapsed and are
+    /// still disabled — i.e. not yet purged. The sweep job's entry point.
+    pub async fn find_due_for_deletion(db: &DbConn, now: DateTime<Utc>) -> Result<Vec<user::UserEntity>, DbErr> {
+        UserQuery::find()
+            .filter(user::Column::Enabled.eq(false))
+            .filter(user::Column::DeletionScheduledAt.is_not_null())
+            .filter(user::Column::DeletionScheduledAt.lte(now))
+            .all(db)
+            .await
+    }
+
+    /// Deletes the `user` row for a person as part of the account-purge cascade.
+    /// Must run after `revoked_token` rows for this user are gone (plain FK, no cascade).
+    pub async fn delete_by_person_id<C: ConnectionTrait>(db: &C, person_id: i32) -> Result<sea_orm::DeleteResult, DbErr> {
+        UserQuery::delete_many()
+            .filter(user::Column::PersonId.eq(person_id))
+            .exec(db)
+            .await
     }
 
     pub async fn find_by_email(db: &DbConn, email: String) -> Result<Option<user::UserEntity>, DbErr> {

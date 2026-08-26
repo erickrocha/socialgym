@@ -15,3 +15,5 @@ evolution-checkin-add-failed = Falha ao salvar check-in de evolucao
 evolution-checkin-find-failed = Falha ao buscar check-in de evolucao
 unknown-error = Erro interno inesperado
 rate-limited = Muitas solicitações. Tente novamente mais tarde.
+internal-auth-invalid = Credenciais de serviço interno inválidas
+account-data-deletion-failed = Falha ao excluir os dados da conta

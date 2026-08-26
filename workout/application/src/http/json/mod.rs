@@ -11,6 +11,8 @@ pub mod exercise_json;
 pub mod person_address_json;
 pub mod country_json;
 pub mod province_json;
+pub mod address_candidate_json;
+pub mod account_deletion_json;
 pub mod friend_page_json;
 pub mod s3_json;
 pub mod business_profile_json;

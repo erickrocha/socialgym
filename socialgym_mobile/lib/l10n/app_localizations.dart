@@ -639,6 +639,108 @@ abstract class AppLocalizations {
   /// **'Could not refresh settings from the server'**
   String get settingsLoadError;
 
+  /// No description provided for @settingsDangerZoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger Zone'**
+  String get settingsDangerZoneTitle;
+
+  /// No description provided for @settingsDeleteAccountDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your account removes your profile, workouts, posts, and all associated data.'**
+  String get settingsDeleteAccountDescription;
+
+  /// No description provided for @settingsDeleteAccountButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get settingsDeleteAccountButton;
+
+  /// No description provided for @settingsDeleteAccountConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get settingsDeleteAccountConfirmTitle;
+
+  /// No description provided for @settingsDeleteAccountConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This can\'t be undone once completed. Choose when you\'d like this to happen:'**
+  String get settingsDeleteAccountConfirmBody;
+
+  /// No description provided for @settingsDeleteAccountOptionGracePeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete after 30 days (you can cancel by logging back in)'**
+  String get settingsDeleteAccountOptionGracePeriod;
+
+  /// No description provided for @settingsDeleteAccountOptionImmediate.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete immediately'**
+  String get settingsDeleteAccountOptionImmediate;
+
+  /// No description provided for @settingsDeleteAccountConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get settingsDeleteAccountConfirmButton;
+
+  /// No description provided for @settingsDeleteAccountScheduledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Deletion Scheduled'**
+  String get settingsDeleteAccountScheduledTitle;
+
+  /// No description provided for @settingsDeleteAccountScheduledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account will be permanently deleted on {date}. You\'ve been signed out.'**
+  String settingsDeleteAccountScheduledBody(String date);
+
+  /// No description provided for @settingsDeleteAccountError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete account. Please try again.'**
+  String get settingsDeleteAccountError;
+
+  /// No description provided for @signInPendingDeletionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Scheduled for Deletion'**
+  String get signInPendingDeletionTitle;
+
+  /// No description provided for @signInPendingDeletionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is scheduled to be permanently deleted on {date}. Would you like to keep your account?'**
+  String signInPendingDeletionBody(String date);
+
+  /// No description provided for @signInPendingDeletionKeepButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep My Account'**
+  String get signInPendingDeletionKeepButton;
+
+  /// No description provided for @signInPendingDeletionDismissButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Now'**
+  String get signInPendingDeletionDismissButton;
+
+  /// No description provided for @signInPendingDeletionCancelSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deletion cancelled. Welcome back!'**
+  String get signInPendingDeletionCancelSuccess;
+
+  /// No description provided for @signInPendingDeletionCancelError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel account deletion. Please try again.'**
+  String get signInPendingDeletionCancelError;
+
   /// No description provided for @workoutTitle.
   ///
   /// In en, this message translates to:

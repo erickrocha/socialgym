@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -8,11 +10,15 @@ import 'package:provider/provider.dart';
 
 import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/address_candidate.dart';
 import '../../models/country.dart';
+import '../../models/province.dart';
 import '../../models/person.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/person_provider.dart';
 import '../../providers/resource_provider.dart';
 import '../../config/nav_section.dart';
+import '../../services/address_search_service.dart';
 import '../../widgets/main_layout.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -53,7 +59,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // Address form dropdown selections and fields
   Country? _selectedCountry;
-  late TextEditingController _addressAdministrativeAreaController;
+  Province? _selectedProvince;
+
+  // Address search (typed text + GPS bias -> candidate addresses)
+  Timer? _addressSearchDebounce;
+  List<AddressCandidate> _addressSuggestions = [];
+  bool _searchingAddress = false;
+  double? _selectedCandidateLatitude;
+  double? _selectedCandidateLongitude;
 
   String? _selectedGender;
   String? _selectedRelationship;
@@ -118,7 +131,6 @@ class _ProfilePageState extends State<ProfilePage> {
     _addressLine2Controller = TextEditingController();
     _addressLocalityController = TextEditingController();
     _addressPostalCodeController = TextEditingController();
-    _addressAdministrativeAreaController = TextEditingController();
   }
 
   void _refreshControllers() {
@@ -160,6 +172,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   void dispose() {
+    _addressSearchDebounce?.cancel();
     _firstNameController.dispose();
     _surnameController.dispose();
     _biographyController.dispose();
@@ -172,7 +185,6 @@ class _ProfilePageState extends State<ProfilePage> {
     _addressLine2Controller.dispose();
     _addressLocalityController.dispose();
     _addressPostalCodeController.dispose();
-    _addressAdministrativeAreaController.dispose();
     super.dispose();
   }
 
@@ -979,14 +991,24 @@ class _ProfilePageState extends State<ProfilePage> {
       _addressLine1Controller.text = address?.addressLine1 ?? '';
       _addressLine2Controller.text = address?.addressLine2 ?? '';
       _addressLocalityController.text = address?.locality ?? '';
-      _addressAdministrativeAreaController.text =
-          address?.administrativeArea ?? '';
       _addressPostalCodeController.text = address?.postalCode ?? '';
 
       // Set country from address
       _selectedCountry = resourceProvider.getCountryByCode(
         address?.countryCode,
       );
+
+      // Resolve the matching province, if any, for the selected country
+      final provinceName = address?.administrativeArea;
+      _selectedProvince = provinceName == null || provinceName.isEmpty
+          ? null
+          : resourceProvider
+              .getProvincesByCountry(_selectedCountry?.id)
+              .cast<Province?>()
+              .firstWhere(
+                (p) => p!.name.toLowerCase() == provinceName.toLowerCase(),
+                orElse: () => null,
+              );
     });
 
     // If adding a new address (not editing), capture GPS location immediately
@@ -1001,15 +1023,80 @@ class _ProfilePageState extends State<ProfilePage> {
       _isAddressFormExpanded = false;
       _editingAddress = null;
       _selectedCountry = null;
+      _selectedProvince = null;
       _capturedPosition = null; // Clear captured GPS position
+      _addressSuggestions = [];
+      _selectedCandidateLatitude = null;
+      _selectedCandidateLongitude = null;
+      _addressSearchDebounce?.cancel();
 
       // Clear form
       _addressLine1Controller.clear();
       _addressLine2Controller.clear();
       _addressLocalityController.clear();
-      _addressAdministrativeAreaController.clear();
       _addressPostalCodeController.clear();
     });
+  }
+
+  void _onAddressLine1Changed(String text) {
+    _addressSearchDebounce?.cancel();
+
+    if (text.trim().length < 3) {
+      setState(() => _addressSuggestions = []);
+      return;
+    }
+
+    _addressSearchDebounce = Timer(const Duration(milliseconds: 400), () async {
+      setState(() => _searchingAddress = true);
+      try {
+        final results = await AddressSearchService.search(
+          text: text.trim(),
+          token: context.read<AuthProvider>().auth!.accessToken,
+          latitude: _capturedPosition?.latitude,
+          longitude: _capturedPosition?.longitude,
+        );
+        if (!mounted) return;
+        setState(() {
+          _addressSuggestions = results;
+          _searchingAddress = false;
+        });
+      } catch (_) {
+        if (!mounted) return;
+        setState(() {
+          _addressSuggestions = [];
+          _searchingAddress = false;
+        });
+      }
+    });
+  }
+
+  void _selectAddressCandidate(AddressCandidate candidate) {
+    final resourceProvider = context.read<ResourceProvider>();
+
+    setState(() {
+      _addressLine1Controller.text = candidate.addressLine1;
+      _addressLine2Controller.text = candidate.addressLine2 ?? '';
+      _addressLocalityController.text = candidate.locality;
+      _addressPostalCodeController.text = candidate.postalCode ?? '';
+
+      _selectedCountry = resourceProvider.getCountryByCode(candidate.countryCode);
+
+      final provinceOptions = resourceProvider.getProvincesByCountry(_selectedCountry?.id);
+      _selectedProvince = provinceOptions
+          .cast<Province?>()
+          .firstWhere(
+            (p) => p!.acronym.toLowerCase() == candidate.administrativeAreaCode.toLowerCase(),
+            orElse: () => provinceOptions.cast<Province?>().firstWhere(
+                  (p) => p!.name.toLowerCase() == candidate.administrativeArea.toLowerCase(),
+                  orElse: () => null,
+                ),
+          );
+
+      _selectedCandidateLatitude = candidate.latitude;
+      _selectedCandidateLongitude = candidate.longitude;
+      _addressSuggestions = [];
+    });
+    FocusScope.of(context).unfocus();
   }
 
   Widget _buildAddressForm(AppLocalizations l10n, String? businessType) {
@@ -1059,18 +1146,52 @@ class _ProfilePageState extends State<ProfilePage> {
           const Divider(),
           const SizedBox(height: 12),
 
-          // Address Line 1 (Street and Number)
+          // Address Line 1 (Street and Number) — search-as-you-type
           TextField(
             controller: _addressLine1Controller,
+            onChanged: _onAddressLine1Changed,
             decoration: InputDecoration(
               labelText: l10n.addressLine1,
               hintText: 'e.g., 123 Main Street',
               prefixIcon: const Icon(Icons.route_outlined),
+              suffixIcon: _searchingAddress
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : null,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
+          if (_addressSuggestions.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: _addressSuggestions.map((candidate) {
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.place_outlined),
+                    title: Text(
+                      candidate.formattedAddress,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: () => _selectAddressCandidate(candidate),
+                  );
+                }).toList(),
+              ),
+            ),
           const SizedBox(height: 12),
 
           // Address Line 2 (Apartment, Suite, etc.)
@@ -1106,16 +1227,43 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(width: 12),
               Expanded(
                 flex: 2,
-                child: TextField(
-                  controller: _addressAdministrativeAreaController,
-                  decoration: InputDecoration(
-                    labelText: l10n.addressAdministrativeArea,
-                    hintText: 'e.g., State, Province',
-                    prefixIcon: const Icon(Icons.map_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                child: Consumer<ResourceProvider>(
+                  builder: (context, resourceProvider, _) {
+                    final provinceOptions = resourceProvider
+                        .getProvincesByCountry(_selectedCountry?.id);
+                    return DropdownButtonFormField<Province>(
+                      initialValue: _selectedProvince,
+                      decoration: InputDecoration(
+                        labelText: l10n.addressAdministrativeArea,
+                        hintText: 'e.g., State, Province',
+                        prefixIcon: const Icon(Icons.map_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      isExpanded: true,
+                      items: provinceOptions.map((province) {
+                        return DropdownMenuItem(
+                          value: province,
+                          child: Text(
+                            province.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: provinceOptions.isEmpty
+                          ? null
+                          : (value) {
+                              setState(() {
+                                _selectedProvince = value;
+                              });
+                            },
+                      hint: Text(
+                        'e.g., State, Province',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -1146,7 +1294,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         return DropdownMenuItem(
                           value: country,
                           child: Text(
-                            country.name,
+                            '${country.flagEmoji}  ${country.name}',
                             overflow: TextOverflow.ellipsis,
                           ),
                         );
@@ -1154,6 +1302,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       onChanged: (value) {
                         setState(() {
                           _selectedCountry = value;
+                          _selectedProvince = null;
                         });
                       },
                       hint: Text(
@@ -1213,11 +1362,11 @@ class _ProfilePageState extends State<ProfilePage> {
       'addressLine1': _addressLine1Controller.text.trim(),
       'addressLine2': _addressLine2Controller.text.trim(),
       'locality': _addressLocalityController.text.trim(),
-      'administrativeArea': _addressAdministrativeAreaController.text.trim(),
+      'administrativeArea': _selectedProvince?.name ?? '',
       'countryCode': _selectedCountry?.acronym ?? '',
       'postalCode': _addressPostalCodeController.text.trim(),
-      'latitude': _capturedPosition?.latitude ?? _editingAddress?.latitude,
-      'longitude': _capturedPosition?.longitude ?? _editingAddress?.longitude,
+      'latitude': _selectedCandidateLatitude ?? _capturedPosition?.latitude ?? _editingAddress?.latitude,
+      'longitude': _selectedCandidateLongitude ?? _capturedPosition?.longitude ?? _editingAddress?.longitude,
     };
 
     final personProvider = context.read<PersonProvider>();

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socialgym_mobile/models/country.dart';
+import 'package:socialgym_mobile/models/province.dart';
 import 'package:socialgym_mobile/models/settings.dart';
 import 'package:socialgym_mobile/services/grpc/grpc_resource_service.dart';
 
@@ -16,6 +17,7 @@ class ResourceProvider extends ChangeNotifier {
 
   AppResources? get resources => _resources;
   List<Country> get countries => _resources?.countries ?? [];
+  List<Province> get provinces => _resources?.provinces ?? [];
   bool get loading => _loading;
   String? get error => _error;
 
@@ -104,6 +106,12 @@ class ResourceProvider extends ChangeNotifier {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Get provinces belonging to the given country id.
+  List<Province> getProvincesByCountry(int? countryId) {
+    if (countryId == null) return [];
+    return provinces.where((p) => p.countryId == countryId).toList();
   }
 
   /// Clear resources (e.g., on logout).

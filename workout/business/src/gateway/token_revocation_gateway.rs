@@ -3,7 +3,10 @@ use crate::domain::revoked_token::{RevokedToken, RevokedTokenMapper};
 use chrono::NaiveDateTime;
 use entity::prelude::RevokedTokenEntity as RevokedTokenQuery;
 use entity::revoked_token_entity as revoked_token;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, DeleteResult, EntityTrait,
+    QueryFilter,
+};
 
 pub struct TokenRevocationGateway {}
 
@@ -21,5 +24,14 @@ impl TokenRevocationGateway {
             .one(db)
             .await?;
         Ok(found.is_some())
+    }
+
+    /// Bulk-deletes the revoked-token audit rows for a user — must run before the
+    /// `user` row itself is deleted (plain FK, no cascade) in an account-purge cascade.
+    pub async fn delete_all_by_user_id<C: ConnectionTrait>(db: &C, user_id: i32) -> Result<DeleteResult, DbErr> {
+        RevokedTokenQuery::delete_many()
+            .filter(revoked_token::Column::UserId.eq(user_id))
+            .exec(db)
+            .await
     }
 }

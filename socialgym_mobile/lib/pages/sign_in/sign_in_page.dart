@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:socialgym_mobile/models/enums.dart';
 
@@ -115,6 +116,12 @@ class _SignInPageState extends State<SignInPage> {
     );
 
     if (success && mounted) {
+      final pending = authProvider.auth?.pendingAccountDeletion;
+      if (pending != null && mounted) {
+        await _showPendingDeletionDialog(authProvider, pending.scheduledAt);
+      }
+      if (!mounted) return;
+
       // Fetch person data and resources after successful sign in
       final personProvider = context.read<PersonProvider>();
       final resourceProvider = context.read<ResourceProvider>();
@@ -142,6 +149,50 @@ class _SignInPageState extends State<SignInPage> {
         return;
       }
     }
+  }
+
+  /// Shown right after a fresh login when the account has a pending, not-yet
+  /// -purged deletion request — lets the user reactivate it, or dismiss and
+  /// keep using the app with the deletion still scheduled.
+  Future<void> _showPendingDeletionDialog(
+    AuthProvider authProvider,
+    DateTime scheduledAt,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final formattedDate = DateFormat.yMMMd().format(scheduledAt.toLocal());
+
+    final keepAccount = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.signInPendingDeletionTitle),
+        content: Text(l10n.signInPendingDeletionBody(formattedDate)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.signInPendingDeletionDismissButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.signInPendingDeletionKeepButton),
+          ),
+        ],
+      ),
+    );
+
+    if (keepAccount != true || !mounted) return;
+
+    final cancelled = await authProvider.cancelAccountDeletion();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          cancelled
+              ? l10n.signInPendingDeletionCancelSuccess
+              : (authProvider.error ?? l10n.signInPendingDeletionCancelError),
+        ),
+      ),
+    );
   }
 
   @override

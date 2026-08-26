@@ -182,5 +182,52 @@ impl PostGateway {
             .await
             .ok_or_else(|| BusinessError::new("Post not found after removing reaction".to_string()))
     }
+
+    /// Account-deletion cascade: deletes every post authored by this person
+    /// (also removes their embedded comments/reactions on those posts, and any
+    /// comments/reactions others left there, since the whole post is gone).
+    pub async fn delete_all_by_author(&self, person_uuid: &str) -> Result<(), BusinessError> {
+        self.collection
+            .delete_many(doc! { "authorUuid": person_uuid })
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                log::error!("Error deleting posts by author: {:?}", e);
+                BusinessError::new("Failed to delete posts".to_string())
+            })
+    }
+
+    /// Account-deletion cascade: strips this person's reactions from every
+    /// *other* post they reacted to (their own posts are deleted wholesale by
+    /// `delete_all_by_author`, so this only matters for posts they don't own).
+    pub async fn pull_reactions_by_author(&self, person_uuid: &str) -> Result<(), BusinessError> {
+        self.collection
+            .update_many(
+                doc! {},
+                doc! { "$pull": { "reactions": { "authorId": person_uuid } } },
+            )
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                log::error!("Error pulling reactions by author: {:?}", e);
+                BusinessError::new("Failed to remove reactions".to_string())
+            })
+    }
+
+    /// Account-deletion cascade: strips this person's comments from every
+    /// *other* post they commented on.
+    pub async fn pull_comments_by_author(&self, person_uuid: &str) -> Result<(), BusinessError> {
+        self.collection
+            .update_many(
+                doc! {},
+                doc! { "$pull": { "comments": { "authorUuid": person_uuid } } },
+            )
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                log::error!("Error pulling comments by author: {:?}", e);
+                BusinessError::new("Failed to remove comments".to_string())
+            })
+    }
 }
 

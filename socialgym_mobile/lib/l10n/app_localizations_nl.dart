@@ -281,6 +281,68 @@ class AppLocalizationsNl extends AppLocalizations {
       'Instellingen konden niet worden vernieuwd vanaf de server';
 
   @override
+  String get settingsDangerZoneTitle => 'Gevarenzone';
+
+  @override
+  String get settingsDeleteAccountDescription =>
+      'Als je je account verwijdert, worden je profiel, trainingen, berichten en alle bijbehorende gegevens verwijderd.';
+
+  @override
+  String get settingsDeleteAccountButton => 'Account Verwijderen';
+
+  @override
+  String get settingsDeleteAccountConfirmTitle => 'Account Verwijderen';
+
+  @override
+  String get settingsDeleteAccountConfirmBody =>
+      'Dit kan niet ongedaan worden gemaakt zodra het is voltooid. Kies wanneer dit moet gebeuren:';
+
+  @override
+  String get settingsDeleteAccountOptionGracePeriod =>
+      'Verwijderen na 30 dagen (je kunt dit annuleren door opnieuw in te loggen)';
+
+  @override
+  String get settingsDeleteAccountOptionImmediate => 'Direct verwijderen';
+
+  @override
+  String get settingsDeleteAccountConfirmButton => 'Account Verwijderen';
+
+  @override
+  String get settingsDeleteAccountScheduledTitle =>
+      'Accountverwijdering Gepland';
+
+  @override
+  String settingsDeleteAccountScheduledBody(String date) {
+    return 'Je account wordt permanent verwijderd op $date. Je bent uitgelogd.';
+  }
+
+  @override
+  String get settingsDeleteAccountError =>
+      'Account verwijderen mislukt. Probeer het opnieuw.';
+
+  @override
+  String get signInPendingDeletionTitle => 'Account Gepland voor Verwijdering';
+
+  @override
+  String signInPendingDeletionBody(String date) {
+    return 'Je account is gepland om permanent te worden verwijderd op $date. Wil je je account behouden?';
+  }
+
+  @override
+  String get signInPendingDeletionKeepButton => 'Account Behouden';
+
+  @override
+  String get signInPendingDeletionDismissButton => 'Niet Nu';
+
+  @override
+  String get signInPendingDeletionCancelSuccess =>
+      'Accountverwijdering geannuleerd. Welkom terug!';
+
+  @override
+  String get signInPendingDeletionCancelError =>
+      'Annuleren van accountverwijdering mislukt. Probeer het opnieuw.';
+
+  @override
   String get workoutTitle => 'Mijn Trainingen';
 
   @override

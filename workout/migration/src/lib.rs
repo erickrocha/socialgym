@@ -20,6 +20,9 @@ mod m20260813_000001_add_lockout_columns_to_user;
 mod m20260813_000002_create_table_revoked_token;
 mod m20260819_000001_seed_countries;
 mod m20260820_000001_add_owner_indexes;
+mod m20260826_000001_create_table_provinces;
+mod m20260826_000002_seed_provinces;
+mod m20260826_000003_add_account_deletion_columns_to_user;
 
 pub struct Migrator;
 
@@ -47,6 +50,9 @@ impl MigratorTrait for Migrator {
             Box::new(m20260813_000002_create_table_revoked_token::Migration),
             Box::new(m20260819_000001_seed_countries::Migration),
             Box::new(m20260820_000001_add_owner_indexes::Migration),
+            Box::new(m20260826_000001_create_table_provinces::Migration),
+            Box::new(m20260826_000002_seed_provinces::Migration),
+            Box::new(m20260826_000003_add_account_deletion_columns_to_user::Migration),
         ]
     }
 }

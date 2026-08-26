@@ -5,3 +5,4 @@ pub mod post_controller;
 pub mod evolution_controller;
 pub mod notification_controller;
 pub mod feed_controller;
+pub mod internal_controller;

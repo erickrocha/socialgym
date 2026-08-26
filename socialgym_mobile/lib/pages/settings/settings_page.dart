@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:socialgym_mobile/models/enums.dart';
 
+import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/settings.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/person_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -89,6 +92,98 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       );
     }
+  }
+
+  Future<void> _showDeleteAccountDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    bool immediate = false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: Text(l10n.settingsDeleteAccountConfirmTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.settingsDeleteAccountConfirmBody),
+                  const SizedBox(height: 8),
+                  RadioListTile<bool>(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.settingsDeleteAccountOptionGracePeriod),
+                    value: false,
+                    groupValue: immediate,
+                    onChanged: (value) => setDialogState(() => immediate = value!),
+                  ),
+                  RadioListTile<bool>(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.settingsDeleteAccountOptionImmediate),
+                    value: true,
+                    groupValue: immediate,
+                    onChanged: (value) => setDialogState(() => immediate = value!),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: Text(l10n.buttonCancel),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: Text(l10n.settingsDeleteAccountConfirmButton),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      await _performAccountDeletion(immediate);
+    }
+  }
+
+  Future<void> _performAccountDeletion(bool immediate) async {
+    final l10n = AppLocalizations.of(context)!;
+    final authProvider = context.read<AuthProvider>();
+
+    final status = await authProvider.requestAccountDeletion(immediate: immediate);
+    if (!mounted) return;
+
+    if (status == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authProvider.error ?? l10n.settingsDeleteAccountError)),
+      );
+      return;
+    }
+
+    final formattedDate = DateFormat.yMMMd().format(status.scheduledAt.toLocal());
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.settingsDeleteAccountScheduledTitle),
+        content: Text(l10n.settingsDeleteAccountScheduledBody(formattedDate)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.buttonConfirm),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+
+    await authProvider.signOut();
+    if (!mounted) return;
+    context.read<PersonProvider>().clear();
+    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
   }
 
   String _homePageLabel(AppLocalizations l10n, Pages page) {
@@ -206,6 +301,31 @@ class _SettingsPageState extends State<SettingsPage> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : Text(l10n.buttonSave),
+              ),
+            ),
+            const SizedBox(height: 40),
+            const Divider(),
+            const SizedBox(height: 16),
+            Text(
+              l10n.settingsDangerZoneTitle,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.danger),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.settingsDeleteAccountDescription,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _showDeleteAccountDialog,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.danger,
+                  side: BorderSide(color: AppColors.danger),
+                ),
+                icon: const Icon(Icons.delete_forever),
+                label: Text(l10n.settingsDeleteAccountButton),
               ),
             ),
           ],

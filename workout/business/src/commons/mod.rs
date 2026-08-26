@@ -5,3 +5,4 @@ pub mod gateway;
 pub mod auth_config;
 pub mod password_policy;
 pub mod authorization;
+pub mod account_deletion_config;

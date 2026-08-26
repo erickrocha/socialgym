@@ -127,4 +127,16 @@ impl EvolutionCheckInGateway {
         }
         evolution_checkin
     }
+
+    /// Account-deletion cascade: deletes every evolution check-in for this person.
+    pub async fn delete_all_by_person(&self, person_uuid: &str) -> Result<(), BusinessError> {
+        self.collection
+            .delete_many(doc! { "personUuid": person_uuid })
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                log::error!("Error deleting evolution check-ins by person: {:?}", e);
+                BusinessError::new("Failed to delete evolution check-ins".to_string())
+            })
+    }
 }

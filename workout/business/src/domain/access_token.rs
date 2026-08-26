@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -15,6 +16,15 @@ pub struct AccessToken {
     pub person_object_key: String,
     pub active_business_profile_id: Option<i32>,
     pub active_business_profile_uuid: Option<String>,
+    pub pending_account_deletion: Option<PendingAccountDeletion>,
+}
+
+/// Present on the login response only when the account has a not-yet-purged
+/// deletion request, so the client can offer to cancel it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PendingAccountDeletion {
+    pub requested_at: NaiveDateTime,
+    pub scheduled_at: NaiveDateTime,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

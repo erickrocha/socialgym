@@ -15,6 +15,7 @@ import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'country.pb.dart' as $1;
+import 'province.pb.dart' as $3;
 import 'settings.pb.dart' as $2;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
@@ -106,10 +107,12 @@ class ResourceResponse extends $pb.GeneratedMessage {
   factory ResourceResponse({
     $core.Iterable<$1.Country>? countries,
     $2.Setting? setting,
+    $core.Iterable<$3.Province>? provinces,
   }) {
     final result = create();
     if (countries != null) result.countries.addAll(countries);
     if (setting != null) result.setting = setting;
+    if (provinces != null) result.provinces.addAll(provinces);
     return result;
   }
 
@@ -130,6 +133,8 @@ class ResourceResponse extends $pb.GeneratedMessage {
         subBuilder: $1.Country.create)
     ..aOM<$2.Setting>(2, _omitFieldNames ? '' : 'setting',
         subBuilder: $2.Setting.create)
+    ..pPM<$3.Province>(3, _omitFieldNames ? '' : 'provinces',
+        subBuilder: $3.Province.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -164,6 +169,9 @@ class ResourceResponse extends $pb.GeneratedMessage {
   void clearSetting() => $_clearField(2);
   @$pb.TagNumber(2)
   $2.Setting ensureSetting() => $_ensure(1);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<$3.Province> get provinces => $_getList(2);
 }
 
 const $core.bool _omitFieldNames =

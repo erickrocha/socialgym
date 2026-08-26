@@ -16,6 +16,7 @@ pub use super::business_profile_address_entity::Entity as BusinessProfileAddress
 
 pub use super::person_media_entity::Entity as PersonMediaEntity;
 pub use super::country_entity::Entity as CountryEntity;
+pub use super::province_entity::Entity as ProvinceEntity;
 
 pub use super::settings_entity::Entity as SettingsEntity;
 

@@ -14,6 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 			"proto/person_info.proto",
 			"proto/person_address.proto",
 			"proto/country.proto",
+			"proto/province.proto",
 			"proto/exercise.proto",
 			"proto/workout.proto",
 			"proto/business_profile_address.proto",

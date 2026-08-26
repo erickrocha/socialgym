@@ -16,4 +16,14 @@ pub struct AccessTokenJson {
     pub person_object_key: String,
     pub active_business_profile_id: Option<i32>,
     pub active_business_profile_uuid: Option<String>,
+    pub pending_account_deletion: Option<PendingAccountDeletionJson>,
+}
+
+/// Present only when the account has a not-yet-purged deletion request, so the
+/// client can prompt the user to cancel it.
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PendingAccountDeletionJson {
+    pub requested_at: chrono::NaiveDateTime,
+    pub scheduled_at: chrono::NaiveDateTime,
 }

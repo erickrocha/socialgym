@@ -2,6 +2,7 @@ use business::domain::{
     business_profile::BusinessProfile as DomainBusinessProfile,
     business_profile_address::BusinessProfileAddress as DomainBusinessProfileAddress,
     country::Country as DomainCountry, exercise::Exercise as DomainExercise,
+    province::Province as DomainProvince,
     friend::Friend as DomainFriend, person::Person as DomainPerson,
     person_address::PersonAddress as DomainPersonAddress,
     person_info::PersonInfo as DomainPersonInfo,
@@ -96,6 +97,8 @@ impl Mapper<DomainUser, proto::user::User> for UserMapper {
             failed_login_attempts: 0,
             locked_until: None,
             token_valid_after: None,
+            deletion_requested_at: None,
+            deletion_scheduled_at: None,
         }
     }
 }
@@ -283,6 +286,30 @@ impl Mapper<DomainCountry, proto::country::Country> for CountryMapper {
             name: u.name,
             acronym: u.acronym,
             currency: u.currency,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// ProvinceMapper
+// ---------------------------------------------------------------------------
+
+impl Mapper<DomainProvince, proto::province::Province> for ProvinceMapper {
+    fn response(t: DomainProvince) -> proto::province::Province {
+        proto::province::Province {
+            id: t.id.unwrap(),
+            name: t.name,
+            acronym: t.acronym,
+            country_id: t.country_id,
+        }
+    }
+
+    fn domain(u: proto::province::Province) -> DomainProvince {
+        DomainProvince {
+            id: Some(u.id),
+            name: u.name,
+            acronym: u.acronym,
+            country_id: u.country_id,
         }
     }
 }

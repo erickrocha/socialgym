@@ -1,5 +1,5 @@
 use crate::commons::auth_config;
-use crate::domain::access_token::{AccessToken, Claims};
+use crate::domain::access_token::{AccessToken, Claims, PendingAccountDeletion};
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::BusinessProfile;
 use crate::domain::user::{User, UserEntityMapper};
@@ -20,6 +20,7 @@ pub struct Authentication {}
 pub enum AuthenticationError {
     InvalidCredentials,
     AccountLocked { retry_after_seconds: i64 },
+    AccountDisabled,
 }
 
 #[derive(Debug)]
@@ -95,6 +96,16 @@ impl Authentication {
         });
         if password_matches {
             log::info!("User is valid, generating access token");
+            if !user.enabled {
+                if user.deletion_scheduled_at.is_none() {
+                    log::info!("Account user_id={} is disabled", user_id);
+                    return Err(AuthenticationError::AccountDisabled);
+                }
+                log::info!(
+                    "Account user_id={} has a pending deletion; allowing login so it can be cancelled",
+                    user_id
+                );
+            }
             if lockout_enabled && user.failed_login_attempts > 0 {
                 let _ = UserGateway::reset_lockout(db, user_id).await;
             }
@@ -145,6 +156,12 @@ impl Authentication {
         } else {
             None
         };
+        let pending_account_deletion = match (user.deletion_requested_at, user.deletion_scheduled_at) {
+            (Some(requested_at), Some(scheduled_at)) => {
+                Some(PendingAccountDeletion { requested_at, scheduled_at })
+            }
+            _ => None,
+        };
         AccessToken {
             access_token: token,
             token_type: "Bearer".to_string(),
@@ -158,6 +175,7 @@ impl Authentication {
             person_object_key: claims.person_object_key.clone(),
             active_business_profile_id: claims.active_business_profile_id,
             active_business_profile_uuid: claims.active_business_profile_uuid.clone(),
+            pending_account_deletion,
         }
     }
 

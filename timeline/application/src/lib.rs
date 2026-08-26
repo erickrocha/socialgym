@@ -1,5 +1,6 @@
 use crate::routes::evolution_checkin_routes::evolution_checkin_routes;
 use crate::routes::feed_routes::feed_route;
+use crate::routes::internal_routes::internal_routes;
 use crate::routes::notification_routes::notification_routes;
 use crate::routes::post_routes::post_routes;
 use crate::routes::workout_session_routes::workout_session_routes;
@@ -176,7 +177,8 @@ async fn start() -> anyhow::Result<()> {
                 )
                 .nest("/posts", post_routes(state.clone()))
                 .nest("/feed", feed_route(state.clone()))
-                .nest("/notifications", notification_routes(state.clone())),
+                .nest("/notifications", notification_routes(state.clone()))
+                .nest("/internal", internal_routes(state.clone())),
         )
         // 5 MiB cap: posts/workout-sessions carry JSON payloads (media metadata,
         // executed sets) but never raw file bytes — those go to S3 via presigned URLs.

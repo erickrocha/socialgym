@@ -63,9 +63,11 @@ fn warn_if_auth_rules_disabled() {
 }
 
 use crate::authentication::authentication_middleware::authentication;
+use crate::http::address_search_controller::search_address;
 use crate::http::image_controller::generate_media_upload_url;
 use crate::http::resource_controller::get_resource;
 use crate::http::welcome_controller::welcome;
+use crate::infrastructure::account_purge_worker;
 use crate::infrastructure::sqs_worker;
 use crate::routes::authentication_routes::auth_routes;
 use crate::routes::business_profile_routes::business_profile_routes;
@@ -105,6 +107,9 @@ impl Modify for SecurityAddon {
 		http::auth_controller::activate,
 		http::auth_controller::deactivate,
 		http::resource_controller::get_resource,
+		http::address_search_controller::search_address,
+		http::account_deletion_controller::request_account_deletion,
+		http::account_deletion_controller::cancel_account_deletion,
 		http::person_controller::get_me,
 		http::person_controller::get_me_by_uuid,
 		http::person_controller::update_person,
@@ -162,11 +167,15 @@ impl Modify for SecurityAddon {
 			http::json::sign_up_json::SignUpJson,
 			http::json::login_request::LoginRequest,
 			http::json::access_token_json::AccessTokenJson,
+			http::json::access_token_json::PendingAccountDeletionJson,
 			http::json::refresh_token_request::RefreshTokenRequest,
 			http::json::logout_request::LogoutRequest,
 			http::json::resource_json::ResourceJson,
 			http::json::country_json::CountryJson,
 			http::json::province_json::ProvinceJson,
+			http::json::address_candidate_json::AddressCandidateJson,
+			http::json::account_deletion_json::AccountDeletionRequestJson,
+			http::json::account_deletion_json::AccountDeletionStatusJson,
 			http::json::person_json::PersonJson,
 			http::json::friend_json::FriendJson,
 			http::json::friend_page_json::FriendPageJson,
@@ -218,6 +227,17 @@ fn resource_routes(state: AppState) -> Router<AppState> {
     )
 }
 
+/// Build address search routes (Google Maps-backed)
+fn address_search_routes(state: AppState) -> Router<AppState> {
+    Router::new().route(
+        "/search",
+        get(search_address).route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            authentication,
+        )),
+    )
+}
+
 #[tokio::main]
 async fn start() -> anyhow::Result<()> {
     env::set_var("RUST_LOG", "debug");
@@ -240,6 +260,9 @@ async fn start() -> anyhow::Result<()> {
     // Start the SQS consumer background worker.
     // It will no-op gracefully when AWS_SQS_QUEUE_URL is not set.
     sqs_worker::start(Arc::clone(&state.conn));
+
+    // Start the account-deletion sweep worker (immediate and 30-day-grace purges).
+    account_purge_worker::start(Arc::clone(&state.conn));
 
     log::info!("Starting server...");
 
@@ -283,6 +306,7 @@ async fn start() -> anyhow::Result<()> {
                 .nest("/exercises", exercise_routes(state.clone()))
                 .nest("/settings", settings_routes(state.clone()))
                 .nest("/media", media_routes(state.clone()))
+                .nest("/address", address_search_routes(state.clone()))
                 .merge(resource_routes(state.clone())),
         )
         // 10 MiB cap: generous enough for exercise/workout JSON payloads with

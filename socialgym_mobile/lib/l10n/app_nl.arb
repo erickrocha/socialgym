@@ -100,6 +100,35 @@
   "settingsSaveError": "Instellingen konden niet worden opgeslagen",
   "settingsLoadError": "Instellingen konden niet worden vernieuwd vanaf de server",
 
+  "settingsDangerZoneTitle": "Gevarenzone",
+  "settingsDeleteAccountDescription": "Als je je account verwijdert, worden je profiel, trainingen, berichten en alle bijbehorende gegevens verwijderd.",
+  "settingsDeleteAccountButton": "Account Verwijderen",
+  "settingsDeleteAccountConfirmTitle": "Account Verwijderen",
+  "settingsDeleteAccountConfirmBody": "Dit kan niet ongedaan worden gemaakt zodra het is voltooid. Kies wanneer dit moet gebeuren:",
+  "settingsDeleteAccountOptionGracePeriod": "Verwijderen na 30 dagen (je kunt dit annuleren door opnieuw in te loggen)",
+  "settingsDeleteAccountOptionImmediate": "Direct verwijderen",
+  "settingsDeleteAccountConfirmButton": "Account Verwijderen",
+  "settingsDeleteAccountScheduledTitle": "Accountverwijdering Gepland",
+  "settingsDeleteAccountScheduledBody": "Je account wordt permanent verwijderd op {date}. Je bent uitgelogd.",
+  "@settingsDeleteAccountScheduledBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "settingsDeleteAccountError": "Account verwijderen mislukt. Probeer het opnieuw.",
+
+  "signInPendingDeletionTitle": "Account Gepland voor Verwijdering",
+  "signInPendingDeletionBody": "Je account is gepland om permanent te worden verwijderd op {date}. Wil je je account behouden?",
+  "@signInPendingDeletionBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "signInPendingDeletionKeepButton": "Account Behouden",
+  "signInPendingDeletionDismissButton": "Niet Nu",
+  "signInPendingDeletionCancelSuccess": "Accountverwijdering geannuleerd. Welkom terug!",
+  "signInPendingDeletionCancelError": "Annuleren van accountverwijdering mislukt. Probeer het opnieuw.",
+
   "workoutTitle": "Mijn Trainingen",
   "workoutDescription": "Beheer je trainingsroutines en oefeningen",
   "workoutAddNew": "Training Toevoegen",

@@ -100,6 +100,35 @@
   "settingsSaveError": "No se pudieron guardar los ajustes",
   "settingsLoadError": "No se pudieron actualizar los ajustes desde el servidor",
 
+  "settingsDangerZoneTitle": "Zona de Peligro",
+  "settingsDeleteAccountDescription": "Al eliminar tu cuenta se eliminan tu perfil, entrenamientos, publicaciones y todos los datos asociados.",
+  "settingsDeleteAccountButton": "Eliminar Cuenta",
+  "settingsDeleteAccountConfirmTitle": "Eliminar Cuenta",
+  "settingsDeleteAccountConfirmBody": "Esto no se puede deshacer una vez completado. Elige cuándo quieres que ocurra:",
+  "settingsDeleteAccountOptionGracePeriod": "Eliminar después de 30 días (puedes cancelarlo iniciando sesión de nuevo)",
+  "settingsDeleteAccountOptionImmediate": "Eliminar inmediatamente",
+  "settingsDeleteAccountConfirmButton": "Eliminar Cuenta",
+  "settingsDeleteAccountScheduledTitle": "Eliminación de Cuenta Programada",
+  "settingsDeleteAccountScheduledBody": "Tu cuenta se eliminará permanentemente el {date}. Se ha cerrado tu sesión.",
+  "@settingsDeleteAccountScheduledBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "settingsDeleteAccountError": "Error al eliminar la cuenta. Inténtalo de nuevo.",
+
+  "signInPendingDeletionTitle": "Cuenta Programada para Eliminación",
+  "signInPendingDeletionBody": "Tu cuenta está programada para eliminarse permanentemente el {date}. ¿Te gustaría conservar tu cuenta?",
+  "@signInPendingDeletionBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "signInPendingDeletionKeepButton": "Conservar Mi Cuenta",
+  "signInPendingDeletionDismissButton": "Ahora No",
+  "signInPendingDeletionCancelSuccess": "Eliminación de cuenta cancelada. ¡Bienvenido de nuevo!",
+  "signInPendingDeletionCancelError": "Error al cancelar la eliminación de la cuenta. Inténtalo de nuevo.",
+
   "workoutTitle": "Mis Entrenamientos",
   "workoutDescription": "Gestiona tus rutinas de entrenamiento y ejercicios",
   "workoutAddNew": "Añadir Entrenamiento",

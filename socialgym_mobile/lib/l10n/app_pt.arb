@@ -100,6 +100,35 @@
   "settingsSaveError": "Não foi possível salvar as configurações",
   "settingsLoadError": "Não foi possível atualizar as configurações do servidor",
 
+  "settingsDangerZoneTitle": "Zona de Perigo",
+  "settingsDeleteAccountDescription": "Eliminar a sua conta remove o seu perfil, treinos, publicações e todos os dados associados.",
+  "settingsDeleteAccountButton": "Eliminar Conta",
+  "settingsDeleteAccountConfirmTitle": "Eliminar Conta",
+  "settingsDeleteAccountConfirmBody": "Isto não pode ser desfeito depois de concluído. Escolha quando pretende que isto aconteça:",
+  "settingsDeleteAccountOptionGracePeriod": "Eliminar após 30 dias (pode cancelar ao iniciar sessão novamente)",
+  "settingsDeleteAccountOptionImmediate": "Eliminar imediatamente",
+  "settingsDeleteAccountConfirmButton": "Eliminar Conta",
+  "settingsDeleteAccountScheduledTitle": "Eliminação de Conta Agendada",
+  "settingsDeleteAccountScheduledBody": "A sua conta será eliminada permanentemente em {date}. A sua sessão foi terminada.",
+  "@settingsDeleteAccountScheduledBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "settingsDeleteAccountError": "Falha ao eliminar a conta. Tente novamente.",
+
+  "signInPendingDeletionTitle": "Conta Agendada para Eliminação",
+  "signInPendingDeletionBody": "A sua conta está agendada para ser eliminada permanentemente em {date}. Gostaria de manter a sua conta?",
+  "@signInPendingDeletionBody": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "signInPendingDeletionKeepButton": "Manter a Minha Conta",
+  "signInPendingDeletionDismissButton": "Agora Não",
+  "signInPendingDeletionCancelSuccess": "Eliminação de conta cancelada. Bem-vindo de volta!",
+  "signInPendingDeletionCancelError": "Falha ao cancelar a eliminação da conta. Tente novamente.",
+
   "workoutTitle": "Os Meus Treinos",
   "workoutDescription": "Gira as tuas rotinas de treino e exercícios",
   "workoutAddNew": "Adicionar Treino",

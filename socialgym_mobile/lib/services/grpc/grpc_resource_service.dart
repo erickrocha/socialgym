@@ -1,5 +1,6 @@
 import 'package:grpc/grpc.dart' as grpc;
 import 'package:socialgym_mobile/commons/country_mapper.dart';
+import 'package:socialgym_mobile/commons/province_mapper.dart';
 import 'package:socialgym_mobile/commons/settings_mapper.dart';
 import 'package:socialgym_mobile/services/base_service.dart';
 import 'package:socialgym_mobile/services/grpc/grpc_channel_factory.dart';
@@ -43,7 +44,8 @@ class GrpcResourceService {
       );
       final countries = CountryMapper().fromProtoList(response.countries);
       final settings = SettingsMapper().fromProto(response.setting);
-      return AppResources(countries: countries, settings: settings);
+      final provinces = ProvinceMapper().fromProtoList(response.provinces);
+      return AppResources(countries: countries, settings: settings, provinces: provinces);
     } on grpc.GrpcError catch (e) {
       throw BaseService.handleGrpcError(e, 'Failed to load resources');
     }

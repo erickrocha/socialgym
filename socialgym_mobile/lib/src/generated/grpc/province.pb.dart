@@ -21,11 +21,13 @@ class Province extends $pb.GeneratedMessage {
     $core.int? id,
     $core.String? name,
     $core.String? acronym,
+    $core.int? countryId,
   }) {
     final result = create();
     if (id != null) result.id = id;
     if (name != null) result.name = name;
     if (acronym != null) result.acronym = acronym;
+    if (countryId != null) result.countryId = countryId;
     return result;
   }
 
@@ -40,11 +42,12 @@ class Province extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'Province',
-      package: const $pb.PackageName(_omitMessageNames ? '' : 'province'),
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.province'),
       createEmptyInstance: create)
     ..aI(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'acronym')
+    ..aI(4, _omitFieldNames ? '' : 'countryId')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -91,6 +94,15 @@ class Province extends $pb.GeneratedMessage {
   $core.bool hasAcronym() => $_has(2);
   @$pb.TagNumber(3)
   void clearAcronym() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get countryId => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set countryId($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCountryId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCountryId() => $_clearField(4);
 }
 
 const $core.bool _omitFieldNames =

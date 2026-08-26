@@ -126,6 +126,14 @@ pub enum ErrorKey {
     SettingsUpdatedFailed,
 
     RateLimited,
+
+    AddressSearchFailed,
+    AddressSearchDisabled,
+
+    AccountDisabled,
+    AccountDeletionNotPending,
+    AccountDeletionRequestFailed,
+    AccountDeletionCancelFailed,
 }
 
 impl ErrorKey {
@@ -174,6 +182,12 @@ impl ErrorKey {
             ErrorKey::SettingsAddedFailed => "SettingsAddedFailed",
             ErrorKey::SettingsUpdatedFailed => "SettingsUpdatedFailed",
             ErrorKey::RateLimited => "RateLimited",
+            ErrorKey::AddressSearchFailed => "AddressSearchFailed",
+            ErrorKey::AddressSearchDisabled => "AddressSearchDisabled",
+            ErrorKey::AccountDisabled => "AccountDisabled",
+            ErrorKey::AccountDeletionNotPending => "AccountDeletionNotPending",
+            ErrorKey::AccountDeletionRequestFailed => "AccountDeletionRequestFailed",
+            ErrorKey::AccountDeletionCancelFailed => "AccountDeletionCancelFailed",
         }
     }
 
@@ -222,6 +236,12 @@ impl ErrorKey {
             ErrorKey::SettingsAddedFailed => "settings-added-failed",
             ErrorKey::SettingsUpdatedFailed => "settings-updated-failed",
             ErrorKey::RateLimited => "rate-limited",
+            ErrorKey::AddressSearchFailed => "address-search-failed",
+            ErrorKey::AddressSearchDisabled => "address-search-disabled",
+            ErrorKey::AccountDisabled => "account-disabled",
+            ErrorKey::AccountDeletionNotPending => "account-deletion-not-pending",
+            ErrorKey::AccountDeletionRequestFailed => "account-deletion-request-failed",
+            ErrorKey::AccountDeletionCancelFailed => "account-deletion-cancel-failed",
         }
     }
 }

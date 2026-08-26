@@ -283,6 +283,68 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível atualizar as configurações do servidor';
 
   @override
+  String get settingsDangerZoneTitle => 'Zona de Perigo';
+
+  @override
+  String get settingsDeleteAccountDescription =>
+      'Eliminar a sua conta remove o seu perfil, treinos, publicações e todos os dados associados.';
+
+  @override
+  String get settingsDeleteAccountButton => 'Eliminar Conta';
+
+  @override
+  String get settingsDeleteAccountConfirmTitle => 'Eliminar Conta';
+
+  @override
+  String get settingsDeleteAccountConfirmBody =>
+      'Isto não pode ser desfeito depois de concluído. Escolha quando pretende que isto aconteça:';
+
+  @override
+  String get settingsDeleteAccountOptionGracePeriod =>
+      'Eliminar após 30 dias (pode cancelar ao iniciar sessão novamente)';
+
+  @override
+  String get settingsDeleteAccountOptionImmediate => 'Eliminar imediatamente';
+
+  @override
+  String get settingsDeleteAccountConfirmButton => 'Eliminar Conta';
+
+  @override
+  String get settingsDeleteAccountScheduledTitle =>
+      'Eliminação de Conta Agendada';
+
+  @override
+  String settingsDeleteAccountScheduledBody(String date) {
+    return 'A sua conta será eliminada permanentemente em $date. A sua sessão foi terminada.';
+  }
+
+  @override
+  String get settingsDeleteAccountError =>
+      'Falha ao eliminar a conta. Tente novamente.';
+
+  @override
+  String get signInPendingDeletionTitle => 'Conta Agendada para Eliminação';
+
+  @override
+  String signInPendingDeletionBody(String date) {
+    return 'A sua conta está agendada para ser eliminada permanentemente em $date. Gostaria de manter a sua conta?';
+  }
+
+  @override
+  String get signInPendingDeletionKeepButton => 'Manter a Minha Conta';
+
+  @override
+  String get signInPendingDeletionDismissButton => 'Agora Não';
+
+  @override
+  String get signInPendingDeletionCancelSuccess =>
+      'Eliminação de conta cancelada. Bem-vindo de volta!';
+
+  @override
+  String get signInPendingDeletionCancelError =>
+      'Falha ao cancelar a eliminação da conta. Tente novamente.';
+
+  @override
   String get workoutTitle => 'Os Meus Treinos';
 
   @override
@@ -1704,6 +1766,68 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get settingsLoadError =>
       'Não foi possível atualizar as configurações do servidor';
+
+  @override
+  String get settingsDangerZoneTitle => 'Zona de Perigo';
+
+  @override
+  String get settingsDeleteAccountDescription =>
+      'Excluir sua conta remove seu perfil, treinos, posts e todos os dados associados.';
+
+  @override
+  String get settingsDeleteAccountButton => 'Excluir Conta';
+
+  @override
+  String get settingsDeleteAccountConfirmTitle => 'Excluir Conta';
+
+  @override
+  String get settingsDeleteAccountConfirmBody =>
+      'Isso não pode ser desfeito depois de concluído. Escolha quando você quer que isso aconteça:';
+
+  @override
+  String get settingsDeleteAccountOptionGracePeriod =>
+      'Excluir após 30 dias (você pode cancelar fazendo login novamente)';
+
+  @override
+  String get settingsDeleteAccountOptionImmediate => 'Excluir imediatamente';
+
+  @override
+  String get settingsDeleteAccountConfirmButton => 'Excluir Conta';
+
+  @override
+  String get settingsDeleteAccountScheduledTitle =>
+      'Exclusão de Conta Agendada';
+
+  @override
+  String settingsDeleteAccountScheduledBody(String date) {
+    return 'Sua conta será excluída permanentemente em $date. Você foi desconectado.';
+  }
+
+  @override
+  String get settingsDeleteAccountError =>
+      'Falha ao excluir a conta. Tente novamente.';
+
+  @override
+  String get signInPendingDeletionTitle => 'Conta Agendada para Exclusão';
+
+  @override
+  String signInPendingDeletionBody(String date) {
+    return 'Sua conta está agendada para ser excluída permanentemente em $date. Você gostaria de manter sua conta?';
+  }
+
+  @override
+  String get signInPendingDeletionKeepButton => 'Manter Minha Conta';
+
+  @override
+  String get signInPendingDeletionDismissButton => 'Agora Não';
+
+  @override
+  String get signInPendingDeletionCancelSuccess =>
+      'Exclusão de conta cancelada. Bem-vindo de volta!';
+
+  @override
+  String get signInPendingDeletionCancelError =>
+      'Falha ao cancelar a exclusão da conta. Tente novamente.';
 
   @override
   String get workoutTitle => 'Meus Treinos';

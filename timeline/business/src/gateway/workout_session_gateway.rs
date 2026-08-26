@@ -106,4 +106,16 @@ impl WorkoutSessionGateway {
         }
         workouts
     }
+
+    /// Account-deletion cascade: deletes every workout-session mirror for this person.
+    pub async fn delete_all_by_person(&self, person_uuid: &str) -> Result<(), BusinessError> {
+        self.collection
+            .delete_many(doc! { "personUuid": person_uuid })
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                log::error!("Error deleting workout sessions by person: {:?}", e);
+                BusinessError::new("Failed to delete workout sessions".to_string())
+            })
+    }
 }

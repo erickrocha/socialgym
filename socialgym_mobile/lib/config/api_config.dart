@@ -26,6 +26,10 @@ class ApiConfig {
       '/workout/api/people/me/upload/avatar';
   static const String peopleUploadCoverEndpoint =
       '/workout/api/people/me/upload/cover';
+  static const String accountDeleteEndpoint =
+      '/workout/api/people/me/account/delete';
+  static const String accountCancelDeletionEndpoint =
+      '/workout/api/people/me/account/cancel-deletion';
 
   static const String businessProfilesEndpoint =
       '/workout/api/business-profiles';
@@ -49,6 +53,7 @@ class ApiConfig {
 
   static const String feedUploadEndpoint = '/workout/api/media/upload';
   static const String resourceEndpoint = '/workout/api/resource';
+  static const String addressSearchEndpoint = '/workout/api/address/search';
   static const String evolutionCheckInEndpoint =
       '/timeline/api/evolution-checkin';
 

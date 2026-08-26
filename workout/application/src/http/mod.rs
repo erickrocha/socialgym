@@ -10,5 +10,7 @@ pub mod business_profile_controller;
 pub mod person_address_controller;
 pub mod person_info_controller;
 pub mod resource_controller;
+pub mod address_search_controller;
+pub mod account_deletion_controller;
 pub mod settings_controller;
 pub mod team_member_controller;

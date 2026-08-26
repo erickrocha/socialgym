@@ -1,7 +1,9 @@
-use crate::http::json::access_token_json::AccessTokenJson;
+use crate::http::json::access_token_json::{AccessTokenJson, PendingAccountDeletionJson};
 use crate::http::json::business_profile_address_json::BusinessProfileAddressJson;
 use crate::http::json::business_profile_json::BusinessProfileJson;
 use crate::http::json::country_json::CountryJson;
+use crate::http::json::province_json::ProvinceJson;
+use crate::http::json::address_candidate_json::AddressCandidateJson;
 use crate::http::json::exercise_json::ExerciseJson;
 use crate::http::json::person_address_json::PersonAddressJson;
 use crate::http::json::person_info_json::PersonInfoJson;
@@ -13,6 +15,8 @@ use business::domain::access_token::AccessToken;
 use business::domain::business_profile::BusinessProfile;
 use business::domain::business_profile_address::BusinessProfileAddress;
 use business::domain::country::Country;
+use business::domain::province::Province;
+use business::domain::address_candidate::AddressCandidate;
 use business::domain::enums::{Difficulty, Position, ProfileType};
 use business::domain::exercise::{Category, Exercise};
 use business::domain::person::Person;
@@ -61,6 +65,12 @@ impl Mapper<AccessToken, AccessTokenJson> for AccessTokenMapper {
             person_object_key: access_token.person_object_key,
             active_business_profile_id: access_token.active_business_profile_id,
             active_business_profile_uuid: access_token.active_business_profile_uuid,
+            pending_account_deletion: access_token.pending_account_deletion.map(|p| {
+                PendingAccountDeletionJson {
+                    requested_at: p.requested_at,
+                    scheduled_at: p.scheduled_at,
+                }
+            }),
         }
     }
 
@@ -78,6 +88,7 @@ impl Mapper<AccessToken, AccessTokenJson> for AccessTokenMapper {
             person_object_key: u.person_object_key,
             active_business_profile_id: u.active_business_profile_id,
             active_business_profile_uuid: u.active_business_profile_uuid,
+            pending_account_deletion: None,
         }
     }
 }
@@ -160,6 +171,8 @@ impl Mapper<User, UserJson> for UserMapper {
             failed_login_attempts: 0,
             locked_until: None,
             token_valid_after: None,
+            deletion_requested_at: None,
+            deletion_scheduled_at: None,
         }
     }
 }
@@ -421,6 +434,64 @@ impl Mapper<Country, CountryJson> for CountryMapper {
             name: u.name.unwrap(),
             acronym: u.acronym.unwrap(),
             currency: u.currency.unwrap(),
+        }
+    }
+}
+
+pub struct ProvinceMapper {}
+
+impl Mapper<Province, ProvinceJson> for ProvinceMapper {
+    fn json(t: Province) -> ProvinceJson {
+        ProvinceJson {
+            id: t.id,
+            name: Some(t.name),
+            acronym: Some(t.acronym),
+            country_id: Some(t.country_id),
+        }
+    }
+
+    fn domain(u: ProvinceJson) -> Province {
+        Province {
+            id: u.id,
+            name: u.name.unwrap(),
+            acronym: u.acronym.unwrap(),
+            country_id: u.country_id.unwrap(),
+        }
+    }
+}
+
+pub struct AddressCandidateMapper {}
+
+impl Mapper<AddressCandidate, AddressCandidateJson> for AddressCandidateMapper {
+    fn json(t: AddressCandidate) -> AddressCandidateJson {
+        AddressCandidateJson {
+            place_id: t.place_id,
+            formatted_address: t.formatted_address,
+            address_line1: t.address_line1,
+            address_line2: t.address_line2,
+            locality: t.locality,
+            administrative_area: t.administrative_area,
+            administrative_area_code: t.administrative_area_code,
+            postal_code: t.postal_code,
+            country_code: t.country_code,
+            latitude: t.latitude,
+            longitude: t.longitude,
+        }
+    }
+
+    fn domain(u: AddressCandidateJson) -> AddressCandidate {
+        AddressCandidate {
+            place_id: u.place_id,
+            formatted_address: u.formatted_address,
+            address_line1: u.address_line1,
+            address_line2: u.address_line2,
+            locality: u.locality,
+            administrative_area: u.administrative_area,
+            administrative_area_code: u.administrative_area_code,
+            postal_code: u.postal_code,
+            country_code: u.country_code,
+            latitude: u.latitude,
+            longitude: u.longitude,
         }
     }
 }

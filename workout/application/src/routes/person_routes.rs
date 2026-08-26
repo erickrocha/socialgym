@@ -1,4 +1,5 @@
 use crate::authentication::authentication_middleware::authentication;
+use crate::http::account_deletion_controller::{cancel_account_deletion, request_account_deletion};
 use crate::http::image_controller::{person_image_delete, person_image_upload};
 use crate::http::person_address_controller::{
     add_person_address, delete_person_address, update_person_address,
@@ -111,6 +112,20 @@ pub fn person_routes(state: AppState) -> Router<AppState> {
         .route(
             "/me/info/{person_info_id}",
             put(update_person_info).route_layer(middleware::from_fn_with_state(
+                state.clone(),
+                authentication,
+            )),
+        )
+        .route(
+            "/me/account/delete",
+            post(request_account_deletion).route_layer(middleware::from_fn_with_state(
+                state.clone(),
+                authentication,
+            )),
+        )
+        .route(
+            "/me/account/cancel-deletion",
+            post(cancel_account_deletion).route_layer(middleware::from_fn_with_state(
                 state.clone(),
                 authentication,
             )),

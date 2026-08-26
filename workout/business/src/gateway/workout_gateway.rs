@@ -5,7 +5,8 @@ use entity::prelude::WorkoutEntity as WorkoutQuery;
 use entity::workout_entity as workout;
 use entity::workout_entity::Entity;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbConn, DbErr, DeleteResult, EntityTrait, QueryFilter,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, DeleteResult, EntityTrait,
+    QueryFilter,
 };
 
 pub struct WorkoutGateway {}
@@ -54,6 +55,15 @@ impl WorkoutGateway {
         let uuid = parse_uuid(&uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         Entity::delete_many()
             .filter(workout::Column::Uuid.eq(uuid))
+            .exec(db)
+            .await
+    }
+
+    /// Bulk-deletes every workout owned by a person (account-purge cascade).
+    /// `workout_exercise` rows cascade automatically once their workout is gone.
+    pub async fn delete_all_by_owner_id<C: ConnectionTrait>(db: &C, owner_id: i32) -> Result<DeleteResult, DbErr> {
+        Entity::delete_many()
+            .filter(workout::Column::OwnerId.eq(owner_id))
             .exec(db)
             .await
     }

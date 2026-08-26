@@ -1,0 +1,9 @@
+syntax = "proto3";
+package grpc.province;
+
+message Province {
+  int32 id = 1;
+  string name = 2;
+  string acronym = 3;
+  int32 country_id = 4;
+}

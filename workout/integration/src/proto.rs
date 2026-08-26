@@ -10,6 +10,9 @@ pub mod person_address {
 pub mod country {
     tonic::include_proto!("grpc.country");
 }
+pub mod province {
+    tonic::include_proto!("grpc.province");
+}
 pub mod exercise {
     tonic::include_proto!("grpc.exercise");
 }

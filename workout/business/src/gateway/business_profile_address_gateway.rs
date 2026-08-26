@@ -5,7 +5,7 @@ use crate::domain::business_profile_address::{
 };
 use entity::business_profile_address_entity as business_profile_address;
 use entity::prelude::BusinessProfileAddressEntity as BusinessProfileAddressQuery;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, EntityTrait, QueryFilter};
 
 pub struct BusinessProfileAddressGateway {}
 
@@ -62,6 +62,18 @@ impl BusinessProfileAddressGateway {
         let uuid = parse_uuid(&uuid).map_err(|error| DbErr::Type(error.to_string()))?;
         business_profile_address::Entity::delete_many()
             .filter(business_profile_address::Column::Uuid.eq(uuid))
+            .exec(db)
+            .await?;
+        Ok(())
+    }
+
+    /// Bulk-deletes every address row for a business profile (account-purge cascade).
+    pub async fn delete_all_by_business_profile_id<C: ConnectionTrait>(
+        db: &C,
+        business_profile_id: i32,
+    ) -> Result<(), DbErr> {
+        business_profile_address::Entity::delete_many()
+            .filter(business_profile_address::Column::BusinessProfileId.eq(business_profile_id))
             .exec(db)
             .await?;
         Ok(())

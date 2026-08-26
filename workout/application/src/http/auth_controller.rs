@@ -146,6 +146,10 @@ pub async fn sign_in(
             locale,
             ErrorKey::BadCredentials,
         )),
+        Err(AuthenticationError::AccountDisabled) => Err(ExceptionResponse::Forbidden(
+            locale,
+            ErrorKey::AccountDisabled,
+        )),
     }
 }
 

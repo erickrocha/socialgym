@@ -206,5 +206,32 @@ impl MentionNotificationGateway {
 
         Ok(result.matched_count > 0)
     }
+
+    /// Account-deletion cascade: removes every mention event and in-app
+    /// notification involving this person, on either side (author/mentioned,
+    /// actor/recipient).
+    pub async fn delete_all_involving_person(&self, person_uuid: &str) -> Result<(), BusinessError> {
+        self.event_collection
+            .delete_many(doc! {
+                "$or": [
+                    { "authorPersonUuid": person_uuid },
+                    { "mentionedPersonUuid": person_uuid },
+                ]
+            })
+            .await
+            .map_err(|e| BusinessError::new(format!("failed to delete mention events: {e}")))?;
+
+        self.in_app_collection
+            .delete_many(doc! {
+                "$or": [
+                    { "recipientPersonUuid": person_uuid },
+                    { "actorPersonUuid": person_uuid },
+                ]
+            })
+            .await
+            .map_err(|e| BusinessError::new(format!("failed to delete in-app notifications: {e}")))?;
+
+        Ok(())
+    }
 }
 

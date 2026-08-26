@@ -281,6 +281,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLoadError => 'Could not refresh settings from the server';
 
   @override
+  String get settingsDangerZoneTitle => 'Danger Zone';
+
+  @override
+  String get settingsDeleteAccountDescription =>
+      'Deleting your account removes your profile, workouts, posts, and all associated data.';
+
+  @override
+  String get settingsDeleteAccountButton => 'Delete Account';
+
+  @override
+  String get settingsDeleteAccountConfirmTitle => 'Delete Account';
+
+  @override
+  String get settingsDeleteAccountConfirmBody =>
+      'This can\'t be undone once completed. Choose when you\'d like this to happen:';
+
+  @override
+  String get settingsDeleteAccountOptionGracePeriod =>
+      'Delete after 30 days (you can cancel by logging back in)';
+
+  @override
+  String get settingsDeleteAccountOptionImmediate => 'Delete immediately';
+
+  @override
+  String get settingsDeleteAccountConfirmButton => 'Delete Account';
+
+  @override
+  String get settingsDeleteAccountScheduledTitle =>
+      'Account Deletion Scheduled';
+
+  @override
+  String settingsDeleteAccountScheduledBody(String date) {
+    return 'Your account will be permanently deleted on $date. You\'ve been signed out.';
+  }
+
+  @override
+  String get settingsDeleteAccountError =>
+      'Failed to delete account. Please try again.';
+
+  @override
+  String get signInPendingDeletionTitle => 'Account Scheduled for Deletion';
+
+  @override
+  String signInPendingDeletionBody(String date) {
+    return 'Your account is scheduled to be permanently deleted on $date. Would you like to keep your account?';
+  }
+
+  @override
+  String get signInPendingDeletionKeepButton => 'Keep My Account';
+
+  @override
+  String get signInPendingDeletionDismissButton => 'Not Now';
+
+  @override
+  String get signInPendingDeletionCancelSuccess =>
+      'Account deletion cancelled. Welcome back!';
+
+  @override
+  String get signInPendingDeletionCancelError =>
+      'Failed to cancel account deletion. Please try again.';
+
+  @override
   String get workoutTitle => 'My Workouts';
 
   @override

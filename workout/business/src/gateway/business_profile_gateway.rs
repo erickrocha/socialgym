@@ -4,7 +4,8 @@ use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapp
 use entity::business_profile_entity::{ActiveModel, BusinessProfileEntity};
 use entity::prelude::BusinessProfileEntity as BusinessProfileQuery;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, PaginatorTrait, QueryFilter,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, DeleteResult, EntityTrait,
+    PaginatorTrait, QueryFilter,
 };
 
 pub struct BusinessProfileGateway {}
@@ -61,5 +62,11 @@ impl BusinessProfileGateway {
             .all(db)
             .await
             .unwrap_or_else(|_| Vec::new())
+    }
+
+    /// Deletes a single business profile, as part of an account-purge cascade —
+    /// its address/team-member/profile rows must be deleted first (plain FKs).
+    pub async fn delete_by_id<C: ConnectionTrait>(db: &C, id: i32) -> Result<DeleteResult, DbErr> {
+        BusinessProfileQuery::delete_by_id(id).exec(db).await
     }
 }

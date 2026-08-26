@@ -75,6 +75,9 @@ pub enum ErrorKey {
 
     RateLimited,
 
+    InternalAuthInvalid,
+    AccountDataDeletionFailed,
+
     Unknown,
 }
 
@@ -94,6 +97,8 @@ impl ErrorKey {
             ErrorKey::ReactionRemoveFailed => "REACTION_REMOVE_FAILED",
             ErrorKey::EvolutionCheckInAddFailed => "EVOLUTION_CHECKIN_ADD_FAILED",
             ErrorKey::RateLimited => "RATE_LIMITED",
+            ErrorKey::InternalAuthInvalid => "INTERNAL_AUTH_INVALID",
+            ErrorKey::AccountDataDeletionFailed => "ACCOUNT_DATA_DELETION_FAILED",
             ErrorKey::Unknown => "UNKNOWN_ERROR",
         }
     }
@@ -113,6 +118,8 @@ impl ErrorKey {
             ErrorKey::ReactionRemoveFailed => "reaction-remove-failed",
             ErrorKey::EvolutionCheckInAddFailed => "evolution-checkin-add-failed",
             ErrorKey::RateLimited => "rate-limited",
+            ErrorKey::InternalAuthInvalid => "internal-auth-invalid",
+            ErrorKey::AccountDataDeletionFailed => "account-data-deletion-failed",
             ErrorKey::Unknown => "unknown-error",
         }
     }
@@ -146,7 +153,7 @@ mod tests {
         Locale::Dutch,
     ];
 
-    const ALL_KEYS: [ErrorKey; 13] = [
+    const ALL_KEYS: [ErrorKey; 15] = [
         ErrorKey::AuthTokenInvalid,
         ErrorKey::AuthHeaderEmpty,
         ErrorKey::AuthTokenMissing,
@@ -159,6 +166,8 @@ mod tests {
         ErrorKey::ReactionAddFailed,
         ErrorKey::ReactionRemoveFailed,
         ErrorKey::EvolutionCheckInAddFailed,
+        ErrorKey::InternalAuthInvalid,
+        ErrorKey::AccountDataDeletionFailed,
         ErrorKey::Unknown,
     ];
 

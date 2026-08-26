@@ -5,8 +5,8 @@ use entity::person_address_entity as person_address;
 use entity::person_address_entity::{ActiveModel, PersonAddressEntity};
 use entity::prelude::PersonAddressEntity as PersonAddressQuery;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbBackend, DbConn, DbErr, EntityTrait, QueryFilter, Statement,
-    UpdateResult,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbBackend, DbConn, DbErr, EntityTrait,
+    QueryFilter, Statement, UpdateResult,
 };
 
 pub struct PersonAddressGateway {}
@@ -112,6 +112,14 @@ impl PersonAddressGateway {
                 person_address::Column::Current,
                 sea_orm::sea_query::Expr::value(false),
             )
+            .filter(person_address::Column::PersonId.eq(person_id))
+            .exec(db)
+            .await
+    }
+
+    /// Bulk-deletes every address row for a person (account-purge cascade).
+    pub async fn delete_all_by_person_id<C: ConnectionTrait>(db: &C, person_id: i32) -> Result<sea_orm::DeleteResult, DbErr> {
+        person_address::Entity::delete_many()
             .filter(person_address::Column::PersonId.eq(person_id))
             .exec(db)
             .await

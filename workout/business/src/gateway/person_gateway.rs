@@ -7,8 +7,8 @@ use entity::prelude::PersonEntity as PersonQuery;
 use entity::prelude::UserEntity as UserQuery;
 use entity::user_entity as user;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, DbConn, DbErr, EntityTrait, JoinType, QueryFilter,
-    QuerySelect, RelationTrait,
+    ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DbConn, DbErr, DeleteResult,
+    EntityTrait, JoinType, QueryFilter, QuerySelect, RelationTrait,
 };
 
 pub struct PersonGateway {}
@@ -17,6 +17,13 @@ impl PersonGateway {
     pub async fn persist(db: &DbConn, entity: Person) -> Result<ActiveModel, DbErr> {
         let active_model = PersonEntityMapper::build_active_model(entity);
         active_model.save(db).await
+    }
+
+    /// Deletes the `person` row as the final step of an account-purge cascade.
+    /// Auto-cascades `exercise`, `workout_exercise`, and `person_media` per their
+    /// `ON DELETE CASCADE` FKs — every other child table must be deleted first.
+    pub async fn delete_by_id<C: ConnectionTrait>(db: &C, id: i32) -> Result<DeleteResult, DbErr> {
+        PersonQuery::delete_by_id(id).exec(db).await
     }
 
     pub async fn find_by_id(db: &DbConn, id: i32) -> Option<PersonEntity> {
