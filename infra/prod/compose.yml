@@ -114,6 +114,16 @@ services:
 #      - RUST_LOG=info,tonic=debug,rustls=trace,hyper=debug
       - RUST_LOG=info
       - RUST_BACKTRACE=full
+      # S3/CloudFront — needed by GetPersonImageUploadUrl / DeletePersonImage gRPC methods
+      # (ImageStorageUseCase::generate_presigned_url does env::var(...).expect(...), so a
+      # missing var panics the request task and the gateway returns 502).
+      - AWS_WORKOUT_BUCKET=${WORKOUT_AWS_WORKOUT_BUCKET}
+      - AWS_ACCESS_KEY_ID=${WORKOUT_AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${WORKOUT_AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${WORKOUT_AWS_REGION:-us-east-1}
+      - CLOUDFRONT_KEY_PAIR_ID=${WORKOUT_CLOUDFRONT_KEY_PAIR_ID}
+      - CLOUDFRONT_DOMAIN=${WORKOUT_CLOUDFRONT_DOMAIN}
+      - PRIVATE_KEY_RAW=${WORKOUT_PRIVATE_KEY_RAW}
       # Shared across workout-app, integration-app and timeline-app — must match or JWTs fail with 401.
       - ACCESS_TOKEN_SECRET=${AUTH_ACCESS_TOKEN_SECRET}
       - REFRESH_TOKEN_SECRET=${AUTH_REFRESH_TOKEN_SECRET}
