@@ -58,6 +58,8 @@ pub async fn get_friend_relationships_by_uuid(
     path = "/workout/api/friends",
     params(
         ("radius_km" = Option<f64>, Query, description = "Search radius in kilometers (default: 200)"),
+        ("latitude" = Option<f64>, Query, description = "Search around this latitude instead of the person's saved home address"),
+        ("longitude" = Option<f64>, Query, description = "Search around this longitude instead of the person's saved home address"),
     ),
     responses(
         (status = 200, description = "Consolidated friend information page", body = FriendPageJson),
@@ -86,8 +88,11 @@ pub async fn get_friends(
         .get("radius_km")
         .and_then(|s| s.parse::<f64>().ok())
         .unwrap_or(200.0);
+    let latitude = params.get("latitude").and_then(|s| s.parse::<f64>().ok());
+    let longitude = params.get("longitude").and_then(|s| s.parse::<f64>().ok());
 
-    let suggestions = PersonUseCase::get_suggestions(&state.conn, person_id, km).await;
+    let suggestions =
+        PersonUseCase::get_suggestions(&state.conn, person_id, km, latitude, longitude).await;
 
     let suggestions_json: Vec<PersonJson> =
         suggestions.into_iter().map(PersonMapper::json).collect();
@@ -116,6 +121,55 @@ pub async fn get_friends(
     };
 
     Ok(Json(response))
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct FindFriendsQuery {
+    pub query: Option<String>,
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
+    pub radius_km: Option<f64>,
+    pub limit: Option<i32>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/workout/api/friends/search",
+    params(
+        ("query" = Option<String>, Query, description = "Name/username text to search for"),
+        ("latitude" = Option<f64>, Query, description = "Center latitude for a location filter"),
+        ("longitude" = Option<f64>, Query, description = "Center longitude for a location filter"),
+        ("radius_km" = Option<f64>, Query, description = "Search radius in kilometers (default: 200)"),
+        ("limit" = Option<i32>, Query, description = "Max results (default 50, capped at 100)"),
+    ),
+    responses(
+        (status = 200, description = "People matching the combined name/location search", body = [PersonJson]),
+        (status = 400, description = "Bad request", body = BadRequestErrorJson),
+        (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
+        (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
+        (status = 500, description = "Internal server error", body = InternalServerErrorJson),
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn find_friends(
+    state: State<AppState>,
+    Query(params): Query<FindFriendsQuery>,
+    Extension(current_user): Extension<User>,
+) -> HttpResponse<Json<Vec<PersonJson>>> {
+    let persons = PersonUseCase::find_friends(
+        &state.conn,
+        current_user.person_id,
+        params.query,
+        params.latitude,
+        params.longitude,
+        params.radius_km,
+        params.limit.unwrap_or(50),
+    )
+    .await;
+
+    Ok(Json(PersonMapper::json_vec(persons)))
 }
 
 #[utoipa::path(

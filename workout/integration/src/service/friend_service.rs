@@ -49,7 +49,8 @@ impl FriendService for GrpcFriendService {
 			return Err(Status::invalid_argument("person_id must be informed"));
 		}
 
-		let suggestions = PersonUseCase::get_suggestions(&self.conn, payload.person_id, 200.0).await;
+		let suggestions =
+			PersonUseCase::get_suggestions(&self.conn, payload.person_id, 200.0, None, None).await;
 		let friends = PersonUseCase::get_all_friends(&self.conn, payload.person_id).await;
 		let receive_requests =
 			PersonUseCase::get_all_received_requests(&self.conn, payload.person_id).await;

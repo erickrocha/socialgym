@@ -772,6 +772,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get friendsTabSuggestions => 'Suggestions';
 
   @override
+  String get friendsTabFind => 'Rechercher';
+
+  @override
   String get friendsNoFriends => 'Pas encore d\'amis';
 
   @override
@@ -832,6 +835,33 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get friendsActionError => 'L\'action a échoué. Veuillez réessayer.';
+
+  @override
+  String get friendsLocationAnywhere => 'Partout';
+
+  @override
+  String get friendsLocationSavedAddress => 'Près de mon adresse';
+
+  @override
+  String get friendsLocationCurrentGps => 'Près de moi maintenant';
+
+  @override
+  String get friendsFindSearchHint =>
+      'Rechercher par nom ou nom d\'utilisateur';
+
+  @override
+  String get friendsFindPromptTitle => 'Trouver des amis';
+
+  @override
+  String get friendsFindPromptHint =>
+      'Recherchez par nom ou utilisez un filtre de localisation pour trouver des personnes';
+
+  @override
+  String get friendsFindNoResults => 'Aucune personne trouvée';
+
+  @override
+  String get friendsFindNoResultsHint =>
+      'Essayez un autre nom ou filtre de localisation';
 
   @override
   String get friendViewProfile => 'Voir le profil';

@@ -1,5 +1,5 @@
 use crate::authentication::authentication_middleware::authentication;
-use crate::http::friend_controller::{get_friend, get_friends};
+use crate::http::friend_controller::{find_friends, get_friend, get_friends};
 use crate::{http, AppState};
 use axum::routing::{get, put};
 use axum::{middleware, Router};
@@ -22,6 +22,13 @@ pub fn friend_routes(state: AppState) -> Router<AppState> {
         .route(
             "/",
             get(get_friends).route_layer(middleware::from_fn_with_state(
+                state.clone(),
+                authentication,
+            )),
+        )
+        .route(
+            "/search",
+            get(find_friends).route_layer(middleware::from_fn_with_state(
                 state.clone(),
                 authentication,
             )),

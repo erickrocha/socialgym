@@ -122,6 +122,7 @@ impl Modify for SecurityAddon {
 		http::image_controller::person_image_upload,
 		http::image_controller::person_image_delete,
 		http::friend_controller::get_friends,
+		http::friend_controller::find_friends,
 		http::friend_controller::send_friend_request,
 		http::friend_controller::accept_friend_request,
 		http::friend_controller::deny_friend_request,

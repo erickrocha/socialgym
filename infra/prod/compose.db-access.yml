@@ -1,0 +1,26 @@
+# Opt-in overlay: publish Postgres and Mongo to the host for GUI tools
+# (DBeaver, MongoDB Compass). NOT for real deployments.
+#
+#   docker compose -f compose.yml -f compose.db-access.yml up -d
+#
+# Host ports are 5433 / 27018 to avoid colliding with infra/dev/compose.yml,
+# which already binds 5432 / 27017.
+#
+# The base compose.yml keeps postgres/mongo on the `data` network only, which is
+# `internal: true` -- Docker refuses to publish host ports for a container that
+# has no non-internal network. So this overlay also attaches them to `edge`.
+# Publishing is what exposes the DBs; `edge` membership alone does not.
+services:
+  postgres:
+    networks:
+      - data
+      - edge
+    ports:
+      - "5433:5432"
+
+  mongo:
+    networks:
+      - data
+      - edge
+    ports:
+      - "27018:27017"

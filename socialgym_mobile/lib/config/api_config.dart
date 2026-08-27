@@ -35,6 +35,7 @@ class ApiConfig {
       '/workout/api/business-profiles';
 
   static const String friendsEndpoint = '/workout/api/friends';
+  static const String friendsSearchEndpoint = '/workout/api/friends/search';
   static const String friendsRequestEndpoint = '/workout/api/friends/request';
   static const String friendsAcceptEndpoint = '/workout/api/friends/accept';
   static const String friendsRejectEndpoint = '/workout/api/friends/reject';

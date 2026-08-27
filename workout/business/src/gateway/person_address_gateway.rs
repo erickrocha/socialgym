@@ -93,6 +93,30 @@ impl PersonAddressGateway {
             .await
     }
 
+    pub async fn find_all_within_radius_of_point(
+        db: &DbConn,
+        latitude: f64,
+        longitude: f64,
+        radius_km: f64,
+    ) -> Result<Vec<person_address::PersonAddressEntity>, DbErr> {
+        PersonAddressQuery::find()
+            .from_raw_sql(Statement::from_sql_and_values(
+                DbBackend::Postgres,
+                r#"SELECT pa.*
+                   FROM person_address AS pa
+                   WHERE pa.current = TRUE
+                     AND pa.location IS NOT NULL
+                     AND ST_DWithin(
+                         pa.location,
+                         ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+                         $3
+                     )"#,
+                [longitude.into(), latitude.into(), (radius_km * 1_000.0).into()],
+            ))
+            .all(db)
+            .await
+    }
+
     pub async fn delete(db: &DbConn, person_address_id: i32) -> Result<(), DbErr> {
         let address = PersonAddressQuery::find()
             .filter(person_address::Column::Id.eq(person_address_id))

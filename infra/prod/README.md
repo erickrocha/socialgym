@@ -11,12 +11,17 @@ one is meant to run closer to how a real deployment looks.
    ```bash
    cp .env.example .env
    ```
-   - `POSTGRES_*`/`MONGO_*` passwords and `*_ACCESS_TOKEN_SECRET`/`*_REFRESH_TOKEN_SECRET`
+   - `POSTGRES_*`/`MONGO_*` passwords and `AUTH_ACCESS_TOKEN_SECRET`/`AUTH_REFRESH_TOKEN_SECRET`
      are fully self-managed — generate them yourself, e.g.:
      ```bash
      openssl rand -base64 96 | tr -d '\n'   # JWT secrets
      openssl rand -base64 24 | tr -dc 'A-Za-z0-9'   # DB passwords
      ```
+   - `AUTH_ACCESS_TOKEN_SECRET`/`AUTH_REFRESH_TOKEN_SECRET` are a single shared pair
+     consumed by all three Rust services (`workout-app`, `integration-app`,
+     `timeline-app`). They **must** be identical everywhere — `workout-app` signs the
+     JWT at `/login` and the other two validate it, so a mismatch makes every
+     authenticated cross-service call (e.g. `GET /timeline/api/feed`) return 401.
    - `*_AWS_ACCESS_KEY_ID`/`*_AWS_SECRET_ACCESS_KEY`, `*_CLOUDFRONT_KEY_PAIR_ID`,
      `*_PRIVATE_KEY_RAW` come from your AWS account (IAM + CloudFront key
      group) — not something to generate locally.
@@ -63,6 +68,26 @@ All HTTP/gRPC traffic from outside comes in through nginx on 443
 to the right app, and `/grpc.*` to `integration-app`'s gRPC port via
 `grpc_pass`). There's no need to publish `50051`, `8090`, `8091`, `5432`, or
 `27017` to the host for normal operation.
+
+### Inspecting the databases from the host (DBeaver, Compass)
+
+`compose.db-access.yml` is an opt-in overlay that publishes PostgreSQL on host
+port `5433` and MongoDB on `27018` (offset from `infra/dev/`'s `5432`/`27017`
+so both stacks can run at once). It also attaches `postgres`/`mongo` to `edge`,
+which Docker requires before it will publish a host port for a container that is
+otherwise only on the `internal: true` `data` network.
+
+```bash
+docker compose -f compose.yml -f compose.db-access.yml up -d
+```
+
+- **DBeaver / PostgreSQL** — `localhost:5433`, database `workout_prod`, user
+  `workout`, password `POSTGRES_PASSWORD` from `.env`.
+- **MongoDB Compass** —
+  `mongodb://root:<MONGO_ROOT_PASSWORD>@localhost:27018/?authSource=admin&directConnection=true`.
+
+Plain `docker compose ...` (no `-f compose.db-access.yml`) leaves the databases
+unpublished. Don't use this overlay for a real deployment.
 
 ## Known limitations
 

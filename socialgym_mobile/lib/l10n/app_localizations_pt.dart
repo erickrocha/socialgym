@@ -769,6 +769,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get friendsTabSuggestions => 'Sugestões';
 
   @override
+  String get friendsTabFind => 'Procurar';
+
+  @override
   String get friendsNoFriends => 'Ainda sem amigos';
 
   @override
@@ -829,6 +832,32 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get friendsActionError => 'Ação falhou. Por favor, tente novamente.';
+
+  @override
+  String get friendsLocationAnywhere => 'Em qualquer lugar';
+
+  @override
+  String get friendsLocationSavedAddress => 'Perto da minha morada';
+
+  @override
+  String get friendsLocationCurrentGps => 'Perto de mim agora';
+
+  @override
+  String get friendsFindSearchHint => 'Procurar por nome ou nome de utilizador';
+
+  @override
+  String get friendsFindPromptTitle => 'Encontrar amigos';
+
+  @override
+  String get friendsFindPromptHint =>
+      'Procure por nome ou use um filtro de localização para encontrar pessoas';
+
+  @override
+  String get friendsFindNoResults => 'Nenhuma pessoa encontrada';
+
+  @override
+  String get friendsFindNoResultsHint =>
+      'Tente outro nome ou filtro de localização';
 
   @override
   String get friendViewProfile => 'Ver Perfil';
@@ -2209,6 +2238,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get friendsTabSuggestions => 'Sugestões';
 
   @override
+  String get friendsTabFind => 'Buscar';
+
+  @override
   String get friendsNoFriends => 'Ainda sem amigos';
 
   @override
@@ -2269,6 +2301,32 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get friendsActionError => 'Ação falhou. Por favor, tente novamente.';
+
+  @override
+  String get friendsLocationAnywhere => 'Em qualquer lugar';
+
+  @override
+  String get friendsLocationSavedAddress => 'Perto do meu endereço';
+
+  @override
+  String get friendsLocationCurrentGps => 'Perto de mim agora';
+
+  @override
+  String get friendsFindSearchHint => 'Buscar por nome ou nome de usuário';
+
+  @override
+  String get friendsFindPromptTitle => 'Encontrar amigos';
+
+  @override
+  String get friendsFindPromptHint =>
+      'Busque por nome ou use um filtro de localização para encontrar pessoas';
+
+  @override
+  String get friendsFindNoResults => 'Nenhuma pessoa encontrada';
+
+  @override
+  String get friendsFindNoResultsHint =>
+      'Tente outro nome ou filtro de localização';
 
   @override
   String get friendViewProfile => 'Ver Perfil';

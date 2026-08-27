@@ -81,8 +81,9 @@ services:
       - RUST_LOG=${WORKOUT_RUST_LOG:-info}
       - CLOUDFRONT_KEY_PAIR_ID=${WORKOUT_CLOUDFRONT_KEY_PAIR_ID}
       - CLOUDFRONT_DOMAIN=${WORKOUT_CLOUDFRONT_DOMAIN}
-      - ACCESS_TOKEN_SECRET=${WORKOUT_ACCESS_TOKEN_SECRET}
-      - REFRESH_TOKEN_SECRET=${WORKOUT_REFRESH_TOKEN_SECRET}
+      # Shared across workout-app, integration-app and timeline-app — must match or JWTs fail with 401.
+      - ACCESS_TOKEN_SECRET=${AUTH_ACCESS_TOKEN_SECRET}
+      - REFRESH_TOKEN_SECRET=${AUTH_REFRESH_TOKEN_SECRET}
       - PRIVATE_KEY_RAW=${WORKOUT_PRIVATE_KEY_RAW}
     networks:
       - edge
@@ -113,8 +114,9 @@ services:
 #      - RUST_LOG=info,tonic=debug,rustls=trace,hyper=debug
       - RUST_LOG=info
       - RUST_BACKTRACE=full
-      - ACCESS_TOKEN_SECRET=${WORKOUT_ACCESS_TOKEN_SECRET}
-      - REFRESH_TOKEN_SECRET=${WORKOUT_REFRESH_TOKEN_SECRET}
+      # Shared across workout-app, integration-app and timeline-app — must match or JWTs fail with 401.
+      - ACCESS_TOKEN_SECRET=${AUTH_ACCESS_TOKEN_SECRET}
+      - REFRESH_TOKEN_SECRET=${AUTH_REFRESH_TOKEN_SECRET}
     volumes:
       - ../certs/server.crt:/etc/grpc/certs/server.crt:ro
       - ../certs/server.key:/etc/grpc/certs/server.key:ro # O integration app needs the TLS key to serve gRPC securely
@@ -158,8 +160,9 @@ services:
       - RUST_LOG=info
       - CLOUDFRONT_KEY_PAIR_ID=${TIMELINE_CLOUDFRONT_KEY_PAIR_ID}
       - CLOUDFRONT_DOMAIN=${TIMELINE_CLOUDFRONT_DOMAIN}
-      - ACCESS_TOKEN_SECRET=${TIMELINE_ACCESS_TOKEN_SECRET}
-      - REFRESH_TOKEN_SECRET=${TIMELINE_REFRESH_TOKEN_SECRET}
+      # Shared across workout-app, integration-app and timeline-app — must match or JWTs fail with 401.
+      - ACCESS_TOKEN_SECRET=${AUTH_ACCESS_TOKEN_SECRET}
+      - REFRESH_TOKEN_SECRET=${AUTH_REFRESH_TOKEN_SECRET}
       - PRIVATE_KEY_RAW=${TIMELINE_PRIVATE_KEY_RAW}
       - GRPC_PROTOCOL=${GRPC_PROTOCOL}
       - GRPC_HOST=${GRPC_HOST}
@@ -195,7 +198,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
       MONGODB_USERNAME: ${MONGODB_USERNAME}
       MONGODB_PASSWORD: ${MONGODB_PASSWORD}
-      MONGODB_DATABASE: timeline
+      # Must match TIMELINE_DATABASE_NAME so the app user is created in the db the app uses.
+      MONGODB_DATABASE: ${TIMELINE_DATABASE_NAME}
     networks:
       - data
     healthcheck:

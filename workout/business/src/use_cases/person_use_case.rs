@@ -1,4 +1,5 @@
 use crate::commons::entity_mapper::EntityMapper;
+use crate::commons::functions::is_valid_coordinate;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapper};
 use crate::domain::enums::ImageType;
@@ -71,6 +72,12 @@ impl PersonUseCase {
                 Ok(avatar_url) => person_domain.avatar = Some(avatar_url),
                 Err(e) => log::warn!("Error generating pre-signed URL for avatar image: {:?}", e),
             }
+        }
+    }
+
+    async fn fill_images_for_all(persons: &mut [Person]) {
+        for person in persons.iter_mut() {
+            Self::fill_images(person).await;
         }
     }
 
@@ -197,23 +204,41 @@ impl PersonUseCase {
         BusinessProfileEntityMapper::from_models(business_profile_models)
     }
 
-    pub async fn get_suggestions(db: &DbConn, person_id: i32, radius_km: f64) -> Vec<Person> {
+    pub async fn get_suggestions(
+        db: &DbConn,
+        person_id: i32,
+        radius_km: f64,
+        latitude: Option<f64>,
+        longitude: Option<f64>,
+    ) -> Vec<Person> {
         log::info!(
             "Attempting to find friend suggestions for person_id: {:?}",
             person_id
         );
-        // Get the current person's address
-        let current_address = PersonAddressGateway::get_current_address(db, person_id, true).await;
-        if current_address.is_err() {
-            log::info!("Person {:?} don't have current address", person_id);
+
+        if !radius_km.is_finite() || radius_km < 0.0 {
             return Vec::new();
         }
 
-        let current_address = current_address.unwrap();
+        // A valid explicit point (e.g. the caller's live GPS position) searches around
+        // that point instead of the person's saved home address.
+        let search_point = match (latitude, longitude) {
+            (Some(lat), Some(lon)) if is_valid_coordinate(lat, lon) => Some((lat, lon)),
+            _ => None,
+        };
 
-        if current_address.is_none() {
-            log::info!("Error getting current address for person {}", person_id);
-            return Vec::new();
+        if search_point.is_none() {
+            // Home-address mode: the person needs a saved current address to search from.
+            let current_address =
+                PersonAddressGateway::get_current_address(db, person_id, true).await;
+            if current_address.is_err() {
+                log::info!("Person {:?} don't have current address", person_id);
+                return Vec::new();
+            }
+            if current_address.unwrap().is_none() {
+                log::info!("Error getting current address for person {}", person_id);
+                return Vec::new();
+            }
         }
 
         // Get all person IDs that have any relationship with the current person
@@ -222,18 +247,22 @@ impl PersonUseCase {
             .await
             .unwrap_or_else(|_| Vec::new());
 
-        if !radius_km.is_finite() || radius_km < 0.0 {
-            return Vec::new();
-        }
-        let nearby_addresses =
-            PersonAddressGateway::find_all_within_radius(db, person_id, radius_km).await;
+        let nearby_addresses = match search_point {
+            Some((lat, lon)) => {
+                PersonAddressGateway::find_all_within_radius_of_point(db, lat, lon, radius_km)
+                    .await
+            }
+            None => PersonAddressGateway::find_all_within_radius(db, person_id, radius_km).await,
+        };
         let neighbor_ids = Self::extract_neighbor_ids(
             nearby_addresses.unwrap_or_else(|_| Vec::new()),
             person_id,
             &excluded_ids,
         );
         let persons = PersonGateway::find_all_by_id_in(db, neighbor_ids).await;
-        PersonEntityMapper::from_models(persons)
+        let mut persons = PersonEntityMapper::from_models(persons);
+        Self::fill_images_for_all(&mut persons).await;
+        persons
             .into_iter()
             .filter(|person| person.id.unwrap_or_default() != person_id)
             .collect()
@@ -279,7 +308,9 @@ impl PersonUseCase {
             _ => Vec::new(),
         };
         let persons = PersonGateway::find_all_by_id_in(db, friend_ids.clone()).await;
-        PersonEntityMapper::from_models(persons)
+        let mut persons = PersonEntityMapper::from_models(persons);
+        Self::fill_images_for_all(&mut persons).await;
+        persons
     }
 
     pub async fn get_all_friends(db: &DbConn, person_id: i32) -> Vec<Person> {
@@ -308,7 +339,9 @@ impl PersonUseCase {
             .collect();
 
         let persons = PersonGateway::find_all_by_id_in(db, friend_ids.clone()).await;
-        PersonEntityMapper::from_models(persons)
+        let mut persons = PersonEntityMapper::from_models(persons);
+        Self::fill_images_for_all(&mut persons).await;
+        persons
     }
 
     pub async fn get_all_received_requests(db: &DbConn, person_id: i32) -> Vec<Person> {
@@ -423,7 +456,107 @@ impl PersonUseCase {
 
         // Fetch all persons by IDs
         let models = PersonGateway::find_all_by_id_in(db, person_ids).await;
-        PersonEntityMapper::from_models(models)
+        let mut persons = PersonEntityMapper::from_models(models);
+        Self::fill_images_for_all(&mut persons).await;
+        persons
+    }
+
+    /// Combined "find friends" search: a name/username text query, a location
+    /// filter (an explicit lat/long point + radius), or both together (AND).
+    /// At least one of the two filters must be supplied, or nothing is returned.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn find_friends(
+        db: &DbConn,
+        current_user_person_id: i32,
+        query: Option<String>,
+        latitude: Option<f64>,
+        longitude: Option<f64>,
+        radius_km: Option<f64>,
+        limit: i32,
+    ) -> Vec<Person> {
+        let trimmed_query = query
+            .as_deref()
+            .map(str::trim)
+            .filter(|q| !q.is_empty());
+
+        let search_point = match (latitude, longitude) {
+            (Some(lat), Some(lon)) if is_valid_coordinate(lat, lon) => Some((lat, lon)),
+            _ => None,
+        };
+
+        if trimmed_query.is_none() && search_point.is_none() {
+            return Vec::new();
+        }
+
+        let limit_u64 = if limit > 0 { limit as u64 } else { 50 };
+
+        let query_ids: Option<Vec<i32>> = if let Some(text) = trimmed_query {
+            let mut ids =
+                PersonGateway::search_by_query(db, text, current_user_person_id, limit_u64).await;
+            let email_ids = PersonGateway::search_by_query_with_email(
+                db,
+                text,
+                current_user_person_id,
+                limit_u64,
+            )
+            .await;
+            ids.extend(email_ids);
+            ids.sort();
+            ids.dedup();
+            Some(ids)
+        } else {
+            None
+        };
+
+        let location_ids: Option<Vec<i32>> = if let Some((lat, lon)) = search_point {
+            let radius = radius_km
+                .filter(|r| r.is_finite() && *r >= 0.0)
+                .unwrap_or(200.0);
+            let nearby =
+                PersonAddressGateway::find_all_within_radius_of_point(db, lat, lon, radius)
+                    .await
+                    .unwrap_or_else(|_| Vec::new());
+            let mut ids: Vec<i32> = nearby.into_iter().map(|address| address.person_id).collect();
+            ids.sort();
+            ids.dedup();
+            Some(ids)
+        } else {
+            None
+        };
+
+        // Combine: both filters supplied -> intersect (AND); only one supplied -> use it as-is.
+        let mut candidate_ids = match (query_ids, location_ids) {
+            (Some(query_ids), Some(location_ids)) => query_ids
+                .into_iter()
+                .filter(|id| location_ids.contains(id))
+                .collect::<Vec<i32>>(),
+            (Some(query_ids), None) => query_ids,
+            (None, Some(location_ids)) => location_ids,
+            (None, None) => Vec::new(),
+        };
+
+        let excluded_ids = FriendGateway::find_all_related_person_ids(db, current_user_person_id)
+            .await
+            .unwrap_or_else(|_| Vec::new());
+        candidate_ids.retain(|id| *id != current_user_person_id && !excluded_ids.contains(id));
+
+        let limit = if limit > 100 {
+            100
+        } else if limit < 1 {
+            50
+        } else {
+            limit
+        };
+        candidate_ids.truncate(limit as usize);
+
+        if candidate_ids.is_empty() {
+            return Vec::new();
+        }
+
+        let models = PersonGateway::find_all_by_id_in(db, candidate_ids).await;
+        let mut persons = PersonEntityMapper::from_models(models);
+        Self::fill_images_for_all(&mut persons).await;
+        persons
     }
 
     pub async fn search_persons_by_uuid(
@@ -472,7 +605,9 @@ impl PersonUseCase {
         let models = PersonGateway::find_all_by_uuid_in(db, person_uuids)
             .await
             .unwrap_or_default();
-        PersonEntityMapper::from_models(models)
+        let mut persons = PersonEntityMapper::from_models(models);
+        Self::fill_images_for_all(&mut persons).await;
+        persons
     }
 
     pub async fn search_mentionable_friends(
@@ -526,7 +661,9 @@ impl PersonUseCase {
         }
 
         let models = PersonGateway::find_all_by_id_in(db, person_ids).await;
-        PersonEntityMapper::from_models(models)
+        let mut persons = PersonEntityMapper::from_models(models);
+        Self::fill_images_for_all(&mut persons).await;
+        persons
     }
 
     fn extract_accepted_friend_ids(friendships: Vec<Friend>, person_id: i32) -> Vec<i32> {

@@ -1569,6 +1569,12 @@ abstract class AppLocalizations {
   /// **'Suggestions'**
   String get friendsTabSuggestions;
 
+  /// No description provided for @friendsTabFind.
+  ///
+  /// In en, this message translates to:
+  /// **'Find'**
+  String get friendsTabFind;
+
   /// No description provided for @friendsNoFriends.
   ///
   /// In en, this message translates to:
@@ -1688,6 +1694,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Action failed. Please try again.'**
   String get friendsActionError;
+
+  /// No description provided for @friendsLocationAnywhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Anywhere'**
+  String get friendsLocationAnywhere;
+
+  /// No description provided for @friendsLocationSavedAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Near my address'**
+  String get friendsLocationSavedAddress;
+
+  /// No description provided for @friendsLocationCurrentGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Near me now'**
+  String get friendsLocationCurrentGps;
+
+  /// No description provided for @friendsFindSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or username'**
+  String get friendsFindSearchHint;
+
+  /// No description provided for @friendsFindPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find friends'**
+  String get friendsFindPromptTitle;
+
+  /// No description provided for @friendsFindPromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or use a location filter to find people'**
+  String get friendsFindPromptHint;
+
+  /// No description provided for @friendsFindNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No people found'**
+  String get friendsFindNoResults;
+
+  /// No description provided for @friendsFindNoResultsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different name or location filter'**
+  String get friendsFindNoResultsHint;
 
   /// No description provided for @friendViewProfile.
   ///

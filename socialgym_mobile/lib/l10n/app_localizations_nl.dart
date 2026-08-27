@@ -766,6 +766,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get friendsTabSuggestions => 'Suggesties';
 
   @override
+  String get friendsTabFind => 'Zoeken';
+
+  @override
   String get friendsNoFriends => 'Nog geen vrienden';
 
   @override
@@ -826,6 +829,32 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get friendsActionError => 'Actie mislukt. Probeer het opnieuw.';
+
+  @override
+  String get friendsLocationAnywhere => 'Overal';
+
+  @override
+  String get friendsLocationSavedAddress => 'Bij mijn adres';
+
+  @override
+  String get friendsLocationCurrentGps => 'Bij mij nu';
+
+  @override
+  String get friendsFindSearchHint => 'Zoeken op naam of gebruikersnaam';
+
+  @override
+  String get friendsFindPromptTitle => 'Vrienden vinden';
+
+  @override
+  String get friendsFindPromptHint =>
+      'Zoek op naam of gebruik een locatiefilter om mensen te vinden';
+
+  @override
+  String get friendsFindNoResults => 'Geen mensen gevonden';
+
+  @override
+  String get friendsFindNoResultsHint =>
+      'Probeer een andere naam of locatiefilter';
 
   @override
   String get friendViewProfile => 'Profiel bekijken';

@@ -10,6 +10,7 @@ import '../../models/country.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/resource_provider.dart';
 import '../../services/address_search_service.dart';
+import '../../utils/location_utils.dart';
 
 /// Plain result of the address form, read by the embedding page on save.
 /// Transport-agnostic: the page maps this into whatever domain object it
@@ -115,57 +116,12 @@ class _AddressFormFieldsState extends State<AddressFormFields> {
   }
 
   Future<void> _checkLocationAvailability() async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return;
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return;
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        if (mounted) {
-          final shouldOpenSettings = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(l10n.permissionRequired),
-              content: Text(l10n.addressLocationPermissionDeniedForever),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(l10n.buttonCancel),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: Text(l10n.openSettings),
-                ),
-              ],
-            ),
-          );
-          if (shouldOpenSettings == true) {
-            await Geolocator.openAppSettings();
-          }
-        }
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
-      if (!mounted) return;
-      setState(() {
-        _capturedPosition = position;
-        _locationAvailable = true;
-      });
-    } catch (_) {
-      // Location unavailable: fall back silently to fully manual entry.
-    }
+    final position = await LocationUtils.getCurrentPosition(context);
+    if (!mounted || position == null) return;
+    setState(() {
+      _capturedPosition = position;
+      _locationAvailable = true;
+    });
   }
 
   void _onAddressLine1Changed(String text) {

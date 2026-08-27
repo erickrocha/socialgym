@@ -1299,4 +1299,30 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
 
         assert!(result.is_err());
     }
+
+    // ========================
+    // Find Friends Use Case Tests
+    // ========================
+
+    #[tokio::test]
+    async fn test_find_friends_returns_empty_when_no_filters_supplied() {
+        // No query text and no location: the use case must short-circuit before
+        // touching the database at all, so an empty MockDatabase is enough.
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres).into_connection();
+
+        let result =
+            PersonUseCase::find_friends(&db, 1, None, None, None, None, 50).await;
+
+        assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_find_friends_returns_empty_for_out_of_range_coordinates_and_no_query() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres).into_connection();
+
+        let result =
+            PersonUseCase::find_friends(&db, 1, None, Some(200.0), Some(0.0), None, 50).await;
+
+        assert!(result.is_empty());
+    }
 }
