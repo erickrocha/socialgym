@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.erocha.socialgym_mobile"
+    namespace = "com.erocha.socialgym"
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
@@ -23,7 +23,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.erocha.socialgym_mobile"
+        applicationId = "com.erocha.socialgym"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
