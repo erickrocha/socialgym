@@ -639,6 +639,108 @@ abstract class AppLocalizations {
   /// **'Could not refresh settings from the server'**
   String get settingsLoadError;
 
+  /// No description provided for @settingsDangerZoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger Zone'**
+  String get settingsDangerZoneTitle;
+
+  /// No description provided for @settingsDeleteAccountDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your account removes your profile, workouts, posts, and all associated data.'**
+  String get settingsDeleteAccountDescription;
+
+  /// No description provided for @settingsDeleteAccountButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get settingsDeleteAccountButton;
+
+  /// No description provided for @settingsDeleteAccountConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get settingsDeleteAccountConfirmTitle;
+
+  /// No description provided for @settingsDeleteAccountConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This can\'t be undone once completed. Choose when you\'d like this to happen:'**
+  String get settingsDeleteAccountConfirmBody;
+
+  /// No description provided for @settingsDeleteAccountOptionGracePeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete after 30 days (you can cancel by logging back in)'**
+  String get settingsDeleteAccountOptionGracePeriod;
+
+  /// No description provided for @settingsDeleteAccountOptionImmediate.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete immediately'**
+  String get settingsDeleteAccountOptionImmediate;
+
+  /// No description provided for @settingsDeleteAccountConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get settingsDeleteAccountConfirmButton;
+
+  /// No description provided for @settingsDeleteAccountScheduledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Deletion Scheduled'**
+  String get settingsDeleteAccountScheduledTitle;
+
+  /// No description provided for @settingsDeleteAccountScheduledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account will be permanently deleted on {date}. You\'ve been signed out.'**
+  String settingsDeleteAccountScheduledBody(String date);
+
+  /// No description provided for @settingsDeleteAccountError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete account. Please try again.'**
+  String get settingsDeleteAccountError;
+
+  /// No description provided for @signInPendingDeletionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Scheduled for Deletion'**
+  String get signInPendingDeletionTitle;
+
+  /// No description provided for @signInPendingDeletionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is scheduled to be permanently deleted on {date}. Would you like to keep your account?'**
+  String signInPendingDeletionBody(String date);
+
+  /// No description provided for @signInPendingDeletionKeepButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep My Account'**
+  String get signInPendingDeletionKeepButton;
+
+  /// No description provided for @signInPendingDeletionDismissButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Now'**
+  String get signInPendingDeletionDismissButton;
+
+  /// No description provided for @signInPendingDeletionCancelSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deletion cancelled. Welcome back!'**
+  String get signInPendingDeletionCancelSuccess;
+
+  /// No description provided for @signInPendingDeletionCancelError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel account deletion. Please try again.'**
+  String get signInPendingDeletionCancelError;
+
   /// No description provided for @workoutTitle.
   ///
   /// In en, this message translates to:
@@ -657,11 +759,29 @@ abstract class AppLocalizations {
   /// **'Add Workout'**
   String get workoutAddNew;
 
+  /// No description provided for @workoutEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Workout'**
+  String get workoutEditTitle;
+
   /// No description provided for @workoutStartSessionTitle.
   ///
   /// In en, this message translates to:
   /// **'Start Workout Session'**
   String get workoutStartSessionTitle;
+
+  /// No description provided for @workoutDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Workout'**
+  String get workoutDeleteConfirmTitle;
+
+  /// No description provided for @workoutDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this workout?'**
+  String get workoutDeleteConfirm;
 
   /// No description provided for @workoutExercises.
   ///
@@ -740,6 +860,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Muscle Groups'**
   String get workoutMuscleGroups;
+
+  /// No description provided for @workoutAssignToTeamMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Create for'**
+  String get workoutAssignToTeamMember;
+
+  /// No description provided for @workoutAssignToMyself.
+  ///
+  /// In en, this message translates to:
+  /// **'Myself'**
+  String get workoutAssignToMyself;
+
+  /// No description provided for @workoutSelectTeamMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Select team member'**
+  String get workoutSelectTeamMember;
+
+  /// No description provided for @workoutNoTeamMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no accepted team members yet'**
+  String get workoutNoTeamMembers;
 
   /// No description provided for @workoutSets.
   ///
@@ -1269,65 +1413,17 @@ abstract class AppLocalizations {
   /// **'Delete Address'**
   String get addressDelete;
 
-  /// No description provided for @addressSetCurrent.
-  ///
-  /// In en, this message translates to:
-  /// **'Set as Current'**
-  String get addressSetCurrent;
-
   /// No description provided for @addressCurrent.
   ///
   /// In en, this message translates to:
   /// **'Current Address'**
   String get addressCurrent;
 
-  /// No description provided for @addressStreet.
-  ///
-  /// In en, this message translates to:
-  /// **'Street'**
-  String get addressStreet;
-
-  /// No description provided for @addressNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'Number'**
-  String get addressNumber;
-
-  /// No description provided for @addressComplement.
-  ///
-  /// In en, this message translates to:
-  /// **'Complement'**
-  String get addressComplement;
-
-  /// No description provided for @addressNeighborhood.
-  ///
-  /// In en, this message translates to:
-  /// **'Neighborhood'**
-  String get addressNeighborhood;
-
-  /// No description provided for @addressCity.
-  ///
-  /// In en, this message translates to:
-  /// **'City'**
-  String get addressCity;
-
-  /// No description provided for @addressState.
-  ///
-  /// In en, this message translates to:
-  /// **'State/Province'**
-  String get addressState;
-
   /// No description provided for @addressCountry.
   ///
   /// In en, this message translates to:
   /// **'Country'**
   String get addressCountry;
-
-  /// No description provided for @addressZipCode.
-  ///
-  /// In en, this message translates to:
-  /// **'ZIP Code'**
-  String get addressZipCode;
 
   /// No description provided for @addressPostalCode.
   ///
@@ -1359,53 +1455,11 @@ abstract class AppLocalizations {
   /// **'State/Province'**
   String get addressAdministrativeArea;
 
-  /// No description provided for @addressMarkCurrent.
-  ///
-  /// In en, this message translates to:
-  /// **'Mark as current address'**
-  String get addressMarkCurrent;
-
   /// No description provided for @addressSelectCountry.
   ///
   /// In en, this message translates to:
   /// **'Select country'**
   String get addressSelectCountry;
-
-  /// No description provided for @addressSelectState.
-  ///
-  /// In en, this message translates to:
-  /// **'Select state'**
-  String get addressSelectState;
-
-  /// No description provided for @addressSelectCountryFirst.
-  ///
-  /// In en, this message translates to:
-  /// **'Select country first'**
-  String get addressSelectCountryFirst;
-
-  /// No description provided for @addressLatitude.
-  ///
-  /// In en, this message translates to:
-  /// **'Latitude'**
-  String get addressLatitude;
-
-  /// No description provided for @addressLongitude.
-  ///
-  /// In en, this message translates to:
-  /// **'Longitude'**
-  String get addressLongitude;
-
-  /// No description provided for @addressGpsLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'GPS Location'**
-  String get addressGpsLocation;
-
-  /// No description provided for @addressGetCurrentLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'Get Current Location'**
-  String get addressGetCurrentLocation;
 
   /// No description provided for @addressLocationServicesDisabled.
   ///
@@ -1514,6 +1568,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Suggestions'**
   String get friendsTabSuggestions;
+
+  /// No description provided for @friendsTabFind.
+  ///
+  /// In en, this message translates to:
+  /// **'Find'**
+  String get friendsTabFind;
 
   /// No description provided for @friendsNoFriends.
   ///
@@ -1634,6 +1694,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Action failed. Please try again.'**
   String get friendsActionError;
+
+  /// No description provided for @friendsLocationAnywhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Anywhere'**
+  String get friendsLocationAnywhere;
+
+  /// No description provided for @friendsLocationSavedAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Near my address'**
+  String get friendsLocationSavedAddress;
+
+  /// No description provided for @friendsLocationCurrentGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Near me now'**
+  String get friendsLocationCurrentGps;
+
+  /// No description provided for @friendsFindSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or username'**
+  String get friendsFindSearchHint;
+
+  /// No description provided for @friendsFindPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find friends'**
+  String get friendsFindPromptTitle;
+
+  /// No description provided for @friendsFindPromptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or use a location filter to find people'**
+  String get friendsFindPromptHint;
+
+  /// No description provided for @friendsFindNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No people found'**
+  String get friendsFindNoResults;
+
+  /// No description provided for @friendsFindNoResultsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different name or location filter'**
+  String get friendsFindNoResultsHint;
 
   /// No description provided for @friendViewProfile.
   ///
@@ -2226,8 +2334,14 @@ abstract class AppLocalizations {
   /// No description provided for @tooltipSwipeToView.
   ///
   /// In en, this message translates to:
-  /// **'Swipe left to add exercises'**
+  /// **'Go back and swipe an exercise right to add it'**
   String get tooltipSwipeToView;
+
+  /// No description provided for @tooltipBackToExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to exercises'**
+  String get tooltipBackToExercises;
 
   /// No description provided for @sortCreatedAtDesc.
   ///

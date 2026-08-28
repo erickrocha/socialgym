@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:socialgym_mobile/config/app_colors.dart';
 import 'package:socialgym_mobile/models/notification.dart' as app_notification;
+import 'package:socialgym_mobile/providers/person_provider.dart';
 
 class NotificationItemWidget extends StatelessWidget {
   final app_notification.Notification notification;
@@ -20,17 +22,19 @@ class NotificationItemWidget extends StatelessWidget {
     final subtitle = notification.snippet.isNotEmpty
         ? notification.snippet
         : notification.notificationType;
+    final businessType =
+        context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       color: notification.isUnread
-          ? AppColors.primary.withAlpha(10)
+          ? AppColors.primaryFor(businessType).withAlpha(10)
           : Colors.white,
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(
           backgroundColor: notification.isUnread
-              ? AppColors.primary
+              ? AppColors.primaryFor(businessType)
               : Colors.grey.shade300,
           child: Icon(
             _iconForType(notification.notificationType),
@@ -49,7 +53,7 @@ class NotificationItemWidget extends StatelessWidget {
         ),
         subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
         trailing: notification.isUnread
-            ? const Icon(Icons.circle, color: AppColors.primary, size: 10)
+            ? Icon(Icons.circle, color: AppColors.primaryFor(businessType), size: 10)
             : null,
       ),
     );

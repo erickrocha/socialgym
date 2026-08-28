@@ -24,13 +24,21 @@ class FriendsProvider extends ChangeNotifier {
   int get pendingRequestsCount => _friendsData?.pendingRequestsCount ?? 0;
 
   /// Fetch all friends data from the API.
-  Future<void> fetchFriends(String token) async {
+  ///
+  /// When [latitude]/[longitude] are given, suggestions are centered on that
+  /// point (e.g. the device's current GPS position) instead of the person's
+  /// saved home address.
+  Future<void> fetchFriends(String token, {double? latitude, double? longitude}) async {
     _loading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _friendsData = await FriendsService.fetchFriends(token);
+      _friendsData = await FriendsService.fetchFriends(
+        token,
+        latitude: latitude,
+        longitude: longitude,
+      );
       _error = null;
     } catch (e) {
       _error = e.toString();

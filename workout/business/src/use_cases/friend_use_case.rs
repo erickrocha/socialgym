@@ -4,7 +4,7 @@ use crate::domain::business_error::BusinessError;
 use crate::domain::friend::{Friend, FriendEntityMapper, FriendStatus};
 use crate::gateway::friend_gateway::FriendGateway;
 use crate::gateway::person_gateway::PersonGateway;
-use entity::friends;
+use entity::friends_entity as friends;
 use sea_orm::DbConn;
 
 pub struct FriendUseCase {}
@@ -247,7 +247,7 @@ impl FriendUseCase {
         Ok(friend_list)
     }
 
-    fn normalize_accepted_friendships(records: Vec<friends::Model>, person_id: i32) -> Vec<Friend> {
+    fn normalize_accepted_friendships(records: Vec<friends::FriendsEntity>, person_id: i32) -> Vec<Friend> {
         let mut friend_list: Vec<Friend> = records
             .into_iter()
             .filter_map(|f| {
@@ -282,10 +282,10 @@ mod tests {
     use super::FriendUseCase;
     use crate::commons::functions::string_to_uuid;
     use chrono::Utc;
-    use entity::friends;
+    use entity::friends_entity as friends;
 
-    fn make_model(id: i32, person_id: i32, friend_id: i32) -> friends::Model {
-        friends::Model {
+    fn make_model(id: i32, person_id: i32, friend_id: i32) -> friends::FriendsEntity {
+        friends::FriendsEntity {
             id,
             uuid: string_to_uuid(format!("uuid-{id}").as_str()),
             person_id,

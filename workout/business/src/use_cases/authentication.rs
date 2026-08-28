@@ -1,5 +1,5 @@
 use crate::commons::auth_config;
-use crate::domain::access_token::{AccessToken, Claims};
+use crate::domain::access_token::{AccessToken, Claims, PendingAccountDeletion};
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::BusinessProfile;
 use crate::domain::user::{User, UserEntityMapper};
@@ -20,6 +20,7 @@ pub struct Authentication {}
 pub enum AuthenticationError {
     InvalidCredentials,
     AccountLocked { retry_after_seconds: i64 },
+    AccountDisabled,
 }
 
 #[derive(Debug)]
@@ -88,8 +89,23 @@ impl Authentication {
             }
         }
 
-        if bcrypt::verify(password, user.password.as_str()).unwrap() {
+        // A malformed stored hash must not panic the login handler.
+        let password_matches = bcrypt::verify(password, user.password.as_str()).unwrap_or_else(|e| {
+            log::error!("Error verifying password hash for user_id={}: {}", user_id, e);
+            false
+        });
+        if password_matches {
             log::info!("User is valid, generating access token");
+            if !user.enabled {
+                if user.deletion_scheduled_at.is_none() {
+                    log::info!("Account user_id={} is disabled", user_id);
+                    return Err(AuthenticationError::AccountDisabled);
+                }
+                log::info!(
+                    "Account user_id={} has a pending deletion; allowing login so it can be cancelled",
+                    user_id
+                );
+            }
             if lockout_enabled && user.failed_login_attempts > 0 {
                 let _ = UserGateway::reset_lockout(db, user_id).await;
             }
@@ -140,6 +156,12 @@ impl Authentication {
         } else {
             None
         };
+        let pending_account_deletion = match (user.deletion_requested_at, user.deletion_scheduled_at) {
+            (Some(requested_at), Some(scheduled_at)) => {
+                Some(PendingAccountDeletion { requested_at, scheduled_at })
+            }
+            _ => None,
+        };
         AccessToken {
             access_token: token,
             token_type: "Bearer".to_string(),
@@ -153,6 +175,7 @@ impl Authentication {
             person_object_key: claims.person_object_key.clone(),
             active_business_profile_id: claims.active_business_profile_id,
             active_business_profile_uuid: claims.active_business_profile_uuid.clone(),
+            pending_account_deletion,
         }
     }
 
@@ -212,7 +235,10 @@ impl Authentication {
         })
     }
 
-    pub async fn validate_refresh_token(db: &DbConn, token: String) -> Result<User, BusinessError> {
+    /// Validates a refresh token and returns it alongside its claims, so the
+    /// caller (`RefreshToken::execute`) can rotate it: revoke this exact token
+    /// once it's used, and detect reuse of an already-rotated one.
+    pub async fn validate_refresh_token(db: &DbConn, token: String) -> Result<(User, Claims), BusinessError> {
         let public_key = env::var("REFRESH_TOKEN_SECRET").expect("REFRESH_TOKEN_SECRET must be set");
         let result = decode::<Claims>(&token,&DecodingKey::from_secret(public_key.as_bytes()),&Validation::new(Algorithm::HS512));
 
@@ -240,13 +266,23 @@ impl Authentication {
         let user = UserEntityMapper::from_model(opt_entity.unwrap());
 
         if auth_config::token_revocation_enabled() && Self::is_token_revoked(db, &user, &claims).await {
+            // The presented refresh token was already rotated away: someone is
+            // replaying a stolen/old token. Revoke the whole family and force
+            // re-login rather than honoring it.
+            log::warn!(
+                "Refresh token reuse detected for user_id={:?}, revoking all tokens",
+                user.id
+            );
+            if let Some(user_id) = user.id {
+                TokenRevocation::revoke_all_for_user(db, user_id).await;
+            }
             return Err(BusinessError::new("Token revoked".to_string()));
         }
 
-        Ok(user)
+        Ok((user, claims))
     }
 
-    async fn is_token_revoked(db: &DbConn, user: &User, claims: &Claims) -> bool {
+    pub(crate) async fn is_token_revoked(db: &DbConn, user: &User, claims: &Claims) -> bool {
         if let Some(watermark) = user.token_valid_after {
             if let Some(iat) = DateTime::from_timestamp(claims.iat, 0).map(|dt| dt.naive_utc()) {
                 if iat <= watermark {

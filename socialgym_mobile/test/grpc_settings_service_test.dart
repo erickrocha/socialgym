@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:socialgym_mobile/commons/settings_mapper.dart';
 import 'package:socialgym_mobile/models/enums.dart';
 import 'package:socialgym_mobile/models/settings.dart';
 import 'package:socialgym_mobile/services/grpc/grpc_settings_service.dart';
@@ -19,8 +20,8 @@ void main() {
       final settings = Settings(
         id: 5,
         uuid: 'setting-uuid',
-        personId: 9,
-        personUuid: 'person-uuid',
+        ownerId: 9,
+        ownerUuid: 'person-uuid',
         language: 'pt_BR',
         theme: 'dark',
         notificationsEnabled: false,
@@ -28,7 +29,7 @@ void main() {
         homePage: Pages.gallery,
       );
 
-      final proto = GrpcSettingsService.toProto(settings);
+      final proto = SettingsMapper().toProto(settings);
       expect(proto.id, 5);
       expect(proto.uuid, 'setting-uuid');
       expect(proto.ownerId, 9);
@@ -41,12 +42,12 @@ void main() {
 
       // Simulate the wire round-trip (encode/decode) before mapping back.
       final decoded = $settings.Setting.fromBuffer(proto.writeToBuffer());
-      final domain = GrpcSettingsService.toDomain(decoded);
+      final domain = SettingsMapper().fromProto(decoded);
 
       expect(domain.id, 5);
       expect(domain.uuid, 'setting-uuid');
-      expect(domain.personId, 9);
-      expect(domain.personUuid, 'person-uuid');
+      expect(domain.ownerId, 9);
+      expect(domain.ownerUuid, 'person-uuid');
       expect(domain.language, 'pt_BR');
       expect(domain.theme, 'dark');
       expect(domain.notificationsEnabled, false);
@@ -56,7 +57,7 @@ void main() {
 
     test('toDomain parses a lowercase contextMenuPosition from the backend without erroring', () {
       final proto = $settings.Setting(contextMenuPosition: 'left', homePage: 'feed');
-      final domain = GrpcSettingsService.toDomain(proto);
+      final domain = SettingsMapper().fromProto(proto);
       expect(domain.contextMenuPosition, ContextMenuPosition.left);
     });
   });

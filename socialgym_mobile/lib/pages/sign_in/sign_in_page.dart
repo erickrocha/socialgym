@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:socialgym_mobile/models/enums.dart';
 
@@ -68,8 +69,7 @@ class _SignInPageState extends State<SignInPage> {
       // Only fetch resources if settings are not already cached
       // This avoids redundant API calls when settings exist locally
       if (!settingsProvider.hasSettingsCached()) {
-        await resourceProvider.fetchResources(
-          token,
+        await resourceProvider.fetchResources(personProvider.ownerId,
           onSettingsReceived: (settings) async {
             await settingsProvider.applySettings(settings);
             if (settings.language != null) {
@@ -79,7 +79,7 @@ class _SignInPageState extends State<SignInPage> {
         );
       } else {
         // Settings already cached locally; fetch only resources (countries, etc)
-        await resourceProvider.fetchResources(token);
+        await resourceProvider.fetchResources(personProvider.ownerId);
       }
 
       if (mounted) {
@@ -116,6 +116,12 @@ class _SignInPageState extends State<SignInPage> {
     );
 
     if (success && mounted) {
+      final pending = authProvider.auth?.pendingAccountDeletion;
+      if (pending != null && mounted) {
+        await _showPendingDeletionDialog(authProvider, pending.scheduledAt);
+      }
+      if (!mounted) return;
+
       // Fetch person data and resources after successful sign in
       final personProvider = context.read<PersonProvider>();
       final resourceProvider = context.read<ResourceProvider>();
@@ -127,8 +133,7 @@ class _SignInPageState extends State<SignInPage> {
       await personProvider.restoreActiveBusinessProfileFromToken(token);
 
       // Fetch resources and apply settings
-      await resourceProvider.fetchResources(
-        token,
+      await resourceProvider.fetchResources(personProvider.ownerId,
         onSettingsReceived: (settings) async {
           await settingsProvider.applySettings(settings);
           if (settings.language != null) {
@@ -146,6 +151,50 @@ class _SignInPageState extends State<SignInPage> {
     }
   }
 
+  /// Shown right after a fresh login when the account has a pending, not-yet
+  /// -purged deletion request — lets the user reactivate it, or dismiss and
+  /// keep using the app with the deletion still scheduled.
+  Future<void> _showPendingDeletionDialog(
+    AuthProvider authProvider,
+    DateTime scheduledAt,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final formattedDate = DateFormat.yMMMd().format(scheduledAt.toLocal());
+
+    final keepAccount = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.signInPendingDeletionTitle),
+        content: Text(l10n.signInPendingDeletionBody(formattedDate)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.signInPendingDeletionDismissButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.signInPendingDeletionKeepButton),
+          ),
+        ],
+      ),
+    );
+
+    if (keepAccount != true || !mounted) return;
+
+    final cancelled = await authProvider.cancelAccountDeletion();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          cancelled
+              ? l10n.signInPendingDeletionCancelSuccess
+              : (authProvider.error ?? l10n.signInPendingDeletionCancelError),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Show loading indicator while checking existing auth
@@ -159,6 +208,8 @@ class _SignInPageState extends State<SignInPage> {
     final l10n = AppLocalizations.of(context)!;
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 640;
+    final businessType =
+        context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -186,8 +237,8 @@ class _SignInPageState extends State<SignInPage> {
                         ),
                         child: Center(
                           child: isDesktop
-                              ? _buildDesktopLayout(l10n, screenWidth)
-                              : _buildMobileLayout(l10n),
+                              ? _buildDesktopLayout(l10n, screenWidth, businessType)
+                              : _buildMobileLayout(l10n, businessType),
                         ),
                       ),
                     ),
@@ -205,7 +256,7 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   /// Desktop/Tablet: Logo on the left, form on the right
-  Widget _buildDesktopLayout(AppLocalizations l10n, double screenWidth) {
+  Widget _buildDesktopLayout(AppLocalizations l10n, double screenWidth, String? businessType) {
     final logoWidth = screenWidth >= 1024 ? 300.0 : 200.0;
 
     return Center(
@@ -221,7 +272,10 @@ class _SignInPageState extends State<SignInPage> {
             const SizedBox(width: 32),
 
             // Form on the right
-            SizedBox(width: screenWidth >= 1024 ? 450 : 400, child: _buildFormCard(l10n)),
+            SizedBox(
+              width: screenWidth >= 1024 ? 450 : 400,
+              child: _buildFormCard(l10n, businessType),
+            ),
           ],
         ),
       ),
@@ -229,7 +283,7 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   /// Mobile: Logo on top, form below
-  Widget _buildMobileLayout(AppLocalizations l10n) {
+  Widget _buildMobileLayout(AppLocalizations l10n, String? businessType) {
     return Column(
       children: [
         // Logo
@@ -238,12 +292,12 @@ class _SignInPageState extends State<SignInPage> {
         const SizedBox(height: 32),
 
         // Form Card
-        _buildFormCard(l10n),
+        _buildFormCard(l10n, businessType),
       ],
     );
   }
 
-  Widget _buildFormCard(AppLocalizations l10n) {
+  Widget _buildFormCard(AppLocalizations l10n, String? businessType) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -284,7 +338,7 @@ class _SignInPageState extends State<SignInPage> {
                   focusNode: _emailFocus,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: _inputDecoration(l10n.signInEmail),
+                  decoration: _inputDecoration(l10n.signInEmail, businessType),
                   onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_passwordFocus),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -302,7 +356,7 @@ class _SignInPageState extends State<SignInPage> {
                   focusNode: _passwordFocus,
                   obscureText: true,
                   textInputAction: TextInputAction.done,
-                  decoration: _inputDecoration(l10n.signInPassword),
+                  decoration: _inputDecoration(l10n.signInPassword, businessType),
                   onFieldSubmitted: (_) => {
                     if (!context.read<AuthProvider>().loading) {_handleSignIn()},
                   },
@@ -322,8 +376,8 @@ class _SignInPageState extends State<SignInPage> {
                   child: ElevatedButton(
                     onPressed: authProvider.loading ? null : _handleSignIn,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      disabledBackgroundColor: AppColors.primaryDisabled,
+                      backgroundColor: AppColors.primaryFor(businessType),
+                      disabledBackgroundColor: AppColors.primaryDisabledFor(businessType),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     ),
@@ -349,7 +403,7 @@ class _SignInPageState extends State<SignInPage> {
                   },
                   child: Text(
                     l10n.signInForgotPassword,
-                    style: const TextStyle(color: AppColors.primary, fontSize: 14),
+                    style: TextStyle(color: AppColors.primaryFor(businessType), fontSize: 14),
                   ),
                 ),
 
@@ -404,21 +458,21 @@ class _SignInPageState extends State<SignInPage> {
     );
   }
 
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _inputDecoration(String hint, String? businessType) {
     return InputDecoration(
       hintText: hint,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: AppColors.primaryHover, width: 2),
+        borderSide: BorderSide(color: AppColors.primaryHoverFor(businessType), width: 2),
       ),
     );
   }

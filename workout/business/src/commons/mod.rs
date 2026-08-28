@@ -1,5 +1,9 @@
-pub mod functions;
-pub mod entity_mapper;
-pub mod gateway;
+pub mod account_deletion_config;
 pub mod auth_config;
+pub mod authorization;
+pub mod db_pool;
+pub mod entity_mapper;
+pub mod functions;
+pub mod gateway;
+pub mod legal_documents;
 pub mod password_policy;

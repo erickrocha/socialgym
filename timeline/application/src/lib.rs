@@ -1,27 +1,57 @@
+use crate::http::welcome_controller::welcome;
+use crate::routes::content_report_routes::{moderation_routes, report_routes};
 use crate::routes::evolution_checkin_routes::evolution_checkin_routes;
 use crate::routes::feed_routes::feed_route;
+use crate::routes::internal_routes::internal_routes;
 use crate::routes::notification_routes::notification_routes;
 use crate::routes::post_routes::post_routes;
 use crate::routes::workout_session_routes::workout_session_routes;
+use axum::routing::get;
 use axum::{
-    http::{header, HeaderName, Method},
     Router,
+    http::{HeaderName, Method, header},
 };
 use mongodb::Database;
 use std::env;
 use std::sync::Arc;
-use axum::routing::get;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::{Modify, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
-use crate::http::welcome_controller::welcome;
 
 mod authentication;
 mod commons;
 mod http;
 mod infrastructure;
 pub mod routes;
+
+/// CORS origins this API accepts: a comma-separated `CORS_ALLOWED_ORIGINS` env
+/// var, or localhost dev origins when unset — mobile clients don't send an
+/// `Origin` header at all, so this only ever gates the web app.
+fn allowed_origins() -> AllowOrigin {
+    let configured = env::var("CORS_ALLOWED_ORIGINS")
+        .ok()
+        .filter(|s| !s.is_empty());
+    let origins: Vec<axum::http::HeaderValue> = match configured {
+        Some(raw) => raw
+            .split(',')
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .filter_map(|origin| axum::http::HeaderValue::from_str(origin).ok())
+            .collect(),
+        None => {
+            log::warn!(
+                "CORS_ALLOWED_ORIGINS is not set; falling back to localhost dev origins. \
+                 Set it explicitly in production."
+            );
+            ["http://localhost:5173", "http://localhost:3000"]
+                .into_iter()
+                .filter_map(|origin| axum::http::HeaderValue::from_str(origin).ok())
+                .collect()
+        }
+    };
+    AllowOrigin::list(origins)
+}
 
 #[derive(OpenApi)]
 #[openapi(
@@ -91,7 +121,16 @@ async fn start() -> anyhow::Result<()> {
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let database_name = env::var("DATABASE_NAME").expect("DATABASE_NAME must be set");
-    let client = mongodb::Client::with_uri_str(&database_url).await?;
+    // Library default is unbounded; give it an explicit, env-configurable cap
+    // so this process can't open more connections to Mongo than intended.
+    let mut client_options = mongodb::options::ClientOptions::parse(&database_url).await?;
+    client_options.max_pool_size = Some(
+        std::env::var("DB_POOL_MAX_SIZE")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(10),
+    );
+    let client = mongodb::Client::with_options(client_options)?;
     let database = client.database(&database_name);
     let host = env::var("HOST").expect("HOST is not set in .env file");
     let port = env::var("PORT").expect("PORT is not set in .env file");
@@ -101,6 +140,7 @@ async fn start() -> anyhow::Result<()> {
         database: Arc::new(database),
     };
 
+    infrastructure::mongo_indexes::ensure_indexes(&state.database).await;
     infrastructure::mention_notification_worker::start(Arc::clone(&state.database));
 
     log::info!("Starting server...");
@@ -115,7 +155,7 @@ async fn start() -> anyhow::Result<()> {
             Method::HEAD,
             Method::OPTIONS,
         ])
-        .allow_origin(Any)
+        .allow_origin(allowed_origins())
         .allow_headers([
             header::CONTENT_TYPE,
             header::AUTHORIZATION,
@@ -140,8 +180,14 @@ async fn start() -> anyhow::Result<()> {
                 )
                 .nest("/posts", post_routes(state.clone()))
                 .nest("/feed", feed_route(state.clone()))
-                .nest("/notifications", notification_routes(state.clone())),
+                .nest("/notifications", notification_routes(state.clone()))
+                .nest("/reports", report_routes(state.clone()))
+                .nest("/moderation", moderation_routes(state.clone()))
+                .nest("/internal", internal_routes(state.clone())),
         )
+        // 5 MiB cap: posts/workout-sessions carry JSON payloads (media metadata,
+        // executed sets) but never raw file bytes — those go to S3 via presigned URLs.
+        .layer(axum::extract::DefaultBodyLimit::max(5 * 1024 * 1024))
         .layer(cors)
         .with_state(state);
 

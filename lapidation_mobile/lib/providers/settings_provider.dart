@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lapidation_mobile/models/enums.dart';
 import 'package:lapidation_mobile/models/settings.dart';
 
+import '../services/base_service.dart';
 import '../services/grpc/grpc_settings_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
@@ -108,6 +109,8 @@ class SettingsProvider extends ChangeNotifier {
       if (fetched != null) {
         await applySettings(fetched);
       }
+    } on AppException catch (e) {
+      _error = e.message;
     } catch (e) {
       _error = 'Failed to refresh settings.';
     } finally {
@@ -129,6 +132,9 @@ class SettingsProvider extends ChangeNotifier {
       final persisted = await GrpcSettingsService.persistSettings(updated);
       await applySettings(persisted);
       return true;
+    } on AppException catch (e) {
+      _error = e.message;
+      return false;
     } catch (e) {
       _error = 'Failed to save settings.';
       return false;

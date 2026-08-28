@@ -18,7 +18,14 @@ service PersonService {
   rpc RemovePersonAddress (RemovePersonAddressRequest) returns (RemovePersonAddressResponse);
   rpc GetPersonImageUploadUrl (PersonImageUploadRequest) returns (PersonImageUploadResponse);
   rpc DeletePersonImage (PersonImageRequest) returns (DeletePersonImageResponse);
+  rpc HasActiveConsent (ConsentStatusRequest) returns (ConsentStatusResponse);
+  rpc HasRole (RoleStatusRequest) returns (RoleStatusResponse);
 }
+
+message ConsentStatusRequest { string document = 1; }
+message ConsentStatusResponse { bool active = 1; string version = 2; }
+message RoleStatusRequest { string role = 1; }
+message RoleStatusResponse { bool active = 1; }
 
 message GetMeRequest {}
 

@@ -20,15 +20,22 @@ class TeamPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // A business-profile switch always navigates away from this page, but key
     // on the flag anyway so the tab set can never get out of sync with it.
-    final isProfessional = context.watch<PersonProvider>().isProfessional;
-    return _TeamPageContent(key: ValueKey(isProfessional), isProfessional: isProfessional);
+    final personProvider = context.watch<PersonProvider>();
+    final isProfessional = personProvider.isProfessional;
+    final businessType = personProvider.activeBusinessProfile?.businessType;
+    return _TeamPageContent(
+      key: ValueKey(isProfessional),
+      isProfessional: isProfessional,
+      businessType: businessType,
+    );
   }
 }
 
 class _TeamPageContent extends StatefulWidget {
   final bool isProfessional;
+  final String? businessType;
 
-  const _TeamPageContent({super.key, required this.isProfessional});
+  const _TeamPageContent({super.key, required this.isProfessional, required this.businessType});
 
   @override
   State<_TeamPageContent> createState() => _TeamPageContentState();
@@ -166,7 +173,7 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          const Icon(Icons.group, color: AppColors.primary, size: 28),
+          Icon(Icons.group, color: AppColors.primaryFor(widget.businessType), size: 28),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -199,9 +206,9 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
       child: TabBar(
         controller: _tabController,
         isScrollable: widget.isProfessional,
-        labelColor: AppColors.primary,
+        labelColor: AppColors.primaryFor(widget.businessType),
         unselectedLabelColor: Colors.grey[600],
-        indicatorColor: AppColors.primary,
+        indicatorColor: AppColors.primaryFor(widget.businessType),
         tabs: [
           if (widget.isProfessional) Tab(text: l10n.teamTabMembers),
           if (widget.isProfessional)

@@ -1,3 +1,5 @@
+use crate::commons::authorization::ensure_owns;
+use crate::domain::user::User;
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapper};
@@ -11,7 +13,7 @@ use crate::gateway::business_profile_gateway::BusinessProfileGateway;
 use crate::use_cases::common_use_case::{handle_option};
 use crate::use_cases::image_storage_use_case::ImageStorageUseCase;
 use sea_orm::{DbConn};
-use entity::business_profile::Model;
+use entity::business_profile_entity::BusinessProfileEntity;
 use crate::domain::profile::Profile;
 use crate::gateway::profile_gateway::ProfileGateway;
 
@@ -42,14 +44,18 @@ impl BusinessProfileUseCase {
         let business_profile = BusinessProfileGateway::find_by_uuid(db, uuid.as_str()).await;
 
         match business_profile {
-            Some(business_profile) => {
+            Ok(Some(business_profile)) => {
                 let mut result = BusinessProfileEntityMapper::from_model(business_profile);
                 Self::fill_images(&mut result).await;
                 let addresses = Self::load_addresses(db, result.id.unwrap()).await;
                 result.addresses = addresses;
                 Some(result)
             }
-            None => None,
+            Ok(None) => None,
+            Err(error) => {
+                log::error!("Error getting business profile by uuid: {}", error);
+                None
+            }
         }
     }
 
@@ -67,7 +73,9 @@ impl BusinessProfileUseCase {
     pub async fn get_by_owner_uuid(db: &DbConn, uuid: String) -> Result<Vec<BusinessProfile>, BusinessError> {
         log::info!("Getting business profiles for owner uuid: {:?}", uuid);
 
-        let business_profiles = BusinessProfileGateway::find_by_owner_uuid(db, uuid.as_str()).await;
+        let business_profiles = BusinessProfileGateway::find_by_owner_uuid(db, uuid.as_str())
+            .await
+            .map_err(|e| BusinessError::new(e.to_string()))?;
 
         let result = Self::fill_business_profiles(db, business_profiles).await;
 
@@ -76,7 +84,7 @@ impl BusinessProfileUseCase {
         Ok(result)
     }
 
-    async fn fill_business_profiles(db: &DbConn, business_profiles: Vec<Model>) -> Vec<BusinessProfile> {
+    async fn fill_business_profiles(db: &DbConn, business_profiles: Vec<BusinessProfileEntity>) -> Vec<BusinessProfile> {
         let mut result = Vec::new();
 
         for profile in business_profiles {
@@ -143,8 +151,16 @@ impl BusinessProfileUseCase {
         }
     }
 
-    pub async fn add(db: &DbConn, domain: BusinessProfile) -> Result<BusinessProfile, BusinessError> {
-        log::info!("Adding new business profile for owner_id: {:?}", domain.owner_id);
+    /// Create a business profile owned by `actor`. A client-supplied owner id is
+    /// ignored: ownership is always the authenticated person.
+    pub async fn add(
+        db: &DbConn,
+        mut domain: BusinessProfile,
+        actor: &User,
+    ) -> Result<BusinessProfile, BusinessError> {
+        log::info!("Adding new business profile for owner_id: {}", actor.person_id);
+        domain.owner_id = actor.person_id;
+        domain.owner_uuid = actor.person_uuid.clone();
         let added_profile = BusinessProfileGateway::persist(db, domain)
             .await
             .map_err(|e| {
@@ -160,8 +176,21 @@ impl BusinessProfileUseCase {
         Ok(entity)
     }
 
-    pub async fn update(db: &DbConn, domain: BusinessProfile) -> Result<BusinessProfile, BusinessError> {
+    pub async fn update(
+        db: &DbConn,
+        mut domain: BusinessProfile,
+        actor: &User,
+    ) -> Result<BusinessProfile, BusinessError> {
         log::info!("Updating business profile for owner_id: {:?}", domain.owner_id);
+        let id = domain
+            .id
+            .ok_or_else(|| BusinessError::validation("Business profile id is required"))?;
+        let existing = Self::get_by_id(db, id)
+            .await
+            .ok_or_else(|| BusinessError::not_found("Business profile not found"))?;
+        ensure_owns(existing.owner_id, actor.person_id)?;
+        domain.owner_id = existing.owner_id;
+        domain.owner_uuid = existing.owner_uuid.clone();
         let updated_profile = BusinessProfileGateway::persist(db, domain)
             .await
             .map_err(|e| {

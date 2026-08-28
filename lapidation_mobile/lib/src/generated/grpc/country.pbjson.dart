@@ -20,13 +20,15 @@ const Country$json = {
   '1': 'Country',
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 5, '10': 'id'},
-    {'1': 'name', '3': 2, '4': 1, '5': 9, '10': 'name'},
-    {'1': 'acronym', '3': 3, '4': 1, '5': 9, '10': 'acronym'},
-    {'1': 'currency', '3': 4, '4': 1, '5': 9, '10': 'currency'},
+    {'1': 'ddi', '3': 2, '4': 1, '5': 9, '10': 'ddi'},
+    {'1': 'name', '3': 3, '4': 1, '5': 9, '10': 'name'},
+    {'1': 'acronym', '3': 4, '4': 1, '5': 9, '10': 'acronym'},
+    {'1': 'currency', '3': 5, '4': 1, '5': 9, '10': 'currency'},
   ],
 };
 
 /// Descriptor for `Country`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List countryDescriptor = $convert.base64Decode(
-    'CgdDb3VudHJ5Eg4KAmlkGAEgASgFUgJpZBISCgRuYW1lGAIgASgJUgRuYW1lEhgKB2Fjcm9ueW'
-    '0YAyABKAlSB2Fjcm9ueW0SGgoIY3VycmVuY3kYBCABKAlSCGN1cnJlbmN5');
+    'CgdDb3VudHJ5Eg4KAmlkGAEgASgFUgJpZBIQCgNkZGkYAiABKAlSA2RkaRISCgRuYW1lGAMgAS'
+    'gJUgRuYW1lEhgKB2Fjcm9ueW0YBCABKAlSB2Fjcm9ueW0SGgoIY3VycmVuY3kYBSABKAlSCGN1'
+    'cnJlbmN5');

@@ -8,10 +8,9 @@ use business::domain::{
     user::User as DomainUser, workout::Workout as DomainWorkout,
     settings::Settings as DomainSettings,
     team_member::{TeamMember as DomainTeamMember, TeamMemberStatus},
-    profile::Profile as DomainProfile
 };
 use chrono::NaiveDateTime;
-use business::domain::enums::{Position, ProfileType};
+use business::domain::enums::{Difficulty, Position, ProfileType};
 use crate::proto;
 
 // ---------------------------------------------------------------------------
@@ -50,7 +49,6 @@ pub struct PersonInfoMapper;
 pub struct PersonAddressMapper;
 pub struct PersonMapper;
 pub struct FriendMapper;
-pub struct ProvinceMapper;
 pub struct CountryMapper;
 pub struct ExerciseMapper;
 pub struct WorkoutMapper;
@@ -97,6 +95,8 @@ impl Mapper<DomainUser, proto::user::User> for UserMapper {
             failed_login_attempts: 0,
             locked_until: None,
             token_valid_after: None,
+            deletion_requested_at: None,
+            deletion_scheduled_at: None,
         }
     }
 }
@@ -156,8 +156,8 @@ impl Mapper<DomainPersonAddress, proto::person_address::PersonAddress> for Perso
             administrative_area: t.administrative_area,
             postal_code: t.postal_code.unwrap_or_default(),
             country_code: t.country_code,
-            latitude: t.latitude.unwrap_or(0.0),
-            longitude: t.longitude.unwrap_or(0.0),
+            latitude: None,
+            longitude: None,
             current: t.current,
             uuid: t.uuid.unwrap_or_default(),
             created_at: t.created_at.map(|d| d.to_string()).unwrap_or_default(),
@@ -171,8 +171,6 @@ impl Mapper<DomainPersonAddress, proto::person_address::PersonAddress> for Perso
             uuid: if u.uuid.is_empty() { None } else { Some(u.uuid) },
             person_id: u.person_id,
             current: u.current,
-            latitude: Some(u.latitude),
-            longitude: Some(u.longitude),
             address_line1: u.address_line_1,
             address_line2: if u.address_line_2.is_empty() { None } else { Some(u.address_line_2) },
             locality: u.locality,
@@ -269,7 +267,8 @@ impl Mapper<DomainFriend, proto::friend::Friend> for FriendMapper {
 impl Mapper<DomainCountry, proto::country::Country> for CountryMapper {
     fn response(t: DomainCountry) -> proto::country::Country {
         proto::country::Country {
-            id: t.id,
+            id: t.id.unwrap(),
+            ddi: t.ddi,
             name: t.name,
             acronym: t.acronym,
             currency: t.currency,
@@ -278,7 +277,8 @@ impl Mapper<DomainCountry, proto::country::Country> for CountryMapper {
 
     fn domain(u: proto::country::Country) -> DomainCountry {
         DomainCountry {
-            id: u.id,
+            id: Some(u.id),
+            ddi: u.ddi,
             name: u.name,
             acronym: u.acronym,
             currency: u.currency,
@@ -300,7 +300,7 @@ impl Mapper<DomainExercise, proto::exercise::Exercise> for ExerciseMapper {
             owner_name: t.owner_name,
             description: t.description.unwrap_or_default(),
             sets: t.sets,
-            category: t.category.to_text(),
+            category: t.category.to_string(),
             reps_or_duration: t.reps_or_duration,
             uuid: t.uuid.unwrap_or_default(),
             visibility: t.visibility.to_string(),
@@ -344,12 +344,13 @@ impl Mapper<DomainWorkout, proto::workout::Workout> for WorkoutMapper {
             owner_uuid: t.owner_uuid,
             name: t.name,
             description: t.description.unwrap_or_default(),
-            difficulty: t.difficulty,
+            difficulty: t.difficulty.to_string(),
             muscle_group: t.muscle_group,
             visibility: t.visibility.to_string(),
             exercises: ExerciseMapper::response_vec(t.exercises),
             created_at: t.created_at.map(|d| d.to_string()).unwrap_or_default(),
             updated_at: t.updated_at.map(|d| d.to_string()).unwrap_or_default(),
+            target_person_uuid: String::new(),
         }
     }
 
@@ -364,10 +365,10 @@ impl Mapper<DomainWorkout, proto::workout::Workout> for WorkoutMapper {
             owner_uuid: u.owner_uuid,
             name: u.name,
             description: Some(u.description),
-            difficulty: u.difficulty,
+            difficulty: Difficulty::from_string(&u.difficulty.to_lowercase()),
             muscle_group: u.muscle_group,
             exercises: ExerciseMapper::domain_vec(u.exercises),
-            visibility: Visibility::from_string(&u.visibility),
+            visibility: Visibility::from_string(&u.visibility.to_lowercase()),
             created_at: NaiveDateTime::parse_from_str(&u.created_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
             updated_at: NaiveDateTime::parse_from_str(&u.updated_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
         }
@@ -394,8 +395,8 @@ impl Mapper<DomainBusinessProfileAddress, proto::business_profile_address::Busin
             locality: t.locality,
             postal_code: t.postal_code.unwrap_or_default(),
             country_code: t.country_code,
-            latitude: t.latitude.unwrap_or(0.0),
-            longitude: t.longitude.unwrap_or(0.0),
+            latitude: None,
+            longitude: None,
             created_at: t.created_at.map(|d| d.to_string()).unwrap_or_default(),
             updated_at: t.updated_at.map(|d| d.to_string()).unwrap_or_default(),
         }
@@ -416,8 +417,6 @@ impl Mapper<DomainBusinessProfileAddress, proto::business_profile_address::Busin
             administrative_area: u.administrative_area,
             postal_code: Some(u.postal_code),
             country_code: u.country_code,
-            latitude: Some(u.latitude),
-            longitude: Some(u.longitude),
             created_at: NaiveDateTime::parse_from_str(&u.created_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
             updated_at: NaiveDateTime::parse_from_str(&u.updated_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
         }
@@ -439,7 +438,7 @@ impl Mapper<DomainBusinessProfile, proto::business_profile::BusinessProfile>
             owner_uuid: t.owner_uuid,
             tax_id: t.tax_id,
             business_name: t.business_name,
-            business_type: t.business_type.to_text(),
+            business_type: t.business_type.to_string(),
             social_name: t.social_name.unwrap_or_default(),
             object_key: t.object_key.unwrap_or_default(),
             logo: t.logo.unwrap_or_default(),
@@ -484,7 +483,7 @@ impl Mapper<DomainSettings, proto::settings::Setting> for SettingsMapper {
             language: t.language,
             theme: t.theme,
             notifications_enabled: t.notifications_enabled,
-            context_menu_position: t.context_menu_position.to_text(),
+            context_menu_position: t.context_menu_position.to_string(),
             home_page: t.home_page,
             created_at: t.created_at.map(|d| d.to_string()).unwrap_or_default(),
             updated_at: t.updated_at.map(|d| d.to_string()).unwrap_or_default(),

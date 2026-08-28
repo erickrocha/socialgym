@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:grpc/grpc.dart' as grpc;
 
 abstract class BaseService {
   /// Extract error message from Dio response
@@ -27,6 +28,42 @@ abstract class BaseService {
     }
 
     return AppException(statusCode: statusCode, message: message);
+  }
+
+  /// Convert gRPC error to AppException
+  static AppException handleGrpcError(grpc.GrpcError error, String fallback) {
+    return AppException(
+      statusCode: _grpcStatusToHttpStatus(error.code),
+      message: error.message ?? fallback,
+    );
+  }
+
+  static int _grpcStatusToHttpStatus(int code) {
+    switch (code) {
+      case grpc.StatusCode.invalidArgument:
+      case grpc.StatusCode.failedPrecondition:
+      case grpc.StatusCode.outOfRange:
+        return 400;
+      case grpc.StatusCode.unauthenticated:
+        return 401;
+      case grpc.StatusCode.permissionDenied:
+        return 403;
+      case grpc.StatusCode.notFound:
+        return 404;
+      case grpc.StatusCode.aborted:
+      case grpc.StatusCode.alreadyExists:
+        return 409;
+      case grpc.StatusCode.resourceExhausted:
+        return 429;
+      case grpc.StatusCode.unimplemented:
+        return 501;
+      case grpc.StatusCode.unavailable:
+        return 503;
+      case grpc.StatusCode.deadlineExceeded:
+        return 504;
+      default:
+        return 500;
+    }
   }
 }
 

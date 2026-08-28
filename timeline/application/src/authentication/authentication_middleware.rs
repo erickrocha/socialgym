@@ -3,6 +3,7 @@ use crate::commons::i18n::{ErrorKey, Locale};
 use axum::http::header::{ACCEPT_LANGUAGE, AUTHORIZATION};
 use axum::{body::Body, extract::Request, http::Response, middleware::Next};
 use business::commons::token_context::with_forwarded_token;
+use business::gateway::consent_gateway::ConsentGateway;
 use business::use_cases::authentication::Authentication;
 
 pub async fn authentication(
@@ -56,6 +57,18 @@ pub async fn authentication(
     }
 
     req.extensions_mut().insert(current_user.unwrap());
+
+    let mandatory_consents = with_forwarded_token(Some(token_str.clone()), async {
+        ConsentGateway::require("terms").await?;
+        ConsentGateway::require("privacy").await
+    })
+    .await;
+    if mandatory_consents.is_err() {
+        return Err(ExceptionResponse::Forbidden(
+            locale,
+            ErrorKey::ConsentRequired,
+        ));
+    }
 
     // Run the rest of the request stack inside the token scope so gRPC
     // interceptors lower in the call chain can read the token via

@@ -16,6 +16,7 @@ import '../../widgets/workout_card.dart';
 import 'exercise_form_dialog.dart';
 import 'workout_execution_page.dart';
 import 'workout_form_dialog.dart';
+import 'workout_form_page.dart';
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -45,14 +46,32 @@ class _WorkoutPageState extends State<WorkoutPage> {
     }
   }
 
-  void _showAddWorkoutDialog() {
+  void _navigateToAddWorkoutPage() {
     final personProvider = context.read<PersonProvider>();
     final ownerId = personProvider.activeAuthorId;
     final ownerUuid = personProvider.activeAuthorUuid;
 
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) => WorkoutFormPage(ownerId: ownerId, ownerUuid: ownerUuid),
+          ),
+        )
+        .then((result) {
+          if (result == true) {
+            _fetchWorkouts();
+          }
+        });
+  }
+
+  void _showAddExerciseDialog(Workout workout) {
     showDialog(
       context: context,
-      builder: (_) => WorkoutFormDialog(ownerId: ownerId, ownerUuid: ownerUuid),
+      builder: (_) => ExerciseFormDialog(
+        workoutId: workout.id,
+        workoutUuid: workout.uuid!,
+        workoutVisibility: workout.visibility,
+      ),
     ).then((result) {
       if (result == true) {
         _fetchWorkouts();
@@ -60,15 +79,49 @@ class _WorkoutPageState extends State<WorkoutPage> {
     });
   }
 
-  void _showAddExerciseDialog(int workoutId, String workoutUuid) {
+  void _showEditWorkoutDialog(Workout workout) {
+    final personProvider = context.read<PersonProvider>();
+    final ownerId = personProvider.activeAuthorId;
+    final ownerUuid = personProvider.activeAuthorUuid;
+
     showDialog(
       context: context,
-      builder: (_) => ExerciseFormDialog(workoutId: workoutId, workoutUuid: workoutUuid),
+      builder: (_) => WorkoutFormDialog(
+        ownerId: ownerId,
+        ownerUuid: ownerUuid,
+        initialWorkout: workout,
+      ),
     ).then((result) {
       if (result == true) {
         _fetchWorkouts();
       }
     });
+  }
+
+  Future<void> _confirmDeleteWorkout(Workout workout) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.workoutDeleteConfirmTitle),
+        content: Text(l10n.workoutDeleteConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.buttonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.buttonConfirm, style: const TextStyle(color: AppColors.danger)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted || workout.uuid == null) return;
+
+    final workoutProvider = context.read<WorkoutProvider>();
+    await workoutProvider.deleteWorkout(workout.uuid!);
   }
 
   void _startWorkout(Workout workout) {
@@ -103,13 +156,14 @@ class _WorkoutPageState extends State<WorkoutPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return MainLayout(
       navSection: NavSection.workout,
       currentRoute: '/workouts',
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddWorkoutDialog,
-        backgroundColor: AppColors.primary,
+        onPressed: _navigateToAddWorkoutPage,
+        backgroundColor: AppColors.primaryFor(businessType),
         foregroundColor: Colors.white,
         tooltip: l10n.workoutAddNew,
         child: const Icon(Icons.add),
@@ -117,7 +171,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
       body: Consumer<WorkoutProvider>(
         builder: (context, workoutProvider, _) {
           if (workoutProvider.loading && workoutProvider.workouts.isEmpty) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return Center(child: CircularProgressIndicator(color: AppColors.primaryFor(businessType)));
           }
 
           return Column(
@@ -179,7 +233,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
               Expanded(
                 child: workoutProvider.workouts.isEmpty
                     ? _buildEmpty(l10n)
-                    : _buildWorkoutList(workoutProvider, l10n),
+                    : _buildWorkoutList(workoutProvider, l10n, businessType),
               ),
             ],
           );
@@ -204,9 +258,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
     );
   }
 
-  Widget _buildWorkoutList(WorkoutProvider workoutProvider, AppLocalizations l10n) {
+  Widget _buildWorkoutList(
+    WorkoutProvider workoutProvider,
+    AppLocalizations l10n,
+    String? businessType,
+  ) {
     return RefreshIndicator(
-      color: AppColors.primary,
+      color: AppColors.primaryFor(businessType),
       onRefresh: () async => _fetchWorkouts(),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -219,10 +277,40 @@ class _WorkoutPageState extends State<WorkoutPage> {
             padding: const EdgeInsets.only(bottom: 12),
             child: Column(
               children: [
-                WorkoutCard(
-                  workout: workout,
-                  isSelected: isSelected,
-                  onTap: () => workoutProvider.selectWorkout(workout),
+                Dismissible(
+                  key: ValueKey('workout_${workout.uuid ?? workout.id}'),
+                  direction: DismissDirection.horizontal,
+                  confirmDismiss: (direction) async {
+                    if (direction == DismissDirection.endToStart) {
+                      await _confirmDeleteWorkout(workout);
+                    } else {
+                      _showEditWorkoutDialog(workout);
+                    }
+                    return false;
+                  },
+                  background: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryFor(businessType),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.only(left: 20),
+                    child: const Icon(Icons.edit, color: Colors.white, size: 24),
+                  ),
+                  secondaryBackground: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                  ),
+                  child: WorkoutCard(
+                    workout: workout,
+                    isSelected: isSelected,
+                    onTap: () => workoutProvider.selectWorkout(workout),
+                  ),
                 ),
                 if (isSelected) ...[
                   // Start workout button
@@ -252,7 +340,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   ExerciseListWidget(
                     exercises: workout.exercises,
                     workoutName: workout.name,
-                    onAddExercise: () => _showAddExerciseDialog(workout.id!, workout.uuid!),
+                    onAddExercise: () => _showAddExerciseDialog(workout),
                     onReorder: (oldIndex, newIndex) =>
                         _onReorderExercises(workout, oldIndex, newIndex),
                     onDelete: _deleteExercise,

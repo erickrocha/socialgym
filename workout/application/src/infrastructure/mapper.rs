@@ -1,7 +1,8 @@
-use crate::http::json::access_token_json::AccessTokenJson;
+use crate::http::json::access_token_json::{AccessTokenJson, PendingAccountDeletionJson};
 use crate::http::json::business_profile_address_json::BusinessProfileAddressJson;
 use crate::http::json::business_profile_json::BusinessProfileJson;
 use crate::http::json::country_json::CountryJson;
+use crate::http::json::address_candidate_json::AddressCandidateJson;
 use crate::http::json::exercise_json::ExerciseJson;
 use crate::http::json::person_address_json::PersonAddressJson;
 use crate::http::json::person_info_json::PersonInfoJson;
@@ -13,7 +14,8 @@ use business::domain::access_token::AccessToken;
 use business::domain::business_profile::BusinessProfile;
 use business::domain::business_profile_address::BusinessProfileAddress;
 use business::domain::country::Country;
-use business::domain::enums::{Position, ProfileType};
+use business::domain::address_candidate::AddressCandidate;
+use business::domain::enums::{Difficulty, Position, ProfileType};
 use business::domain::exercise::{Category, Exercise};
 use business::domain::person::Person;
 use business::domain::person_address::PersonAddress;
@@ -32,10 +34,7 @@ pub trait Mapper<T, U> {
     fn json_opt(t: Option<T>) -> Option<U> {
         t.map(Self::json)
     }
-
-    fn domain_opt(u: Option<U>) -> Option<T> {
-        u.map(Self::domain)
-    }
+    
     fn domain_vec(u: Vec<U>) -> Vec<T> {
         u.into_iter().map(Self::domain).collect()
     }
@@ -64,6 +63,12 @@ impl Mapper<AccessToken, AccessTokenJson> for AccessTokenMapper {
             person_object_key: access_token.person_object_key,
             active_business_profile_id: access_token.active_business_profile_id,
             active_business_profile_uuid: access_token.active_business_profile_uuid,
+            pending_account_deletion: access_token.pending_account_deletion.map(|p| {
+                PendingAccountDeletionJson {
+                    requested_at: p.requested_at,
+                    scheduled_at: p.scheduled_at,
+                }
+            }),
         }
     }
 
@@ -81,6 +86,7 @@ impl Mapper<AccessToken, AccessTokenJson> for AccessTokenMapper {
             person_object_key: u.person_object_key,
             active_business_profile_id: u.active_business_profile_id,
             active_business_profile_uuid: u.active_business_profile_uuid,
+            pending_account_deletion: None,
         }
     }
 }
@@ -163,6 +169,8 @@ impl Mapper<User, UserJson> for UserMapper {
             failed_login_attempts: 0,
             locked_until: None,
             token_valid_after: None,
+            deletion_requested_at: None,
+            deletion_scheduled_at: None,
         }
     }
 }
@@ -220,8 +228,8 @@ impl Mapper<PersonAddress, PersonAddressJson> for PersonAddressMapper {
             postal_code: address.postal_code,
             country_code: address.country_code,
             current: address.current,
-            latitude: address.latitude,
-            longitude: address.longitude,
+            latitude: None,
+            longitude: None,
             created_at: address.created_at,
             updated_at: address.updated_at,
         }
@@ -239,8 +247,6 @@ impl Mapper<PersonAddress, PersonAddressJson> for PersonAddressMapper {
             postal_code: u.postal_code,
             country_code: u.country_code,
             current: u.current,
-            latitude: u.latitude,
-            longitude: u.longitude,
             created_at: u.created_at,
             updated_at: u.updated_at,
         }
@@ -256,7 +262,7 @@ impl Mapper<Workout, WorkoutJson> for WorkoutMapper {
             uuid: workout.uuid,
             name: Some(workout.name),
             description: workout.description,
-            difficulty: Some(workout.difficulty),
+            difficulty: Some(workout.difficulty.to_string()),
             muscle_group: Some(workout.muscle_group),
             owner_id: workout.owner_id,
             owner_uuid: workout.owner_uuid,
@@ -264,6 +270,7 @@ impl Mapper<Workout, WorkoutJson> for WorkoutMapper {
             visibility: workout.visibility.to_string(),
             created_at: workout.created_at,
             updated_at: workout.updated_at,
+            target_person_uuid: None,
         }
     }
 
@@ -273,7 +280,7 @@ impl Mapper<Workout, WorkoutJson> for WorkoutMapper {
             uuid: u.uuid,
             name: u.name.unwrap(),
             description: u.description,
-            difficulty: u.difficulty.unwrap(),
+            difficulty: Difficulty::from_string(u.difficulty.unwrap().as_str()),
             muscle_group: u.muscle_group.unwrap(),
             owner_id: u.owner_id,
             owner_uuid: u.owner_uuid,
@@ -298,7 +305,7 @@ impl Mapper<Exercise, ExerciseJson> for ExerciseMapper {
             owner_uuid: t.owner_uuid,
             description: t.description,
             sets: Some(t.sets),
-            category: Some(t.category.to_text()),
+            category: Some(t.category.to_string()),
             reps_or_duration: Some(t.reps_or_duration),
             visibility: t.visibility.to_string(),
             created_at: t.created_at,
@@ -339,8 +346,8 @@ impl Mapper<BusinessProfileAddress, BusinessProfileAddressJson> for BusinessProf
             postal_code: address.postal_code,
             locality: address.locality,
             country_code: address.country_code,
-            longitude: address.longitude,
-            latitude: address.latitude,
+            longitude: None,
+            latitude: None,
         }
     }
 
@@ -355,8 +362,6 @@ impl Mapper<BusinessProfileAddress, BusinessProfileAddressJson> for BusinessProf
             postal_code: u.postal_code,
             locality: u.locality,
             country_code: u.country_code,
-            latitude: u.latitude,
-            longitude: u.longitude,
             created_at: None,
             updated_at: None,
         }
@@ -374,7 +379,7 @@ impl Mapper<BusinessProfile, BusinessProfileJson> for BusinessProfileMapper {
             owner_uuid: profile.owner_uuid,
             tax_id: profile.tax_id,
             business_name: profile.business_name,
-            business_type: profile.business_type.to_text(),
+            business_type: profile.business_type.to_string(),
             social_name: profile.social_name,
             logo: profile.logo,
             object_key: profile.object_key,
@@ -408,7 +413,8 @@ pub struct CountryMapper {}
 impl Mapper<Country, CountryJson> for CountryMapper {
     fn json(t: Country) -> CountryJson {
         CountryJson {
-            id: Some(t.id),
+            id: t.id,
+            ddi: Some(t.ddi),
             name: Some(t.name),
             acronym: Some(t.acronym),
             currency: Some(t.currency),
@@ -417,10 +423,47 @@ impl Mapper<Country, CountryJson> for CountryMapper {
 
     fn domain(u: CountryJson) -> Country  {
         Country {
-            id: u.id.unwrap(),
+            id: u.id,
+            ddi: u.ddi.unwrap(),
             name: u.name.unwrap(),
             acronym: u.acronym.unwrap(),
             currency: u.currency.unwrap(),
+        }
+    }
+}
+
+pub struct AddressCandidateMapper {}
+
+impl Mapper<AddressCandidate, AddressCandidateJson> for AddressCandidateMapper {
+    fn json(t: AddressCandidate) -> AddressCandidateJson {
+        AddressCandidateJson {
+            place_id: t.place_id,
+            formatted_address: t.formatted_address,
+            address_line1: t.address_line1,
+            address_line2: t.address_line2,
+            locality: t.locality,
+            administrative_area: t.administrative_area,
+            administrative_area_code: t.administrative_area_code,
+            postal_code: t.postal_code,
+            country_code: t.country_code,
+            latitude: t.latitude,
+            longitude: t.longitude,
+        }
+    }
+
+    fn domain(u: AddressCandidateJson) -> AddressCandidate {
+        AddressCandidate {
+            place_id: u.place_id,
+            formatted_address: u.formatted_address,
+            address_line1: u.address_line1,
+            address_line2: u.address_line2,
+            locality: u.locality,
+            administrative_area: u.administrative_area,
+            administrative_area_code: u.administrative_area_code,
+            postal_code: u.postal_code,
+            country_code: u.country_code,
+            latitude: u.latitude,
+            longitude: u.longitude,
         }
     }
 }
@@ -437,7 +480,7 @@ impl Mapper<Settings,SettingsJson> for SettingsMapper {
             language: t.language,
             theme: t.theme,
             notifications_enabled: t.notifications_enabled,
-            context_menu_position: t.context_menu_position.to_text(),
+            context_menu_position: t.context_menu_position.to_string(),
             home_page: t.home_page,
             created_at: t.created_at,
             updated_at: t.updated_at,

@@ -12,6 +12,8 @@ import '../../config/nav_section.dart';
 import '../../widgets/main_layout.dart';
 import '../../widgets/evolution/vitruvian_body_card.dart';
 import 'evolution_checkin_form_dialog.dart';
+import '../../services/consent_service.dart';
+import '../../services/legal_document_service.dart';
 
 // ---------------------------------------------------------------------------
 // Filter period enum
@@ -34,11 +36,63 @@ class _EvolutionPageState extends State<EvolutionPage> {
   _FilterPeriod _selectedPeriod = _FilterPeriod.lastWeek;
   DateTime? _customStart;
   DateTime? _customEnd;
+  bool _healthConsent = false;
+  bool _checkingConsent = true;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initialize());
+  }
+
+  Future<void> _initialize() async {
+    final active = await ConsentService.hasActive('health_data');
+    if (!mounted) return;
+    setState(() {
+      _healthConsent = active;
+      _checkingConsent = false;
+    });
+    if (active) _load();
+  }
+
+  Future<void> _acceptHealthConsent() async {
+    try {
+      final legal = await LegalDocumentService.get('health_data');
+      if (!mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(legal.title),
+          content: SizedBox(
+            width: 620,
+            child: SingleChildScrollView(child: SelectableText(legal.content)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Agora não'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Concordar'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+      await ConsentService.accept('health_data');
+      if (!mounted) return;
+      setState(() => _healthConsent = true);
+      _load();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível registrar o consentimento.'),
+          ),
+        );
+      }
+    }
   }
 
   // ── Data loading ────────────────────────────────────────────────────────
@@ -47,7 +101,11 @@ class _EvolutionPageState extends State<EvolutionPage> {
     final (start, end) = _dateRange();
     final token = context.read<AuthProvider>().auth?.accessToken ?? '';
 
-    context.read<EvolutionProvider>().fetchCheckIns(startDate: start, endDate: end, token: token);
+    context.read<EvolutionProvider>().fetchCheckIns(
+      startDate: start,
+      endDate: end,
+      token: token,
+    );
   }
 
   (DateTime, DateTime) _dateRange() {
@@ -66,7 +124,10 @@ class _EvolutionPageState extends State<EvolutionPage> {
       case _FilterPeriod.custom:
         final s = _customStart ?? now.subtract(const Duration(days: 7));
         final e = _customEnd ?? now;
-        return (DateTime(s.year, s.month, s.day), DateTime(e.year, e.month, e.day, 23, 59, 59));
+        return (
+          DateTime(s.year, s.month, s.day),
+          DateTime(e.year, e.month, e.day, 23, 59, 59),
+        );
     }
   }
 
@@ -77,6 +138,10 @@ class _EvolutionPageState extends State<EvolutionPage> {
 
   Future<void> _pickCustomRange() async {
     final now = DateTime.now();
+    final businessType = context
+        .read<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
@@ -86,9 +151,11 @@ class _EvolutionPageState extends State<EvolutionPage> {
         end: _customEnd ?? now,
       ),
       builder: (context, child) => Theme(
-        data: Theme.of(
-          context,
-        ).copyWith(colorScheme: const ColorScheme.light(primary: AppColors.primary)),
+        data: Theme.of(context).copyWith(
+          colorScheme: ColorScheme.light(
+            primary: AppColors.primaryFor(businessType),
+          ),
+        ),
         child: child!,
       ),
     );
@@ -118,13 +185,14 @@ class _EvolutionPageState extends State<EvolutionPage> {
 
     final created = await showDialog<bool>(
       context: context,
-      builder: (_) => EvolutionCheckInFormDialog(personUuid: personUuid, l10n: l10n),
+      builder: (_) =>
+          EvolutionCheckInFormDialog(personUuid: personUuid, l10n: l10n),
     );
 
     if (created == true && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.evolutionCreatedSuccessfully)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.evolutionCreatedSuccessfully)),
+      );
       _load();
     }
   }
@@ -134,16 +202,61 @@ class _EvolutionPageState extends State<EvolutionPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final person = context.watch<PersonProvider>().person;
+    final personProvider = context.watch<PersonProvider>();
+    final person = personProvider.person;
     final personInfo = person?.personInfo;
     final gender = person?.gender;
+    final businessType = personProvider.activeBusinessProfile?.businessType;
+
+    if (_checkingConsent) {
+      return const MainLayout(
+        navSection: NavSection.workout,
+        currentRoute: '/evolution',
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (!_healthConsent) {
+      return MainLayout(
+        navSection: NavSection.workout,
+        currentRoute: '/evolution',
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.health_and_safety_outlined, size: 52),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Dados opcionais de saúde',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Medidas e check-ins são opcionais, servem apenas ao acompanhamento de bem-estar e não constituem diagnóstico.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: _acceptHealthConsent,
+                    child: const Text('Ler e concordar'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return MainLayout(
       navSection: NavSection.workout,
       currentRoute: '/evolution',
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddCheckInDialog,
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryFor(businessType),
         foregroundColor: Colors.white,
         tooltip: l10n.evolutionAddCheckin,
         child: const Icon(Icons.add),
@@ -152,7 +265,7 @@ class _EvolutionPageState extends State<EvolutionPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(l10n),
-          _buildFilterRow(l10n),
+          _buildFilterRow(l10n, businessType),
           Expanded(
             child: Consumer<EvolutionProvider>(
               builder: (context, provider, _) {
@@ -160,12 +273,18 @@ class _EvolutionPageState extends State<EvolutionPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (provider.error != null) {
-                  return _buildError(provider.error!);
+                  return _buildError(provider.error!, businessType);
                 }
                 if (provider.checkins.isEmpty) {
                   return _buildEmpty(l10n);
                 }
-                return _buildContent(l10n, provider.checkins, personInfo, gender);
+                return _buildContent(
+                  l10n,
+                  provider.checkins,
+                  personInfo,
+                  gender,
+                  businessType,
+                );
               },
             ),
           ),
@@ -183,16 +302,22 @@ class _EvolutionPageState extends State<EvolutionPage> {
       decoration: const BoxDecoration(gradient: AppColors.gradient3),
       child: Text(
         l10n.evolutionTitle,
-        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
 
   // ── Filter row ──────────────────────────────────────────────────────────
 
-  Widget _buildFilterRow(AppLocalizations l10n) {
+  Widget _buildFilterRow(AppLocalizations l10n, String? businessType) {
     final customLabel =
-        _selectedPeriod == _FilterPeriod.custom && _customStart != null && _customEnd != null
+        _selectedPeriod == _FilterPeriod.custom &&
+            _customStart != null &&
+            _customEnd != null
         ? '${_fmtDate(_customStart!)} – ${_fmtDate(_customEnd!)}'
         : l10n.evolutionFilterCustom;
 
@@ -207,18 +332,21 @@ class _EvolutionPageState extends State<EvolutionPage> {
               label: l10n.evolutionFilterLastWeek,
               selected: _selectedPeriod == _FilterPeriod.lastWeek,
               onTap: () => _selectPeriod(_FilterPeriod.lastWeek),
+              businessType: businessType,
             ),
             const SizedBox(width: 8),
             _PeriodChip(
               label: l10n.evolutionFilterLastMonth,
               selected: _selectedPeriod == _FilterPeriod.lastMonth,
               onTap: () => _selectPeriod(_FilterPeriod.lastMonth),
+              businessType: businessType,
             ),
             const SizedBox(width: 8),
             _PeriodChip(
               label: l10n.evolutionFilterLast6Months,
               selected: _selectedPeriod == _FilterPeriod.last6Months,
               onTap: () => _selectPeriod(_FilterPeriod.last6Months),
+              businessType: businessType,
             ),
             const SizedBox(width: 8),
             _PeriodChip(
@@ -226,6 +354,7 @@ class _EvolutionPageState extends State<EvolutionPage> {
               selected: _selectedPeriod == _FilterPeriod.custom,
               icon: Icons.calendar_month_outlined,
               onTap: _pickCustomRange,
+              businessType: businessType,
             ),
           ],
         ),
@@ -240,16 +369,21 @@ class _EvolutionPageState extends State<EvolutionPage> {
     List<EvolutionCheckIn> checkins,
     PersonInfo? personInfo,
     String? gender,
+    String? businessType,
   ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          VitruvianBodyCard(personInfo: personInfo, gender: gender, checkins: checkins),
+          VitruvianBodyCard(
+            personInfo: personInfo,
+            gender: gender,
+            checkins: checkins,
+          ),
           const SizedBox(height: 20),
           if (checkins.isNotEmpty) ...[
-            _buildLatestMetrics(l10n, checkins.first),
+            _buildLatestMetrics(l10n, checkins.first, businessType),
             const SizedBox(height: 20),
           ],
           Text(
@@ -261,7 +395,10 @@ class _EvolutionPageState extends State<EvolutionPage> {
             ),
           ),
           const SizedBox(height: 8),
-          ...checkins.map((checkin) => _CheckinCard(checkin: checkin)),
+          ...checkins.map(
+            (checkin) =>
+                _CheckinCard(checkin: checkin, businessType: businessType),
+          ),
           const SizedBox(height: 24),
         ],
       ),
@@ -270,14 +407,22 @@ class _EvolutionPageState extends State<EvolutionPage> {
 
   // ── Latest metrics ──────────────────────────────────────────────────────
 
-  Widget _buildLatestMetrics(AppLocalizations l10n, EvolutionCheckIn latestCheckin) {
+  Widget _buildLatestMetrics(
+    AppLocalizations l10n,
+    EvolutionCheckIn latestCheckin,
+    String? businessType,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 4, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.black.withAlpha(12),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -297,22 +442,26 @@ class _EvolutionPageState extends State<EvolutionPage> {
               l10n.evolutionCompositionWeight,
               latestCheckin.composition!.weight,
               'kg',
+              businessType,
               decimalPlaces: 3,
             ),
             _buildMetricRow(
               l10n.evolutionCompositionBodyFat,
               latestCheckin.composition!.bodyFatPct,
               '%',
+              businessType,
             ),
             _buildMetricRow(
               l10n.evolutionCompositionMuscleMass,
               latestCheckin.composition!.muscleMassPct,
               '%',
+              businessType,
             ),
             _buildMetricRow(
               l10n.evolutionCompositionVisceralFat,
               latestCheckin.composition!.visceralFat,
               '%',
+              businessType,
             ),
             const SizedBox(height: 12),
           ],
@@ -321,16 +470,19 @@ class _EvolutionPageState extends State<EvolutionPage> {
               l10n.evolutionCircumferenceChest,
               latestCheckin.circumferences!.chest,
               'cm',
+              businessType,
             ),
             _buildMetricRow(
               l10n.evolutionCircumferenceWaist,
               latestCheckin.circumferences!.waist,
               'cm',
+              businessType,
             ),
             _buildMetricRow(
               l10n.evolutionCircumferenceHip,
               latestCheckin.circumferences!.hip,
               'cm',
+              businessType,
             ),
           ],
         ],
@@ -338,20 +490,29 @@ class _EvolutionPageState extends State<EvolutionPage> {
     );
   }
 
-  Widget _buildMetricRow(String label, double? value, String unit, {int decimalPlaces = 1}) {
+  Widget _buildMetricRow(
+    String label,
+    double? value,
+    String unit,
+    String? businessType, {
+    int decimalPlaces = 1,
+  }) {
     if (value == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF666666))),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 13, color: Color(0xFF666666)),
+          ),
           Text(
             '${value.toStringAsFixed(decimalPlaces)} $unit',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: AppColors.primaryFor(businessType),
             ),
           ),
         ],
@@ -368,7 +529,11 @@ class _EvolutionPageState extends State<EvolutionPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.trending_up, size: 64, color: Colors.grey.withAlpha(100)),
+            Icon(
+              Icons.trending_up,
+              size: 64,
+              color: Colors.grey.withAlpha(100),
+            ),
             const SizedBox(height: 16),
             Text(
               l10n.evolutionNoData,
@@ -381,7 +546,7 @@ class _EvolutionPageState extends State<EvolutionPage> {
     );
   }
 
-  Widget _buildError(String msg) {
+  Widget _buildError(String msg, String? businessType) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -399,7 +564,7 @@ class _EvolutionPageState extends State<EvolutionPage> {
             ElevatedButton(
               onPressed: _load,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.primaryFor(businessType),
                 foregroundColor: Colors.white,
               ),
               child: Text(context.read<AppLocalizations>().buttonRetry),
@@ -425,8 +590,15 @@ class _PeriodChip extends StatelessWidget {
   final bool selected;
   final IconData? icon;
   final VoidCallback onTap;
+  final String? businessType;
 
-  const _PeriodChip({required this.label, required this.selected, required this.onTap, this.icon});
+  const _PeriodChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+    this.businessType,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -436,15 +608,25 @@ class _PeriodChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.transparent,
+          color: selected
+              ? AppColors.primaryFor(businessType)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? AppColors.primary : const Color(0xFFCCCCCC)),
+          border: Border.all(
+            color: selected
+                ? AppColors.primaryFor(businessType)
+                : const Color(0xFFCCCCCC),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 14, color: selected ? Colors.white : const Color(0xFF666666)),
+              Icon(
+                icon,
+                size: 14,
+                color: selected ? Colors.white : const Color(0xFF666666),
+              ),
               const SizedBox(width: 4),
             ],
             Text(
@@ -468,8 +650,9 @@ class _PeriodChip extends StatelessWidget {
 
 class _CheckinCard extends StatelessWidget {
   final EvolutionCheckIn checkin;
+  final String? businessType;
 
-  const _CheckinCard({required this.checkin});
+  const _CheckinCard({required this.checkin, this.businessType});
 
   @override
   Widget build(BuildContext context) {
@@ -483,7 +666,11 @@ class _CheckinCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 4, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.black.withAlpha(12),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -503,7 +690,10 @@ class _CheckinCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Text(dateStr, style: const TextStyle(fontSize: 12, color: Color(0xFF888888))),
+              Text(
+                dateStr,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -512,13 +702,17 @@ class _CheckinCard extends StatelessWidget {
               if (checkin.composition?.weight != null)
                 _ValueBadge(
                   label: l10n.evolutionCompositionWeight,
-                  value: '${checkin.composition!.weight?.toStringAsFixed(3) ?? '--'} kg',
+                  value:
+                      '${checkin.composition!.weight?.toStringAsFixed(3) ?? '--'} kg',
+                  businessType: businessType,
                 ),
               const SizedBox(width: 8),
               if (checkin.composition?.bodyFatPct != null)
                 _ValueBadge(
                   label: l10n.evolutionCompositionBodyFat,
-                  value: '${checkin.composition!.bodyFatPct?.toStringAsFixed(1) ?? '--'}%',
+                  value:
+                      '${checkin.composition!.bodyFatPct?.toStringAsFixed(1) ?? '--'}%',
+                  businessType: businessType,
                 ),
             ],
           ),
@@ -531,28 +725,38 @@ class _CheckinCard extends StatelessWidget {
 class _ValueBadge extends StatelessWidget {
   final String label;
   final String value;
+  final String? businessType;
 
-  const _ValueBadge({required this.label, required this.value});
+  const _ValueBadge({
+    required this.label,
+    required this.value,
+    this.businessType,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.primary.withAlpha(20),
+        color: AppColors.primaryFor(businessType).withAlpha(20),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withAlpha(60)),
+        border: Border.all(
+          color: AppColors.primaryFor(businessType).withAlpha(60),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF666666))),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: Color(0xFF666666)),
+          ),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: AppColors.primaryFor(businessType),
             ),
           ),
         ],

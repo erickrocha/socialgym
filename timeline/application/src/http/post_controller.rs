@@ -1,14 +1,14 @@
+use crate::AppState;
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
 use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::error_response_json::{
     BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,
 };
 use crate::http::json::post_json::{CommentJson, PostJson, ReactionJson};
-use crate::infrastructure::mapper::{CommentMapper, Mapper,PostMapper, ReactionMapper};
-use crate::AppState;
+use crate::infrastructure::mapper::{CommentMapper, Mapper, PostMapper, ReactionMapper};
+use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
-use axum::Json;
 use business::use_cases::post_use_case::PostUseCase;
 use domain::user::User;
 use serde::Deserialize;
@@ -41,15 +41,19 @@ pub async fn create_post(
     Extension(current_user): Extension<User>,
     Json(payload): Json<PostJson>,
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
-    log::info!("Creating post for author: {}", current_user.person_uuid);
+    if !payload.media.is_empty() && !payload.third_party_consent_confirmed {
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::PostCreateFailed,
+        ));
+    }
     let post = PostMapper::domain(payload);
-    
-    PostUseCase::create(&state.database, current_user.person_id, post)
+
+    PostUseCase::create(&state.database, &current_user, post)
         .await
         .map(|p| (StatusCode::CREATED, Json(PostMapper::json(p))))
-        .map_err(|e| {
-            log::error!("Error creating post: {}", e.message);
-            ExceptionResponse::BadRequest(locale, ErrorKey::PostCreateFailed)
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::PostCreateFailed)
         })
 }
 
@@ -78,16 +82,15 @@ pub async fn add_comment(
     Extension(current_user): Extension<User>,
     Json(payload): Json<CommentJson>,
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
-    log::info!("Adding comment to post: {}", post_id);
     let comment = CommentMapper::domain(payload);
-    let post_response =PostUseCase::add_comment(&state.database, current_user.person_id, post_id, comment).await;
+    let post_response =
+        PostUseCase::add_comment(&state.database, &current_user, post_id, comment).await;
 
-    post_response.map(|p| (StatusCode::CREATED, Json(PostMapper::json(p))))
-        .map_err(|e| {
-            log::error!("Error adding comment: {}", e.message);
-            ExceptionResponse::BadRequest(locale, ErrorKey::CommentAddFailed)
+    post_response
+        .map(|p| (StatusCode::CREATED, Json(PostMapper::json(p))))
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::CommentAddFailed)
         })
-
 }
 // ── Add / update reaction ─────────────────────────────────────────────────────
 #[utoipa::path(
@@ -110,16 +113,15 @@ pub async fn add_reaction(
     state: State<AppState>,
     Path(post_id): Path<String>,
     Extension(locale): Extension<Locale>,
+    Extension(current_user): Extension<User>,
     Json(payload): Json<ReactionJson>,
-) -> HttpResponse<(StatusCode,Json<PostJson>)> {
-    log::info!("Adding reaction to post: {}", post_id);
+) -> HttpResponse<(StatusCode, Json<PostJson>)> {
     let reaction = ReactionMapper::domain(payload);
-    PostUseCase::add_reaction(&state.database, post_id, reaction)
+    PostUseCase::add_reaction(&state.database, &current_user, post_id, reaction)
         .await
         .map(|p| (StatusCode::CREATED, Json(PostMapper::json(p))))
-        .map_err(|e| {
-            log::error!("Error adding reaction: {}", e.message);
-            ExceptionResponse::BadRequest(locale, ErrorKey::ReactionAddFailed)
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::ReactionAddFailed)
         })
 }
 // ── Remove reaction ───────────────────────────────────────────────────────────
@@ -145,12 +147,10 @@ pub async fn remove_reaction(
     Extension(locale): Extension<Locale>,
     Extension(current_user): Extension<User>,
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
-    log::info!("Removing reaction from post: {}", post_id);
     PostUseCase::remove_reaction(&state.database, post_id, current_user.person_uuid)
         .await
         .map(|p| (StatusCode::OK, Json(PostMapper::json(p))))
-        .map_err(|e| {
-            log::error!("Error removing reaction: {}", e.message);
-            ExceptionResponse::BadRequest(locale, ErrorKey::ReactionRemoveFailed)
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::ReactionRemoveFailed)
         })
 }

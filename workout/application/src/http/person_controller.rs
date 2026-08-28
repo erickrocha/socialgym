@@ -1,20 +1,64 @@
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
+use crate::commons::i18n::{ErrorKey, Locale};
+use crate::http::json::error_response_json::{
+    BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,
+};
 use crate::http::json::person_json::PersonJson;
-use crate::infrastructure::mapper::{Mapper,  PersonInfoMapper, PersonMapper};
+use crate::infrastructure::mapper::{Mapper, PersonInfoMapper, PersonMapper};
 use crate::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
+use business::commons::functions::parse_uuid;
+use business::commons::legal_documents;
 use business::domain::person::Person;
 use business::domain::user::User;
+use business::use_cases::consent_use_case::ConsentUseCase;
 use business::use_cases::person_use_case::PersonUseCase;
 use serde::Deserialize;
-use crate::commons::i18n::{ErrorKey, Locale};
-use crate::http::json::error_response_json::{BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson};
 
 #[derive(Debug, Deserialize)]
 pub struct SearchPersonsQuery {
     pub query: String,
     pub limit: Option<i32>,
+}
+
+pub async fn get_person_by_id(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<PersonJson>> {
+    let person = PersonUseCase::get(&state.conn, id).await.map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::PersonNotFound)
+    })?;
+    Ok(Json(PersonMapper::json(person)))
+}
+
+pub async fn get_person_by_uuid(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<PersonJson>> {
+    let person = PersonUseCase::find_by_uuid(&state.conn, uuid)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::PersonNotFound)
+        })?;
+    Ok(Json(PersonMapper::json(person)))
+}
+
+pub async fn search_mentionable_friends(
+    State(state): State<AppState>,
+    Path(person_id): Path<i32>,
+    Query(params): Query<SearchPersonsQuery>,
+) -> HttpResponse<Json<Vec<PersonJson>>> {
+    let people = PersonUseCase::search_mentionable_friends(
+        &state.conn,
+        person_id,
+        &params.query,
+        params.limit.unwrap_or(10),
+    )
+    .await;
+    Ok(Json(PersonMapper::json_vec(people)))
 }
 
 #[utoipa::path(
@@ -34,18 +78,19 @@ pub struct SearchPersonsQuery {
 )]
 pub async fn update_person(
     state: State<AppState>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
     Json(payload): Json<PersonJson>,
 ) -> HttpResponse<Json<PersonJson>> {
-    if payload.id.is_none() {
-        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::PersonNotUpdated));
-    }
-
-    let person_id = payload.id.unwrap();
+    // `/people/me`: the person updated is always the caller, never `payload.id`.
+    let person_id = current_user.person_id;
 
     let person_result = PersonUseCase::get(&state.conn, person_id).await;
     if person_result.is_err() {
-        return Err(ExceptionResponse::NotFound(locale,ErrorKey::PersonNotUpdated));
+        return Err(ExceptionResponse::NotFound(
+            locale,
+            ErrorKey::PersonNotUpdated,
+        ));
     };
 
     let person = person_result.unwrap();
@@ -71,14 +116,24 @@ pub async fn update_person(
     };
 
     let avatar = match payload.avatar {
-        Some(image_url) =>  image_url,
+        Some(image_url) => image_url,
         None => person.avatar.unwrap_or_default(),
     };
 
     let cover = match payload.cover {
-        Some(image_url) =>  image_url,
+        Some(image_url) => image_url,
         None => person.cover.unwrap_or_default(),
     };
+
+    if payload
+        .person_info
+        .as_ref()
+        .is_some_and(|info| info.weight.is_some() || info.height.is_some())
+    {
+        ConsentUseCase::require_current(&state.conn, person_id, legal_documents::HEALTH_DATA)
+            .await
+            .map_err(|_| ExceptionResponse::Forbidden(locale, ErrorKey::ConsentRequired))?;
+    }
 
     let person_info = match payload.person_info {
         Some(json) => Some(PersonInfoMapper::domain(json)),
@@ -103,7 +158,10 @@ pub async fn update_person(
 
     match person_response {
         Ok(person) => Ok(Json(PersonMapper::json(person))),
-        Err(_) => Err(ExceptionResponse::BadRequest(locale,ErrorKey::PersonNotUpdated)),
+        Err(_) => Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::PersonNotUpdated,
+        )),
     }
 }
 
@@ -121,15 +179,20 @@ pub async fn update_person(
         ("bearer_auth" = [])
     )
 )]
-pub async fn get_me(state: State<AppState>, Extension(locale): Extension<Locale>,Extension(current_user): Extension<User>) -> HttpResponse<Json<PersonJson>> {
-    log::info!("Getting current user with person id: {}",current_user.person_id);
+pub async fn get_me(
+    state: State<AppState>,
+    Extension(locale): Extension<Locale>,
+    Extension(current_user): Extension<User>,
+) -> HttpResponse<Json<PersonJson>> {
     let person_id = current_user.person_id;
 
-    log::info!("Getting person id: {}", person_id);
     let person_entity = PersonUseCase::get(&state.conn, person_id).await;
 
     if person_entity.is_err() {
-        return Err(ExceptionResponse::NotFound(locale,ErrorKey::PersonNotFound));
+        return Err(ExceptionResponse::NotFound(
+            locale,
+            ErrorKey::PersonNotFound,
+        ));
     }
 
     Ok(Json(PersonMapper::json(person_entity.unwrap())))
@@ -152,12 +215,18 @@ pub async fn get_me(state: State<AppState>, Extension(locale): Extension<Locale>
         ("bearer_auth" = [])
     )
 )]
-pub async fn get_my_friend(state: State<AppState>, Path(friend_id): Path<i32>, Extension(locale): Extension<Locale>) -> HttpResponse<Json<PersonJson>> {
-    log::info!("Getting person id: {}", friend_id);
+pub async fn get_my_friend(
+    state: State<AppState>,
+    Path(friend_id): Path<i32>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<PersonJson>> {
     let person_entity = PersonUseCase::get(&state.conn, friend_id).await;
 
     if person_entity.is_err() {
-        return Err(ExceptionResponse::NotFound(locale,ErrorKey::PersonNotFound));
+        return Err(ExceptionResponse::NotFound(
+            locale,
+            ErrorKey::PersonNotFound,
+        ));
     }
 
     Ok(Json(PersonMapper::json(person_entity.unwrap())))
@@ -181,21 +250,30 @@ pub async fn get_my_friend(state: State<AppState>, Path(friend_id): Path<i32>, E
         ("bearer_auth" = [])
     )
 )]
-pub async fn search_persons(state: State<AppState>,Query(params): Query<SearchPersonsQuery>,Extension(current_user): Extension<User>) -> HttpResponse<Json<Vec<PersonJson>>> {
+pub async fn search_persons(
+    state: State<AppState>,
+    Query(params): Query<SearchPersonsQuery>,
+    Extension(current_user): Extension<User>,
+) -> HttpResponse<Json<Vec<PersonJson>>> {
     let current_user_person_id = current_user.person_id;
 
     let query = params.query.clone();
     let limit = params.limit.unwrap_or(50);
 
     // Cap the limit at 100
-    let limit = if limit > 100 { 100 } else if limit < 1 { 50 } else { limit };
-
-    log::info!("Searching persons with query: '{}', limit: {}",query,limit);
+    let limit = if limit > 100 {
+        100
+    } else if limit < 1 {
+        50
+    } else {
+        limit
+    };
 
     // Call the use case
-    let persons = PersonUseCase::search_persons(&state.conn, &query, current_user_person_id, limit).await;
-    Ok(Json(PersonMapper::json_vec(persons)))}
-
+    let persons =
+        PersonUseCase::search_persons(&state.conn, &query, current_user_person_id, limit).await;
+    Ok(Json(PersonMapper::json_vec(persons)))
+}
 
 #[utoipa::path(
     get,
@@ -214,12 +292,24 @@ pub async fn search_persons(state: State<AppState>,Query(params): Query<SearchPe
         ("bearer_auth" = [])
     )
 )]
-pub async fn get_me_by_uuid(state: State<AppState>, Path(uuid): Path<String>,Extension(locale): Extension<Locale>,) -> HttpResponse<Json<PersonJson>> {
-    log::info!("Getting person by uuid: {}", uuid);
+pub async fn get_me_by_uuid(
+    state: State<AppState>,
+    Path(uuid): Path<String>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<PersonJson>> {
+    if parse_uuid(&uuid).is_err() {
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::InvalidParameterValue,
+        ));
+    }
     let person_entity = PersonUseCase::find_by_uuid(&state.conn, uuid).await;
 
     if person_entity.is_err() {
-        return Err(ExceptionResponse::NotFound(locale,ErrorKey::PersonNotFound));
+        return Err(ExceptionResponse::NotFound(
+            locale,
+            ErrorKey::PersonNotFound,
+        ));
     }
 
     Ok(Json(PersonMapper::json(person_entity.unwrap())))

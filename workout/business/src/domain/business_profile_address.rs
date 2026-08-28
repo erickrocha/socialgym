@@ -1,7 +1,7 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
 use chrono::NaiveDateTime;
-use entity::business_profile_address::{ActiveModel, Model};
+use entity::business_profile_address_entity::{ActiveModel, BusinessProfileAddressEntity};
 use sea_orm::{NotSet, Set};
 
 #[derive(Debug, Clone)]
@@ -15,15 +15,13 @@ pub struct BusinessProfileAddress {
     pub administrative_area: String,
     pub postal_code: Option<String>,
     pub country_code: String,
-    pub latitude: Option<f64>,
-    pub longitude: Option<f64>,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
 }
 
 pub struct BusinessProfileAddressEntityMapper {}
 
-impl EntityMapper<BusinessProfileAddress, Model, ActiveModel>
+impl EntityMapper<BusinessProfileAddress, BusinessProfileAddressEntity, ActiveModel>
     for BusinessProfileAddressEntityMapper
 {
     fn build_active_model(d: BusinessProfileAddress) -> ActiveModel {
@@ -43,14 +41,12 @@ impl EntityMapper<BusinessProfileAddress, Model, ActiveModel>
             administrative_area: Set(d.administrative_area),
             postal_code: Set(d.postal_code),
             country_code: Set(d.country_code),
-            latitude: Set(d.latitude),
-            longitude: Set(d.longitude),
             created_at: NotSet,
             updated_at: NotSet,
         }
     }
 
-    fn from_model(e: Model) -> BusinessProfileAddress {
+    fn from_model(e: BusinessProfileAddressEntity) -> BusinessProfileAddress {
         BusinessProfileAddress {
             id: Some(e.id),
             uuid: Some(uuid_to_string(e.uuid)),
@@ -61,8 +57,6 @@ impl EntityMapper<BusinessProfileAddress, Model, ActiveModel>
             administrative_area: e.administrative_area,
             postal_code: e.postal_code,
             country_code: e.country_code,
-            latitude: e.latitude,
-            longitude: e.longitude,
             created_at: Some(e.created_at.naive_utc()),
             updated_at: Some(e.updated_at.naive_utc()),
         }
@@ -79,8 +73,6 @@ impl EntityMapper<BusinessProfileAddress, Model, ActiveModel>
             administrative_area: e.administrative_area.unwrap(),
             postal_code: e.postal_code.unwrap(),
             country_code: e.country_code.unwrap(),
-            latitude: e.latitude.unwrap(),
-            longitude: e.longitude.unwrap(),
             created_at: Some(e.created_at.unwrap().naive_utc()),
             updated_at: Some(e.updated_at.unwrap().naive_utc()),
         }
@@ -97,8 +89,6 @@ impl BusinessProfileAddress {
         administrative_area: String,
         postal_code: Option<String>,
         country_code: String,
-        latitude: Option<f64>,
-        longitude: Option<f64>,
     ) -> Self {
         Self::update(
             None,
@@ -109,8 +99,6 @@ impl BusinessProfileAddress {
             administrative_area,
             postal_code,
             country_code,
-            latitude,
-            longitude,
         )
     }
 
@@ -124,8 +112,6 @@ impl BusinessProfileAddress {
         administrative_area: String,
         postal_code: Option<String>,
         country_code: String,
-        latitude: Option<f64>,
-        longitude: Option<f64>,
     ) -> Self {
         Self {
             id,
@@ -137,8 +123,6 @@ impl BusinessProfileAddress {
             administrative_area,
             postal_code,
             country_code,
-            latitude,
-            longitude,
             created_at: None,
             updated_at: None,
         }

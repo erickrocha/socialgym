@@ -1,7 +1,7 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
 use chrono::NaiveDateTime;
-use entity::person_address::{ActiveModel, Model};
+use entity::person_address_entity::{ActiveModel, PersonAddressEntity};
 use sea_orm::{NotSet, Set};
 
 #[derive(Debug, Clone)]
@@ -16,15 +16,13 @@ pub struct PersonAddress {
     pub postal_code: Option<String>,
     pub country_code: String,
     pub current: bool,
-    pub latitude: Option<f64>,
-    pub longitude: Option<f64>,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
 }
 
 pub struct PersonAddressEntityMapper {}
 
-impl EntityMapper<PersonAddress, Model, ActiveModel> for PersonAddressEntityMapper {
+impl EntityMapper<PersonAddress, PersonAddressEntity, ActiveModel> for PersonAddressEntityMapper {
     fn build_active_model(d: PersonAddress) -> ActiveModel {
         ActiveModel {
             id: match d.id {
@@ -43,14 +41,12 @@ impl EntityMapper<PersonAddress, Model, ActiveModel> for PersonAddressEntityMapp
             postal_code: Set(d.postal_code),
             country_code: Set(d.country_code),
             current: Set(d.current),
-            latitude: Set(d.latitude),
-            longitude: Set(d.longitude),
             created_at: NotSet,
             updated_at: NotSet,
         }
     }
 
-    fn from_model(e: Model) -> PersonAddress {
+    fn from_model(e: PersonAddressEntity) -> PersonAddress {
         PersonAddress {
             id: Some(e.id),
             person_id: e.person_id,
@@ -61,8 +57,6 @@ impl EntityMapper<PersonAddress, Model, ActiveModel> for PersonAddressEntityMapp
             postal_code: e.postal_code,
             country_code: e.country_code,
             current: e.current,
-            latitude: e.latitude,
-            longitude: e.longitude,
             uuid: Some(uuid_to_string(e.uuid)),
             created_at: Some(e.created_at.naive_utc()),
             updated_at: Some(e.updated_at.naive_utc()),
@@ -80,8 +74,6 @@ impl EntityMapper<PersonAddress, Model, ActiveModel> for PersonAddressEntityMapp
             postal_code: e.postal_code.unwrap(),
             country_code: e.country_code.unwrap(),
             current: e.current.unwrap(),
-            latitude: e.latitude.unwrap(),
-            longitude: e.longitude.unwrap(),
             uuid: Some(uuid_to_string(e.uuid.unwrap())),
             created_at: Some(e.created_at.unwrap().naive_utc()),
             updated_at: Some(e.updated_at.unwrap().naive_utc()),
@@ -100,8 +92,6 @@ impl PersonAddress {
         postal_code: Option<String>,
         country_code: String,
         current: bool,
-        latitude: Option<f64>,
-        longitude: Option<f64>,
     ) -> PersonAddress {
         Self::update(
             None,
@@ -113,8 +103,6 @@ impl PersonAddress {
             postal_code,
             country_code,
             current,
-            latitude,
-            longitude,
         )
     }
 
@@ -129,8 +117,6 @@ impl PersonAddress {
         postal_code: Option<String>,
         country_code: String,
         current: bool,
-        latitude: Option<f64>,
-        longitude: Option<f64>,
     ) -> PersonAddress {
         PersonAddress {
             id,
@@ -142,8 +128,6 @@ impl PersonAddress {
             postal_code,
             country_code,
             current,
-            latitude,
-            longitude,
             uuid: None,
             created_at: None,
             updated_at: None,

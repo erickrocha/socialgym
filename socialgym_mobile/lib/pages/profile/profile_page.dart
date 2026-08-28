@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -8,11 +7,10 @@ import 'package:provider/provider.dart';
 
 import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
-import '../../models/country.dart';
 import '../../models/person.dart';
 import '../../providers/person_provider.dart';
-import '../../providers/resource_provider.dart';
 import '../../config/nav_section.dart';
+import '../../widgets/address/address_form_fields.dart';
 import '../../widgets/main_layout.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -45,16 +43,6 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController _weightController;
   late TextEditingController _heightController;
 
-  // Address form controllers
-  late TextEditingController _addressLine1Controller;
-  late TextEditingController _addressLine2Controller;
-  late TextEditingController _addressLocalityController;
-  late TextEditingController _addressPostalCodeController;
-
-  // Address form dropdown selections and fields
-  Country? _selectedCountry;
-  late TextEditingController _addressAdministrativeAreaController;
-
   String? _selectedGender;
   String? _selectedRelationship;
   DateTime? _selectedDateOfBirth;
@@ -77,7 +65,6 @@ class _ProfilePageState extends State<ProfilePage> {
   // Address form state
   bool _isAddressFormExpanded = false;
   PersonAddress? _editingAddress;
-  Position? _capturedPosition; // Store GPS position when opening form
 
   @override
   void initState() {
@@ -112,13 +99,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
     _selectedDateOfBirth = person?.dateOfBirth;
     _captureOriginalValues();
-
-    // Initialize address form controllers
-    _addressLine1Controller = TextEditingController();
-    _addressLine2Controller = TextEditingController();
-    _addressLocalityController = TextEditingController();
-    _addressPostalCodeController = TextEditingController();
-    _addressAdministrativeAreaController = TextEditingController();
   }
 
   void _refreshControllers() {
@@ -168,11 +148,6 @@ class _ProfilePageState extends State<ProfilePage> {
     _currentCityController.dispose();
     _weightController.dispose();
     _heightController.dispose();
-    _addressLine1Controller.dispose();
-    _addressLine2Controller.dispose();
-    _addressLocalityController.dispose();
-    _addressPostalCodeController.dispose();
-    _addressAdministrativeAreaController.dispose();
     super.dispose();
   }
 
@@ -279,6 +254,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _showImageSourceDialog({required bool isAvatar}) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context.read<PersonProvider>().activeBusinessProfile?.businessType;
 
     showModalBottomSheet(
       context: context,
@@ -300,9 +276,9 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.camera_alt,
-                  color: AppColors.primary,
+                  color: AppColors.primaryFor(businessType),
                 ),
                 title: Text(l10n.profileTakePhoto),
                 onTap: () {
@@ -311,9 +287,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.photo_library,
-                  color: AppColors.primary,
+                  color: AppColors.primaryFor(businessType),
                 ),
                 title: Text(l10n.profileChooseFromGallery),
                 onTap: () {
@@ -507,13 +483,15 @@ class _ProfilePageState extends State<ProfilePage> {
             return Center(child: Text(l10n.profileUpdateError));
           }
 
+          final businessType = personProvider.activeBusinessProfile?.businessType;
+
           return Stack(
             children: [
               SingleChildScrollView(
                 child: Column(
                   children: [
-                    _buildHeader(person, l10n),
-                    _buildProfileContent(person, l10n),
+                    _buildHeader(person, l10n, businessType),
+                    _buildProfileContent(person, l10n, businessType),
                   ],
                 ),
               ),
@@ -529,7 +507,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildHeader(Person person, AppLocalizations l10n) {
+  Widget _buildHeader(Person person, AppLocalizations l10n, String? businessType) {
     final screenWidth = MediaQuery.of(context).size.width;
     final coverHeight = screenWidth > 600 ? 250.0 : 180.0;
     final avatarSize = screenWidth > 600 ? 140.0 : 100.0;
@@ -620,7 +598,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               imageUrl: person.avatar!,
                               fit: BoxFit.cover,
                               placeholder: (context, url) => Container(
-                                color: AppColors.primary,
+                                color: AppColors.primaryFor(businessType),
                                 child: const Center(
                                   child: CircularProgressIndicator(
                                     color: Colors.white,
@@ -655,7 +633,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: AppColors.primaryFor(businessType),
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
@@ -676,7 +654,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProfileContent(Person person, AppLocalizations l10n) {
+  Widget _buildProfileContent(Person person, AppLocalizations l10n, String? businessType) {
     return Padding(
       padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 80),
       child: Form(
@@ -709,6 +687,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: _buildSectionHeader(
                     l10n.profilePersonalInfo,
                     Icons.person_outline,
+                    businessType,
                   ),
                 ),
                 if (!_isEditing)
@@ -720,7 +699,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       });
                     },
                     icon: const Icon(Icons.edit, size: 20),
-                    color: AppColors.primary,
+                    color: AppColors.primaryFor(businessType),
                     tooltip: l10n.profileEditProfile,
                   )
                 else
@@ -741,7 +720,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       IconButton(
                         onPressed: _saveChanges,
                         icon: const Icon(Icons.save, size: 20),
-                        color: AppColors.primary,
+                        color: AppColors.primaryFor(businessType),
                         tooltip: l10n.profileSaveChanges,
                       ),
                     ],
@@ -755,6 +734,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 controller: _firstNameController,
                 label: l10n.profileFirstName,
                 icon: Icons.person_outline,
+                businessType: businessType,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.validationFirstNameRequired;
@@ -767,6 +747,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 controller: _surnameController,
                 label: l10n.profileSurname,
                 icon: Icons.person_outline,
+                businessType: businessType,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return l10n.validationSurnameRequired;
@@ -788,6 +769,7 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icons.description_outlined,
               maxLines: 3,
               enabled: _isEditing,
+              businessType: businessType,
             ),
             const SizedBox(height: 16),
 
@@ -797,6 +779,7 @@ class _ProfilePageState extends State<ProfilePage> {
               hint: l10n.profileJobHint,
               icon: Icons.work_outline,
               enabled: _isEditing,
+              businessType: businessType,
             ),
             const SizedBox(height: 16),
 
@@ -807,6 +790,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Icons.favorite_outline,
                 l10n.profileRelationship,
                 _getRelationshipLabel(person.personInfo!.relationship!, l10n),
+                businessType,
               ),
 
             const SizedBox(height: 16),
@@ -816,6 +800,7 @@ class _ProfilePageState extends State<ProfilePage> {
               label: l10n.profileHomeTown,
               icon: Icons.home_outlined,
               enabled: _isEditing,
+              businessType: businessType,
             ),
             const SizedBox(height: 16),
 
@@ -824,6 +809,7 @@ class _ProfilePageState extends State<ProfilePage> {
               label: l10n.profileCurrentCity,
               icon: Icons.location_city_outlined,
               enabled: _isEditing,
+              businessType: businessType,
             ),
 
             const SizedBox(height: 32),
@@ -832,6 +818,7 @@ class _ProfilePageState extends State<ProfilePage> {
             _buildSectionHeader(
               l10n.profilePhysicalStats,
               Icons.fitness_center_outlined,
+              businessType,
             ),
             const SizedBox(height: 16),
 
@@ -844,6 +831,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     icon: Icons.monitor_weight_outlined,
                     keyboardType: TextInputType.number,
                     enabled: _isEditing,
+                    businessType: businessType,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -854,6 +842,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     icon: Icons.height,
                     keyboardType: TextInputType.number,
                     enabled: _isEditing,
+                    businessType: businessType,
                   ),
                 ),
               ],
@@ -862,14 +851,14 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 32),
 
             // Addresses Section
-            _buildAddressesSection(person, l10n),
+            _buildAddressesSection(person, l10n, businessType),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAddressesSection(Person person, AppLocalizations l10n) {
+  Widget _buildAddressesSection(Person person, AppLocalizations l10n, String? businessType) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -880,13 +869,14 @@ class _ProfilePageState extends State<ProfilePage> {
               child: _buildSectionHeader(
                 l10n.addressSection,
                 Icons.location_on_outlined,
+                businessType,
               ),
             ),
             if (!_isAddressFormExpanded)
               IconButton(
                 onPressed: () => _openAddressForm(null),
                 icon: const Icon(Icons.add_circle_outline),
-                color: AppColors.primary,
+                color: AppColors.primaryFor(businessType),
                 tooltip: l10n.addressAdd,
               ),
           ],
@@ -894,14 +884,7 @@ class _ProfilePageState extends State<ProfilePage> {
         const SizedBox(height: 16),
 
         // Expandable Address Form
-        AnimatedCrossFade(
-          duration: const Duration(milliseconds: 300),
-          crossFadeState: _isAddressFormExpanded
-              ? CrossFadeState.showFirst
-              : CrossFadeState.showSecond,
-          firstChild: _buildAddressForm(l10n),
-          secondChild: const SizedBox.shrink(),
-        ),
+        if (_isAddressFormExpanded) _buildAddressForm(businessType),
 
         if (person.addresses.isEmpty && !_isAddressFormExpanded)
           Container(
@@ -938,7 +921,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   icon: const Icon(Icons.add),
                   label: Text(l10n.addressAdd),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: AppColors.primaryFor(businessType),
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -948,261 +931,53 @@ class _ProfilePageState extends State<ProfilePage> {
         else if (!_isAddressFormExpanded)
           ...(person.addresses
                 ..sort((a, b) => b.current ? -1 : (a.current ? 1 : 0)))
-              .map((address) => _buildAddressCard(address, l10n)),
+              .map((address) => _buildAddressCard(address, l10n, businessType)),
       ],
     );
   }
 
-  void _openAddressForm(PersonAddress? address) async {
-    final resourceProvider = context.read<ResourceProvider>();
-
+  void _openAddressForm(PersonAddress? address) {
     setState(() {
       _editingAddress = address;
       _isAddressFormExpanded = true;
-
-      // Populate form with address data or clear for new address
-      _addressLine1Controller.text = address?.addressLine1 ?? '';
-      _addressLine2Controller.text = address?.addressLine2 ?? '';
-      _addressLocalityController.text = address?.locality ?? '';
-      _addressAdministrativeAreaController.text =
-          address?.administrativeArea ?? '';
-      _addressPostalCodeController.text = address?.postalCode ?? '';
-
-      // Set country from address
-      _selectedCountry = resourceProvider.getCountryByCode(
-        address?.countryCode,
-      );
     });
-
-    // If adding a new address (not editing), capture GPS location immediately
-    if (address == null) {
-      final l10n = AppLocalizations.of(context)!;
-      _capturedPosition = await _getCurrentLocation(l10n);
-    }
   }
 
   void _closeAddressForm() {
     setState(() {
       _isAddressFormExpanded = false;
       _editingAddress = null;
-      _selectedCountry = null;
-      _capturedPosition = null; // Clear captured GPS position
-
-      // Clear form
-      _addressLine1Controller.clear();
-      _addressLine2Controller.clear();
-      _addressLocalityController.clear();
-      _addressAdministrativeAreaController.clear();
-      _addressPostalCodeController.clear();
     });
   }
 
-  Widget _buildAddressForm(AppLocalizations l10n) {
-    final isEditing = _editingAddress != null;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withAlpha(100)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withAlpha(20),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Icon(
-                isEditing ? Icons.edit_location_alt : Icons.add_location_alt,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isEditing ? l10n.addressEdit : l10n.addressAdd,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: _closeAddressForm,
-                icon: const Icon(Icons.close),
-                color: Colors.grey[600],
-              ),
-            ],
-          ),
-          const Divider(),
-          const SizedBox(height: 12),
-
-          // Address Line 1 (Street and Number)
-          TextField(
-            controller: _addressLine1Controller,
-            decoration: InputDecoration(
-              labelText: l10n.addressLine1,
-              hintText: 'e.g., 123 Main Street',
-              prefixIcon: const Icon(Icons.route_outlined),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Address Line 2 (Apartment, Suite, etc.)
-          TextField(
-            controller: _addressLine2Controller,
-            decoration: InputDecoration(
-              labelText: l10n.addressLine2,
-              hintText: 'e.g., Apt 4B, Suite 100',
-              prefixIcon: const Icon(Icons.home_outlined),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Locality (City) and Administrative Area (State/Province)
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: TextField(
-                  controller: _addressLocalityController,
-                  decoration: InputDecoration(
-                    labelText: l10n.addressLocality,
-                    prefixIcon: const Icon(Icons.location_city_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: TextField(
-                  controller: _addressAdministrativeAreaController,
-                  decoration: InputDecoration(
-                    labelText: l10n.addressAdministrativeArea,
-                    hintText: 'e.g., State, Province',
-                    prefixIcon: const Icon(Icons.map_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Country and Postal Code
-          Row(
-            children: [
-              Expanded(
-                child: Consumer<ResourceProvider>(
-                  builder: (context, resourceProvider, _) {
-                    return DropdownButtonFormField<Country>(
-                      initialValue: _selectedCountry,
-                      decoration: InputDecoration(
-                        labelText: l10n.addressCountry,
-                        prefixIcon: const Icon(Icons.flag_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 16,
-                        ),
-                      ),
-                      isExpanded: true,
-                      items: resourceProvider.countries.map((country) {
-                        return DropdownMenuItem(
-                          value: country,
-                          child: Text(
-                            country.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCountry = value;
-                        });
-                      },
-                      hint: Text(
-                        l10n.addressSelectCountry,
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _addressPostalCodeController,
-                  decoration: InputDecoration(
-                    labelText: l10n.addressPostalCode,
-                    prefixIcon: const Icon(Icons.pin_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Action buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: _closeAddressForm,
-                child: Text(l10n.buttonCancel),
-              ),
-              const SizedBox(width: 12),
-              ElevatedButton.icon(
-                onPressed: () => _saveAddress(l10n),
-                icon: const Icon(Icons.save),
-                label: Text(l10n.buttonSave),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+  Widget _buildAddressForm(String? businessType) {
+    final editing = _editingAddress;
+    return AddressFormFields(
+      key: ValueKey(editing?.uuid ?? editing?.id ?? 'new-address'),
+      initialAddressLine1: editing?.addressLine1,
+      initialAddressLine2: editing?.addressLine2,
+      initialLocality: editing?.locality,
+      initialAdministrativeArea: editing?.administrativeArea,
+      initialPostalCode: editing?.postalCode,
+      initialCountryCode: editing?.countryCode,
+      isEditing: editing != null,
+      accentColor: AppColors.primaryFor(businessType),
+      onCancel: _closeAddressForm,
+      onSave: (values) => _saveAddress(values),
     );
   }
 
-  Future<void> _saveAddress(AppLocalizations l10n) async {
-    // Use the GPS position captured when opening the form (for new addresses)
-    // or keep existing coordinates when editing
+  Future<void> _saveAddress(AddressFormValues values) async {
+    final l10n = AppLocalizations.of(context)!;
     final Map<String, dynamic> data = {
-      'addressLine1': _addressLine1Controller.text.trim(),
-      'addressLine2': _addressLine2Controller.text.trim(),
-      'locality': _addressLocalityController.text.trim(),
-      'administrativeArea': _addressAdministrativeAreaController.text.trim(),
-      'countryCode': _selectedCountry?.acronym ?? '',
-      'postalCode': _addressPostalCodeController.text.trim(),
-      'latitude': _capturedPosition?.latitude ?? _editingAddress?.latitude,
-      'longitude': _capturedPosition?.longitude ?? _editingAddress?.longitude,
+      'addressLine1': values.addressLine1,
+      'addressLine2': values.addressLine2,
+      'locality': values.locality,
+      'administrativeArea': values.administrativeArea,
+      'countryCode': values.countryCode,
+      'postalCode': values.postalCode,
+      'latitude': values.latitude,
+      'longitude': values.longitude,
     };
 
     final personProvider = context.read<PersonProvider>();
@@ -1239,15 +1014,17 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Widget _buildAddressCard(PersonAddress address, AppLocalizations l10n) {
+  Widget _buildAddressCard(PersonAddress address, AppLocalizations l10n, String? businessType) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: address.current ? AppColors.primary.withAlpha(20) : Colors.white,
+        color: address.current
+            ? AppColors.primaryFor(businessType).withAlpha(20)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: address.current ? AppColors.primary : Colors.grey[300]!,
+          color: address.current ? AppColors.primaryFor(businessType) : Colors.grey[300]!,
           width: address.current ? 2 : 1,
         ),
         boxShadow: [
@@ -1265,7 +1042,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Icon(
                 Icons.location_on,
-                color: address.current ? AppColors.primary : Colors.grey[600],
+                color: address.current ? AppColors.primaryFor(businessType) : Colors.grey[600],
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -1285,7 +1062,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: AppColors.primaryFor(businessType),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -1322,87 +1099,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<Position?> _getCurrentLocation(AppLocalizations l10n) async {
-    try {
-      // Check if location services are enabled
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.addressLocationServicesDisabled),
-              backgroundColor: AppColors.danger,
-            ),
-          );
-        }
-        return null;
-      }
-
-      // Check location permission
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.addressLocationPermissionDenied),
-                backgroundColor: AppColors.danger,
-              ),
-            );
-          }
-          return null;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        if (mounted) {
-          final shouldOpenSettings = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(l10n.permissionRequired),
-              content: Text(l10n.addressLocationPermissionDeniedForever),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(l10n.buttonCancel),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: Text(l10n.openSettings),
-                ),
-              ],
-            ),
-          );
-
-          if (shouldOpenSettings == true) {
-            await Geolocator.openAppSettings();
-          }
-        }
-        return null;
-      }
-
-      // Get current position
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
-
-      return position;
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.addressLocationError),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-      }
-      return null;
-    }
-  }
 
   void _confirmDeleteAddress(PersonAddress address, AppLocalizations l10n) {
     showDialog(
@@ -1451,10 +1147,10 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Widget _buildSectionHeader(String title, IconData icon) {
+  Widget _buildSectionHeader(String title, IconData icon, String? businessType) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.primary),
+        Icon(icon, color: AppColors.primaryFor(businessType)),
         const SizedBox(width: 8),
         Text(
           title,
@@ -1473,6 +1169,7 @@ class _ProfilePageState extends State<ProfilePage> {
     TextInputType? keyboardType,
     bool enabled = true,
     String? Function(String?)? validator,
+    String? businessType,
   }) {
     return TextFormField(
       controller: controller,
@@ -1491,7 +1188,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: AppColors.primaryFor(businessType), width: 2),
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1587,10 +1284,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String value, String? businessType) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.primary, size: 20),
+        Icon(icon, color: AppColors.primaryFor(businessType), size: 20),
         const SizedBox(width: 8),
         Text(
           '$label: ',

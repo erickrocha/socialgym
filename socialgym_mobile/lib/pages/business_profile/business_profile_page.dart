@@ -11,6 +11,7 @@ import '../../models/business_profile_address.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/business_profile_provider.dart';
 import '../../providers/person_provider.dart';
+import '../../widgets/address/address_form_fields.dart';
 import '../../widgets/main_layout.dart';
 
 class BusinessProfilePage extends StatefulWidget {
@@ -28,12 +29,6 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
 
   bool _isAddressFormExpanded = false;
   BusinessProfileAddress? _editingAddress;
-  final _addressLine1Controller = TextEditingController();
-  final _addressLine2Controller = TextEditingController();
-  final _localityController = TextEditingController();
-  final _administrativeAreaController = TextEditingController();
-  final _postalCodeController = TextEditingController();
-  final _countryCodeController = TextEditingController();
 
   @override
   void initState() {
@@ -65,12 +60,6 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
     _businessNameController.dispose();
     _socialNameController.dispose();
     _taxIdController.dispose();
-    _addressLine1Controller.dispose();
-    _addressLine2Controller.dispose();
-    _localityController.dispose();
-    _administrativeAreaController.dispose();
-    _postalCodeController.dispose();
-    _countryCodeController.dispose();
     super.dispose();
   }
 
@@ -156,12 +145,6 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
     setState(() {
       _editingAddress = address;
       _isAddressFormExpanded = true;
-      _addressLine1Controller.text = address?.addressLine1 ?? '';
-      _addressLine2Controller.text = address?.addressLine2 ?? '';
-      _localityController.text = address?.locality ?? '';
-      _administrativeAreaController.text = address?.administrativeArea ?? '';
-      _postalCodeController.text = address?.postalCode ?? '';
-      _countryCodeController.text = address?.countryCode ?? '';
     });
   }
 
@@ -172,7 +155,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
     });
   }
 
-  Future<void> _saveAddress() async {
+  Future<void> _saveAddress(AddressFormValues values) async {
     final provider = context.read<BusinessProfileProvider>();
     final current = provider.current;
     if (current == null || current.id == null) return;
@@ -180,12 +163,14 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
       id: _editingAddress?.id,
       uuid: _editingAddress?.uuid,
       businessProfileId: current.id!,
-      addressLine1: _addressLine1Controller.text.trim(),
-      addressLine2: _addressLine2Controller.text.trim(),
-      locality: _localityController.text.trim(),
-      administrativeArea: _administrativeAreaController.text.trim(),
-      postalCode: _postalCodeController.text.trim(),
-      countryCode: _countryCodeController.text.trim(),
+      addressLine1: values.addressLine1,
+      addressLine2: values.addressLine2,
+      locality: values.locality,
+      administrativeArea: values.administrativeArea,
+      postalCode: values.postalCode,
+      countryCode: values.countryCode,
+      latitude: values.latitude,
+      longitude: values.longitude,
     );
     final success = _editingAddress == null
         ? await provider.addAddress(address)
@@ -264,7 +249,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
           width: double.infinity,
           child: profile.coverImage != null
               ? CachedNetworkImage(imageUrl: profile.coverImage!, fit: BoxFit.cover)
-              : Container(color: AppColors.professionalSecondaryDisabled),
+              : Container(color: AppColors.professionalPrimaryDisabled),
         ),
         Positioned(
           top: 8,
@@ -289,7 +274,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                     height: 88,
                     child: profile.logo != null
                         ? CachedNetworkImage(imageUrl: profile.logo!, fit: BoxFit.cover)
-                        : const Icon(Icons.storefront, size: 40, color: AppColors.professionalSecondary),
+                        : const Icon(Icons.storefront, size: 40, color: AppColors.professionalPrimary),
                   ),
                 ),
               ),
@@ -297,7 +282,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                 right: 0,
                 bottom: 0,
                 child: IconButton(
-                  style: IconButton.styleFrom(backgroundColor: AppColors.professionalSecondary),
+                  style: IconButton.styleFrom(backgroundColor: AppColors.professionalPrimary),
                   icon: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
                   onPressed: () => _showImageSourceDialog(isLogo: true),
                 ),
@@ -369,7 +354,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
           children: [
             Text(l10n.businessProfilePageAddresses, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             IconButton(
-              icon: const Icon(Icons.add_circle_outline, color: AppColors.professionalSecondary),
+              icon: const Icon(Icons.add_circle_outline, color: AppColors.professionalPrimary),
               onPressed: () => _openAddressForm(null),
             ),
           ],
@@ -381,73 +366,19 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
   }
 
   Widget _buildAddressForm() {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _addressLine1Controller,
-              decoration: const InputDecoration(labelText: 'Address line 1'),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _addressLine2Controller,
-              decoration: const InputDecoration(labelText: 'Address line 2'),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _localityController,
-                    decoration: const InputDecoration(labelText: 'City'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    controller: _administrativeAreaController,
-                    decoration: const InputDecoration(labelText: 'State'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _postalCodeController,
-                    decoration: const InputDecoration(labelText: 'Postal code'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    controller: _countryCodeController,
-                    decoration: const InputDecoration(labelText: 'Country code'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(onPressed: _closeAddressForm, child: const Text('Cancel')),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _saveAddress,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.professionalSecondary),
-                  child: const Text('Save', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+    final editing = _editingAddress;
+    return AddressFormFields(
+      key: ValueKey(editing?.uuid ?? editing?.id ?? 'new-address'),
+      initialAddressLine1: editing?.addressLine1,
+      initialAddressLine2: editing?.addressLine2,
+      initialLocality: editing?.locality,
+      initialAdministrativeArea: editing?.administrativeArea,
+      initialPostalCode: editing?.postalCode,
+      initialCountryCode: editing?.countryCode,
+      isEditing: editing != null,
+      accentColor: AppColors.professionalPrimary,
+      onCancel: _closeAddressForm,
+      onSave: _saveAddress,
     );
   }
 

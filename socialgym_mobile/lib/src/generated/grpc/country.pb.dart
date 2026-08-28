@@ -19,12 +19,14 @@ export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 class Country extends $pb.GeneratedMessage {
   factory Country({
     $core.int? id,
+    $core.String? ddi,
     $core.String? name,
     $core.String? acronym,
     $core.String? currency,
   }) {
     final result = create();
     if (id != null) result.id = id;
+    if (ddi != null) result.ddi = ddi;
     if (name != null) result.name = name;
     if (acronym != null) result.acronym = acronym;
     if (currency != null) result.currency = currency;
@@ -45,9 +47,10 @@ class Country extends $pb.GeneratedMessage {
       package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.country'),
       createEmptyInstance: create)
     ..aI(1, _omitFieldNames ? '' : 'id')
-    ..aOS(2, _omitFieldNames ? '' : 'name')
-    ..aOS(3, _omitFieldNames ? '' : 'acronym')
-    ..aOS(4, _omitFieldNames ? '' : 'currency')
+    ..aOS(2, _omitFieldNames ? '' : 'ddi')
+    ..aOS(3, _omitFieldNames ? '' : 'name')
+    ..aOS(4, _omitFieldNames ? '' : 'acronym')
+    ..aOS(5, _omitFieldNames ? '' : 'currency')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -78,31 +81,40 @@ class Country extends $pb.GeneratedMessage {
   void clearId() => $_clearField(1);
 
   @$pb.TagNumber(2)
-  $core.String get name => $_getSZ(1);
+  $core.String get ddi => $_getSZ(1);
   @$pb.TagNumber(2)
-  set name($core.String value) => $_setString(1, value);
+  set ddi($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
-  $core.bool hasName() => $_has(1);
+  $core.bool hasDdi() => $_has(1);
   @$pb.TagNumber(2)
-  void clearName() => $_clearField(2);
+  void clearDdi() => $_clearField(2);
 
   @$pb.TagNumber(3)
-  $core.String get acronym => $_getSZ(2);
+  $core.String get name => $_getSZ(2);
   @$pb.TagNumber(3)
-  set acronym($core.String value) => $_setString(2, value);
+  set name($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
-  $core.bool hasAcronym() => $_has(2);
+  $core.bool hasName() => $_has(2);
   @$pb.TagNumber(3)
-  void clearAcronym() => $_clearField(3);
+  void clearName() => $_clearField(3);
 
   @$pb.TagNumber(4)
-  $core.String get currency => $_getSZ(3);
+  $core.String get acronym => $_getSZ(3);
   @$pb.TagNumber(4)
-  set currency($core.String value) => $_setString(3, value);
+  set acronym($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
-  $core.bool hasCurrency() => $_has(3);
+  $core.bool hasAcronym() => $_has(3);
   @$pb.TagNumber(4)
-  void clearCurrency() => $_clearField(4);
+  void clearAcronym() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get currency => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set currency($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasCurrency() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearCurrency() => $_clearField(5);
 }
 
 const $core.bool _omitFieldNames =

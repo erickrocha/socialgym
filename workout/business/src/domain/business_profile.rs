@@ -3,7 +3,7 @@ use crate::commons::functions::{string_to_uuid, uuid_to_string};
 use crate::domain::business_profile_address::BusinessProfileAddress;
 use crate::domain::enums::ProfileType;
 use chrono::NaiveDateTime;
-use entity::business_profile::{ActiveModel, Model};
+use entity::business_profile_entity::{ActiveModel, BusinessProfileEntity};
 use sea_orm::{NotSet, Set};
 
 #[derive(Debug, Clone)]
@@ -26,7 +26,7 @@ pub struct BusinessProfile {
 
 pub struct BusinessProfileEntityMapper {}
 
-impl EntityMapper<BusinessProfile, Model, ActiveModel> for BusinessProfileEntityMapper {
+impl EntityMapper<BusinessProfile, BusinessProfileEntity, ActiveModel> for BusinessProfileEntityMapper {
     fn build_active_model(d: BusinessProfile) -> ActiveModel {
         ActiveModel {
             id: match d.id {
@@ -41,7 +41,7 @@ impl EntityMapper<BusinessProfile, Model, ActiveModel> for BusinessProfileEntity
             owner_uuid: Set(string_to_uuid(d.owner_uuid.as_str())),
             tax_id: Set(d.tax_id),
             business_name: Set(d.business_name),
-            business_type: Set(d.business_type.to_text()),
+            business_type: Set(d.business_type.to_string()),
             social_name: Set(d.social_name),
             logo: Set(d.logo),
             cover_image: Set(d.cover_image),
@@ -50,7 +50,7 @@ impl EntityMapper<BusinessProfile, Model, ActiveModel> for BusinessProfileEntity
         }
     }
 
-    fn from_model(e: Model) -> BusinessProfile {
+    fn from_model(e: BusinessProfileEntity) -> BusinessProfile {
         BusinessProfile {
             id: Some(e.id),
             uuid: Some(uuid_to_string(e.uuid)),

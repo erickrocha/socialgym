@@ -1,6 +1,7 @@
 import 'package:grpc/grpc.dart' as grpc;
 import 'package:socialgym_mobile/commons/person_mapper.dart';
 import 'package:socialgym_mobile/models/person.dart';
+import 'package:socialgym_mobile/services/base_service.dart';
 import 'package:socialgym_mobile/services/grpc/grpc_channel_factory.dart';
 import 'package:socialgym_mobile/src/generated/grpc/person.pbgrpc.dart' as $person;
 
@@ -46,100 +47,140 @@ class GrpcPersonService {
       return const <MentionableFriend>[];
     }
 
-    final response = await _ensureClient().searchMentionableFriends(
-      $person.SearchMentionableFriendsRequest(personId: personId, query: normalized, limit: limit),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
-    );
+    try {
+      final response = await _ensureClient().searchMentionableFriends(
+        $person.SearchMentionableFriendsRequest(personId: personId, query: normalized, limit: limit),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
 
-    return response.people
-        .map(
-          (p) => MentionableFriend(
-            id: p.id,
-            uuid: p.uuid,
-            firstname: p.firstname,
-            surname: p.surname,
-            avatar: p.hasAvatar() && p.avatar.isNotEmpty ? p.avatar : null,
-          ),
-        )
-        .toList(growable: false);
+      return response.people
+          .map(
+            (p) => MentionableFriend(
+              id: p.id,
+              uuid: p.uuid,
+              firstname: p.firstname,
+              surname: p.surname,
+              avatar: p.hasAvatar() && p.avatar.isNotEmpty ? p.avatar : null,
+            ),
+          )
+          .toList(growable: false);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to search friends');
+    }
   }
 
   static Future<Person> getPerson({int? id,String? uuid}) async {
-    final response = await _ensureClient().getPerson(
-      $person.PersonIdRequest(id: id, uuid: uuid),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
-    );
+    try {
+      final response = await _ensureClient().getPerson(
+        $person.PersonIdRequest(id: id, uuid: uuid),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
 
-    return PersonMapper().fromProto(response.person);
+      return PersonMapper().fromProto(response.person);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to load person');
+    }
   }
 
   /// Fetches the authenticated caller's own profile. Identity is derived
   /// server-side from the JWT, mirroring REST's `GET /me`.
   static Future<Person> getMe() async {
-    final response = await _ensureClient().getMe(
-      $person.GetMeRequest(),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
-    );
-    return PersonMapper().fromProto(response.person);
+    try {
+      final response = await _ensureClient().getMe(
+        $person.GetMeRequest(),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return PersonMapper().fromProto(response.person);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to load profile');
+    }
   }
 
   static Future<Person> updatePerson(Person domain) async {
-    final response = await _ensureClient().updatePerson(
-      PersonMapper().toProto(domain),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
-    );
-    return PersonMapper().fromProto(response.person);
+    try {
+      final response = await _ensureClient().updatePerson(
+        PersonMapper().toProto(domain),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return PersonMapper().fromProto(response.person);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to update profile');
+    }
   }
 
   static Future<PersonInfo> updatePersonInfo(PersonInfo domain) async {
-    final response = await _ensureClient().updatePersonInfo(
-      PersonInfoMapper().toProto(domain),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
-    );
-    return PersonInfoMapper().fromProto(response);
+    try {
+      final response = await _ensureClient().updatePersonInfo(
+        PersonInfoMapper().toProto(domain),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return PersonInfoMapper().fromProto(response);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to update profile info');
+    }
   }
 
   static Future<PersonAddress> addPersonAddress(PersonAddress domain) async {
-    final response = await _ensureClient().addPersonAddress(
-      PersonAddressMapper().toProto(domain),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
-    );
-    return PersonAddressMapper().fromProto(response);
+    try {
+      final response = await _ensureClient().addPersonAddress(
+        PersonAddressMapper().toProto(domain),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return PersonAddressMapper().fromProto(response);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to add address');
+    }
   }
 
   static Future<PersonAddress> updatePersonAddress(PersonAddress domain) async {
-    final response = await _ensureClient().updatePersonAddress(
-      PersonAddressMapper().toProto(domain),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
-    );
-    return PersonAddressMapper().fromProto(response);
+    try {
+      final response = await _ensureClient().updatePersonAddress(
+        PersonAddressMapper().toProto(domain),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return PersonAddressMapper().fromProto(response);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to update address');
+    }
   }
 
   static Future<bool> removePersonAddress({int? id, String? uuid}) async {
-    final response = await _ensureClient().removePersonAddress(
-      $person.RemovePersonAddressRequest(id: id ?? 0, uuid: uuid ?? ''),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
-    );
-    return response.success;
+    try {
+      final response = await _ensureClient().removePersonAddress(
+        $person.RemovePersonAddressRequest(id: id ?? 0, uuid: uuid ?? ''),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return response.success;
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to remove address');
+    }
   }
 
   static Future<PersonImageUploadUrl> getPersonImageUploadUrl({
     required String imageType,
     required String format,
   }) async {
-    final response = await _ensureClient().getPersonImageUploadUrl(
-      $person.PersonImageUploadRequest(imageType: imageType, format: format),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
-    );
-    return PersonImageUploadUrl(url: response.url, objectKey: response.objectKey);
+    try {
+      final response = await _ensureClient().getPersonImageUploadUrl(
+        $person.PersonImageUploadRequest(imageType: imageType, format: format),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return PersonImageUploadUrl(url: response.url, objectKey: response.objectKey);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to prepare image upload');
+    }
   }
 
   static Future<bool> deletePersonImage({required String imageType}) async {
-    final response = await _ensureClient().deletePersonImage(
-      $person.PersonImageRequest(imageType: imageType),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
-    );
-    return response.success;
+    try {
+      final response = await _ensureClient().deletePersonImage(
+        $person.PersonImageRequest(imageType: imageType),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return response.success;
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to delete image');
+    }
   }
 
   static $person.PersonServiceClient _ensureClient() {
@@ -161,12 +202,16 @@ class GrpcPersonService {
   }
 
   static Future<List<Person>> searchPersonsByUuid({required String uuid, required String query, required int limit}) async {
-    final response = await _ensureClient().searchPersons(
-      $person.PersonParams()..uuid = uuid
-        ..query = query
-        ..limit = limit,
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
-    );
-    return PersonMapper().fromProtoList(response.people);
+    try {
+      final response = await _ensureClient().searchPersons(
+        $person.PersonParams()..uuid = uuid
+          ..query = query
+          ..limit = limit,
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return PersonMapper().fromProtoList(response.people);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to search people');
+    }
   }
 }

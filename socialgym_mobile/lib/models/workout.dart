@@ -71,6 +71,7 @@ class Workout {
 
   Workout copyWith({
     int? id,
+    String? uuid,
     String? name,
     String? description,
     String? difficulty,
@@ -84,6 +85,7 @@ class Workout {
   }) {
     return Workout(
       id: id ?? this.id,
+      uuid: uuid ?? this.uuid,
       name: name ?? this.name,
       description: description ?? this.description,
       difficulty: difficulty ?? this.difficulty,

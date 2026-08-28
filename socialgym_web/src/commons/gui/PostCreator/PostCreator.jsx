@@ -10,6 +10,7 @@ const PostCreator = ({ userAvatar, userName, onPostCreate, loading = false }) =>
     const [postContent, setPostContent] = useState('');
     const [attachments, setAttachments] = useState([]);
     const [previewUrls, setPreviewUrls] = useState([]);
+    const [thirdPartyConsentConfirmed, setThirdPartyConsentConfirmed] = useState(false);
 
     const handleTextChange = (e) => {
         setPostContent(e.target.value);
@@ -44,11 +45,13 @@ const PostCreator = ({ userAvatar, userName, onPostCreate, loading = false }) =>
             onPostCreate({
                 content: postContent,
                 files: attachments,
+                thirdPartyConsentConfirmed,
             });
             setPostContent('');
             setAttachments([]);
             setPreviewUrls([]);
             setIsExpanded(false);
+            setThirdPartyConsentConfirmed(false);
         }
     };
 
@@ -57,6 +60,7 @@ const PostCreator = ({ userAvatar, userName, onPostCreate, loading = false }) =>
         setAttachments([]);
         setPreviewUrls([]);
         setIsExpanded(false);
+        setThirdPartyConsentConfirmed(false);
     };
 
     return (
@@ -108,6 +112,11 @@ const PostCreator = ({ userAvatar, userName, onPostCreate, loading = false }) =>
                         </div>
                     )}
 
+                    {attachments.length > 0 && <label className="post-creator__image-consent">
+                        <input type="checkbox" checked={thirdPartyConsentConfirmed} onChange={(e) => setThirdPartyConsentConfirmed(e.target.checked)} />
+                        <span>Declaro que tenho autorização das pessoas retratadas para publicar estas mídias.</span>
+                    </label>}
+
                     <div className="post-creator__actions">
                         <div className="post-creator__attachment-buttons">
                             <label className="post-creator__attachment-btn">
@@ -141,7 +150,7 @@ const PostCreator = ({ userAvatar, userName, onPostCreate, loading = false }) =>
                             <Button
                                 variant="primary"
                                 onClick={handlePostSubmit}
-                                disabled={loading || (!postContent.trim() && attachments.length === 0)}
+                                disabled={loading || (!postContent.trim() && attachments.length === 0) || (attachments.length > 0 && !thirdPartyConsentConfirmed)}
                             >
                                 {loading ? 'Posting...' : t('feed.post')}
                             </Button>

@@ -2,12 +2,13 @@ use crate::infrastructure::mapper::{ExerciseMapper, Mapper};
 use crate::proto::exercise::exercise_request::Identifier;
 use crate::proto::exercise::exercise_service_server::ExerciseService;
 use crate::proto::exercise::{Exercise, ExerciseParams, ExerciseRequest, PaginatedExercise};
-use business::commons::functions::string_to_uuid;
 use business::use_cases::exercise_use_case::ExerciseUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
-use uuid::Uuid;
+use crate::infrastructure::utils::{
+    business_status, require_active_profile, require_actor, validate_uuid, validate_uuids,
+};
 
 pub struct GrpcExerciseService {
     conn: Arc<DatabaseConnection>,
@@ -25,30 +26,30 @@ impl ExerciseService for GrpcExerciseService {
         &self,
         request: Request<ExerciseRequest>,
     ) -> Result<Response<Exercise>, Status> {
+        let actor = require_actor(&request)?;
         let req = request.into_inner();
-        match req.identifier {
-            Some(Identifier::Id(id)) => {
-                let exercise = ExerciseUseCase::get(&self.conn, id)
-                    .await
-                    .ok_or_else(|| Status::not_found("exercise not found"))?;
-                let grpc_exercise = ExerciseMapper::response(exercise);
-                Ok(Response::new(grpc_exercise))
-            }
+        let exercise = match req.identifier {
+            Some(Identifier::Id(id)) => ExerciseUseCase::get(&self.conn, id)
+                .await
+                .map_err(business_status)?,
             Some(Identifier::Uuid(uuid)) => {
-                let exercise = ExerciseUseCase::get_by_uuid(&self.conn, uuid)
+                validate_uuid(&uuid, "uuid")?;
+                ExerciseUseCase::get_by_uuid(&self.conn, uuid)
                     .await
-                    .ok_or_else(|| Status::not_found("exercise not found"))?;
-                let grpc_exercise = ExerciseMapper::response(exercise);
-                Ok(Response::new(grpc_exercise))
+                    .map_err(business_status)?
             }
-            None => Err(Status::invalid_argument("Identifier is required")),
-        }
+            None => return Err(Status::invalid_argument("Identifier is required")),
+        };
+        ExerciseUseCase::ensure_readable(&exercise, actor.person_id).map_err(business_status)?;
+        Ok(Response::new(ExerciseMapper::response(exercise)))
     }
 
     async fn get_exercises(
         &self,
         request: Request<ExerciseParams>,
     ) -> Result<Response<PaginatedExercise>, Status> {
+        let actor = require_actor(&request)?;
+        let active_profile = require_active_profile(&request);
         let req = request.into_inner();
         let page_number = req.page_number;
         let page_size = req.page_size;
@@ -71,15 +72,19 @@ impl ExerciseService for GrpcExerciseService {
 
         let capped_page_size = if page_size > 100 { 100 } else { page_size };
 
+        validate_uuids(&req.owners, "owners")?;
+
         // Get public_owner_ids, default to empty if not provided
-        let public_owner_uuids = req
-            .owners
-            .iter()
-            .map(|owner| string_to_uuid(owner))
-            .collect::<Vec<Uuid>>();
+        let public_owner_uuids = req.owners.iter().cloned().collect::<Vec<String>>();
+        // The query always runs as the caller's acting identity (their active
+        // business profile, if any, else themself); `owner_uuid` in the
+        // request is ignored.
+        let acting_owner_uuid = active_profile
+            .and_then(|p| p.uuid)
+            .unwrap_or_else(|| actor.person_uuid.clone());
         let result = ExerciseUseCase::find_by_complex_filters_paginated_uuid(
             &self.conn,
-            string_to_uuid(&req.owner_uuid),
+            acting_owner_uuid,
             public_owner_uuids,
             category,
             visibility,
@@ -98,13 +103,13 @@ impl ExerciseService for GrpcExerciseService {
     }
 
     async fn add_exercise(&self, request: Request<Exercise>) -> Result<Response<Exercise>, Status> {
+        let actor = require_actor(&request)?;
+        let active_profile = require_active_profile(&request);
         let payload = request.into_inner();
         let exercise = ExerciseMapper::domain(payload);
-        let persisted = ExerciseUseCase::persist(&self.conn, exercise).await;
-        if persisted.is_none() {
-            return Err(Status::internal("Failed to persist exercise"));
-        }
-        let grpc_exercise = ExerciseMapper::response(persisted.unwrap());
+        let persisted =
+            ExerciseUseCase::persist(&self.conn, exercise, &actor, active_profile.as_ref()).await;
+        let grpc_exercise = ExerciseMapper::response(persisted.map_err(business_status)?);
         Ok(Response::new(grpc_exercise))
     }
 
@@ -112,13 +117,13 @@ impl ExerciseService for GrpcExerciseService {
         &self,
         request: Request<Exercise>,
     ) -> Result<Response<Exercise>, Status> {
+        let actor = require_actor(&request)?;
+        let active_profile = require_active_profile(&request);
         let payload = request.into_inner();
         let exercise = ExerciseMapper::domain(payload);
-        let persisted = ExerciseUseCase::persist(&self.conn, exercise).await;
-        if persisted.is_none() {
-            return Err(Status::internal("Failed to persist exercise"));
-        }
-        let grpc_exercise = ExerciseMapper::response(persisted.unwrap());
+        let persisted =
+            ExerciseUseCase::persist(&self.conn, exercise, &actor, active_profile.as_ref()).await;
+        let grpc_exercise = ExerciseMapper::response(persisted.map_err(business_status)?);
         Ok(Response::new(grpc_exercise))
     }
 
@@ -126,20 +131,20 @@ impl ExerciseService for GrpcExerciseService {
         &self,
         request: Request<ExerciseRequest>,
     ) -> Result<Response<()>, Status> {
+        let actor = require_actor(&request)?;
         let req = request.into_inner();
         match req.identifier {
             Some(Identifier::Id(id)) => {
-                let result = ExerciseUseCase::delete_by_id(&self.conn, id).await;
-                if result.is_err() {
-                    return Err(Status::internal("Failed to delete exercise"));
-                }
+                ExerciseUseCase::delete_by_id(&self.conn, id, actor.person_id)
+                    .await
+                    .map_err(business_status)?;
                 Ok(Response::new(()))
             }
             Some(Identifier::Uuid(uuid)) => {
-                let result = ExerciseUseCase::delete_by_uuid(&self.conn, uuid).await;
-                if result.is_err() {
-                    return Err(Status::internal("Failed to delete exercise"));
-                }
+                validate_uuid(&uuid, "uuid")?;
+                ExerciseUseCase::delete_by_uuid(&self.conn, uuid, actor.person_id)
+                    .await
+                    .map_err(business_status)?;
                 Ok(Response::new(()))
             }
             None => Err(Status::invalid_argument("Identifier is required")),

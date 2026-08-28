@@ -66,14 +66,16 @@ pub enum Category {
     Cardio,
 }
 
-impl Category {
-    pub fn to_text(&self) -> String {
+impl Display for Category {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Category::Force => "force".to_string(),
-            Category::Cardio => "cardio".to_string(),
+            Category::Force => write!(f, "force"),
+            Category::Cardio => write!(f, "cardio"),
         }
     }
+}
 
+impl Category {
     pub fn from_string(s: &str) -> Category {
         match s {
             "force" => Category::Force,

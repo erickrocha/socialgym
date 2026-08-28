@@ -1,3 +1,4 @@
+use crate::AppState;
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
 use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::error_response_json::{
@@ -6,8 +7,7 @@ use crate::http::json::error_response_json::{
 use crate::http::json::evolution_check_in_json::EvolutionCheckInJson;
 use crate::infrastructure::data_tools::opt_naive_to_bson_datetime;
 use crate::infrastructure::mapper::{EvolutionCheckInMapper, Mapper};
-use crate::AppState;
-use axum::extract::{Query, Request, State};
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
 use business::gateway::evolution_check_in_gateway::EvolutionCheckInGateway;
@@ -39,23 +39,24 @@ pub struct EvolutionCheckInFilterParams {
         ("api_key" = [])
     )
 )]
-pub async fn add(state: State<AppState>, Extension(locale): Extension<Locale>,Json(payload): Json<EvolutionCheckInJson>) -> HttpResponse<(StatusCode, Json<EvolutionCheckInJson>)> {
-    log::info!("Recording evolution check-in {:?}", payload);
-
+pub async fn add(
+    state: State<AppState>,
+    Extension(locale): Extension<Locale>,
+    Extension(current_user): Extension<User>,
+    Json(payload): Json<EvolutionCheckInJson>,
+) -> HttpResponse<(StatusCode, Json<EvolutionCheckInJson>)> {
     let domain = EvolutionCheckInMapper::domain(payload);
 
     let evolution_check_in_use_case =
         EvolutionCheckInUseCase::new(EvolutionCheckInGateway::new(&state.database.clone()));
 
-    let entity = evolution_check_in_use_case.add(domain).await;
+    let evolution_check_in = evolution_check_in_use_case
+        .add(domain, &current_user.person_uuid)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::EvolutionCheckInAddFailed)
+        })?;
 
-    if entity.is_err() {
-        let error = entity.err().unwrap();
-        log::error!("Error recording evolution check-in: {}", error.message);
-        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::EvolutionCheckInAddFailed));
-    }
-
-    let evolution_check_in = entity.unwrap();
     let payload = EvolutionCheckInMapper::json(evolution_check_in);
     Ok((StatusCode::CREATED, Json(payload)))
 }
@@ -79,8 +80,11 @@ pub async fn add(state: State<AppState>, Extension(locale): Extension<Locale>,Js
         ("api_key" = [])
     )
 )]
-pub async fn get_by_owner(state: State<AppState>,Query(params): Query<EvolutionCheckInFilterParams>,req: Request) -> HttpResponse<Json<Vec<EvolutionCheckInJson>>> {
-    let current_user = req.extensions().get::<User>().unwrap();
+pub async fn get_by_owner(
+    state: State<AppState>,
+    Query(params): Query<EvolutionCheckInFilterParams>,
+    Extension(current_user): Extension<User>,
+) -> HttpResponse<Json<Vec<EvolutionCheckInJson>>> {
     let person_uuid = current_user.person_uuid.clone();
     let end = params.end_date.unwrap_or_else(|| Utc::now().naive_utc());
     let start = params.start_date.unwrap_or_else(|| end - Duration::days(7));
@@ -88,8 +92,11 @@ pub async fn get_by_owner(state: State<AppState>,Query(params): Query<EvolutionC
     let start_bson = opt_naive_to_bson_datetime(start).unwrap();
     let end_bson = opt_naive_to_bson_datetime(end).unwrap();
 
-    let evolution_check_in_use_case = EvolutionCheckInUseCase::new(EvolutionCheckInGateway::new(&state.database.clone()));
+    let evolution_check_in_use_case =
+        EvolutionCheckInUseCase::new(EvolutionCheckInGateway::new(&state.database.clone()));
 
-    let response = evolution_check_in_use_case.find_all_by_owner(person_uuid, start_bson, end_bson).await;
+    let response = evolution_check_in_use_case
+        .find_all_by_owner(person_uuid, start_bson, end_bson)
+        .await;
     Ok(Json(EvolutionCheckInMapper::json_vec(response)))
 }

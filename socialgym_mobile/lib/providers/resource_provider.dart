@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socialgym_mobile/models/country.dart';
 import 'package:socialgym_mobile/models/settings.dart';
+import 'package:socialgym_mobile/services/grpc/grpc_resource_service.dart';
 
 import '../models/resource.dart';
-import '../services/resource_service.dart';
+import '../services/base_service.dart';
 
 class ResourceProvider extends ChangeNotifier {
   AppResources? _resources;
@@ -43,8 +44,7 @@ class ResourceProvider extends ChangeNotifier {
 
   /// Fetch application resources from the API.
   /// Optionally apply settings through the provided callback.
-  Future<bool> fetchResources(
-    String token, {
+  Future<bool> fetchResources(int ownerId, {
     Future<void> Function(Settings)? onSettingsReceived,
   }) async {
     _loading = true;
@@ -52,7 +52,7 @@ class ResourceProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _resources = await ResourceService.fetchResources(token);
+      _resources = await GrpcResourceService.fetchResources(id: ownerId);
       await _saveToStorage(_resources!);
 
       // If settings are present, notify the callback to apply them
@@ -63,9 +63,14 @@ class ResourceProvider extends ChangeNotifier {
       _loading = false;
       notifyListeners();
       return true;
+    } on AppException catch (e) {
+      _loading = false;
+      _error = e.message;
+      notifyListeners();
+      return false;
     } catch (e) {
       _loading = false;
-      _error = e.toString();
+      _error = 'Connection error. Please try again.';
       notifyListeners();
       return false;
     }

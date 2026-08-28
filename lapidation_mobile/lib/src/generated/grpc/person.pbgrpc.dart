@@ -113,6 +113,20 @@ class PersonServiceClient extends $grpc.Client {
     return $createUnaryCall(_$deletePersonImage, request, options: options);
   }
 
+  $grpc.ResponseFuture<$0.ConsentStatusResponse> hasActiveConsent(
+    $0.ConsentStatusRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$hasActiveConsent, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.RoleStatusResponse> hasRole(
+    $0.RoleStatusRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$hasRole, request, options: options);
+  }
+
   // method descriptors
 
   static final _$getPerson =
@@ -169,6 +183,16 @@ class PersonServiceClient extends $grpc.Client {
           '/grpc.person.PersonService/DeletePersonImage',
           ($0.PersonImageRequest value) => value.writeToBuffer(),
           $0.DeletePersonImageResponse.fromBuffer);
+  static final _$hasActiveConsent =
+      $grpc.ClientMethod<$0.ConsentStatusRequest, $0.ConsentStatusResponse>(
+          '/grpc.person.PersonService/HasActiveConsent',
+          ($0.ConsentStatusRequest value) => value.writeToBuffer(),
+          $0.ConsentStatusResponse.fromBuffer);
+  static final _$hasRole =
+      $grpc.ClientMethod<$0.RoleStatusRequest, $0.RoleStatusResponse>(
+          '/grpc.person.PersonService/HasRole',
+          ($0.RoleStatusRequest value) => value.writeToBuffer(),
+          $0.RoleStatusResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('grpc.person.PersonService')
@@ -261,6 +285,22 @@ abstract class PersonServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.PersonImageRequest.fromBuffer(value),
         ($0.DeletePersonImageResponse value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.ConsentStatusRequest, $0.ConsentStatusResponse>(
+            'HasActiveConsent',
+            hasActiveConsent_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.ConsentStatusRequest.fromBuffer(value),
+            ($0.ConsentStatusResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.RoleStatusRequest, $0.RoleStatusResponse>(
+        'HasRole',
+        hasRole_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $0.RoleStatusRequest.fromBuffer(value),
+        ($0.RoleStatusResponse value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.PersonResponse> getPerson_Pre($grpc.ServiceCall $call,
@@ -354,4 +394,21 @@ abstract class PersonServiceBase extends $grpc.Service {
 
   $async.Future<$0.DeletePersonImageResponse> deletePersonImage(
       $grpc.ServiceCall call, $0.PersonImageRequest request);
+
+  $async.Future<$0.ConsentStatusResponse> hasActiveConsent_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.ConsentStatusRequest> $request) async {
+    return hasActiveConsent($call, await $request);
+  }
+
+  $async.Future<$0.ConsentStatusResponse> hasActiveConsent(
+      $grpc.ServiceCall call, $0.ConsentStatusRequest request);
+
+  $async.Future<$0.RoleStatusResponse> hasRole_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.RoleStatusRequest> $request) async {
+    return hasRole($call, await $request);
+  }
+
+  $async.Future<$0.RoleStatusResponse> hasRole(
+      $grpc.ServiceCall call, $0.RoleStatusRequest request);
 }

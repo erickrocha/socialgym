@@ -70,8 +70,8 @@ class BusinessProfileAddressMapper implements Mapper<BusinessProfileAddress,$bus
       administrativeArea: proto.administrativeArea,
       postalCode: proto.postalCode,
       countryCode: proto.countryCode,
-      latitude: proto.latitude != 0 ? proto.latitude : null,
-      longitude: proto.longitude != 0 ? proto.longitude : null,
+      latitude: proto.hasLatitude() ? proto.latitude : null,
+      longitude: proto.hasLongitude() ? proto.longitude : null,
       createdAt: proto.createdAt.isNotEmpty ? proto.createdAt : null,
       updatedAt: proto.updatedAt.isNotEmpty ? proto.updatedAt : null,
     );
@@ -94,8 +94,8 @@ class BusinessProfileAddressMapper implements Mapper<BusinessProfileAddress,$bus
       administrativeArea: domain.administrativeArea,
       postalCode: domain.postalCode,
       countryCode: domain.countryCode,
-      latitude: domain.latitude ?? 0,
-      longitude: domain.longitude ?? 0,
+      latitude: domain.latitude,
+      longitude: domain.longitude,
       createdAt: domain.createdAt ?? '',
       updatedAt: domain.updatedAt ?? '',
     );

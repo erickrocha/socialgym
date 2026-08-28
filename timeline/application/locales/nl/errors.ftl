@@ -14,3 +14,7 @@ reaction-remove-failed = Reactie verwijderen mislukt
 evolution-checkin-add-failed = Evolutie check-in opslaan mislukt
 evolution-checkin-find-failed = Evolutie check-in zoeken mislukt
 unknown-error = Onverwachte interne fout
+rate-limited = Te veel verzoeken. Probeer het later opnieuw.
+internal-auth-invalid = Ongeldige interne service-inloggegevens
+account-data-deletion-failed = Verwijderen van accountgegevens mislukt
+consent-required = De vereiste juridische toestemming ontbreekt of is verouderd

@@ -91,7 +91,6 @@ cargo run                            # runs src/main.rs, which just calls applic
 
 - Business-logic tests use the `mock` Cargo feature (see `business/Cargo.toml` `[features] mock = [...]`) with `sea_orm::MockDatabase` — they live in `business/tests/mock.rs` and `application/tests/mock.rs` and require `--features mock`.
 - Both services load config via `dotenvy` from a `.env` file in the service root (`DATABASE_URL`, `HOST`, `PORT`, AWS creds, `ACCESS_TOKEN_SECRET`/`REFRESH_TOKEN_SECRET`, gRPC TLS settings, etc.) — never commit real secrets to these files.
-- workout's `sea-schema` dependency is pinned to `=0.18.0`; do not bump it without checking the comment in `workout/Cargo.toml` about the `sea-orm` 2.0.0-rc.41 shim `?Send`/`Send` conflict.
 
 ## Frontend (`socialgym_web`)
 

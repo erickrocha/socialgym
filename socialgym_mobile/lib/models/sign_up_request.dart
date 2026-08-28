@@ -5,6 +5,10 @@ class SignUpRequest {
   final String password;
   final String dateOfBirth;
   final String gender;
+  final String termsVersion;
+  final String privacyVersion;
+  final bool termsAccepted;
+  final bool privacyAccepted;
 
   SignUpRequest({
     required this.firstname,
@@ -13,6 +17,10 @@ class SignUpRequest {
     required this.password,
     required this.dateOfBirth,
     required this.gender,
+    required this.termsVersion,
+    required this.privacyVersion,
+    required this.termsAccepted,
+    required this.privacyAccepted,
   });
 
   Map<String, dynamic> toJson() {
@@ -23,6 +31,10 @@ class SignUpRequest {
       'password': password,
       'dateOfBirth': dateOfBirth,
       'gender': gender,
+      'termsVersion': termsVersion,
+      'privacyVersion': privacyVersion,
+      'termsAccepted': termsAccepted,
+      'privacyAccepted': privacyAccepted,
     };
   }
 }

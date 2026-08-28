@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socialgym_mobile/config/nav_section.dart';
 import 'package:socialgym_mobile/l10n/app_localizations.dart';
 import 'package:socialgym_mobile/models/business_profile.dart';
 import 'package:socialgym_mobile/models/person.dart';
 import 'package:socialgym_mobile/providers/auth_provider.dart';
+import 'package:socialgym_mobile/providers/locale_provider.dart';
 import 'package:socialgym_mobile/providers/person_provider.dart';
 import 'package:socialgym_mobile/widgets/sidebar_menu.dart';
 
@@ -13,10 +15,13 @@ void main() {
   group('SidebarMenu Reactivity', () {
     late PersonProvider personProvider;
     late AuthProvider authProvider;
+    late LocaleProvider localeProvider;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       personProvider = PersonProvider();
       authProvider = AuthProvider();
+      localeProvider = LocaleProvider();
     });
 
     testWidgets('header avatar updates when switching to business profile',
@@ -53,6 +58,7 @@ void main() {
             providers: [
               ChangeNotifierProvider<PersonProvider>.value(value: personProvider),
               ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+              ChangeNotifierProvider<LocaleProvider>.value(value: localeProvider),
             ],
             child: Scaffold(
               body: SidebarMenu(
@@ -112,6 +118,7 @@ void main() {
             providers: [
               ChangeNotifierProvider<PersonProvider>.value(value: personProvider),
               ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+              ChangeNotifierProvider<LocaleProvider>.value(value: localeProvider),
             ],
             child: Scaffold(
               body: SidebarMenu(

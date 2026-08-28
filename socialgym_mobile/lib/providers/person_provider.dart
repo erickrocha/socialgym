@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:grpc/grpc.dart' as grpc;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socialgym_mobile/models/business_profile.dart';
@@ -42,6 +41,8 @@ class PersonProvider extends ChangeNotifier {
   int get activeAuthorId => _activeBusinessProfile?.id ?? _person?.id ?? 0;
   String get activeAuthorUuid =>
       _activeBusinessProfile?.uuid ?? _person?.uuid ?? '';
+  String get activeAuthorName =>
+      _activeBusinessProfile?.businessName ?? _person?.fullName ?? 'Unknow';
 
   /// Avatar/logo image reference of whichever account is currently active.
   String? get activeAuthorObjectKeyOrLogo =>
@@ -157,13 +158,6 @@ class PersonProvider extends ChangeNotifier {
       _updating = false;
       notifyListeners();
       return false;
-    } on grpc.GrpcError catch (e, stackTrace) {
-      _error = e.message ?? 'Failed to update profile. Please try again.';
-      debugPrint('Failed to update person via gRPC: $e');
-      debugPrintStack(stackTrace: stackTrace);
-      _updating = false;
-      notifyListeners();
-      return false;
     } catch (e, stackTrace) {
       _error = 'Failed to update profile. Please try again.';
       debugPrint('Unexpected error while updating person: $e');
@@ -193,13 +187,6 @@ class PersonProvider extends ChangeNotifier {
     } on AppException catch (e) {
       _error = e.message;
       debugPrint('Failed to update person info: $e');
-      _updating = false;
-      notifyListeners();
-      return false;
-    } on grpc.GrpcError catch (e, stackTrace) {
-      _error = e.message ?? 'Failed to update profile info. Please try again.';
-      debugPrint('Failed to update person info via gRPC: $e');
-      debugPrintStack(stackTrace: stackTrace);
       _updating = false;
       notifyListeners();
       return false;
@@ -413,7 +400,16 @@ class PersonProvider extends ChangeNotifier {
   /// Switch to a profile by index. Activates the business profile on the
   /// backend (reissuing the JWT scoped to it) and returns the new token, or
   /// null on failure.
-  Future<AuthResponse?> switchProfile(int profileIndex, String token) async {
+  ///
+  /// The backend revokes the token used to authenticate the activate call as
+  /// part of rotating it, so [onTokenIssued] (if given) is invoked with the
+  /// new token immediately, before the follow-up gRPC call, so that call
+  /// authenticates with the new token rather than the just-revoked one.
+  Future<AuthResponse?> switchProfile(
+    int profileIndex,
+    String token, {
+    Future<void> Function(AuthResponse)? onTokenIssued,
+  }) async {
     if (_person == null ||
         profileIndex < 0 ||
         profileIndex >= _person!.businessProfiles.length) {
@@ -433,6 +429,9 @@ class PersonProvider extends ChangeNotifier {
         businessProfileUuid: selectedProfile.uuid!,
         token: token,
       );
+      if (onTokenIssued != null) {
+        await onTokenIssued(newAuth);
+      }
       _activeBusinessProfile =
           await GrpcBusinessProfileService.getBusinessProfileById(
             uuid: selectedProfile.uuid!,
@@ -441,6 +440,11 @@ class PersonProvider extends ChangeNotifier {
       _updating = false;
       notifyListeners();
       return newAuth;
+    } on AppException catch (e) {
+      _error = e.message;
+      _updating = false;
+      notifyListeners();
+      return null;
     } catch (e) {
       _error = 'Failed to switch profile.';
       _updating = false;
@@ -452,12 +456,18 @@ class PersonProvider extends ChangeNotifier {
   /// Deactivate the current business profile on the backend (reissuing the
   /// JWT back in personal context) and returns the new token, or null on
   /// failure.
-  Future<AuthResponse?> switchToPersonal(String token) async {
+  Future<AuthResponse?> switchToPersonal(
+    String token, {
+    Future<void> Function(AuthResponse)? onTokenIssued,
+  }) async {
     _updating = true;
     _error = null;
     notifyListeners();
     try {
       final newAuth = await BusinessProfileRestService.deactivate(token: token);
+      if (onTokenIssued != null) {
+        await onTokenIssued(newAuth);
+      }
       _activeBusinessProfile = null;
       await _saveActiveBusinessProfileToStorage(null);
       _updating = false;

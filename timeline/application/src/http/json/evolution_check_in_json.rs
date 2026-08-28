@@ -2,6 +2,7 @@ use chrono::NaiveDateTime;
 use crate::http::json::body_composition_json::BodyCompositionJson;
 use crate::http::json::circumferences_json::CircumferencesJson;
 use serde::{Deserialize, Serialize};
+#[allow(unused_imports)]
 use serde_json::json;
 use utoipa::ToSchema;
 

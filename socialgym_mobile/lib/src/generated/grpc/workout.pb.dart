@@ -32,6 +32,7 @@ class Workout extends $pb.GeneratedMessage {
     $core.Iterable<$2.Exercise>? exercises,
     $core.String? createdAt,
     $core.String? updatedAt,
+    $core.String? targetPersonUuid,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -46,6 +47,7 @@ class Workout extends $pb.GeneratedMessage {
     if (exercises != null) result.exercises.addAll(exercises);
     if (createdAt != null) result.createdAt = createdAt;
     if (updatedAt != null) result.updatedAt = updatedAt;
+    if (targetPersonUuid != null) result.targetPersonUuid = targetPersonUuid;
     return result;
   }
 
@@ -75,6 +77,7 @@ class Workout extends $pb.GeneratedMessage {
         subBuilder: $2.Exercise.create)
     ..aOS(11, _omitFieldNames ? '' : 'createdAt')
     ..aOS(12, _omitFieldNames ? '' : 'updatedAt')
+    ..aOS(13, _omitFieldNames ? '' : 'targetPersonUuid')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -196,6 +199,19 @@ class Workout extends $pb.GeneratedMessage {
   $core.bool hasUpdatedAt() => $_has(11);
   @$pb.TagNumber(12)
   void clearUpdatedAt() => $_clearField(12);
+
+  /// Only used on AddWorkout, by a caller acting as a business profile, to
+  /// create the workout owned by this team member instead of the profile
+  /// itself. Requires an Accepted `team_members` relationship. Empty = normal
+  /// ownership (the acting identity).
+  @$pb.TagNumber(13)
+  $core.String get targetPersonUuid => $_getSZ(12);
+  @$pb.TagNumber(13)
+  set targetPersonUuid($core.String value) => $_setString(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasTargetPersonUuid() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearTargetPersonUuid() => $_clearField(13);
 }
 
 enum WorkoutRequest_Identifier { id, uuid, notSet }

@@ -26,11 +26,16 @@ class ApiConfig {
       '/workout/api/people/me/upload/avatar';
   static const String peopleUploadCoverEndpoint =
       '/workout/api/people/me/upload/cover';
+  static const String accountDeleteEndpoint =
+      '/workout/api/people/me/account/delete';
+  static const String accountCancelDeletionEndpoint =
+      '/workout/api/people/me/account/cancel-deletion';
 
   static const String businessProfilesEndpoint =
       '/workout/api/business-profiles';
 
   static const String friendsEndpoint = '/workout/api/friends';
+  static const String friendsSearchEndpoint = '/workout/api/friends/search';
   static const String friendsRequestEndpoint = '/workout/api/friends/request';
   static const String friendsAcceptEndpoint = '/workout/api/friends/accept';
   static const String friendsRejectEndpoint = '/workout/api/friends/reject';
@@ -49,6 +54,7 @@ class ApiConfig {
 
   static const String feedUploadEndpoint = '/workout/api/media/upload';
   static const String resourceEndpoint = '/workout/api/resource';
+  static const String addressSearchEndpoint = '/workout/api/address/search';
   static const String evolutionCheckInEndpoint =
       '/timeline/api/evolution-checkin';
 
@@ -59,6 +65,6 @@ class ApiConfig {
     return baseUrlDefault;
   }
 
-  static String? get grpcAuthority => 'latently-bubaline-salome.ngrok-free.dev';
+  static String? get grpcAuthority => grpcHost;
   // static String? get grpcAuthority => '192.168.15.4';
 }

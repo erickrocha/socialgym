@@ -48,7 +48,10 @@ class _SetDetailPageState extends State<SetDetailPage> {
     setState(() {
       _isEditingWeight = true;
     });
-    _weightController.text = '';
+    _weightController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _weightController.text.length,
+    );
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted && _weightFocus.canRequestFocus) {
         _weightFocus.requestFocus();
@@ -72,7 +75,10 @@ class _SetDetailPageState extends State<SetDetailPage> {
     setState(() {
       _isEditingReps = true;
     });
-    _repsController.text = '';
+    _repsController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _repsController.text.length,
+    );
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted && _repsFocus.canRequestFocus) {
         _repsFocus.requestFocus();

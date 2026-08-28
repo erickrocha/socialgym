@@ -1,12 +1,12 @@
-use async_trait::async_trait;
 use crate::repositories::repository::Repository;
+use async_trait::async_trait;
 use domain::business_error::BusinessError;
-use futures::stream::TryStreamExt;
-use mongodb::bson::{doc, to_bson};
-use mongodb::{Collection, Database};
 use domain::comment::Comment;
 use domain::post::Post;
 use domain::reaction::Reaction;
+use futures::stream::TryStreamExt;
+use mongodb::bson::{doc, to_bson};
+use mongodb::{Collection, Database};
 
 const COLLECTION_NAME: &str = "posts";
 
@@ -15,6 +15,34 @@ pub struct PostGateway {
 }
 
 impl PostGateway {
+    pub async fn remove_comment_for_moderation(
+        &self,
+        post_id: &str,
+        comment_id: &str,
+    ) -> Result<(), BusinessError> {
+        self.collection
+            .update_one(
+                doc! { "_id": post_id },
+                doc! { "$pull": { "comments": { "_id": comment_id } } },
+            )
+            .await
+            .map(|_| ())
+            .map_err(|e| BusinessError::infrastructure(format!("Failed to remove comment: {e}")))
+    }
+    pub async fn remove_media_for_moderation(
+        &self,
+        post_id: &str,
+        media_id: &str,
+    ) -> Result<(), BusinessError> {
+        self.collection
+            .update_one(
+                doc! { "_id": post_id },
+                doc! { "$pull": { "media": { "uuid": media_id } } },
+            )
+            .await
+            .map(|_| ())
+            .map_err(|e| BusinessError::infrastructure(format!("Failed to remove media: {e}")))
+    }
     pub fn new(db: &Database) -> PostGateway {
         Self {
             collection: db.collection::<Post>(COLLECTION_NAME),
@@ -49,11 +77,15 @@ impl Repository<Post, String> for PostGateway {
     }
 
     async fn update(&self, id: String, entity: Post) -> Result<Post, BusinessError> {
-        let result = self.collection.replace_one(doc! { "_id": id.clone() }, entity).await;
+        let result = self
+            .collection
+            .replace_one(doc! { "_id": id.clone() }, entity)
+            .await;
         match result {
             Ok(r) if r.matched_count > 0 => self
                 .find_by_id(id)
-                .await.ok_or_else(|| BusinessError::new("Post not found after update".to_string())),
+                .await
+                .ok_or_else(|| BusinessError::new("Post not found after update".to_string())),
             Ok(_) => Err(BusinessError::new("No post found to update".to_string())),
             Err(e) => {
                 log::error!("Error updating post: {:?}", e);
@@ -76,7 +108,12 @@ impl Repository<Post, String> for PostGateway {
 
 impl PostGateway {
     /// Returns posts for the given authors, sorted newest-first and paginated.
-    pub async fn find_feed(&self,author_ids: Vec<String>,skip: u64,limit: u64) -> Result<Vec<Post>, BusinessError> {
+    pub async fn find_feed(
+        &self,
+        author_ids: Vec<String>,
+        skip: u64,
+        limit: u64,
+    ) -> Result<Vec<Post>, BusinessError> {
         if author_ids.is_empty() {
             return Ok(Vec::new());
         }
@@ -102,14 +139,17 @@ impl PostGateway {
             log::error!("Error iterating post cursor: {:?}", e);
             BusinessError::new("Failed to iterate posts".to_string())
         })? {
-
             posts.push(post);
         }
         Ok(posts)
     }
 
     /// Pushes a comment (or reply) into the post's comments array.
-    pub async fn add_comment(&self,post_id: &str,comment: Comment) -> Result<Post, BusinessError> {
+    pub async fn add_comment(
+        &self,
+        post_id: &str,
+        comment: Comment,
+    ) -> Result<Post, BusinessError> {
         let comment_bson = to_bson(&comment).map_err(|e| {
             log::error!("Error serializing comment: {:?}", e);
             BusinessError::new("Failed to serialize comment".to_string())
@@ -163,12 +203,14 @@ impl PostGateway {
     pub async fn remove_reaction(
         &self,
         post_id: &str,
-        person_id: &str,
+        person_uuid: &str,
     ) -> Result<Post, BusinessError> {
         self.collection
             .update_one(
                 doc! { "_id": post_id },
-                doc! { "$pull": { "reactions": { "personId": person_id } } },
+                // `Reaction` serialises the reactor as `authorId`; matching on
+                // `personId` here never removed anything.
+                doc! { "$pull": { "reactions": { "authorId": person_uuid } } },
             )
             .await
             .map_err(|e| {
@@ -180,5 +222,51 @@ impl PostGateway {
             .await
             .ok_or_else(|| BusinessError::new("Post not found after removing reaction".to_string()))
     }
-}
 
+    /// Account-deletion cascade: deletes every post authored by this person
+    /// (also removes their embedded comments/reactions on those posts, and any
+    /// comments/reactions others left there, since the whole post is gone).
+    pub async fn delete_all_by_author(&self, person_uuid: &str) -> Result<(), BusinessError> {
+        self.collection
+            .delete_many(doc! { "authorUuid": person_uuid })
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                log::error!("Error deleting posts by author: {:?}", e);
+                BusinessError::new("Failed to delete posts".to_string())
+            })
+    }
+
+    /// Account-deletion cascade: strips this person's reactions from every
+    /// *other* post they reacted to (their own posts are deleted wholesale by
+    /// `delete_all_by_author`, so this only matters for posts they don't own).
+    pub async fn pull_reactions_by_author(&self, person_uuid: &str) -> Result<(), BusinessError> {
+        self.collection
+            .update_many(
+                doc! {},
+                doc! { "$pull": { "reactions": { "authorId": person_uuid } } },
+            )
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                log::error!("Error pulling reactions by author: {:?}", e);
+                BusinessError::new("Failed to remove reactions".to_string())
+            })
+    }
+
+    /// Account-deletion cascade: strips this person's comments from every
+    /// *other* post they commented on.
+    pub async fn pull_comments_by_author(&self, person_uuid: &str) -> Result<(), BusinessError> {
+        self.collection
+            .update_many(
+                doc! {},
+                doc! { "$pull": { "comments": { "authorUuid": person_uuid } } },
+            )
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                log::error!("Error pulling comments by author: {:?}", e);
+                BusinessError::new("Failed to remove comments".to_string())
+            })
+    }
+}

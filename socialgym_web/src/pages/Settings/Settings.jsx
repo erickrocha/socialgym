@@ -5,6 +5,7 @@ import { AppHeader, Button, Toast } from '../../commons/gui';
 import { fetchMySettings, updateMySettings } from '../../redux/reducers/settings/settings.actions';
 import { setLocalSettings } from '../../redux/reducers/settings/settings.slice';
 import './Settings.scss';
+import axios from '../../axios.config.js';
 
 export const Settings = () => {
     const { t, i18n } = useTranslation();
@@ -17,9 +18,12 @@ export const Settings = () => {
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [homePage, setHomePage] = useState('/home');
     const [toastMessage, setToastMessage] = useState('');
+    const [exports, setExports] = useState([]);
+    const [requestingExport, setRequestingExport] = useState(false);
 
     useEffect(() => {
         dispatch(fetchMySettings());
+        axios.get('/workout/api/people/me/data-exports').then(({ data }) => setExports(data)).catch(() => {});
     }, [dispatch]);
 
     useEffect(() => {
@@ -49,6 +53,34 @@ export const Settings = () => {
         } catch {
             setToastMessage(t('settings.savedSuccess', 'Configurações salvas localmente!'));
         }
+    };
+
+    const requestExport = async () => {
+        setRequestingExport(true);
+        try {
+            const { data } = await axios.post('/workout/api/people/me/data-exports');
+            setExports((current) => [data, ...current]);
+            setToastMessage('Sua exportação foi solicitada. Esta página mostrará quando estiver pronta.');
+        } catch {
+            setToastMessage('Não foi possível solicitar a exportação.');
+        } finally { setRequestingExport(false); }
+    };
+
+    const downloadExport = async (id) => {
+        try {
+            const { data } = await axios.get(`/workout/api/people/me/data-exports/${id}/download`);
+            window.location.assign(data.url);
+        } catch { setToastMessage('A exportação ainda não está disponível.'); }
+    };
+
+    const deleteAccount = async () => {
+        if (!window.confirm('Sua conta será desativada agora e excluída após o prazo informado. Deseja continuar?')) return;
+        try {
+            const { data } = await axios.post('/workout/api/people/me/account/delete', { immediate: false });
+            localStorage.removeItem('auth');
+            window.alert(`Exclusão agendada para ${new Date(data.scheduledAt).toLocaleDateString()}.`);
+            window.location.assign('/login');
+        } catch { setToastMessage('Não foi possível solicitar a exclusão da conta.'); }
     };
 
     return (
@@ -132,6 +164,30 @@ export const Settings = () => {
                             </Button>
                         </div>
                     </form>
+
+                    <section className="form-section" aria-labelledby="privacy-rights-title">
+                        <h2 id="privacy-rights-title">Privacidade e seus dados</h2>
+                        <p><a href="/privacy">Política de Privacidade</a> · <a href="/privacy/dpo">Fale com o Encarregado</a></p>
+                        <button type="button" onClick={() => {
+                            localStorage.removeItem('socialgym-cookie-consent-v1');
+                            window.location.reload();
+                        }}>Revisar preferências de cookies</button>
+                        <Button type="button" onClick={requestExport} disabled={requestingExport}>
+                            {requestingExport ? 'Solicitando…' : 'Baixar meus dados'}
+                        </Button>
+                        {exports.length > 0 && <ul className="data-export-list">
+                            {exports.map((item) => <li key={item.id}>
+                                <span>Solicitação de {new Date(item.createdAt).toLocaleString()} — {item.status}</span>
+                                {item.status === 'ready' && <button type="button" onClick={() => downloadExport(item.id)}>Baixar ZIP</button>}
+                            </li>)}
+                        </ul>}
+                    </section>
+
+                    <section className="form-section danger-zone" aria-labelledby="danger-zone-title">
+                        <h2 id="danger-zone-title">Excluir conta</h2>
+                        <p>A conta será desativada imediatamente. A exclusão permanente ocorrerá após o período de segurança configurado.</p>
+                        <button type="button" className="danger-button" onClick={deleteAccount}>Solicitar exclusão da conta</button>
+                    </section>
                 </div>
             </main>
 

@@ -7,6 +7,7 @@ import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/person.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/person_provider.dart';
 import '../../services/person_service.dart';
 import '../../services/base_service.dart';
 
@@ -71,6 +72,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final coverHeight = screenWidth > 600 ? 250.0 : 180.0;
     final avatarSize = screenWidth > 600 ? 140.0 : 100.0;
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -82,7 +84,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
               SliverAppBar(
                 expandedHeight: coverHeight,
                 pinned: true,
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.primaryFor(businessType),
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () => Navigator.of(context).pop(),
@@ -150,7 +152,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                                         imageUrl: _person.avatar!,
                                         fit: BoxFit.cover,
                                         placeholder: (context, url) => Container(
-                                          color: AppColors.primary,
+                                          color: AppColors.primaryFor(businessType),
                                           child: const Center(
                                             child: CircularProgressIndicator(color: Colors.white),
                                           ),
@@ -234,7 +236,11 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Personal Information
-                          _buildSectionHeader(l10n.profilePersonalInfo, Icons.person_outline),
+                          _buildSectionHeader(
+                            l10n.profilePersonalInfo,
+                            Icons.person_outline,
+                            businessType,
+                          ),
                           const SizedBox(height: 12),
 
                           if (_person.personInfo?.biography != null &&
@@ -243,6 +249,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.description_outlined,
                               l10n.profileBiography,
                               _person.personInfo!.biography!,
+                              businessType,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -253,6 +260,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.work_outline,
                               l10n.profileJob,
                               _person.personInfo!.job!,
+                              businessType,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -262,6 +270,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.favorite_outline,
                               l10n.profileRelationship,
                               _getRelationshipLabel(_person.personInfo!.relationship!, l10n),
+                              businessType,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -272,6 +281,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.home_outlined,
                               l10n.profileHomeTown,
                               _person.personInfo!.homeTown!,
+                              businessType,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -282,6 +292,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.location_city_outlined,
                               l10n.profileCurrentCity,
                               _person.personInfo!.currentCity!,
+                              businessType,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -291,6 +302,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.people_outline,
                               l10n.profileGender,
                               _getGenderLabel(_person.gender!, l10n),
+                              businessType,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -300,6 +312,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.calendar_today_outlined,
                               l10n.profileDateOfBirth,
                               DateFormat.yMMMd().format(_person.dateOfBirth!),
+                              businessType,
                             ),
                           ],
 
@@ -311,6 +324,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                             _buildSectionHeader(
                               l10n.profilePhysicalStats,
                               Icons.fitness_center_outlined,
+                              businessType,
                             ),
                             const SizedBox(height: 12),
                             Row(
@@ -321,6 +335,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                                       icon: Icons.monitor_weight_outlined,
                                       label: l10n.profileWeight,
                                       value: '${_person.personInfo!.weight!.toStringAsFixed(1)} kg',
+                                      businessType: businessType,
                                     ),
                                   ),
                                 if (_person.personInfo?.weight != null &&
@@ -332,6 +347,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                                       icon: Icons.height,
                                       label: l10n.profileHeight,
                                       value: '${_person.personInfo!.height!.toStringAsFixed(0)} cm',
+                                      businessType: businessType,
                                     ),
                                   ),
                               ],
@@ -341,9 +357,15 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
 
                           // Addresses
                           if (_person.addresses.isNotEmpty) ...[
-                            _buildSectionHeader(l10n.addressSection, Icons.location_on_outlined),
+                            _buildSectionHeader(
+                              l10n.addressSection,
+                              Icons.location_on_outlined,
+                              businessType,
+                            ),
                             const SizedBox(height: 12),
-                            ..._person.addresses.map((address) => _buildAddressCard(address, l10n)),
+                            ..._person.addresses.map(
+                              (address) => _buildAddressCard(address, l10n, businessType),
+                            ),
                           ],
                         ],
                       ),
@@ -382,21 +404,21 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon) {
+  Widget _buildSectionHeader(String title, IconData icon, String? businessType) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.primary, size: 22),
+        Icon(icon, color: AppColors.primaryFor(businessType), size: 22),
         const SizedBox(width: 8),
         Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ],
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String value, String? businessType) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: AppColors.primary, size: 18),
+        Icon(icon, color: AppColors.primaryFor(businessType), size: 18),
         const SizedBox(width: 8),
         Expanded(
           child: RichText(
@@ -419,7 +441,12 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
     );
   }
 
-  Widget _buildStatCard({required IconData icon, required String label, required String value}) {
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required String? businessType,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
@@ -432,14 +459,14 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
       ),
       child: Column(
         children: [
-          Icon(icon, color: AppColors.primary, size: 28),
+          Icon(icon, color: AppColors.primaryFor(businessType), size: 28),
           const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: AppColors.primaryFor(businessType),
             ),
           ),
           const SizedBox(height: 2),
@@ -453,15 +480,17 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
     );
   }
 
-  Widget _buildAddressCard(PersonAddress address, AppLocalizations l10n) {
+  Widget _buildAddressCard(PersonAddress address, AppLocalizations l10n, String? businessType) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: address.current ? AppColors.primary.withAlpha(15) : Colors.white,
+        color: address.current ? AppColors.primaryFor(businessType).withAlpha(15) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: address.current ? AppColors.primary.withAlpha(100) : Colors.grey[200]!,
+          color: address.current
+              ? AppColors.primaryFor(businessType).withAlpha(100)
+              : Colors.grey[200]!,
         ),
         boxShadow: [
           BoxShadow(color: Colors.grey.withAlpha(25), blurRadius: 4, offset: const Offset(0, 1)),
@@ -472,7 +501,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
         children: [
           Icon(
             address.current ? Icons.location_on : Icons.location_on_outlined,
-            color: address.current ? AppColors.primary : Colors.grey[500],
+            color: address.current ? AppColors.primaryFor(businessType) : Colors.grey[500],
             size: 22,
           ),
           const SizedBox(width: 10),
@@ -485,7 +514,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                     margin: const EdgeInsets.only(bottom: 4),
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: AppColors.primaryFor(businessType),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(

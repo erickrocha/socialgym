@@ -2,7 +2,7 @@ use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
 use crate::domain::enums::Position;
 use chrono::NaiveDateTime;
-use entity::settings::{ActiveModel, Model};
+use entity::settings_entity::{ActiveModel, SettingsEntity};
 use sea_orm::Set;
 
 #[derive(Debug, Clone)]
@@ -22,7 +22,7 @@ pub struct Settings {
 
 pub struct SettingsEntityMapper {}
 
-impl EntityMapper<Settings, Model, ActiveModel> for SettingsEntityMapper {
+impl EntityMapper<Settings, SettingsEntity, ActiveModel> for SettingsEntityMapper {
     fn build_active_model(d: Settings) -> ActiveModel {
         ActiveModel {
             id: match d.id {
@@ -38,14 +38,14 @@ impl EntityMapper<Settings, Model, ActiveModel> for SettingsEntityMapper {
             language: Set(d.language),
             theme: Set(d.theme),
             notifications_enabled: Set(d.notifications_enabled),
-            context_menu_position: Set(d.context_menu_position.to_text()),
+            context_menu_position: Set(d.context_menu_position.to_string()),
             home_page: Set(d.home_page),
             created_at: sea_orm::NotSet,
             updated_at: sea_orm::NotSet,
         }
     }
 
-    fn from_model(e: Model) -> Settings {
+    fn from_model(e: SettingsEntity) -> Settings {
         Settings {
             id: Some(e.id),
             uuid: Some(uuid_to_string(e.uuid)),

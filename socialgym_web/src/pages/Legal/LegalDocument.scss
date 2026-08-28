@@ -1,0 +1,13 @@
+.legal-document {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+  color: #202124;
+  background: #fff;
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+.legal-document__version { color: #5f6368; }
+.legal-document__content { white-space: pre-wrap; font-family: inherit; }
+.legal-document a { color: #005fcc; }

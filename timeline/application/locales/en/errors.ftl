@@ -14,3 +14,7 @@ reaction-remove-failed = Failed to remove reaction
 evolution-checkin-add-failed = Failed to add evolution check-in
 evolution-checkin-find-failed = Failed to find evolution check-in
 unknown-error = Unexpected server error
+rate-limited = Too many requests. Please try again later.
+internal-auth-invalid = Invalid internal service credentials
+account-data-deletion-failed = Failed to delete account data
+consent-required = The required legal consent is missing or out of date

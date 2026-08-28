@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/workout.dart';
+import '../../providers/person_provider.dart';
 import 'set_detail_page.dart';
 import 'workout_complete_dialog.dart';
 
@@ -25,8 +27,6 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   bool _isEditingReps = false;
   late double _editWeight;
   late int _editRepsOrDuration;
-  int _elapsedSeconds = 0;
-  Timer? _timer;
   late DateTime _startAt;
 
   late PageController _pageController;
@@ -39,20 +39,12 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     _editWeight = exercise?.weight ?? 0;
     _editRepsOrDuration = exercise?.repsOrDuration ?? 0;
     _startAt = DateTime.now();
-    _startTimer();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _pageController.dispose();
     super.dispose();
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _elapsedSeconds++);
-    });
   }
 
   List<dynamic> get _exercises => widget.workout.exercises;
@@ -67,12 +59,6 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     final totalSetsAll = _exercises.fold<int>(0, (acc, ex) => acc + (ex.sets as int));
     if (totalSetsAll == 0) return 0;
     return (_executedSets.length / totalSetsAll) * 100;
-  }
-
-  String _formatTime(int seconds) {
-    final mins = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
   int _completedSetsForExercise(int exerciseIdx) {
@@ -192,11 +178,10 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   }
 
   void _completeWorkout() {
-    _timer?.cancel();
     final session = {
       'workoutId': widget.workout.id,
       'workoutName': widget.workout.name,
-      'duration': _elapsedSeconds,
+      'duration': DateTime.now().difference(_startAt).inSeconds,
       'executedSets': _executedSets,
       'startedAt': _startAt.toIso8601String(),
     };
@@ -230,6 +215,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     if (_exercises.isEmpty) {
       return Scaffold(
@@ -257,7 +243,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
         child: Column(
           children: [
             _buildHeader(l10n),
-            _buildExerciseDots(),
+            _buildExerciseDots(businessType),
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -274,7 +260,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                   });
                 },
                 itemBuilder: (context, pageIdx) {
-                  return _buildExercisePage(l10n, pageIdx);
+                  return _buildExercisePage(l10n, pageIdx, businessType);
                 },
               ),
             ),
@@ -297,21 +283,14 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                 onPressed: () => _showExitConfirmation(l10n),
               ),
               Expanded(
-                child: Column(
-                  children: [
-                    Text(
-                      widget.workout.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '⏱️ ${_formatTime(_elapsedSeconds)}',
-                      style: TextStyle(color: Colors.white.withAlpha(204), fontSize: 14),
-                    ),
-                  ],
+                child: Text(
+                  widget.workout.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
               const SizedBox(width: 48),
@@ -345,7 +324,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     );
   }
 
-  Widget _buildExerciseDots() {
+  Widget _buildExerciseDots(String? businessType) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: SingleChildScrollView(
@@ -369,9 +348,11 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                     color: isCompleted
                         ? AppColors.success
                         : isActive
-                        ? AppColors.primary
+                        ? AppColors.primaryFor(businessType)
                         : Colors.grey.withAlpha(76),
-                    border: isActive ? Border.all(color: AppColors.primary, width: 2) : null,
+                    border: isActive
+                        ? Border.all(color: AppColors.primaryFor(businessType), width: 2)
+                        : null,
                   ),
                 ),
               );
@@ -383,7 +364,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     );
   }
 
-  Widget _buildExercisePage(AppLocalizations l10n, int pageIdx) {
+  Widget _buildExercisePage(AppLocalizations l10n, int pageIdx, String? businessType) {
     final exercise = _exercises[pageIdx];
     final isCurrentPage = pageIdx == _currentExerciseIndex;
     final completedForExercise = _completedSetsForExercise(pageIdx);
@@ -515,10 +496,10 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                       color: isCompleted
                           ? AppColors.success
                           : isActive
-                          ? AppColors.primary
+                          ? AppColors.primaryFor(businessType)
                           : Colors.grey.withAlpha(51),
                       border: isActive
-                          ? Border.all(color: AppColors.primary, width: 2)
+                          ? Border.all(color: AppColors.primaryFor(businessType), width: 2)
                           : isCompleted
                           ? Border.all(color: AppColors.success.withAlpha(100), width: 1)
                           : null,
@@ -545,7 +526,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
 
           // Values card
           if (isCurrentPage)
-            _buildValuesCard(l10n, isCardio)
+            _buildValuesCard(l10n, isCardio, businessType)
           else
             _buildReadOnlyValues(l10n, exercise, isCardio),
 
@@ -553,9 +534,9 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
 
           // Actions — only active page
           if (isCurrentPage) ...[
-            _buildActions(l10n),
+            _buildActions(l10n, businessType),
             const SizedBox(height: 16),
-            _buildMotivation(l10n),
+            _buildMotivation(l10n, businessType),
             const SizedBox(height: 16),
           ],
 
@@ -566,7 +547,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     );
   }
 
-  Widget _buildValuesCard(AppLocalizations l10n, bool isCardio) {
+  Widget _buildValuesCard(AppLocalizations l10n, bool isCardio, String? businessType) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -597,6 +578,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                   isEditMode: _isEditingWeight,
                   value: _editWeight,
                   unit: isCardio ? '' : l10n.workoutWeightUnit,
+                  businessType: businessType,
                   onChanged: (v) => setState(() => _editWeight = v),
                   onTap: () => setState(() {
                     _isEditingWeight = true;
@@ -617,6 +599,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                   isEditMode: _isEditingReps,
                   value: _editRepsOrDuration.toDouble(),
                   unit: '',
+                  businessType: businessType,
                   onChanged: (v) => setState(() => _editRepsOrDuration = v.round()),
                   onTap: () => setState(() {
                     _isEditingReps = true;
@@ -663,7 +646,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     );
   }
 
-  Widget _buildActions(AppLocalizations l10n) {
+  Widget _buildActions(AppLocalizations l10n, String? businessType) {
     return Row(
       children: [
         if (!_isFirstExercise) ...[
@@ -695,7 +678,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
             icon: const Icon(Icons.check, size: 20),
             label: Text(l10n.executionConfirmSet),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: AppColors.primaryFor(businessType),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -706,7 +689,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     );
   }
 
-  Widget _buildMotivation(AppLocalizations l10n) {
+  Widget _buildMotivation(AppLocalizations l10n, String? businessType) {
     final text = _isLastSet && _isLastExercise ? l10n.executionAlmostDone : l10n.executionKeepGoing;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -716,10 +699,10 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
         Flexible(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+              color: AppColors.primaryFor(businessType),
             ),
           ),
         ),
@@ -845,6 +828,7 @@ class _ValueBox extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onEditingComplete;
   final VoidCallback? onDone;
+  final String? businessType;
 
   const _ValueBox({
     required this.icon,
@@ -856,6 +840,7 @@ class _ValueBox extends StatefulWidget {
     required this.onTap,
     required this.onEditingComplete,
     this.onDone,
+    this.businessType,
   });
 
   @override
@@ -878,7 +863,9 @@ class _ValueBoxState extends State<_ValueBox> {
   void didUpdateWidget(_ValueBox oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isEditMode != widget.isEditMode && widget.isEditMode) {
-      _controller.text = '';
+      _controller.text =
+          widget.value.toStringAsFixed(widget.value == widget.value.roundToDouble() ? 0 : 1);
+      _controller.selection = TextSelection(baseOffset: 0, extentOffset: _controller.text.length);
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted && _focusNode.canRequestFocus) {
           _focusNode.requestFocus();
@@ -915,9 +902,13 @@ class _ValueBoxState extends State<_ValueBox> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: widget.isEditMode ? AppColors.primary.withAlpha(10) : const Color(0xFFF8F8F8),
+          color: widget.isEditMode
+              ? AppColors.primaryFor(widget.businessType).withAlpha(10)
+              : const Color(0xFFF8F8F8),
           borderRadius: BorderRadius.circular(12),
-          border: widget.isEditMode ? Border.all(color: AppColors.primary, width: 1.5) : null,
+          border: widget.isEditMode
+              ? Border.all(color: AppColors.primaryFor(widget.businessType), width: 1.5)
+              : null,
         ),
         child: Column(
           children: [

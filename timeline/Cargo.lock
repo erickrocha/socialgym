@@ -71,6 +71,7 @@ dependencies = [
  "domain",
  "dotenvy",
  "fluent-templates",
+ "futures",
  "log",
  "mongodb",
  "serde",

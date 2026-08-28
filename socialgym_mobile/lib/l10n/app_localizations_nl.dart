@@ -281,6 +281,68 @@ class AppLocalizationsNl extends AppLocalizations {
       'Instellingen konden niet worden vernieuwd vanaf de server';
 
   @override
+  String get settingsDangerZoneTitle => 'Gevarenzone';
+
+  @override
+  String get settingsDeleteAccountDescription =>
+      'Als je je account verwijdert, worden je profiel, trainingen, berichten en alle bijbehorende gegevens verwijderd.';
+
+  @override
+  String get settingsDeleteAccountButton => 'Account Verwijderen';
+
+  @override
+  String get settingsDeleteAccountConfirmTitle => 'Account Verwijderen';
+
+  @override
+  String get settingsDeleteAccountConfirmBody =>
+      'Dit kan niet ongedaan worden gemaakt zodra het is voltooid. Kies wanneer dit moet gebeuren:';
+
+  @override
+  String get settingsDeleteAccountOptionGracePeriod =>
+      'Verwijderen na 30 dagen (je kunt dit annuleren door opnieuw in te loggen)';
+
+  @override
+  String get settingsDeleteAccountOptionImmediate => 'Direct verwijderen';
+
+  @override
+  String get settingsDeleteAccountConfirmButton => 'Account Verwijderen';
+
+  @override
+  String get settingsDeleteAccountScheduledTitle =>
+      'Accountverwijdering Gepland';
+
+  @override
+  String settingsDeleteAccountScheduledBody(String date) {
+    return 'Je account wordt permanent verwijderd op $date. Je bent uitgelogd.';
+  }
+
+  @override
+  String get settingsDeleteAccountError =>
+      'Account verwijderen mislukt. Probeer het opnieuw.';
+
+  @override
+  String get signInPendingDeletionTitle => 'Account Gepland voor Verwijdering';
+
+  @override
+  String signInPendingDeletionBody(String date) {
+    return 'Je account is gepland om permanent te worden verwijderd op $date. Wil je je account behouden?';
+  }
+
+  @override
+  String get signInPendingDeletionKeepButton => 'Account Behouden';
+
+  @override
+  String get signInPendingDeletionDismissButton => 'Niet Nu';
+
+  @override
+  String get signInPendingDeletionCancelSuccess =>
+      'Accountverwijdering geannuleerd. Welkom terug!';
+
+  @override
+  String get signInPendingDeletionCancelError =>
+      'Annuleren van accountverwijdering mislukt. Probeer het opnieuw.';
+
+  @override
   String get workoutTitle => 'Mijn Trainingen';
 
   @override
@@ -290,7 +352,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get workoutAddNew => 'Training Toevoegen';
 
   @override
+  String get workoutEditTitle => 'Training Bewerken';
+
+  @override
   String get workoutStartSessionTitle => 'Trainingssessie starten';
+
+  @override
+  String get workoutDeleteConfirmTitle => 'Training Verwijderen';
+
+  @override
+  String get workoutDeleteConfirm =>
+      'Weet je zeker dat je deze training wilt verwijderen?';
 
   @override
   String get workoutExercises => 'oefeningen';
@@ -331,6 +403,18 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get workoutMuscleGroups => 'Spiergroepen';
+
+  @override
+  String get workoutAssignToTeamMember => 'Aanmaken voor';
+
+  @override
+  String get workoutAssignToMyself => 'Mezelf';
+
+  @override
+  String get workoutSelectTeamMember => 'Teamlid selecteren';
+
+  @override
+  String get workoutNoTeamMembers => 'Je hebt nog geen geaccepteerde teamleden';
 
   @override
   String get workoutSets => 'Sets';
@@ -600,34 +684,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addressDelete => 'Adres Verwijderen';
 
   @override
-  String get addressSetCurrent => 'Instellen als Huidig';
-
-  @override
   String get addressCurrent => 'Huidig Adres';
 
   @override
-  String get addressStreet => 'Straat';
-
-  @override
-  String get addressNumber => 'Nummer';
-
-  @override
-  String get addressComplement => 'Aanvulling';
-
-  @override
-  String get addressNeighborhood => 'Buurt';
-
-  @override
-  String get addressCity => 'Stad';
-
-  @override
-  String get addressState => 'Staat/Provincie';
-
-  @override
   String get addressCountry => 'Land';
-
-  @override
-  String get addressZipCode => 'Postcode';
 
   @override
   String get addressPostalCode => 'Postcode';
@@ -645,28 +705,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addressAdministrativeArea => 'Staat/Provincie';
 
   @override
-  String get addressMarkCurrent => 'Markeren als huidig adres';
-
-  @override
   String get addressSelectCountry => 'Selecteer land';
-
-  @override
-  String get addressSelectState => 'Selecteer staat';
-
-  @override
-  String get addressSelectCountryFirst => 'Selecteer eerst het land';
-
-  @override
-  String get addressLatitude => 'Breedtegraad';
-
-  @override
-  String get addressLongitude => 'Lengtegraad';
-
-  @override
-  String get addressGpsLocation => 'GPS-locatie';
-
-  @override
-  String get addressGetCurrentLocation => 'Huidige locatie ophalen';
 
   @override
   String get addressLocationServicesDisabled =>
@@ -725,6 +764,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get friendsTabSuggestions => 'Suggesties';
+
+  @override
+  String get friendsTabFind => 'Zoeken';
 
   @override
   String get friendsNoFriends => 'Nog geen vrienden';
@@ -787,6 +829,32 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get friendsActionError => 'Actie mislukt. Probeer het opnieuw.';
+
+  @override
+  String get friendsLocationAnywhere => 'Overal';
+
+  @override
+  String get friendsLocationSavedAddress => 'Bij mijn adres';
+
+  @override
+  String get friendsLocationCurrentGps => 'Bij mij nu';
+
+  @override
+  String get friendsFindSearchHint => 'Zoeken op naam of gebruikersnaam';
+
+  @override
+  String get friendsFindPromptTitle => 'Vrienden vinden';
+
+  @override
+  String get friendsFindPromptHint =>
+      'Zoek op naam of gebruik een locatiefilter om mensen te vinden';
+
+  @override
+  String get friendsFindNoResults => 'Geen mensen gevonden';
+
+  @override
+  String get friendsFindNoResultsHint =>
+      'Probeer een andere naam of locatiefilter';
 
   @override
   String get friendViewProfile => 'Profiel bekijken';
@@ -1093,7 +1161,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tooltipSwipeToView =>
-      'Veeg naar links om oefeningen toe te voegen';
+      'Ga terug en veeg een oefening naar rechts om deze toe te voegen';
+
+  @override
+  String get tooltipBackToExercises => 'Terug naar oefeningen';
 
   @override
   String get sortCreatedAtDesc => 'Nieuwste Eerst';

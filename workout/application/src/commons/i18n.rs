@@ -1,4 +1,5 @@
 use fluent_templates::{static_loader, Loader};
+use std::fmt::{Display, Formatter};
 use unic_langid::{langid, LanguageIdentifier};
 
 static_loader! {
@@ -16,6 +17,19 @@ pub enum Locale {
     Es,
     Fr,
     Dutch,
+}
+
+impl Display for Locale {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Locale::En => write!(f, "en"),
+            Locale::Pt => write!(f, "pt"),
+            Locale::PtBr => write!(f, "pt-BR"),
+            Locale::Es => write!(f, "es"),
+            Locale::Fr => write!(f, "fr"),
+            Locale::Dutch => write!(f, "nl"),
+        }
+    }
 }
 
 impl Locale {
@@ -53,17 +67,6 @@ impl Locale {
             Locale::Dutch => langid!("nl"),
         }
     }
-
-    pub fn to_text(self) -> String {
-        match self {
-            Locale::En => "en".to_string(),
-            Locale::Pt => "pt".to_string(),
-            Locale::PtBr => "pt-BR".to_string(),
-            Locale::Es => "es".to_string(),
-            Locale::Fr => "fr".to_string(),
-            Locale::Dutch => "nl".to_string(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,13 +82,10 @@ pub enum ErrorKey {
     TokenRevoked,
 
     PersonNotFound,
-    PersonFetchFailed,
     PersonNotUpdated,
 
-    PersonInfoNotFound,
     PersonInfoNotUpdated,
 
-    PersonAddressNotFound,
     PersonAddressNotUpdated,
     PersonAddressNotAdded,
     PersonAddressNotDeleted,
@@ -118,13 +118,27 @@ pub enum ErrorKey {
 
     WorkoutNotFound,
     WorkoutAddFailed,
-    WorkoutFetchFailed,
     ExercisesFetchFailed,
     ExercisesNotAdded,
 
     SettingsNotFound,
     SettingsAddedFailed,
-    SettingsUpdatedFailed
+    SettingsUpdatedFailed,
+
+    RateLimited,
+
+    AddressSearchFailed,
+    AddressSearchDisabled,
+
+    AccountDisabled,
+    AccountDeletionNotPending,
+    AccountDeletionRequestFailed,
+    AccountDeletionCancelFailed,
+    UnderageRegistration,
+    ConsentRequired,
+    ConsentOperationFailed,
+    DataExportFailed,
+    DataExportNotReady,
 }
 
 impl ErrorKey {
@@ -139,18 +153,17 @@ impl ErrorKey {
             ErrorKey::AccountLocked => "AccountLocked",
             ErrorKey::TokenRevoked => "TokenRevoked",
             ErrorKey::PersonNotFound => "PersonNotFound",
-            ErrorKey::PersonFetchFailed => "PersonFetchFailed",
             ErrorKey::PersonNotUpdated => "PersonNotUpdated",
-            ErrorKey::PersonInfoNotFound => "PersonInfoNotFound",
             ErrorKey::PersonInfoNotUpdated => "PersonInfoNotUpdated",
-            ErrorKey::PersonAddressNotFound => "PersonAddressNotFound",
             ErrorKey::PersonAddressNotUpdated => "PersonAddressNotUpdated",
             ErrorKey::PersonAddressNotAdded => "PersonAddressNotAdded",
             ErrorKey::PersonAddressNotDeleted => "PersonAddressNotDeleted",
             ErrorKey::ResourcesNotFound => "ResourcesNotFound",
             ErrorKey::PersonPreSignedUrlNotGenerated => "PersonPreSignedUrlNotGenerated",
             ErrorKey::PersonPreSignedUrlNotDeleted => "PersonPreSignedUrlNotDeleted",
-            ErrorKey::BusinessProfilePreSignedUrlNotGenerated => "BusinessProfilePreSignedUrlNotGenerated",
+            ErrorKey::BusinessProfilePreSignedUrlNotGenerated => {
+                "BusinessProfilePreSignedUrlNotGenerated"
+            }
             ErrorKey::BusinessProfileNotFound => "BusinessProfileNotFound",
             ErrorKey::BusinessProfileForbidden => "BusinessProfileForbidden",
             ErrorKey::RequiredParameterMissing => "RequiredParameterMissing",
@@ -170,12 +183,23 @@ impl ErrorKey {
             ErrorKey::TeamMemberCancelRequestFailed => "TeamMemberCancelRequestFailed",
             ErrorKey::WorkoutNotFound => "WorkoutNotFound",
             ErrorKey::WorkoutAddFailed => "WorkoutAddFailed",
-            ErrorKey::WorkoutFetchFailed => "WorkoutFetchFailed",
             ErrorKey::ExercisesFetchFailed => "ExercisesFetchFailed",
             ErrorKey::ExercisesNotAdded => "ExercisesNotAdded",
             ErrorKey::SettingsNotFound => "SettingsNotFound",
             ErrorKey::SettingsAddedFailed => "SettingsAddedFailed",
             ErrorKey::SettingsUpdatedFailed => "SettingsUpdatedFailed",
+            ErrorKey::RateLimited => "RateLimited",
+            ErrorKey::AddressSearchFailed => "AddressSearchFailed",
+            ErrorKey::AddressSearchDisabled => "AddressSearchDisabled",
+            ErrorKey::AccountDisabled => "AccountDisabled",
+            ErrorKey::AccountDeletionNotPending => "AccountDeletionNotPending",
+            ErrorKey::AccountDeletionRequestFailed => "AccountDeletionRequestFailed",
+            ErrorKey::AccountDeletionCancelFailed => "AccountDeletionCancelFailed",
+            ErrorKey::UnderageRegistration => "underage-registration",
+            ErrorKey::ConsentRequired => "consent-required",
+            ErrorKey::ConsentOperationFailed => "consent-operation-failed",
+            ErrorKey::DataExportFailed => "data-export-failed",
+            ErrorKey::DataExportNotReady => "data-export-not-ready",
         }
     }
 
@@ -190,18 +214,17 @@ impl ErrorKey {
             ErrorKey::AccountLocked => "account-locked",
             ErrorKey::TokenRevoked => "token-revoked",
             ErrorKey::PersonNotFound => "person-not-found",
-            ErrorKey::PersonFetchFailed => "person-fetch-failed",
             ErrorKey::PersonNotUpdated => "person-not-updated",
-            ErrorKey::PersonInfoNotFound => "person-info-not-found",
             ErrorKey::PersonInfoNotUpdated => "person-info-not-updated",
-            ErrorKey::PersonAddressNotFound => "person-address-not-found",
             ErrorKey::PersonAddressNotUpdated => "person-address-not-updated",
             ErrorKey::PersonAddressNotAdded => "person-address-not-added",
             ErrorKey::PersonAddressNotDeleted => "person-address-not-deleted",
             ErrorKey::ResourcesNotFound => "resources-not-found",
             ErrorKey::PersonPreSignedUrlNotGenerated => "person-pre-signed-url-not-generated",
             ErrorKey::PersonPreSignedUrlNotDeleted => "person-pre-signed-url-not-deleted",
-            ErrorKey::BusinessProfilePreSignedUrlNotGenerated => "business-profile-pre-signed-url-not-generated",
+            ErrorKey::BusinessProfilePreSignedUrlNotGenerated => {
+                "business-profile-pre-signed-url-not-generated"
+            }
             ErrorKey::BusinessProfileNotFound => "business-profile-not-found",
             ErrorKey::BusinessProfileForbidden => "business-profile-forbidden",
             ErrorKey::RequiredParameterMissing => "required-parameter-missing",
@@ -221,12 +244,23 @@ impl ErrorKey {
             ErrorKey::TeamMemberCancelRequestFailed => "team-member-cancel-request-failed",
             ErrorKey::WorkoutNotFound => "workout-not-found",
             ErrorKey::WorkoutAddFailed => "workout-add-failed",
-            ErrorKey::WorkoutFetchFailed => "workout-fetch-failed",
             ErrorKey::ExercisesFetchFailed => "exercises-fetch-failed",
             ErrorKey::ExercisesNotAdded => "exercises-not-added",
             ErrorKey::SettingsNotFound => "settings-not-found",
             ErrorKey::SettingsAddedFailed => "settings-added-failed",
             ErrorKey::SettingsUpdatedFailed => "settings-updated-failed",
+            ErrorKey::RateLimited => "rate-limited",
+            ErrorKey::AddressSearchFailed => "address-search-failed",
+            ErrorKey::AddressSearchDisabled => "address-search-disabled",
+            ErrorKey::AccountDisabled => "account-disabled",
+            ErrorKey::AccountDeletionNotPending => "account-deletion-not-pending",
+            ErrorKey::AccountDeletionRequestFailed => "account-deletion-request-failed",
+            ErrorKey::AccountDeletionCancelFailed => "account-deletion-cancel-failed",
+            ErrorKey::UnderageRegistration => "underage-registration",
+            ErrorKey::ConsentRequired => "consent-required",
+            ErrorKey::ConsentOperationFailed => "consent-operation-failed",
+            ErrorKey::DataExportFailed => "data-export-failed",
+            ErrorKey::DataExportNotReady => "data-export-not-ready",
         }
     }
 }
@@ -259,7 +293,7 @@ mod tests {
         Locale::Dutch,
     ];
 
-    const ALL_KEYS: [ErrorKey; 43] = [
+    const ALL_KEYS: [ErrorKey; 39] = [
         ErrorKey::SignUpPersonFailed,
         ErrorKey::SignUpUserFailed,
         ErrorKey::AuthHeaderMissing,
@@ -269,11 +303,8 @@ mod tests {
         ErrorKey::AccountLocked,
         ErrorKey::TokenRevoked,
         ErrorKey::PersonNotFound,
-        ErrorKey::PersonFetchFailed,
         ErrorKey::PersonNotUpdated,
-        ErrorKey::PersonInfoNotFound,
         ErrorKey::PersonInfoNotUpdated,
-        ErrorKey::PersonAddressNotFound,
         ErrorKey::PersonAddressNotUpdated,
         ErrorKey::PersonAddressNotAdded,
         ErrorKey::PersonAddressNotDeleted,
@@ -300,7 +331,6 @@ mod tests {
         ErrorKey::TeamMemberCancelRequestFailed,
         ErrorKey::WorkoutNotFound,
         ErrorKey::WorkoutAddFailed,
-        ErrorKey::WorkoutFetchFailed,
         ErrorKey::ExercisesFetchFailed,
         ErrorKey::ExercisesNotAdded,
     ];

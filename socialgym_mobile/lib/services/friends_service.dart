@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../config/api_config.dart';
 import '../models/friends_data.dart';
+import '../models/person.dart';
 import '../utils/dio_client.dart';
 import 'base_service.dart';
 
@@ -8,10 +9,24 @@ class FriendsService {
   static final _dio = DioClient().dio;
 
   /// Fetch friends data including suggestions, friends, and requests.
-  static Future<FriendsData> fetchFriends(String token) async {
+  ///
+  /// When [latitude]/[longitude] are given, suggestions are centered on that
+  /// point (e.g. the device's current GPS position) instead of the person's
+  /// saved home address.
+  static Future<FriendsData> fetchFriends(
+    String token, {
+    double? latitude,
+    double? longitude,
+  }) async {
     try {
       DioClient().setAuthToken(token);
-      final response = await _dio.get(ApiConfig.friendsEndpoint);
+      final response = await _dio.get(
+        ApiConfig.friendsEndpoint,
+        queryParameters: {
+          'latitude': ?latitude,
+          'longitude': ?longitude,
+        },
+      );
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         return FriendsData.fromJson(data);
@@ -23,6 +38,43 @@ class FriendsService {
       }
     } on DioException catch (e) {
       throw BaseService.handleDioError(e, 'Failed to fetch friends');
+    }
+  }
+
+  /// Combined "find friends" search: a name/username query, a location
+  /// filter, or both together.
+  static Future<List<Person>> searchFriends({
+    required String token,
+    String? query,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
+    int? limit,
+  }) async {
+    try {
+      DioClient().setAuthToken(token);
+      final response = await _dio.get(
+        ApiConfig.friendsSearchEndpoint,
+        queryParameters: {
+          'query': ?query,
+          'latitude': ?latitude,
+          'longitude': ?longitude,
+          'radius_km': ?radiusKm,
+          'limit': ?limit,
+        },
+      );
+      if (response.statusCode == 200) {
+        return (response.data as List<dynamic>)
+            .map((e) => Person.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw AppException(
+          statusCode: response.statusCode ?? 500,
+          message: response.data?['message'] ?? 'Failed to search friends',
+        );
+      }
+    } on DioException catch (e) {
+      throw BaseService.handleDioError(e, 'Failed to search friends');
     }
   }
 

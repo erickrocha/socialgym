@@ -1,5 +1,9 @@
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
+use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::access_token_json::AccessTokenJson;
+use crate::http::json::error_response_json::{
+    BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,
+};
 use crate::http::json::login_request::LoginRequest;
 use crate::http::json::logout_request::LogoutRequest;
 use crate::http::json::refresh_token_request::RefreshTokenRequest;
@@ -7,21 +11,30 @@ use crate::http::json::sign_up_json::SignUpJson;
 use crate::infrastructure::mapper::{AccessTokenMapper, Mapper};
 use crate::AppState;
 use axum::extract::{Path, State};
+use axum::http::HeaderMap;
 use axum::http::StatusCode;
 use axum::{Extension, Form, Json};
-use business::domain::enums::Position;
+use business::commons::functions::parse_uuid;
+use business::commons::legal_documents;
 use business::domain::person::Person;
-use business::domain::settings::Settings;
 use business::domain::user::User;
-use business::gateway::settings_gateway::SettingsGateway;
-use business::use_cases::person_use_case::PersonUseCase;
-use business::use_cases::user_use_case::{UserUseCase, UserUseCaseError};
 use business::use_cases::logout_use_case::LogoutUseCase;
-use business::use_cases::{authentication::{Authentication, AuthenticatedContext, AuthenticationError}, refresh_token::RefreshToken};
-use business::use_cases::setings_use_case::SettingsUseCase;
-use business::use_cases::switch_business_profile::{SwitchBusinessProfile, SwitchBusinessProfileError};
-use crate::commons::i18n::{ErrorKey, Locale};
-use crate::http::json::error_response_json::{BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson};
+use business::use_cases::registration_use_case::{
+    RegistrationError, RegistrationRequest, RegistrationUseCase,
+};
+use business::use_cases::switch_business_profile::{
+    SwitchBusinessProfile, SwitchBusinessProfileError,
+};
+use business::use_cases::{
+    authentication::{AuthenticatedContext, Authentication, AuthenticationError},
+    refresh_token::RefreshToken,
+};
+
+fn is_at_least_eighteen(date_of_birth: chrono::NaiveDate, today: chrono::NaiveDate) -> bool {
+    date_of_birth
+        .checked_add_months(chrono::Months::new(18 * 12))
+        .is_some_and(|birthday| birthday <= today)
+}
 
 #[utoipa::path(
     post,
@@ -35,55 +48,117 @@ use crate::http::json::error_response_json::{BadRequestErrorJson, ForbiddenError
 pub async fn sign_up(
     state: State<AppState>,
     Extension(locale): Extension<Locale>,
+    headers: HeaderMap,
     Json(payload): Json<SignUpJson>,
 ) -> HttpResponse<Json<AccessTokenJson>> {
-    let person = Person::new(payload.firstname,payload.surname,payload.date_of_birth,payload.gender);
-
-    let person_added = PersonUseCase::add(&state.conn, person).await;
-    if person_added.is_err() {
-        log::error!("Error adding new user {}",person_added.err().unwrap());
-        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::SignUpPersonFailed));
+    let today = chrono::Utc::now().date_naive();
+    if !is_at_least_eighteen(payload.date_of_birth, today) {
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::UnderageRegistration,
+        ));
     }
-
-    let person_domain = person_added.unwrap();
-    let person_id = person_domain.id.unwrap();
-    let person_uuid = person_domain.uuid.unwrap();
-
-    log::info!("Creating default user settings when new person is created");
-    let settings = Settings::new(person_id, person_uuid.clone(), locale.to_text(), "default".to_string(), true, Position::Left, "Feed".to_string());
-    let settings_use_case = SettingsUseCase::new(SettingsGateway::new((*state.conn).clone()));
-    let settings_added = settings_use_case.persist(settings).await;
-    if settings_added.is_err() {
-        log::error!("Error adding new settings {}",settings_added.err().unwrap());
-        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::SettingsAddedFailed));
+    if !payload.terms_accepted
+        || !payload.privacy_accepted
+        || !legal_documents::is_current(legal_documents::TERMS, &payload.terms_version)
+        || !legal_documents::is_current(legal_documents::PRIVACY, &payload.privacy_version)
+    {
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::ConsentRequired,
+        ));
     }
-    log::info!("Default user settings created successfully for person_id: {}", person_id);
+    let acceptance_ip = headers
+        .get("x-real-ip")
+        .or_else(|| headers.get("x-forwarded-for"))
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(',').next())
+        .map(str::trim)
+        .filter(|value| !value.is_empty() && value.len() <= 45)
+        .unwrap_or("unknown")
+        .to_string();
+    let terms_version = payload.terms_version.clone();
+    let privacy_version = payload.privacy_version.clone();
+    let person = Person::new(
+        payload.firstname,
+        payload.surname,
+        payload.date_of_birth,
+        payload.gender,
+    );
 
-    let name = format!("{} {}", person_domain.firstname, person_domain.surname);
-    let user: User = User::new(Some(name),payload.email, payload.password, person_id, person_uuid);
-
-    let password = user.password.clone();
-    let user_added = UserUseCase::add(&state.conn, user).await;
-
-    let current = match user_added {
+    let password = payload.password.clone();
+    let current = match RegistrationUseCase::execute(
+        &state.conn,
+        RegistrationRequest {
+            person,
+            email: payload.email,
+            password: payload.password,
+            language: locale.to_string(),
+            terms_version,
+            privacy_version,
+            ip: acceptance_ip,
+        },
+    )
+    .await
+    {
         Ok(current) => current,
-        Err(UserUseCaseError::WeakPassword(violations)) => {
-            log::info!("Signup rejected, password does not satisfy policy: {:?}", violations);
-            return Err(ExceptionResponse::BadRequest(locale, ErrorKey::WeakPassword));
+        Err(RegistrationError::WeakPassword) => {
+            return Err(ExceptionResponse::BadRequest(
+                locale,
+                ErrorKey::WeakPassword,
+            ));
         }
-        Err(e) => {
-            log::error!("Error adding new user {:?}",e);
-            return Err(ExceptionResponse::BadRequest(locale,ErrorKey::SignUpUserFailed));
+        Err(RegistrationError::OutdatedLegalDocument) => {
+            return Err(ExceptionResponse::BadRequest(
+                locale,
+                ErrorKey::ConsentRequired,
+            ));
+        }
+        Err(_) => {
+            return Err(ExceptionResponse::BadRequest(
+                locale,
+                ErrorKey::SignUpUserFailed,
+            ));
         }
     };
 
     let access_token = Authentication::execute(&state.conn, current.email, password).await;
     match access_token {
         Ok(token) => Ok(Json(AccessTokenMapper::json(token))),
-        Err(e) => {
-            log::error!("Error generating access token {:?}",e);
-            Err(ExceptionResponse::Unauthorized(locale,ErrorKey::UnknowAuthError))
-        },
+        Err(_e) => Err(ExceptionResponse::Unauthorized(
+            locale,
+            ErrorKey::UnknowAuthError,
+        )),
+    }
+}
+
+#[cfg(test)]
+mod age_tests {
+    use super::is_at_least_eighteen;
+    use chrono::NaiveDate;
+
+    #[test]
+    fn rejects_the_day_before_the_eighteenth_birthday() {
+        assert!(!is_at_least_eighteen(
+            NaiveDate::from_ymd_opt(2008, 8, 28).unwrap(),
+            NaiveDate::from_ymd_opt(2026, 8, 27).unwrap(),
+        ));
+    }
+
+    #[test]
+    fn accepts_on_the_eighteenth_birthday() {
+        assert!(is_at_least_eighteen(
+            NaiveDate::from_ymd_opt(2008, 8, 27).unwrap(),
+            NaiveDate::from_ymd_opt(2026, 8, 27).unwrap(),
+        ));
+    }
+
+    #[test]
+    fn handles_leap_day_without_year_subtraction_errors() {
+        assert!(is_at_least_eighteen(
+            NaiveDate::from_ymd_opt(2008, 2, 29).unwrap(),
+            NaiveDate::from_ymd_opt(2026, 2, 28).unwrap(),
+        ));
     }
 }
 
@@ -106,8 +181,17 @@ pub async fn sign_in(
         Authentication::execute(&state.conn, login_request.email, login_request.password).await;
     match access_token {
         Ok(token) => Ok(Json(AccessTokenMapper::json(token))),
-        Err(AuthenticationError::AccountLocked { .. }) => Err(ExceptionResponse::Locked(locale, ErrorKey::AccountLocked)),
-        Err(AuthenticationError::InvalidCredentials) => Err(ExceptionResponse::Unauthorized(locale,ErrorKey::BadCredentials)),
+        Err(AuthenticationError::AccountLocked { .. }) => {
+            Err(ExceptionResponse::Locked(locale, ErrorKey::AccountLocked))
+        }
+        Err(AuthenticationError::InvalidCredentials) => Err(ExceptionResponse::Unauthorized(
+            locale,
+            ErrorKey::BadCredentials,
+        )),
+        Err(AuthenticationError::AccountDisabled) => Err(ExceptionResponse::Forbidden(
+            locale,
+            ErrorKey::AccountDisabled,
+        )),
     }
 }
 
@@ -128,7 +212,10 @@ pub async fn refresh_token(
     let access_token = RefreshToken::execute(&state.conn, request.refresh_token).await;
     match access_token {
         Ok(token) => Ok(Json(AccessTokenMapper::json(token))),
-        Err(_) => Err(ExceptionResponse::Unauthorized(locale,ErrorKey::BadCredentials)),
+        Err(_) => Err(ExceptionResponse::Unauthorized(
+            locale,
+            ErrorKey::BadCredentials,
+        )),
     }
 }
 
@@ -150,10 +237,15 @@ pub async fn logout(
     Extension(auth_context): Extension<AuthenticatedContext>,
     Json(payload): Json<LogoutRequest>,
 ) -> StatusCode {
-    let result = LogoutUseCase::execute(&state.conn, current_user.id.unwrap(), auth_context.jti, auth_context.exp, payload.refresh_token).await;
-    if let Err(e) = result {
-        log::error!("Logout reported an error, still treating as logged out: {}", e);
-    }
+    let result = LogoutUseCase::execute(
+        &state.conn,
+        current_user.id.unwrap(),
+        auth_context.jti,
+        auth_context.exp,
+        payload.refresh_token,
+    )
+    .await;
+    if let Err(_e) = result {}
     StatusCode::NO_CONTENT
 }
 
@@ -180,19 +272,34 @@ pub async fn activate(
     Path(business_profile_uuid): Path<String>,
     Extension(current_user): Extension<User>,
     Extension(auth_context): Extension<AuthenticatedContext>,
-    Extension(locale): Extension<Locale>) -> HttpResponse<Json<AccessTokenJson>> {
-    log::info!("Activating business profile uuid={} for owner_id={:?}",business_profile_uuid,current_user.id);
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<AccessTokenJson>> {
+    if parse_uuid(&business_profile_uuid).is_err() {
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::InvalidParameterValue,
+        ));
+    }
 
-    let result = SwitchBusinessProfile::activate(&state.conn, &current_user, business_profile_uuid, auth_context.jti, auth_context.exp).await;
+    let result = SwitchBusinessProfile::activate(
+        &state.conn,
+        &current_user,
+        business_profile_uuid,
+        auth_context.jti,
+        auth_context.exp,
+    )
+    .await;
 
     match result {
         Ok(access_token) => Ok(Json(AccessTokenMapper::json(access_token))),
-        Err(SwitchBusinessProfileError::NotFound) => {
-            Err(ExceptionResponse::NotFound(locale, ErrorKey::BusinessProfileNotFound))
-        }
-        Err(SwitchBusinessProfileError::Forbidden) => {
-            Err(ExceptionResponse::Forbidden(locale, ErrorKey::BusinessProfileForbidden))
-        }
+        Err(SwitchBusinessProfileError::NotFound) => Err(ExceptionResponse::NotFound(
+            locale,
+            ErrorKey::BusinessProfileNotFound,
+        )),
+        Err(SwitchBusinessProfileError::Forbidden) => Err(ExceptionResponse::Forbidden(
+            locale,
+            ErrorKey::BusinessProfileForbidden,
+        )),
     }
 }
 
@@ -210,10 +317,18 @@ pub async fn activate(
         ("bearer_auth" = [])
     )
 )]
-pub async fn deactivate(state: State<AppState>,Extension(current_user): Extension<User>,Extension(auth_context): Extension<AuthenticatedContext>) -> HttpResponse<Json<AccessTokenJson>> {
-    log::info!("Deactivating business profile context for owner_id={:?}", current_user.id);
-
-    let access_token = SwitchBusinessProfile::deactivate(&state.conn, &current_user, auth_context.jti, auth_context.exp).await;
+pub async fn deactivate(
+    state: State<AppState>,
+    Extension(current_user): Extension<User>,
+    Extension(auth_context): Extension<AuthenticatedContext>,
+) -> HttpResponse<Json<AccessTokenJson>> {
+    let access_token = SwitchBusinessProfile::deactivate(
+        &state.conn,
+        &current_user,
+        auth_context.jti,
+        auth_context.exp,
+    )
+    .await;
 
     Ok(Json(AccessTokenMapper::json(access_token)))
 }

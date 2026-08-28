@@ -1,17 +1,19 @@
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
+use crate::commons::i18n::{ErrorKey, Locale};
+use crate::http::json::error_response_json::{
+    BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,
+};
 use crate::http::json::s3_json::S3Json;
 use crate::AppState;
-use axum::extract::{Path, Query,State};
+use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
+use business::domain::business_profile::BusinessProfile;
 use business::domain::user::User;
 use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
 use business::use_cases::common_use_case::choose_image_type;
 use business::use_cases::person_media_use_case::PersonMediaUseCase;
 use business::use_cases::person_use_case::PersonUseCase;
 use std::collections::HashMap;
-use business::domain::business_profile::BusinessProfile;
-use crate::commons::i18n::{ErrorKey, Locale};
-use crate::http::json::error_response_json::{BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson};
 
 #[utoipa::path(
     get,
@@ -39,7 +41,10 @@ pub async fn person_image_upload(
     Extension(current_user): Extension<User>,
 ) -> HttpResponse<Json<S3Json>> {
     let person_id = current_user.person_id;
-    let format = params.get("format").cloned().unwrap_or_else(|| "jpg".to_string());
+    let format = params
+        .get("format")
+        .cloned()
+        .unwrap_or_else(|| "jpg".to_string());
     let image_type = choose_image_type(image_type.as_str());
 
     let result = PersonUseCase::upload_person_image(
@@ -50,8 +55,10 @@ pub async fn person_image_upload(
     )
     .await;
     if result.is_err() {
-        log::error!("Error generating pre-signed URL: {:?}", result.err());
-        return Err(ExceptionResponse::BadRequest(locale, ErrorKey::PersonPreSignedUrlNotGenerated));
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::PersonPreSignedUrlNotGenerated,
+        ));
     }
     let image_storage = result.unwrap();
     let response = S3Json::new(image_storage.url, image_storage.object_key, person_id);
@@ -83,11 +90,12 @@ pub async fn person_image_delete(
 ) -> HttpResponse<Json<()>> {
     let person_id = current_user.person_id;
     let image_type = choose_image_type(image_type.as_str());
-    let result =
-        PersonUseCase::delete_person_image(&state.conn, person_id, image_type).await;
+    let result = PersonUseCase::delete_person_image(&state.conn, person_id, image_type).await;
     if result.is_err() {
-        log::error!("Error deleting person image: {:?}", result.err());
-        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::PersonPreSignedUrlNotDeleted));
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::PersonPreSignedUrlNotDeleted,
+        ));
     }
     Ok(Json(()))
 }
@@ -120,7 +128,10 @@ pub async fn business_profile_image_upload(
 ) -> HttpResponse<Json<S3Json>> {
     let business_profile_id = active_business_profile.id;
     let business_profile_uuid = active_business_profile.uuid.clone().unwrap();
-    let format = params.get("format").cloned().unwrap_or_else(|| "jpg".to_string());
+    let format = params
+        .get("format")
+        .cloned()
+        .unwrap_or_else(|| "jpg".to_string());
     let image_type = choose_image_type(image_type.as_str());
 
     let result = BusinessProfileUseCase::upload_business_profile_image(
@@ -132,11 +143,17 @@ pub async fn business_profile_image_upload(
     )
     .await;
     if result.is_err() {
-        log::error!("Error generating pre-signed URL: {:?}", result.err());
-        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::BusinessProfilePreSignedUrlNotGenerated));
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::BusinessProfilePreSignedUrlNotGenerated,
+        ));
     }
     let image_storage = result.unwrap();
-    let response = S3Json::new(image_storage.url, image_storage.object_key, business_profile_id.unwrap());
+    let response = S3Json::new(
+        image_storage.url,
+        image_storage.object_key,
+        business_profile_id.unwrap(),
+    );
     Ok(Json(response))
 }
 
@@ -166,26 +183,32 @@ pub async fn generate_media_upload_url(
 ) -> HttpResponse<Json<S3Json>> {
     let person_id = current_user.person_id;
 
-    let format = params.get("format").cloned().unwrap_or_else(|| "image/jpeg".to_string());
+    let format = params
+        .get("format")
+        .cloned()
+        .unwrap_or_else(|| "image/jpeg".to_string());
 
     let album = match params.get("album").cloned() {
         Some(a) if !a.is_empty() => a,
         _ => {
-            return Err(ExceptionResponse::BadRequest(locale, ErrorKey::RequiredParameterMissing));
+            return Err(ExceptionResponse::BadRequest(
+                locale,
+                ErrorKey::RequiredParameterMissing,
+            ));
         }
     };
 
-    let result = PersonMediaUseCase::generate_upload_url(&state.conn, person_id, album, format).await;
+    let result =
+        PersonMediaUseCase::generate_upload_url(&state.conn, person_id, album, format).await;
 
     match result {
         Ok(image_storage) => {
             let response = S3Json::new(image_storage.url, image_storage.object_key, person_id);
             Ok(Json(response))
         }
-        Err(e) => {
-            log::error!("Error generating media upload URL: {:?}", e);
-            Err(ExceptionResponse::BadRequest(locale,ErrorKey::PreSignedUrlNotGenerated))
-        }
+        Err(_e) => Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::PreSignedUrlNotGenerated,
+        )),
     }
 }
-

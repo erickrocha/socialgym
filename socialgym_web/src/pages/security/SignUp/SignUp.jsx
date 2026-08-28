@@ -16,10 +16,12 @@ const SignUp = () => {
     const { register, handleSubmit, watch, formState: { errors } } = useForm();
     const [showCustomGender, setShowCustomGender] = useState(false);
     const selectedGender = watch("gender");
+    const termsAccepted = watch("termsAccepted");
+    const privacyAccepted = watch("privacyAccepted");
 
     // Handle gender change to show/hide custom gender field
     const handleGenderChange = (e) => {
-        setShowCustomGender(e.target.value === "custom");
+        setShowCustomGender(e.target.value === "Custom");
     };
 
     const {auth} = useSelector((state) => state.auth);
@@ -68,17 +70,23 @@ const SignUp = () => {
     ];
 
     useEffect(() => {
-        setShowCustomGender(selectedGender === "custom");
+        setShowCustomGender(selectedGender === "Custom");
     }, [selectedGender]);
 
     const dispatch = useDispatch();
 
     const onSubmit = (data) => {
         // Handle custom gender
-        if (data.gender === "custom") {
+        if (data.gender === "Custom") {
             data.gender = data.customGender;
         }
         data.dateOfBirth = `${data.birthdayYear}-${data.birthdayMonth}-${data.birthdayDay}`;
+        const birthDate = new Date(`${data.dateOfBirth}T00:00:00`);
+        const cutoff = new Date();
+        cutoff.setFullYear(cutoff.getFullYear() - 18);
+        if (birthDate > cutoff) return;
+        data.termsVersion = import.meta.env.VITE_TERMS_VERSION || '1.0.0';
+        data.privacyVersion = import.meta.env.VITE_PRIVACY_VERSION || '1.0.0';
         // Clean up unused fields
         delete data.birthdayYear;
         delete data.birthdayMonth;
@@ -192,8 +200,17 @@ const SignUp = () => {
                         />
                         <p id="password-hint" className="field-hint">{t('signUp.passwordHint')}</p>
 
+                        <label className="legal-acceptance">
+                            <input type="checkbox" {...register('termsAccepted', { required: true })} />
+                            <span>Li e aceito os <a href="/terms" target="_blank" rel="noreferrer">Termos de Uso</a>.</span>
+                        </label>
+                        <label className="legal-acceptance">
+                            <input type="checkbox" {...register('privacyAccepted', { required: true })} />
+                            <span>Li e aceito a <a href="/privacy" target="_blank" rel="noreferrer">Política de Privacidade</a>.</span>
+                        </label>
+
                         {/* Submit Button */}
-                        <Button className="primary-button" id="sign-up-button" type="submit">
+                        <Button className="primary-button" id="sign-up-button" type="submit" disabled={!termsAccepted || !privacyAccepted}>
                             {t('signUp.submit')}
                         </Button>
                     </form>
@@ -210,4 +227,3 @@ const SignUp = () => {
 };
 
 export default SignUp;
-

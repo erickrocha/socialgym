@@ -96,8 +96,10 @@ class SocialGymApp extends StatelessWidget {
               fontFamilyFallback: _fontFamilyFallbacks,
               colorScheme: ColorScheme.fromSeed(
                 seedColor: personProvider.isProfessional
-                    ? AppColors.professionalSecondary
-                    : AppColors.primary,
+                    ? AppColors.professionalPrimary
+                    : AppColors.primaryFor(
+                        personProvider.activeBusinessProfile?.businessType,
+                      ),
                 surface: AppColors.background,
               ),
               useMaterial3: true,
@@ -115,7 +117,10 @@ class SocialGymApp extends StatelessWidget {
               '/workouts': (context) => const WorkoutPage(),
               '/exercises': (context) => const ExercisesPage(),
               '/workout-sessions': (context) => const WorkoutSessionsPage(),
-              '/evolution': (context) => const EvolutionPage(),
+              '/evolution': (context) =>
+                  context.read<PersonProvider>().isProfessional
+                      ? const WorkoutPage()
+                      : const EvolutionPage(),
               '/friends': (context) => const FriendsPage(),
               '/team': (context) => const TeamPage(),
               '/followers': (context) => const FollowersPage(),

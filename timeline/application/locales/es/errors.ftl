@@ -14,3 +14,7 @@ reaction-remove-failed = No se pudo quitar la reaccion
 evolution-checkin-add-failed = No se pudo guardar el check-in de evolucion
 evolution-checkin-find-failed = No se pudo buscar el check-in de evolucion
 unknown-error = Error interno inesperado
+rate-limited = Demasiadas solicitudes. Inténtalo de nuevo más tarde.
+internal-auth-invalid = Credenciales de servicio interno no válidas
+account-data-deletion-failed = Error al eliminar los datos de la cuenta
+consent-required = Falta el consentimiento legal obligatorio o está desactualizado

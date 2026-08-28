@@ -1,16 +1,160 @@
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
 use crate::commons::i18n::{ErrorKey, Locale};
+use crate::http::json::business_profile_address_json::BusinessProfileAddressJson;
 use crate::http::json::business_profile_json::BusinessProfileJson;
 use crate::http::json::error_response_json::{
     BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,
 };
-use crate::infrastructure::mapper::{BusinessProfileMapper, Mapper};
+use crate::infrastructure::mapper::{BusinessProfileAddressMapper, BusinessProfileMapper, Mapper};
 use crate::AppState;
-use axum::extract::State;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use axum::{Extension, Json};
 use business::domain::business_profile::BusinessProfile;
 use business::domain::user::User;
+use business::use_cases::business_profile_address_use_case::BusinessProfileAddressUseCase;
 use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
+
+pub async fn get_profile_by_id(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<BusinessProfileJson>> {
+    BusinessProfileUseCase::get_by_id(&state.conn, id)
+        .await
+        .map(BusinessProfileMapper::json)
+        .map(Json)
+        .ok_or(ExceptionResponse::NotFound(
+            locale,
+            ErrorKey::BusinessProfileNotFound,
+        ))
+}
+
+pub async fn get_profile_by_uuid(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<BusinessProfileJson>> {
+    BusinessProfileUseCase::get_by_uuid(&state.conn, uuid)
+        .await
+        .map(BusinessProfileMapper::json)
+        .map(Json)
+        .ok_or(ExceptionResponse::NotFound(
+            locale,
+            ErrorKey::BusinessProfileNotFound,
+        ))
+}
+
+pub async fn get_profiles_by_owner_id(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<Vec<BusinessProfileJson>>> {
+    let profiles = BusinessProfileUseCase::get_by_owner_id(&state.conn, id)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
+        })?;
+    Ok(Json(BusinessProfileMapper::json_vec(profiles)))
+}
+
+pub async fn get_profiles_by_owner_uuid(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<Vec<BusinessProfileJson>>> {
+    let profiles = BusinessProfileUseCase::get_by_owner_uuid(&state.conn, uuid)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
+        })?;
+    Ok(Json(BusinessProfileMapper::json_vec(profiles)))
+}
+
+pub async fn add_profile(
+    State(state): State<AppState>,
+    Extension(current_user): Extension<User>,
+    Extension(locale): Extension<Locale>,
+    Json(payload): Json<BusinessProfileJson>,
+) -> HttpResponse<(StatusCode, Json<BusinessProfileJson>)> {
+    let profile = BusinessProfileUseCase::add(
+        &state.conn,
+        BusinessProfileMapper::domain(payload),
+        &current_user,
+    )
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
+        })?;
+    Ok((
+        StatusCode::CREATED,
+        Json(BusinessProfileMapper::json(profile)),
+    ))
+}
+
+pub async fn update_profile(
+    State(state): State<AppState>,
+    Extension(current_user): Extension<User>,
+    Extension(locale): Extension<Locale>,
+    Json(payload): Json<BusinessProfileJson>,
+) -> HttpResponse<Json<BusinessProfileJson>> {
+    let profile =
+        BusinessProfileUseCase::update(&state.conn, BusinessProfileMapper::domain(payload), &current_user)
+            .await
+            .map_err(|error| {
+                ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
+            })?;
+    Ok(Json(BusinessProfileMapper::json(profile)))
+}
+
+pub async fn save_address(
+    State(state): State<AppState>,
+    Extension(current_user): Extension<User>,
+    Extension(locale): Extension<Locale>,
+    Json(payload): Json<BusinessProfileAddressJson>,
+) -> HttpResponse<Json<BusinessProfileAddressJson>> {
+    let (latitude, longitude) = (payload.latitude, payload.longitude);
+    let address = BusinessProfileAddressUseCase::save(
+        &state.conn,
+        BusinessProfileAddressMapper::domain(payload),
+        current_user.person_id,
+        latitude,
+        longitude,
+    )
+    .await
+    .map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
+    })?;
+    Ok(Json(BusinessProfileAddressMapper::json(address)))
+}
+
+pub async fn delete_address_by_id(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    Extension(current_user): Extension<User>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<StatusCode> {
+    BusinessProfileAddressUseCase::delete_by_id(&state.conn, id, current_user.person_id)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
+        })?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn delete_address_by_uuid(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<StatusCode> {
+    BusinessProfileAddressUseCase::delete_by_uuid(&state.conn, uuid, current_user.person_id)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
+        })?;
+    Ok(StatusCode::NO_CONTENT)
+}
 
 #[utoipa::path(
     get,
@@ -31,16 +175,11 @@ pub async fn get_by_owner_id(
     Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<BusinessProfileJson>>> {
-    let owner_id = current_user.id.unwrap();
-    log::info!("Fetching business profiles for owner_id={}", owner_id);
+    let owner_id = current_user.person_id;
 
     let result = BusinessProfileUseCase::get_by_owner_id(&state.conn, owner_id).await;
 
     if result.is_err() {
-        log::error!(
-            "Error fetching business profiles: {:?}",
-            result.err().unwrap()
-        );
         return Err(ExceptionResponse::NotFound(
             locale,
             ErrorKey::BusinessProfileNotFound,
@@ -79,7 +218,6 @@ pub async fn get_active(
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<BusinessProfileJson>> {
     let business_profile_id = active_business_profile.id.unwrap();
-    log::info!("Fetching business profile with id={}", business_profile_id);
 
     let result = BusinessProfileUseCase::get_by_id(&state.conn, business_profile_id).await;
 

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/business_profile.dart';
 import '../models/person.dart';
 import '../models/team_member_data.dart';
+import '../services/base_service.dart';
 import '../services/grpc/grpc_team_member_service.dart';
 
 class TeamMemberProvider extends ChangeNotifier {
@@ -40,8 +41,10 @@ class TeamMemberProvider extends ChangeNotifier {
         businessProfileId: businessProfileId,
         personId: personId,
       );
+    } on AppException catch (e) {
+      _error = e.message;
     } catch (e) {
-      _error = e.toString();
+      _error = 'Connection error. Please try again.';
     } finally {
       _loading = false;
       notifyListeners();
@@ -90,8 +93,13 @@ class TeamMemberProvider extends ChangeNotifier {
       _actionLoading = false;
       notifyListeners();
       return true;
+    } on AppException catch (e) {
+      _error = e.message;
+      _actionLoading = false;
+      notifyListeners();
+      return false;
     } catch (e) {
-      _error = e.toString();
+      _error = 'Connection error. Please try again.';
       _actionLoading = false;
       notifyListeners();
       return false;

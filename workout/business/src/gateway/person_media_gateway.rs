@@ -1,6 +1,6 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::person_media::{PersonMedia, PersonMediaEntityMapper};
-use entity::person_media::{Column, Entity, Model};
+use entity::person_media_entity::{Column, Entity, PersonMediaEntity};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
 
 pub struct PersonMediaGateway {}
@@ -9,7 +9,7 @@ impl PersonMediaGateway {
     pub async fn save(
         db: &DbConn,
         media: PersonMedia,
-    ) -> Result<entity::person_media::ActiveModel, DbErr> {
+    ) -> Result<entity::person_media_entity::ActiveModel, DbErr> {
         let active_model = PersonMediaEntityMapper::build_active_model(media);
         active_model.save(db).await
     }
@@ -18,7 +18,7 @@ impl PersonMediaGateway {
         db: &DbConn,
         person_id: i32,
         album: String,
-    ) -> Result<Vec<Model>, DbErr> {
+    ) -> Result<Vec<PersonMediaEntity>, DbErr> {
         Entity::find()
             .filter(Column::PersonId.eq(person_id))
             .filter(Column::Album.eq(album))
@@ -26,7 +26,20 @@ impl PersonMediaGateway {
             .await
     }
 
-    pub async fn find_by_s3_key(db: &DbConn, s3_key: &str) -> Result<Option<Model>, DbErr> {
+    pub async fn find_all_by_person(
+        db: &DbConn,
+        person_id: i32,
+    ) -> Result<Vec<PersonMediaEntity>, DbErr> {
+        Entity::find()
+            .filter(Column::PersonId.eq(person_id))
+            .all(db)
+            .await
+    }
+
+    pub async fn find_by_s3_key(
+        db: &DbConn,
+        s3_key: &str,
+    ) -> Result<Option<PersonMediaEntity>, DbErr> {
         Entity::find()
             .filter(Column::S3Key.eq(s3_key))
             .one(db)

@@ -75,15 +75,23 @@ services:
       - AWS_WORKOUT_BUCKET=${WORKOUT_AWS_WORKOUT_BUCKET}
       - AWS_ACCESS_KEY_ID=${WORKOUT_AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${WORKOUT_AWS_SECRET_ACCESS_KEY}
-      - AWS_REGION=${WORKOUT_AWS_REGION:-us-east-1}
+      - AWS_REGION=${WORKOUT_AWS_REGION:?WORKOUT_AWS_REGION must be explicitly set}
       - AWS_SQS_QUEUE_URL=${WORKOUT_AWS_SQS_QUEUE_URL}
       - RUST_BACKTRACE=1
       - RUST_LOG=${WORKOUT_RUST_LOG:-info}
       - CLOUDFRONT_KEY_PAIR_ID=${WORKOUT_CLOUDFRONT_KEY_PAIR_ID}
       - CLOUDFRONT_DOMAIN=${WORKOUT_CLOUDFRONT_DOMAIN}
-      - ACCESS_TOKEN_SECRET=${WORKOUT_ACCESS_TOKEN_SECRET}
-      - REFRESH_TOKEN_SECRET=${WORKOUT_REFRESH_TOKEN_SECRET}
+      # Shared across workout-app, integration-app and timeline-app — must match or JWTs fail with 401.
+      - ACCESS_TOKEN_SECRET=${AUTH_ACCESS_TOKEN_SECRET}
+      - REFRESH_TOKEN_SECRET=${AUTH_REFRESH_TOKEN_SECRET}
       - PRIVATE_KEY_RAW=${WORKOUT_PRIVATE_KEY_RAW}
+      - TERMS_VERSION=${TERMS_VERSION:-1.0.0}
+      - PRIVACY_VERSION=${PRIVACY_VERSION:-1.0.0}
+      - HEALTH_DATA_CONSENT_VERSION=${HEALTH_DATA_CONSENT_VERSION:-1.0.0}
+      - TIMELINE_BASE_URL=${TIMELINE_BASE_URL:-http://timeline-app:8091}
+      - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:?INTERNAL_SERVICE_SECRET must be set}
+      - ACCOUNT_DELETION_GRACE_DAYS=${ACCOUNT_DELETION_GRACE_DAYS:-30}
+      - ACCOUNT_PURGE_INTERVAL_SECONDS=${ACCOUNT_PURGE_INTERVAL_SECONDS:-900}
     networks:
       - edge
       - data
@@ -113,8 +121,19 @@ services:
 #      - RUST_LOG=info,tonic=debug,rustls=trace,hyper=debug
       - RUST_LOG=info
       - RUST_BACKTRACE=full
-      - ACCESS_TOKEN_SECRET=${WORKOUT_ACCESS_TOKEN_SECRET}
-      - REFRESH_TOKEN_SECRET=${WORKOUT_REFRESH_TOKEN_SECRET}
+      # S3/CloudFront — needed by GetPersonImageUploadUrl / DeletePersonImage gRPC methods
+      # (ImageStorageUseCase::generate_presigned_url does env::var(...).expect(...), so a
+      # missing var panics the request task and the gateway returns 502).
+      - AWS_WORKOUT_BUCKET=${WORKOUT_AWS_WORKOUT_BUCKET}
+      - AWS_ACCESS_KEY_ID=${WORKOUT_AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${WORKOUT_AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${WORKOUT_AWS_REGION:?WORKOUT_AWS_REGION must be explicitly set}
+      - CLOUDFRONT_KEY_PAIR_ID=${WORKOUT_CLOUDFRONT_KEY_PAIR_ID}
+      - CLOUDFRONT_DOMAIN=${WORKOUT_CLOUDFRONT_DOMAIN}
+      - PRIVATE_KEY_RAW=${WORKOUT_PRIVATE_KEY_RAW}
+      # Shared across workout-app, integration-app and timeline-app — must match or JWTs fail with 401.
+      - ACCESS_TOKEN_SECRET=${AUTH_ACCESS_TOKEN_SECRET}
+      - REFRESH_TOKEN_SECRET=${AUTH_REFRESH_TOKEN_SECRET}
     volumes:
       - ../certs/server.crt:/etc/grpc/certs/server.crt:ro
       - ../certs/server.key:/etc/grpc/certs/server.key:ro # O integration app needs the TLS key to serve gRPC securely
@@ -152,14 +171,15 @@ services:
       - AWS_WORKOUT_BUCKET=${TIMELINE_AWS_WORKOUT_BUCKET}
       - AWS_ACCESS_KEY_ID=${TIMELINE_AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${TIMELINE_AWS_SECRET_ACCESS_KEY}
-      - AWS_REGION=${TIMELINE_AWS_REGION:-us-east-1}
+      - AWS_REGION=${TIMELINE_AWS_REGION:?TIMELINE_AWS_REGION must be explicitly set}
       - RUST_BACKTRACE=1
 #      - RUST_LOG=info,tonic=debug,rustls=trace,hyper=debug
       - RUST_LOG=info
       - CLOUDFRONT_KEY_PAIR_ID=${TIMELINE_CLOUDFRONT_KEY_PAIR_ID}
       - CLOUDFRONT_DOMAIN=${TIMELINE_CLOUDFRONT_DOMAIN}
-      - ACCESS_TOKEN_SECRET=${TIMELINE_ACCESS_TOKEN_SECRET}
-      - REFRESH_TOKEN_SECRET=${TIMELINE_REFRESH_TOKEN_SECRET}
+      # Shared across workout-app, integration-app and timeline-app — must match or JWTs fail with 401.
+      - ACCESS_TOKEN_SECRET=${AUTH_ACCESS_TOKEN_SECRET}
+      - REFRESH_TOKEN_SECRET=${AUTH_REFRESH_TOKEN_SECRET}
       - PRIVATE_KEY_RAW=${TIMELINE_PRIVATE_KEY_RAW}
       - GRPC_PROTOCOL=${GRPC_PROTOCOL}
       - GRPC_HOST=${GRPC_HOST}
@@ -167,6 +187,7 @@ services:
       - GRPC_PORT=${GRPC_PORT}
       - GRPC_USE_TLS=${GRPC_USE_TLS}
       - GRPC_CERT_PATH=${GRPC_CERT_PATH}
+      - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:?INTERNAL_SERVICE_SECRET must be set}
     volumes:
       - ../certs/server.crt:/etc/grpc/certs/server.crt:ro
     networks:
@@ -176,7 +197,7 @@ services:
       mongo:
         condition: service_healthy
       integration-app:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     deploy:
       resources:
@@ -195,7 +216,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
       MONGODB_USERNAME: ${MONGODB_USERNAME}
       MONGODB_PASSWORD: ${MONGODB_PASSWORD}
-      MONGODB_DATABASE: timeline
+      # Must match TIMELINE_DATABASE_NAME so the app user is created in the db the app uses.
+      MONGODB_DATABASE: ${TIMELINE_DATABASE_NAME}
     networks:
       - data
     healthcheck:
@@ -206,6 +228,7 @@ services:
       start_period: 20s
     volumes:
       - mongodb_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
     deploy:
       resources:
         limits:

@@ -84,6 +84,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
 
   Future<void> _pickCustomRange() async {
     final now = DateTime.now();
+    final businessType = context.read<PersonProvider>().activeBusinessProfile?.businessType;
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
@@ -95,7 +96,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
       builder: (context, child) => Theme(
         data: Theme.of(
           context,
-        ).copyWith(colorScheme: const ColorScheme.light(primary: AppColors.primary)),
+        ).copyWith(colorScheme: ColorScheme.light(primary: AppColors.primaryFor(businessType))),
         child: child!,
       ),
     );
@@ -115,6 +116,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return MainLayout(
       navSection: NavSection.workout,
@@ -131,12 +133,12 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (provider.fetchError != null) {
-                  return _buildError(provider.fetchError!);
+                  return _buildError(provider.fetchError!, businessType);
                 }
                 if (provider.sessions.isEmpty) {
                   return _buildEmpty(l10n);
                 }
-                return _buildContent(l10n, provider.sessions);
+                return _buildContent(l10n, provider.sessions, businessType);
               },
             ),
           ),
@@ -206,7 +208,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
 
   // ── Main content ─────────────────────────────────────────────────────────────
 
-  Widget _buildContent(AppLocalizations l10n, List<WorkoutSession> sessions) {
+  Widget _buildContent(AppLocalizations l10n, List<WorkoutSession> sessions, String? businessType) {
     final totalVolume = sessions.fold<double>(0, (acc, s) => acc + s.totalVolume);
     final totalSets = sessions.fold<int>(0, (acc, s) => acc + s.totalSets);
     final avgDuration = sessions.isEmpty
@@ -219,11 +221,19 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Summary cards
-          _buildSummaryRow(l10n, sessions.length, totalVolume, totalSets, avgDuration, sessions),
+          _buildSummaryRow(
+            l10n,
+            sessions.length,
+            totalVolume,
+            totalSets,
+            avgDuration,
+            sessions,
+            businessType,
+          ),
           const SizedBox(height: 20),
 
           // Bar chart
-          _buildBarChart(l10n, sessions),
+          _buildBarChart(l10n, sessions, businessType),
           const SizedBox(height: 20),
 
           // Session list
@@ -259,6 +269,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
     int totalSets,
     int avgDuration,
     List<WorkoutSession> sessions,
+    String? businessType,
   ) {
     final mins = avgDuration ~/ 60;
     final secs = avgDuration % 60;
@@ -270,12 +281,12 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
           icon: Icons.fitness_center,
           value: '$count',
           label: l10n.sessionsCount,
-          color: AppColors.primary,
+          color: AppColors.primaryFor(businessType),
         ),
         const SizedBox(width: 8),
         _SummaryCard(
           icon: Icons.bar_chart,
-          value: '${totalVolume.toStringAsFixed(0)} kg',
+          value: '${totalVolume.toStringAsFixed(3)} kg',
           label: l10n.executionTotalVolume,
           color: AppColors.secondary,
         ),
@@ -292,7 +303,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
 
   // ── Bar chart ─────────────────────────────────────────────────────────────────
 
-  Widget _buildBarChart(AppLocalizations l10n, List<WorkoutSession> sessions) {
+  Widget _buildBarChart(AppLocalizations l10n, List<WorkoutSession> sessions, String? businessType) {
     // Limit chart to last 10 sessions for readability
     final displayed = sessions.length > 10 ? sessions.sublist(sessions.length - 10) : sessions;
 
@@ -308,7 +319,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
           BarChartRodData(
             toY: session.totalVolume,
             width: 16,
-            color: AppColors.primary,
+            color: AppColors.primaryFor(businessType),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
         ],
@@ -420,7 +431,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
     );
   }
 
-  Widget _buildError(String msg) {
+  Widget _buildError(String msg, String? businessType) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -438,7 +449,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
             ElevatedButton(
               onPressed: _load,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.primaryFor(businessType),
                 foregroundColor: Colors.white,
               ),
               child: const Text('Retry'),
@@ -469,15 +480,18 @@ class _PeriodChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.transparent,
+          color: selected ? AppColors.primaryFor(businessType) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? AppColors.primary : const Color(0xFFCCCCCC)),
+          border: Border.all(
+            color: selected ? AppColors.primaryFor(businessType) : const Color(0xFFCCCCCC),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -564,6 +578,7 @@ class _SessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
     final date = session.completedAtDate;
     final dateStr = date != null
         ? '${date.day.toString().padLeft(2, '0')}/'
@@ -612,7 +627,7 @@ class _SessionCard extends StatelessWidget {
                 _StatChip(
                   icon: Icons.timer_outlined,
                   label: session.formattedDuration,
-                  color: AppColors.primary,
+                  color: AppColors.primaryFor(businessType),
                 ),
                 _StatChip(
                   icon: Icons.repeat,
@@ -621,7 +636,7 @@ class _SessionCard extends StatelessWidget {
                 ),
                 _StatChip(
                   icon: Icons.fitness_center,
-                  label: '${session.totalVolume.toStringAsFixed(0)} kg',
+                  label: '${session.totalVolume.toStringAsFixed(3)} kg',
                   color: AppColors.third,
                 ),
               ],

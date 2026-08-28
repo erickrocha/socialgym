@@ -3,6 +3,7 @@ import {Spinner} from "./commons/gui/index.js";
 import {lazy, Suspense} from "react";
 import {Navigate, Route, Routes} from "react-router";
 import ProtectedRoute from "./guard/ProtectedRoute.jsx";
+import CookieBanner from './commons/components/CookieBanner/CookieBanner.jsx';
 
 const SignIn = lazy(() => import("./pages/security/SignIn/SignIn.jsx"));
 const SignUp = lazy(() => import("./pages/security/SignUp/SignUp.jsx"));
@@ -22,11 +23,14 @@ const WorkoutSessions = lazy(() => import("./pages/WorkoutSessions/WorkoutSessio
 const Evolution = lazy(() => import("./pages/Evolution/Evolution.jsx"));
 const Notifications = lazy(() => import("./pages/Notifications/Notifications.jsx"));
 const Settings = lazy(() => import("./pages/Settings/Settings.jsx"));
+const LegalDocument = lazy(() => import("./pages/Legal/LegalDocument.jsx"));
+const Moderation = lazy(() => import("./pages/Moderation/Moderation.jsx"));
 
 function App() {
 
     return (
         <Suspense fallback={<Spinner/>}>
+            <CookieBanner />
             <Routes>
                 <Route path="/" element={<Navigate to="/home" replace/>}/>
                 <Route path="/" element={<ProtectedRoute/>}>
@@ -45,9 +49,14 @@ function App() {
                     <Route path="/business" element={<Business/>}/>
                     <Route path="/business/:id" element={<BusinessProfile/>}/>
                     <Route path="/business/:id/team" element={<BusinessTeam/>}/>
+                    <Route path="/moderation" element={<Moderation/>}/>
                 </Route>
                 <Route path="/login" element={<SignIn/>}/>
                 <Route path="/signup" element={<SignUp/>}/>
+                <Route path="/terms" element={<LegalDocument document="terms"/>}/>
+                <Route path="/privacy" element={<LegalDocument document="privacy"/>}/>
+                <Route path="/privacy/dpo" element={<LegalDocument document="privacy"/>}/>
+                <Route path="/health-consent" element={<LegalDocument document="health_data"/>}/>
                 <Route path="*" element={<Navigate to="/home"/>}/>
             </Routes>
         </Suspense>

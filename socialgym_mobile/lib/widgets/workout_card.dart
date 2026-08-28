@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../config/app_colors.dart';
 import '../l10n/app_localizations.dart';
 import '../models/visibility_option.dart';
 import '../models/workout.dart';
+import '../providers/person_provider.dart';
 
 class WorkoutCard extends StatelessWidget {
   final Workout workout;
@@ -16,6 +18,7 @@ class WorkoutCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final visibility = VisibilityOption.fromApiValue(workout.visibility);
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return GestureDetector(
       onTap: onTap,
@@ -24,7 +27,10 @@ class WorkoutCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? AppColors.primary : Colors.transparent, width: 2),
+          border: Border.all(
+            color: isSelected ? AppColors.primaryFor(businessType) : Colors.transparent,
+            width: 2,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withAlpha(isSelected ? 30 : 15),
@@ -46,7 +52,7 @@ class WorkoutCard extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(25),
+                      color: AppColors.primaryFor(businessType).withAlpha(25),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
@@ -113,7 +119,9 @@ class WorkoutCard extends StatelessWidget {
               // Expand indicator
               if (isSelected) ...[
                 const SizedBox(height: 8),
-                const Center(child: Icon(Icons.keyboard_arrow_down, color: AppColors.primary)),
+                Center(
+                  child: Icon(Icons.keyboard_arrow_down, color: AppColors.primaryFor(businessType)),
+                ),
               ],
             ],
           ),

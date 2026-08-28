@@ -1,10 +1,10 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
 use chrono::NaiveDateTime;
-use entity::user::{ActiveModel, Model};
+use entity::user_entity::{ActiveModel, UserEntity};
 use sea_orm::{NotSet, Set};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct User {
     pub id: Option<i32>,
     pub uuid: Option<String>,
@@ -20,10 +20,37 @@ pub struct User {
     pub failed_login_attempts: i32,
     pub locked_until: Option<NaiveDateTime>,
     pub token_valid_after: Option<NaiveDateTime>,
+    pub deletion_requested_at: Option<NaiveDateTime>,
+    pub deletion_scheduled_at: Option<NaiveDateTime>,
+}
+
+/// Redacts `password` so `log::info!("{:?}", user)` can never leak a hash (or,
+/// worse, a plaintext password mid-signup) into logs.
+impl std::fmt::Debug for User {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("User")
+            .field("id", &self.id)
+            .field("uuid", &self.uuid)
+            .field("email", &self.email)
+            .field("name", &self.name)
+            .field("password", &"[redacted]")
+            .field("enabled", &self.enabled)
+            .field("first_login", &self.first_login)
+            .field("person_id", &self.person_id)
+            .field("person_uuid", &self.person_uuid)
+            .field("created_at", &self.created_at)
+            .field("updated_at", &self.updated_at)
+            .field("failed_login_attempts", &self.failed_login_attempts)
+            .field("locked_until", &self.locked_until)
+            .field("token_valid_after", &self.token_valid_after)
+            .field("deletion_requested_at", &self.deletion_requested_at)
+            .field("deletion_scheduled_at", &self.deletion_scheduled_at)
+            .finish()
+    }
 }
 
 pub struct UserEntityMapper {}
-impl EntityMapper<User, Model, ActiveModel> for UserEntityMapper {
+impl EntityMapper<User, UserEntity, ActiveModel> for UserEntityMapper {
     fn build_active_model(d: User) -> ActiveModel {
         ActiveModel {
             id: match d.id {
@@ -46,10 +73,12 @@ impl EntityMapper<User, Model, ActiveModel> for UserEntityMapper {
             failed_login_attempts: Set(d.failed_login_attempts),
             locked_until: Set(d.locked_until.map(|dt| dt.and_utc())),
             token_valid_after: Set(d.token_valid_after.map(|dt| dt.and_utc())),
+            deletion_requested_at: Set(d.deletion_requested_at.map(|dt| dt.and_utc())),
+            deletion_scheduled_at: Set(d.deletion_scheduled_at.map(|dt| dt.and_utc())),
         }
     }
 
-    fn from_model(e: Model) -> User {
+    fn from_model(e: UserEntity) -> User {
         User {
             id: Some(e.id),
             uuid: Some(uuid_to_string(e.uuid)),
@@ -65,6 +94,8 @@ impl EntityMapper<User, Model, ActiveModel> for UserEntityMapper {
             failed_login_attempts: e.failed_login_attempts,
             locked_until: e.locked_until.map(|dt| dt.naive_utc()),
             token_valid_after: e.token_valid_after.map(|dt| dt.naive_utc()),
+            deletion_requested_at: e.deletion_requested_at.map(|dt| dt.naive_utc()),
+            deletion_scheduled_at: e.deletion_scheduled_at.map(|dt| dt.naive_utc()),
         }
     }
 
@@ -84,6 +115,8 @@ impl EntityMapper<User, Model, ActiveModel> for UserEntityMapper {
             failed_login_attempts: e.failed_login_attempts.unwrap(),
             locked_until: e.locked_until.unwrap().map(|dt| dt.naive_utc()),
             token_valid_after: e.token_valid_after.unwrap().map(|dt| dt.naive_utc()),
+            deletion_requested_at: e.deletion_requested_at.unwrap().map(|dt| dt.naive_utc()),
+            deletion_scheduled_at: e.deletion_scheduled_at.unwrap().map(|dt| dt.naive_utc()),
         }
     }
 }
@@ -136,6 +169,8 @@ impl User {
             failed_login_attempts: 0,
             locked_until: None,
             token_valid_after: None,
+            deletion_requested_at: None,
+            deletion_scheduled_at: None,
         }
     }
 }

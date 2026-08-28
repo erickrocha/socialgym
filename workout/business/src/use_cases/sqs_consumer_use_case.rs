@@ -243,10 +243,14 @@ impl SqsConsumerUseCase {
 
         // ---- Resolve person ----
         let person_model = match PersonGateway::find_by_uuid(db, person_uuid).await {
-            Some(p) => p,
-            None => {
+            Ok(Some(p)) => p,
+            Ok(None) => {
                 // Person was deleted; nothing to do – discard permanently
                 log::warn!("No person found for uuid '{}' (key '{}') – discarding message", person_uuid, object_key);
+                return Ok(());
+            }
+            Err(e) => {
+                log::warn!("Invalid person uuid '{}' in object key '{}': {} – discarding message", person_uuid, object_key, e);
                 return Ok(());
             }
         };
@@ -296,7 +300,7 @@ impl SqsConsumerUseCase {
     /// When `album` is `"avatar"` or `"cover"`, updates the matching column on
     /// the `person` table so the existing image-delivery path keeps working.
     async fn maybe_sync_person_image(db: &DbConn, person_id: i32, album: &str, s3_key: &str) {
-        use entity::person;
+        use entity::person_entity as person;
         use sea_orm::{ActiveModelTrait, ActiveValue::Set};
 
         let update_result = match album {
@@ -392,12 +396,12 @@ mod tests {
     #[test]
     fn mime_type_from_content_type_roundtrip() {
         let mime = MimeType::from_content_type("image/jpeg");
-        assert_eq!(mime.to_text(), "image/jpeg");
+        assert_eq!(mime.to_string(), "image/jpeg");
 
         let mime = MimeType::from_content_type("video/mp4");
-        assert_eq!(mime.to_text(), "video/mp4");
+        assert_eq!(mime.to_string(), "video/mp4");
 
         let mime = MimeType::from_content_type("application/octet-stream");
-        assert_eq!(mime.to_text(), "application/octet-stream");
+        assert_eq!(mime.to_string(), "application/octet-stream");
     }
 }

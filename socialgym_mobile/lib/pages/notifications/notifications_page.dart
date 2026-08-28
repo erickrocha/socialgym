@@ -76,13 +76,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget build(BuildContext context) {
     final personProvider = context.read<PersonProvider>();
     final mentionedUuid = personProvider.activeAuthorUuid;
+    final businessType = personProvider.activeBusinessProfile?.businessType;
     return MainLayout(
       navSection: NavSection.home,
       currentRoute: '/notifications',
       body: Consumer<NotificationsProvider>(
         builder: (context, notificationsProvider, _) {
           return RefreshIndicator(
-            color: AppColors.primary,
+            color: AppColors.primaryFor(businessType),
             onRefresh: () => notificationsProvider.fetchNotifications(_token, mentionedUuid),
             child: CustomScrollView(
               controller: _scrollController,
@@ -123,11 +124,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   ),
                 if (notificationsProvider.loading &&
                     notificationsProvider.notifications.isEmpty)
-                  const SliverFillRemaining(
+                  SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
                       child: CircularProgressIndicator(
-                        color: AppColors.primary,
+                        color: AppColors.primaryFor(businessType),
                       ),
                     ),
                   )
@@ -156,12 +157,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     }, childCount: notificationsProvider.notifications.length),
                   ),
                 if (notificationsProvider.loadingMore)
-                  const SliverToBoxAdapter(
+                  SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Center(
                         child: CircularProgressIndicator(
-                          color: AppColors.primary,
+                          color: AppColors.primaryFor(businessType),
                         ),
                       ),
                     ),

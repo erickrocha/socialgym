@@ -55,14 +55,68 @@ class WorkoutProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> addWorkout(Map<String, dynamic> workoutData, String token) async {
+  Future<bool> addWorkout(Workout workoutData) async {
     _loading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final workout = await GrpcWorkoutService.createWorkout(workout: Workout.fromJson(workoutData));
+      final workout = await GrpcWorkoutService.createWorkout(workout: workoutData);
       _workouts = [..._workouts, workout];
+      _loading = false;
+      notifyListeners();
+      return true;
+    } on AppException catch (e) {
+      _error = e.message;
+      _loading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'Connection error. Please try again.';
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateWorkout(Workout workout) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final updated = await GrpcWorkoutService.update(workout: workout);
+      _workouts = _workouts.map((w) => w.id == updated.id ? updated : w).toList();
+      if (_selectedWorkout?.id == updated.id) {
+        _selectedWorkout = updated;
+      }
+      _loading = false;
+      notifyListeners();
+      return true;
+    } on AppException catch (e) {
+      _error = e.message;
+      _loading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'Connection error. Please try again.';
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteWorkout(String uuid) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await GrpcWorkoutService.deleteWorkout(uuid: uuid);
+      _workouts = _workouts.where((w) => w.uuid != uuid).toList();
+      if (_selectedWorkout?.uuid == uuid) {
+        _selectedWorkout = null;
+      }
       _loading = false;
       notifyListeners();
       return true;

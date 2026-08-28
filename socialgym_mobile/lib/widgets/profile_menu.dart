@@ -110,10 +110,17 @@ class _ProfileMenuState extends State<ProfileMenu> {
           final authProvider = context.read<AuthProvider>();
           final personProvider = context.read<PersonProvider>();
           final navigator = Navigator.of(context);
-          final newAuth = await personProvider.switchProfile(index, token);
+          final newAuth = await personProvider.switchProfile(
+            index,
+            token,
+            onTokenIssued: authProvider.applySwitchedToken,
+          );
           if (newAuth != null) {
-            await authProvider.applySwitchedToken(newAuth);
             navigator.pushNamedAndRemoveUntil('/feed', (route) => false);
+          } else if (context.mounted && personProvider.error != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(personProvider.error!)),
+            );
           }
         }
       }
@@ -126,10 +133,16 @@ class _ProfileMenuState extends State<ProfileMenu> {
         final authProvider = context.read<AuthProvider>();
         final personProvider = context.read<PersonProvider>();
         final navigator = Navigator.of(context);
-        final newAuth = await personProvider.switchToPersonal(token);
+        final newAuth = await personProvider.switchToPersonal(
+          token,
+          onTokenIssued: authProvider.applySwitchedToken,
+        );
         if (newAuth != null) {
-          await authProvider.applySwitchedToken(newAuth);
           navigator.pushNamedAndRemoveUntil('/feed', (route) => false);
+        } else if (context.mounted && personProvider.error != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(personProvider.error!)),
+          );
         }
         break;
       case 'add_profile':
@@ -161,7 +174,9 @@ class _ProfileMenuState extends State<ProfileMenu> {
   }
 
   List<PopupMenuEntry<String>> _buildMenuItems(AppLocalizations l10n) {
-    final person = Provider.of<PersonProvider>(context, listen: false).person;
+    final personProvider = Provider.of<PersonProvider>(context, listen: false);
+    final person = personProvider.person;
+    final businessType = personProvider.activeBusinessProfile?.businessType;
     final profiles = person?.businessProfiles ?? [];
 
     final items = <PopupMenuEntry<String>>[
@@ -211,14 +226,14 @@ class _ProfileMenuState extends State<ProfileMenu> {
         );
       }),
 
-      if (Provider.of<PersonProvider>(context, listen: false).isProfessional)
+      if (personProvider.isProfessional)
         PopupMenuItem(
           value: 'switch_personal',
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.account_circle_outlined,
-                color: AppColors.primary,
+                color: AppColors.primaryFor(businessType),
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -236,9 +251,9 @@ class _ProfileMenuState extends State<ProfileMenu> {
         value: 'add_profile',
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.add_circle_outline,
-              color: AppColors.primary,
+              color: AppColors.primaryFor(businessType),
               size: 20,
             ),
             const SizedBox(width: 12),

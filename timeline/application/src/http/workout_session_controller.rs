@@ -38,16 +38,21 @@ pub struct WorkoutFilterParams {
         ("api_key" = [])
     )
 )]
-pub async fn create_workout_session(state: State<AppState>,Extension(locale): Extension<Locale>,Json(payload): Json<WorkoutSessionJson>) -> HttpResponse<(StatusCode, Json<WorkoutSessionJson>)> {
+pub async fn create_workout_session(
+    state: State<AppState>,
+    Extension(locale): Extension<Locale>,
+    Extension(current_user): Extension<User>,
+    Json(payload): Json<WorkoutSessionJson>,
+) -> HttpResponse<(StatusCode, Json<WorkoutSessionJson>)> {
     let domain = WorkoutMapper::domain(payload);
 
-    let entity = WorkoutSessionUseCase::add(&state.database, domain).await;
+    let done_workout =
+        WorkoutSessionUseCase::add(&state.database, domain, &current_user.person_uuid)
+            .await
+            .map_err(|error| {
+                ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutAddFailed)
+            })?;
 
-    if entity.is_err() {
-        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::WorkoutAddFailed));
-    }
-
-    let done_workout = entity.unwrap();
     let payload = WorkoutMapper::json(done_workout);
     Ok((StatusCode::CREATED, Json(payload)))
 }
@@ -71,18 +76,23 @@ pub async fn create_workout_session(state: State<AppState>,Extension(locale): Ex
         ("api_key" = [])
     )
 )]
-pub async fn get_workout_session(state: State<AppState>,Extension(locale): Extension<Locale>,Path(workout_session_id): Path<String>) -> HttpResponse<Json<WorkoutSessionJson>> {
-    let response = WorkoutSessionUseCase::find_by_id(&state.database, workout_session_id.clone()).await;
-    match response {
-        Some(workout) => {
-            let payload = WorkoutMapper::json(workout);
-            Ok(Json(payload))
-        }
-        None => {
-            Err(ExceptionResponse::not_found(locale, ErrorKey::WorkoutNotFound))
-        }
-    }
+pub async fn get_workout_session(
+    state: State<AppState>,
+    Extension(locale): Extension<Locale>,
+    Extension(current_user): Extension<User>,
+    Path(workout_session_id): Path<String>,
+) -> HttpResponse<Json<WorkoutSessionJson>> {
+    let workout = WorkoutSessionUseCase::find_by_id(
+        &state.database,
+        workout_session_id.clone(),
+        &current_user.person_uuid,
+    )
+    .await
+    .map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutNotFound)
+    })?;
 
+    Ok(Json(WorkoutMapper::json(workout)))
 }
 
 #[utoipa::path(

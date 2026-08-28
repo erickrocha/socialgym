@@ -1,4 +1,4 @@
-    use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum ImageType {
@@ -48,13 +48,6 @@ impl ProfileType {
             _ => ProfileType::Professional,
         }
     }
-
-    pub fn to_text(&self) -> String {
-        match self {
-            ProfileType::Professional => "Professional".to_string(),
-            ProfileType::Company => "Company".to_string(),
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -66,7 +59,7 @@ pub enum Visibility {
 }
 
 impl Display for Visibility {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Visibility::Public => write!(f, "public"),
             Visibility::Private => write!(f, "private"),
@@ -74,27 +67,16 @@ impl Display for Visibility {
             Visibility::Professional => write!(f, "professional"),
         }
     }
-
-
 }
 
 impl Visibility {
     pub fn from_string(s: &str) -> Visibility {
-        match s {
+        match s.to_lowercase().as_str() {
             "public" => Visibility::Public,
             "private" => Visibility::Private,
-            "friends" => Visibility::Friends,
+            "friends" | "friendsonly" => Visibility::Friends,
             "professional" => Visibility::Professional,
             _ => Visibility::Public,
-        }
-    }
-
-    fn to_text(&self) -> String {
-        match self {
-            Visibility::Public => "Public".to_string(),
-            Visibility::Private => "Private".to_string(),
-            Visibility::Friends => "Friends".to_string(),
-            Visibility::Professional => "Professional".to_string(),
         }
     }
 }
@@ -106,21 +88,23 @@ pub enum Category {
     Hypertrophy,
     Endurance,
     Power,
-    Speed
+    Speed,
+}
+
+impl Display for Category {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Category::Force => write!(f, "Force"),
+            Category::Cardio => write!(f, "Cardio"),
+            Category::Hypertrophy => write!(f, "Hypertrophy"),
+            Category::Endurance => write!(f, "Endurance"),
+            Category::Power => write!(f, "Power"),
+            Category::Speed => write!(f, "Speed"),
+        }
+    }
 }
 
 impl Category {
-    pub fn to_text(&self) -> String {
-        match self {
-            Category::Force => "Force".to_string(),
-            Category::Cardio => "Cardio".to_string(),
-            Category::Hypertrophy => "Hypertrophy".to_string(),
-            Category::Endurance => "Endurance".to_string(),
-            Category::Power => "Power".to_string(),
-            Category::Speed => "Speed".to_string(),
-        }
-    }
-
     pub fn from_string(s: &str) -> Category {
         match s {
             "Force" => Category::Force,
@@ -150,11 +134,34 @@ pub enum MimeType {
     Unknow(String),
 }
 
+impl Display for MimeType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MimeType::Jpeg(_) => write!(f, "image/jpeg"),
+            MimeType::Png(_) => write!(f, "image/png"),
+            MimeType::Gif(_) => write!(f, "image/gif"),
+            MimeType::WebP(_) => write!(f, "image/webp"),
+            MimeType::Svg(_) => write!(f, "image/svg+xml"),
+            MimeType::Avif(_) => write!(f, "image/avif"),
+            MimeType::Mp4(_) => write!(f, "video/mp4"),
+            MimeType::WebM(_) => write!(f, "video/webm"),
+            MimeType::QuickTime(_) => write!(f, "video/quicktime"),
+            MimeType::Mpeg(_) => write!(f, "audio/mpeg"),
+            MimeType::Aac(_) => write!(f, "audio/aac"),
+            MimeType::Unknow(_) => write!(f, "application/octet-stream"),
+        }
+    }
+}
+
 impl MimeType {
     /// Maps a full content-type header value (e.g. `"image/jpeg"`) to a `MimeType`.
     pub fn from_content_type(content_type: &str) -> MimeType {
         // Strip any parameters like "; charset=utf-8"
-        let base = content_type.split(';').next().unwrap_or(content_type).trim();
+        let base = content_type
+            .split(';')
+            .next()
+            .unwrap_or(content_type)
+            .trim();
         match base {
             "image/jpeg" | "image/jpg" => MimeType::Jpeg(base.to_string()),
             "image/png" => MimeType::Png(base.to_string()),
@@ -198,27 +205,22 @@ impl MimeType {
             _ => MimeType::Unknow("application/octet-stream".to_string()),
         }
     }
-
-    pub fn to_text(&self) -> String {
-        match self {
-            MimeType::Jpeg(_) => "image/jpeg".to_string(),
-            MimeType::Png(_) => "image/png".to_string(),
-            MimeType::Gif(_) => "image/gif".to_string(),
-            MimeType::WebP(_) => "image/webp".to_string(),
-            MimeType::Svg(_) => "image/svg+xml".to_string(),
-            MimeType::Avif(_) => "image/avif".to_string(),
-            MimeType::Mp4(_) => "video/mp4".to_string(),
-            MimeType::WebM(_) => "video/webm".to_string(),
-            MimeType::QuickTime(_) => "video/quicktime".to_string(),
-            MimeType::Mpeg(_) => "audio/mpeg".to_string(),
-            MimeType::Aac(_) => "audio/aac".to_string(),
-            MimeType::Unknow(_) => "application/octet-stream".to_string(),
-        }
-    }
 }
 
 pub enum MediaType {
-    Image, Video, Audio,
+    Image,
+    Video,
+    Audio,
+}
+
+impl Display for MediaType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MediaType::Image => write!(f, "Image"),
+            MediaType::Video => write!(f, "Video"),
+            MediaType::Audio => write!(f, "Audio"),
+        }
+    }
 }
 
 impl MediaType {
@@ -230,23 +232,25 @@ impl MediaType {
             _ => MediaType::Image,
         }
     }
-
-    pub fn to_text(&self) -> String {
-        match self {
-            MediaType::Image => "Image".to_string(),
-            MediaType::Video => "Video".to_string(),
-            MediaType::Audio => "Audio".to_string(),
-        }
-    }
 }
-
 
 #[derive(Debug, Clone)]
 pub enum Position {
     Left,
     Top,
     Bottom,
-    Right
+    Right,
+}
+
+impl Display for Position {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Position::Left => write!(f, "Left"),
+            Position::Top => write!(f, "Top"),
+            Position::Bottom => write!(f, "Bottom"),
+            Position::Right => write!(f, "Right"),
+        }
+    }
 }
 
 impl Position {
@@ -259,13 +263,38 @@ impl Position {
             _ => Position::Left,
         }
     }
+}
 
-    pub fn to_text(&self) -> String {
+#[derive(Debug, Clone)]
+pub enum Difficulty {
+    Soft,
+    Easy,
+    Medium,
+    Hard,
+    Strong,
+}
+
+impl Display for Difficulty {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Position::Left => "Left".to_string(),
-            Position::Top => "Top".to_string(),
-            Position::Bottom => "Bottom".to_string(),
-            Position::Right => "Right".to_string(),
+            Difficulty::Soft => write!(f, "Soft"),
+            Difficulty::Easy => write!(f, "Easy"),
+            Difficulty::Medium => write!(f, "Medium"),
+            Difficulty::Hard => write!(f, "Hard"),
+            Difficulty::Strong => write!(f, "Strong"),
+        }
+    }
+}
+
+impl Difficulty {
+    pub fn from_string(s: &str) -> Difficulty {
+        match s {
+            "Soft" => Difficulty::Soft,
+            "Easy" => Difficulty::Easy,
+            "Medium" => Difficulty::Medium,
+            "Hard" => Difficulty::Hard,
+            "Strong" => Difficulty::Strong,
+            _ => Difficulty::Soft,
         }
     }
 }

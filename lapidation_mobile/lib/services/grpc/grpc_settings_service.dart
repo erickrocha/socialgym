@@ -1,6 +1,8 @@
 import 'package:grpc/grpc.dart' as grpc;
+import 'package:lapidation_mobile/commons/settings_mapper.dart';
 import 'package:lapidation_mobile/models/enums.dart';
 import 'package:lapidation_mobile/models/settings.dart';
+import 'package:lapidation_mobile/services/base_service.dart';
 import 'package:lapidation_mobile/services/grpc/grpc_channel_factory.dart';
 
 import '../../config/api_config.dart';
@@ -26,12 +28,12 @@ class GrpcSettingsService {
     try {
       final response = await _ensureClient().getByOwnerIds(
         $settings.SettingOwnerIdRequest(ownerId: ownerId, ownerUuid: ownerUuid),
-        options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
       );
-      return toDomain(response);
+      return SettingsMapper().fromProto(response);
     } on grpc.GrpcError catch (e) {
       if (e.code == grpc.StatusCode.notFound) return null;
-      rethrow;
+      throw BaseService.handleGrpcError(e, 'Failed to load settings');
     }
   }
 
@@ -39,45 +41,15 @@ class GrpcSettingsService {
   /// server's copy. Callers must pass through the previously-loaded
   /// `id`/`uuid` (if any) or the backend will insert a duplicate row.
   static Future<Settings> persistSettings(Settings settings) async {
-    final response = await _ensureClient().persistSettings(
-      toProto(settings),
-      options: grpc.CallOptions(timeout: const Duration(seconds: 5)),
-    );
-    return toDomain(response);
-  }
-
-  /// Maps the app's [Settings] to the wire [$settings.Setting] message.
-  static $settings.Setting toProto(Settings settings) {
-    return $settings.Setting(
-      id: settings.id ?? 0,
-      uuid: settings.uuid ?? '',
-      ownerId: settings.personId ?? 0,
-      ownerUuid: settings.personUuid ?? '',
-      language: settings.language ?? 'en',
-      theme: settings.theme ?? 'default',
-      notificationsEnabled: settings.notificationsEnabled ?? true,
-      contextMenuPosition: positionToWire(
-        settings.contextMenuPosition ?? ContextMenuPosition.left,
-      ),
-      homePage: (settings.homePage ?? Pages.feed).toStringValue(),
-    );
-  }
-
-  /// Maps a wire [$settings.Setting] message back to the app's [Settings].
-  static Settings toDomain($settings.Setting proto) {
-    return Settings(
-      id: proto.id,
-      uuid: proto.uuid,
-      personId: proto.ownerId,
-      personUuid: proto.ownerUuid,
-      language: proto.language,
-      theme: proto.theme,
-      notificationsEnabled: proto.notificationsEnabled,
-      contextMenuPosition: ContextMenuPosition.fromString(proto.contextMenuPosition),
-      homePage: Pages.fromString(proto.homePage),
-      createdAt: proto.createdAt.isEmpty ? null : DateTime.tryParse(proto.createdAt),
-      updatedAt: proto.updatedAt.isEmpty ? null : DateTime.tryParse(proto.updatedAt),
-    );
+    try {
+      final response = await _ensureClient().persistSettings(
+        SettingsMapper().toProto(settings),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return SettingsMapper().fromProto(response);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to save settings');
+    }
   }
 
   /// The backend's `Position::from_string`

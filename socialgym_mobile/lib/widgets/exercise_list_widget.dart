@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../config/app_colors.dart';
 import '../l10n/app_localizations.dart';
 import '../models/exercise.dart';
 import '../models/visibility_option.dart';
+import '../providers/person_provider.dart';
 
 class ExerciseListWidget extends StatefulWidget {
   final List<Exercise> exercises;
@@ -56,9 +58,10 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     if (_exercises.isEmpty) {
-      return _buildEmpty(l10n);
+      return _buildEmpty(l10n, businessType);
     }
 
     return Container(
@@ -67,7 +70,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withAlpha(40)),
+        border: Border.all(color: AppColors.primaryFor(businessType).withAlpha(40)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,7 +101,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
                     icon: const Icon(Icons.add, size: 14),
                     label: Text(l10n.workoutAddExercise, style: const TextStyle(fontSize: 12)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.primaryFor(businessType),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -161,14 +164,14 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
     );
   }
 
-  Widget _buildEmpty(AppLocalizations l10n) {
+  Widget _buildEmpty(AppLocalizations l10n, String? businessType) {
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withAlpha(40)),
+        border: Border.all(color: AppColors.primaryFor(businessType).withAlpha(40)),
       ),
       child: Column(
         children: [
@@ -192,7 +195,7 @@ class _ExerciseListWidgetState extends State<ExerciseListWidget> {
               icon: const Icon(Icons.add, size: 16),
               label: Text(l10n.workoutAddExercise),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.primaryFor(businessType),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
@@ -223,6 +226,7 @@ class _ReorderableExerciseItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visibility = VisibilityOption.fromApiValue(exercise.visibility);
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
     final content = Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -243,16 +247,16 @@ class _ReorderableExerciseItem extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(25),
+              color: AppColors.primaryFor(businessType).withAlpha(25),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Center(
               child: Text(
                 '$displayIndex',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+                  color: AppColors.primaryFor(businessType),
                 ),
               ),
             ),
@@ -277,7 +281,7 @@ class _ReorderableExerciseItem extends StatelessWidget {
                   child: Row(
                     children: [
                       // Owner with person icon
-                      Icon(Icons.person, size: 14, color: AppColors.primary),
+                      Icon(Icons.person, size: 14, color: AppColors.primaryFor(businessType)),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
@@ -294,14 +298,14 @@ class _ReorderableExerciseItem extends StatelessWidget {
                         child: Icon(
                           _getCategoryIcon(exercise.category),
                           size: 16,
-                          color: AppColors.primary,
+                          color: AppColors.primaryFor(businessType),
                         ),
                       ),
                       // Visibility icon aligned to right
                       const Spacer(),
                       Tooltip(
                         message: visibility.label(l10n),
-                        child: Icon(visibility.icon, size: 16, color: AppColors.primary),
+                        child: Icon(visibility.icon, size: 16, color: AppColors.primaryFor(businessType)),
                       ),
                     ],
                   ),

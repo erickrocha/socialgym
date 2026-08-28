@@ -39,6 +39,7 @@ data:
         server {
             listen 443 ssl;
             listen [::]:443 ssl;
+            http2 on;   # obrigatório para gRPC: sem isso o ALPN só oferece http/1.1
             server_name _;
 
             ssl_certificate /etc/nginx/certs/server.crt;

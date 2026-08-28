@@ -114,7 +114,7 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
     final name = widget.workoutSession['workoutName'] as String? ?? '';
     final duration = widget.workoutSession['duration'] as int? ?? 0;
     final sets = _getCompletedSets();
-    final volume = _getTotalVolume().toStringAsFixed(0);
+    final volume = _getTotalVolume().toStringAsFixed(3);
     return '💪 ${l10n.feedShareWorkoutSummary}\n'
         '🏋️ $name\n'
         '⏱️ ${l10n.executionDuration}: ${_formatDuration(duration)}\n'
@@ -132,6 +132,7 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final duration = widget.workoutSession['duration'] as int? ?? 0;
+    final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
 
     return Consumer<WorkoutSessionProvider>(
       builder: (context, provider, _) {
@@ -174,9 +175,9 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                     const SizedBox(height: 8),
                     Text(
                       widget.workoutSession['workoutName'] as String? ?? '',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
-                        color: AppColors.primary,
+                        color: AppColors.primaryFor(businessType),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -213,7 +214,7 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                           Container(width: 1, height: 48, color: Colors.grey.withAlpha(50)),
                           _StatItem(
                             icon: '🏋️',
-                            value: _getTotalVolume().toStringAsFixed(0),
+                            value: _getTotalVolume().toStringAsFixed(3),
                             label: '${l10n.executionTotalVolume} (${l10n.workoutWeightUnit})',
                           ),
                         ],
@@ -225,15 +226,15 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(20),
+                        color: AppColors.primaryFor(businessType).withAlpha(20),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         l10n.executionGreatJob,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          color: AppColors.primaryFor(businessType),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -274,7 +275,7 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                           icon: const Icon(Icons.bar_chart),
                           label: Text(l10n.sessionsViewProgress),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: AppColors.primaryFor(businessType),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -302,8 +303,8 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                         child: OutlinedButton(
                           onPressed: _navigateBack,
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: const BorderSide(color: AppColors.primary),
+                            foregroundColor: AppColors.primaryFor(businessType),
+                            side: BorderSide(color: AppColors.primaryFor(businessType)),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
@@ -317,8 +318,8 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                             child: OutlinedButton(
                               onPressed: provider.saving ? null : _navigateBack,
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.primary,
-                                side: const BorderSide(color: AppColors.primary),
+                                foregroundColor: AppColors.primaryFor(businessType),
+                                side: BorderSide(color: AppColors.primaryFor(businessType)),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -345,7 +346,7 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                                 provider.saving ? l10n.executionSaving : l10n.executionSaveSession,
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
+                                backgroundColor: AppColors.primaryFor(businessType),
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),

@@ -4,8 +4,8 @@ import 'package:lapidation_mobile/models/enums.dart';
 class Settings {
   final int? id;
   final String? uuid;
-  final int? personId;
-  final String? personUuid;
+  final int? ownerId;
+  final String? ownerUuid;
   final String? language;
   final String? theme;
   final bool? notificationsEnabled;
@@ -17,8 +17,8 @@ class Settings {
   Settings({
     this.id = 0,
     this.uuid = '',
-    this.personId = 0,
-    this.personUuid = '',
+    this.ownerId = 0,
+    this.ownerUuid = '',
     this.language = 'en',
     this.theme = "default",
     this.notificationsEnabled = true,
@@ -33,8 +33,8 @@ class Settings {
     return Settings(
       id: json['id'] as int?,
       uuid: json['uuid'] as String?,
-      personId: json['personId'] as int?,
-      personUuid: json['personUuid'] as String?,
+      ownerId: json['personId'] as int?,
+      ownerUuid: json['personUuid'] as String?,
       language: json['language'] as String?,
       theme: json['theme'] as String?,
       notificationsEnabled: json['notificationsEnabled'] as bool?,
@@ -49,8 +49,8 @@ class Settings {
     return {
       'id': id,
       'uuid': uuid,
-      'personId': personId,
-      'personUuid': personUuid,
+      'personId': ownerId,
+      'personUuid': ownerUuid,
       'language': language,
       'theme': theme,
       'notificationsEnabled': notificationsEnabled,
@@ -75,8 +75,8 @@ class Settings {
     return Settings(
       id: id ?? this.id,
       uuid: uuid ?? this.uuid,
-      personId: personId ?? this.personId,
-      personUuid: personUuid ?? this.personUuid,
+      ownerId: personId ?? ownerId,
+      ownerUuid: personUuid ?? ownerUuid,
       language: language ?? this.language,
       theme: theme ?? this.theme,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,

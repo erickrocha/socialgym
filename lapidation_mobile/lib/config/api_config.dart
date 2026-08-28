@@ -60,6 +60,6 @@ class ApiConfig {
     return baseUrlDefault;
   }
 
-  static String? get grpcAuthority => 'latently-bubaline-salome.ngrok-free.dev';
+  static String? get grpcAuthority => grpcHost;
   // static String? get grpcAuthority => '192.168.15.4';
 }
