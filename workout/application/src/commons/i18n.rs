@@ -134,6 +134,11 @@ pub enum ErrorKey {
     AccountDeletionNotPending,
     AccountDeletionRequestFailed,
     AccountDeletionCancelFailed,
+    UnderageRegistration,
+    ConsentRequired,
+    ConsentOperationFailed,
+    DataExportFailed,
+    DataExportNotReady,
 }
 
 impl ErrorKey {
@@ -156,7 +161,9 @@ impl ErrorKey {
             ErrorKey::ResourcesNotFound => "ResourcesNotFound",
             ErrorKey::PersonPreSignedUrlNotGenerated => "PersonPreSignedUrlNotGenerated",
             ErrorKey::PersonPreSignedUrlNotDeleted => "PersonPreSignedUrlNotDeleted",
-            ErrorKey::BusinessProfilePreSignedUrlNotGenerated => "BusinessProfilePreSignedUrlNotGenerated",
+            ErrorKey::BusinessProfilePreSignedUrlNotGenerated => {
+                "BusinessProfilePreSignedUrlNotGenerated"
+            }
             ErrorKey::BusinessProfileNotFound => "BusinessProfileNotFound",
             ErrorKey::BusinessProfileForbidden => "BusinessProfileForbidden",
             ErrorKey::RequiredParameterMissing => "RequiredParameterMissing",
@@ -188,6 +195,11 @@ impl ErrorKey {
             ErrorKey::AccountDeletionNotPending => "AccountDeletionNotPending",
             ErrorKey::AccountDeletionRequestFailed => "AccountDeletionRequestFailed",
             ErrorKey::AccountDeletionCancelFailed => "AccountDeletionCancelFailed",
+            ErrorKey::UnderageRegistration => "underage-registration",
+            ErrorKey::ConsentRequired => "consent-required",
+            ErrorKey::ConsentOperationFailed => "consent-operation-failed",
+            ErrorKey::DataExportFailed => "data-export-failed",
+            ErrorKey::DataExportNotReady => "data-export-not-ready",
         }
     }
 
@@ -210,7 +222,9 @@ impl ErrorKey {
             ErrorKey::ResourcesNotFound => "resources-not-found",
             ErrorKey::PersonPreSignedUrlNotGenerated => "person-pre-signed-url-not-generated",
             ErrorKey::PersonPreSignedUrlNotDeleted => "person-pre-signed-url-not-deleted",
-            ErrorKey::BusinessProfilePreSignedUrlNotGenerated => "business-profile-pre-signed-url-not-generated",
+            ErrorKey::BusinessProfilePreSignedUrlNotGenerated => {
+                "business-profile-pre-signed-url-not-generated"
+            }
             ErrorKey::BusinessProfileNotFound => "business-profile-not-found",
             ErrorKey::BusinessProfileForbidden => "business-profile-forbidden",
             ErrorKey::RequiredParameterMissing => "required-parameter-missing",
@@ -242,6 +256,11 @@ impl ErrorKey {
             ErrorKey::AccountDeletionNotPending => "account-deletion-not-pending",
             ErrorKey::AccountDeletionRequestFailed => "account-deletion-request-failed",
             ErrorKey::AccountDeletionCancelFailed => "account-deletion-cancel-failed",
+            ErrorKey::UnderageRegistration => "underage-registration",
+            ErrorKey::ConsentRequired => "consent-required",
+            ErrorKey::ConsentOperationFailed => "consent-operation-failed",
+            ErrorKey::DataExportFailed => "data-export-failed",
+            ErrorKey::DataExportNotReady => "data-export-not-ready",
         }
     }
 }

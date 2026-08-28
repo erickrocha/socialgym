@@ -1,24 +1,29 @@
 use crate::infrastructure::mapper::{Mapper, PersonAddressMapper, PersonInfoMapper, PersonMapper};
+use crate::infrastructure::utils::{require_person_id, validate_uuid};
 use crate::proto::person::person_id_request::Identifier;
+use crate::proto::person::person_params::ParamIdentifier;
 use crate::proto::person::person_service_server::PersonService;
 use crate::proto::person::{
-    DeletePersonImageResponse, GetMeRequest, PeopleResponse, Person, PersonIdRequest,
-    PersonImageRequest, PersonImageUploadRequest, PersonImageUploadResponse, PersonParams,
-    PersonResponse, RemovePersonAddressRequest, RemovePersonAddressResponse,
+    ConsentStatusRequest, ConsentStatusResponse, DeletePersonImageResponse, GetMeRequest,
+    PeopleResponse, Person, PersonIdRequest, PersonImageRequest, PersonImageUploadRequest,
+    PersonImageUploadResponse, PersonParams, PersonResponse, RemovePersonAddressRequest,
+    RemovePersonAddressResponse, RoleStatusRequest, RoleStatusResponse,
     SearchMentionableFriendsRequest,
 };
+use business::commons::legal_documents;
 use business::domain::person::Person as DomainPerson;
+use business::domain::user::User;
 use business::gateway::person_address_gateway::PersonAddressGateway;
 use business::gateway::person_info_gateway::PersonInfoGateway;
+use business::gateway::user_role_gateway::UserRoleGateway;
 use business::use_cases::common_use_case::choose_image_type;
+use business::use_cases::consent_use_case::ConsentUseCase;
 use business::use_cases::person_address_use_case::PersonAddressUseCase;
 use business::use_cases::person_info_use_case::PersonInfoUseCase;
 use business::use_cases::person_use_case::PersonUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
-use crate::infrastructure::utils::{require_person_id, validate_uuid};
-use crate::proto::person::person_params::ParamIdentifier;
 
 pub struct GrpcPersonService {
     conn: Arc<DatabaseConnection>,
@@ -36,7 +41,42 @@ impl GrpcPersonService {
 /// the request with `UNAUTHENTICATED` before the handler ever runs.
 #[tonic::async_trait]
 impl PersonService for GrpcPersonService {
-    async fn get_person(&self,request: Request<PersonIdRequest>) -> Result<Response<PersonResponse>, Status> {
+    async fn has_role(
+        &self,
+        request: Request<RoleStatusRequest>,
+    ) -> Result<Response<RoleStatusResponse>, Status> {
+        let user_id = request
+            .extensions()
+            .get::<User>()
+            .and_then(|user| user.id)
+            .ok_or_else(|| Status::unauthenticated("authenticated user missing"))?;
+        let role = request.get_ref().role.trim();
+        if role.is_empty() {
+            return Err(Status::invalid_argument("role is required"));
+        }
+        let active = UserRoleGateway::has_role(&self.conn, user_id, role)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
+        Ok(Response::new(RoleStatusResponse { active }))
+    }
+    async fn has_active_consent(
+        &self,
+        request: Request<ConsentStatusRequest>,
+    ) -> Result<Response<ConsentStatusResponse>, Status> {
+        let person_id = require_person_id(&request)?;
+        let document = request.into_inner().document;
+        let version = legal_documents::current_version(&document)
+            .ok_or_else(|| Status::invalid_argument("unknown consent document"))?;
+        let active = ConsentUseCase::require_current(&self.conn, person_id, &document)
+            .await
+            .is_ok();
+        Ok(Response::new(ConsentStatusResponse { active, version }))
+    }
+
+    async fn get_person(
+        &self,
+        request: Request<PersonIdRequest>,
+    ) -> Result<Response<PersonResponse>, Status> {
         let req = request.into_inner();
 
         match req.identifier {
@@ -68,11 +108,16 @@ impl PersonService for GrpcPersonService {
                     person: Some(grpc_person),
                 }))
             }
-            None =>  Err(Status::invalid_argument("either id or uuid must be informed")),
+            None => Err(Status::invalid_argument(
+                "either id or uuid must be informed",
+            )),
         }
     }
 
-    async fn get_me(&self, request: Request<GetMeRequest>) -> Result<Response<PersonResponse>, Status> {
+    async fn get_me(
+        &self,
+        request: Request<GetMeRequest>,
+    ) -> Result<Response<PersonResponse>, Status> {
         let person_id = require_person_id(&request)?;
 
         let person = PersonUseCase::get(&self.conn, person_id)
@@ -84,7 +129,10 @@ impl PersonService for GrpcPersonService {
         }))
     }
 
-    async fn search_mentionable_friends(&self,request: Request<SearchMentionableFriendsRequest>) -> Result<Response<PeopleResponse>, Status> {
+    async fn search_mentionable_friends(
+        &self,
+        request: Request<SearchMentionableFriendsRequest>,
+    ) -> Result<Response<PeopleResponse>, Status> {
         let payload = request.into_inner();
 
         if payload.person_id <= 0 {
@@ -108,7 +156,10 @@ impl PersonService for GrpcPersonService {
         }))
     }
 
-    async fn update_person( &self,request: Request<Person>) -> Result<Response<PersonResponse>, Status> {
+    async fn update_person(
+        &self,
+        request: Request<Person>,
+    ) -> Result<Response<PersonResponse>, Status> {
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
 
@@ -116,17 +167,37 @@ impl PersonService for GrpcPersonService {
             .await
             .map_err(|e| Status::internal(e.message))?;
 
-        let firstname = if payload.firstname.is_empty() { existing.firstname } else { payload.firstname };
-        let surname = if payload.surname.is_empty() { existing.surname } else { payload.surname };
+        let firstname = if payload.firstname.is_empty() {
+            existing.firstname
+        } else {
+            payload.firstname
+        };
+        let surname = if payload.surname.is_empty() {
+            existing.surname
+        } else {
+            payload.surname
+        };
         let date_of_birth = if payload.date_of_birth.is_empty() {
             existing.date_of_birth
         } else {
             chrono::NaiveDate::parse_from_str(&payload.date_of_birth, "%Y-%m-%d")
                 .unwrap_or(existing.date_of_birth)
         };
-        let gender = if payload.gender.is_empty() { existing.gender } else { payload.gender };
-        let avatar = if payload.avatar.is_empty() { existing.avatar.unwrap_or_default() } else { payload.avatar };
-        let cover = if payload.cover.is_empty() { existing.cover.unwrap_or_default() } else { payload.cover };
+        let gender = if payload.gender.is_empty() {
+            existing.gender
+        } else {
+            payload.gender
+        };
+        let avatar = if payload.avatar.is_empty() {
+            existing.avatar.unwrap_or_default()
+        } else {
+            payload.avatar
+        };
+        let cover = if payload.cover.is_empty() {
+            existing.cover.unwrap_or_default()
+        } else {
+            payload.cover
+        };
         let person_info = match payload.person_info {
             Some(info) => Some(PersonInfoMapper::domain(info)),
             None => existing.person_info,
@@ -156,7 +227,10 @@ impl PersonService for GrpcPersonService {
         }
     }
 
-    async fn update_person_info(&self, request: Request<crate::proto::person_info::PersonInfo>) -> Result<Response<crate::proto::person_info::PersonInfo>, Status> {
+    async fn update_person_info(
+        &self,
+        request: Request<crate::proto::person_info::PersonInfo>,
+    ) -> Result<Response<crate::proto::person_info::PersonInfo>, Status> {
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
 
@@ -166,6 +240,11 @@ impl PersonService for GrpcPersonService {
             .ok_or_else(|| Status::not_found("PersonInfo not found"))?;
 
         let domain = PersonInfoMapper::domain(payload);
+        if domain.weight.is_some() || domain.height.is_some() {
+            ConsentUseCase::require_current(&self.conn, person_id, legal_documents::HEALTH_DATA)
+                .await
+                .map_err(|_| Status::permission_denied("health_data consent is required"))?;
+        }
 
         let updated = PersonInfoUseCase::update(&self.conn, existing.id, domain)
             .await
@@ -174,7 +253,10 @@ impl PersonService for GrpcPersonService {
         Ok(Response::new(PersonInfoMapper::response(updated)))
     }
 
-    async fn add_person_address(&self, request: Request<crate::proto::person_address::PersonAddress>) -> Result<Response<crate::proto::person_address::PersonAddress>, Status> {
+    async fn add_person_address(
+        &self,
+        request: Request<crate::proto::person_address::PersonAddress>,
+    ) -> Result<Response<crate::proto::person_address::PersonAddress>, Status> {
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
 
@@ -191,7 +273,10 @@ impl PersonService for GrpcPersonService {
         Ok(Response::new(PersonAddressMapper::response(added)))
     }
 
-    async fn update_person_address(&self, request: Request<crate::proto::person_address::PersonAddress>) -> Result<Response<crate::proto::person_address::PersonAddress>, Status> {
+    async fn update_person_address(
+        &self,
+        request: Request<crate::proto::person_address::PersonAddress>,
+    ) -> Result<Response<crate::proto::person_address::PersonAddress>, Status> {
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
 
@@ -205,7 +290,9 @@ impl PersonService for GrpcPersonService {
             .ok_or_else(|| Status::not_found("Person address not found"))?;
 
         if existing.person_id != person_id {
-            return Err(Status::permission_denied("address does not belong to the authenticated person"));
+            return Err(Status::permission_denied(
+                "address does not belong to the authenticated person",
+            ));
         }
 
         let (latitude, longitude) = (payload.latitude, payload.longitude);
@@ -214,11 +301,7 @@ impl PersonService for GrpcPersonService {
         address.person_id = person_id;
 
         let updated = PersonAddressUseCase::update_person_address(
-            &self.conn,
-            address,
-            person_id,
-            latitude,
-            longitude,
+            &self.conn, address, person_id, latitude, longitude,
         )
         .await
         .map_err(|e| Status::internal(e.message))?;
@@ -226,7 +309,10 @@ impl PersonService for GrpcPersonService {
         Ok(Response::new(PersonAddressMapper::response(updated)))
     }
 
-    async fn remove_person_address(&self, request: Request<RemovePersonAddressRequest>) -> Result<Response<RemovePersonAddressResponse>, Status> {
+    async fn remove_person_address(
+        &self,
+        request: Request<RemovePersonAddressRequest>,
+    ) -> Result<Response<RemovePersonAddressResponse>, Status> {
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
 
@@ -240,7 +326,9 @@ impl PersonService for GrpcPersonService {
             .ok_or_else(|| Status::not_found("Person address not found"))?;
 
         if existing.person_id != person_id {
-            return Err(Status::permission_denied("address does not belong to the authenticated person"));
+            return Err(Status::permission_denied(
+                "address does not belong to the authenticated person",
+            ));
         }
 
         PersonAddressUseCase::delete_person_address(&self.conn, existing.id, person_id)
@@ -250,16 +338,24 @@ impl PersonService for GrpcPersonService {
         Ok(Response::new(RemovePersonAddressResponse { success: true }))
     }
 
-    async fn get_person_image_upload_url(&self, request: Request<PersonImageUploadRequest>) -> Result<Response<PersonImageUploadResponse>, Status> {
+    async fn get_person_image_upload_url(
+        &self,
+        request: Request<PersonImageUploadRequest>,
+    ) -> Result<Response<PersonImageUploadResponse>, Status> {
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
 
-        let format = if payload.format.is_empty() { "jpg".to_string() } else { payload.format };
+        let format = if payload.format.is_empty() {
+            "jpg".to_string()
+        } else {
+            payload.format
+        };
         let image_type = choose_image_type(payload.image_type.as_str());
 
-        let image_storage = PersonUseCase::upload_person_image(&self.conn, person_id, image_type, format)
-            .await
-            .map_err(|e| Status::internal(e.message))?;
+        let image_storage =
+            PersonUseCase::upload_person_image(&self.conn, person_id, image_type, format)
+                .await
+                .map_err(|e| Status::internal(e.message))?;
 
         Ok(Response::new(PersonImageUploadResponse {
             url: image_storage.url,
@@ -268,7 +364,10 @@ impl PersonService for GrpcPersonService {
         }))
     }
 
-    async fn delete_person_image(&self, request: Request<PersonImageRequest>) -> Result<Response<DeletePersonImageResponse>, Status> {
+    async fn delete_person_image(
+        &self,
+        request: Request<PersonImageRequest>,
+    ) -> Result<Response<DeletePersonImageResponse>, Status> {
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
 
@@ -281,7 +380,10 @@ impl PersonService for GrpcPersonService {
         Ok(Response::new(DeletePersonImageResponse { success: true }))
     }
 
-    async fn search_persons(&self,request: Request<PersonParams>) -> Result<Response<PeopleResponse>, Status> {
+    async fn search_persons(
+        &self,
+        request: Request<PersonParams>,
+    ) -> Result<Response<PeopleResponse>, Status> {
         let req = request.into_inner();
 
         let query = req.query;
@@ -293,7 +395,13 @@ impl PersonService for GrpcPersonService {
                     return Err(Status::invalid_argument("id must be a positive integer"));
                 }
                 // Cap the limit at 100
-                let limit = if limit > 100 { 100 } else if limit < 1 { 50 } else { limit };
+                let limit = if limit > 100 {
+                    100
+                } else if limit < 1 {
+                    50
+                } else {
+                    limit
+                };
                 let persons = PersonUseCase::search_persons(&self.conn, &query, id, limit).await;
                 Ok(Response::new(PeopleResponse {
                     people: PersonMapper::response_vec(persons),
@@ -305,13 +413,22 @@ impl PersonService for GrpcPersonService {
                 }
                 validate_uuid(&uuid, "uuid")?;
                 // Cap the limit at 100
-                let limit = if limit > 100 { 100 } else if limit < 1 { 50 } else { limit };
-                let persons = PersonUseCase::search_persons_by_uuid(&self.conn, &query, uuid, limit).await;
+                let limit = if limit > 100 {
+                    100
+                } else if limit < 1 {
+                    50
+                } else {
+                    limit
+                };
+                let persons =
+                    PersonUseCase::search_persons_by_uuid(&self.conn, &query, uuid, limit).await;
                 Ok(Response::new(PeopleResponse {
                     people: PersonMapper::response_vec(persons),
                 }))
             }
-            None => Err(Status::invalid_argument("either id or uuid must be informed")),
+            None => Err(Status::invalid_argument(
+                "either id or uuid must be informed",
+            )),
         }
     }
 }

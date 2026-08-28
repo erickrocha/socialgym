@@ -204,3 +204,12 @@
   }
 }
 
+.legal-acceptance {
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  margin: .75rem 0;
+  line-height: 1.4;
+}
+.legal-acceptance input { width: 20px; height: 20px; flex: 0 0 auto; }
+.legal-acceptance a { color: #005fcc; text-decoration: underline; }

@@ -5,7 +5,10 @@ use crate::http::json::exercise_json::ExerciseJson;
 use crate::http::json::notification_json::NotificationJson;
 use crate::http::json::post_json::{CommentJson, MediaJson, MentionJson, PostJson, ReactionJson};
 use crate::http::json::workout_session_json::WorkoutSessionJson;
-use crate::infrastructure::data_tools::{bson_datetime_to_naive, naive_to_bson_datetime, opt_bson_datetime_to_naive, opt_naive_to_bson_datetime};
+use crate::infrastructure::data_tools::{
+    bson_datetime_to_naive, naive_to_bson_datetime, opt_bson_datetime_to_naive,
+    opt_naive_to_bson_datetime,
+};
 use domain::body_composition::BodyComposition;
 use domain::circumferences::{Biceps, Circumferences, Thighs};
 use domain::comment::Comment;
@@ -14,21 +17,21 @@ use domain::evolution_check_in::EvolutionCheckIn;
 use domain::exercise::Exercise;
 use domain::in_app_notification::InAppNotification;
 use domain::media::Media;
+use domain::mention::Mention;
 use domain::post::Post;
 use domain::reaction::Reaction;
 use domain::workout_session::WorkoutSession;
 use uuid::Uuid;
-use domain::mention::Mention;
 
 pub trait Mapper<T, U> {
     fn json(t: T) -> U;
     fn domain(u: U) -> T;
 
-    fn json_vec(t: Vec<T>) -> Vec<U>{
+    fn json_vec(t: Vec<T>) -> Vec<U> {
         t.into_iter().map(Self::json).collect()
     }
 
-    fn domain_vec(u: Vec<U>) -> Vec<T>{
+    fn domain_vec(u: Vec<U>) -> Vec<T> {
         u.into_iter().map(Self::domain).collect()
     }
 }
@@ -216,8 +219,14 @@ impl Mapper<Comment, CommentJson> for CommentMapper {
             author_avatar: u.author_avatar,
             content: u.content,
             parent_uuid: u.parent_uuid,
-            created_at: u.created_at.and_then(opt_naive_to_bson_datetime).unwrap_or(now),
-            updated_at: u.updated_at.and_then(opt_naive_to_bson_datetime).unwrap_or(now),
+            created_at: u
+                .created_at
+                .and_then(opt_naive_to_bson_datetime)
+                .unwrap_or(now),
+            updated_at: u
+                .updated_at
+                .and_then(opt_naive_to_bson_datetime)
+                .unwrap_or(now),
             mentions: MentionMapper::domain_vec(u.mentions),
         }
     }
@@ -270,6 +279,7 @@ impl Mapper<Post, PostJson> for PostMapper {
             mentions: MentionMapper::json_vec(t.mentions),
             created_at: opt_bson_datetime_to_naive(t.created_at),
             updated_at: opt_bson_datetime_to_naive(t.updated_at),
+            third_party_consent_confirmed: false,
         }
     }
 
@@ -290,14 +300,19 @@ impl Mapper<Post, PostJson> for PostMapper {
             reactions: ReactionMapper::domain_vec(u.reactions),
             comments: CommentMapper::domain_vec(u.comments),
             mentions: MentionMapper::domain_vec(u.mentions),
-            created_at: u.created_at.and_then(opt_naive_to_bson_datetime).unwrap_or(now),
-            updated_at: u.updated_at.and_then(opt_naive_to_bson_datetime).unwrap_or(now),
+            created_at: u
+                .created_at
+                .and_then(opt_naive_to_bson_datetime)
+                .unwrap_or(now),
+            updated_at: u
+                .updated_at
+                .and_then(opt_naive_to_bson_datetime)
+                .unwrap_or(now),
         }
     }
 }
 
 impl PostMapper {
-    
     /// Convert post to JSON, replacing media and comment avatar URLs
     /// from the shared CloudFront signed-URL cache.
     pub fn json_with_avatars(
@@ -329,7 +344,7 @@ impl PostMapper {
                     }
                 })
                 .collect(),
-            reactions:ReactionMapper::json_vec(post.reactions),
+            reactions: ReactionMapper::json_vec(post.reactions),
             comments: post
                 .comments
                 .into_iter()
@@ -338,6 +353,7 @@ impl PostMapper {
             created_at: opt_bson_datetime_to_naive(post.created_at),
             updated_at: opt_bson_datetime_to_naive(post.updated_at),
             mentions: MentionMapper::json_vec(post.mentions),
+            third_party_consent_confirmed: false,
         }
     }
 }
@@ -346,14 +362,26 @@ pub struct BodyCompositeMapper {}
 
 impl Mapper<BodyComposition, BodyCompositionJson> for BodyCompositeMapper {
     fn json(t: BodyComposition) -> BodyCompositionJson {
-        BodyCompositionJson::new(Some(t.uuid), t.weight, t.body_fat_pct, t.muscle_mass_pct, t.visceral_fat)
+        BodyCompositionJson::new(
+            Some(t.uuid),
+            t.weight,
+            t.body_fat_pct,
+            t.muscle_mass_pct,
+            t.visceral_fat,
+        )
     }
 
     fn domain(u: BodyCompositionJson) -> BodyComposition {
-        BodyComposition::new(match u.uuid {
-            Some(uuid) => uuid.to_string(),
-            None => Uuid::new_v4().to_string(),
-        }, u.weight, u.body_fat_pct, u.muscle_mass_pct, u.visceral_fat)
+        BodyComposition::new(
+            match u.uuid {
+                Some(uuid) => uuid.to_string(),
+                None => Uuid::new_v4().to_string(),
+            },
+            u.weight,
+            u.body_fat_pct,
+            u.muscle_mass_pct,
+            u.visceral_fat,
+        )
     }
 }
 
@@ -361,7 +389,8 @@ pub struct CircumferencesMapper {}
 
 impl Mapper<Circumferences, CircumferencesJson> for CircumferencesMapper {
     fn json(t: Circumferences) -> CircumferencesJson {
-        CircumferencesJson::new(Some(t.uuid),
+        CircumferencesJson::new(
+            Some(t.uuid),
             t.neck,
             t.chest,
             t.waist,
@@ -464,7 +493,7 @@ impl Mapper<InAppNotification, NotificationJson> for NotificationMapper {
 
 pub struct MentionMapper {}
 
-impl Mapper<Mention,MentionJson> for MentionMapper {
+impl Mapper<Mention, MentionJson> for MentionMapper {
     fn json(u: Mention) -> MentionJson {
         MentionJson {
             name: u.name,

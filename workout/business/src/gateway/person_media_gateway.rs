@@ -26,7 +26,20 @@ impl PersonMediaGateway {
             .await
     }
 
-    pub async fn find_by_s3_key(db: &DbConn, s3_key: &str) -> Result<Option<PersonMediaEntity>, DbErr> {
+    pub async fn find_all_by_person(
+        db: &DbConn,
+        person_id: i32,
+    ) -> Result<Vec<PersonMediaEntity>, DbErr> {
+        Entity::find()
+            .filter(Column::PersonId.eq(person_id))
+            .all(db)
+            .await
+    }
+
+    pub async fn find_by_s3_key(
+        db: &DbConn,
+        s3_key: &str,
+    ) -> Result<Option<PersonMediaEntity>, DbErr> {
         Entity::find()
             .filter(Column::S3Key.eq(s3_key))
             .one(db)

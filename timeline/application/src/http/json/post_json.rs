@@ -24,6 +24,8 @@ pub struct PostJson {
     pub updated_at: Option<chrono::NaiveDateTime>,
     #[serde(default)]
     pub mentions: Vec<MentionJson>,
+    #[serde(default, skip_serializing)]
+    pub third_party_consent_confirmed: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -47,7 +49,6 @@ pub struct ReactionJson {
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CommentJson {
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uuid: Option<String>,
     pub post_uuid: String,

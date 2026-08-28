@@ -23,7 +23,9 @@ pub mod routes;
 /// var, or localhost dev origins when unset — mobile clients don't send an
 /// `Origin` header at all, so this only ever gates the web app.
 fn allowed_origins() -> AllowOrigin {
-    let configured = env::var("CORS_ALLOWED_ORIGINS").ok().filter(|s| !s.is_empty());
+    let configured = env::var("CORS_ALLOWED_ORIGINS")
+        .ok()
+        .filter(|s| !s.is_empty());
     let origins: Vec<axum::http::HeaderValue> = match configured {
         Some(raw) => raw
             .split(',')
@@ -68,6 +70,7 @@ use crate::http::image_controller::generate_media_upload_url;
 use crate::http::resource_controller::get_resource;
 use crate::http::welcome_controller::welcome;
 use crate::infrastructure::account_purge_worker;
+use crate::infrastructure::data_export_worker;
 use crate::infrastructure::sqs_worker;
 use crate::routes::authentication_routes::auth_routes;
 use crate::routes::business_profile_routes::business_profile_routes;
@@ -263,6 +266,7 @@ async fn start() -> anyhow::Result<()> {
 
     // Start the account-deletion sweep worker (immediate and 30-day-grace purges).
     account_purge_worker::start(Arc::clone(&state.conn));
+    data_export_worker::start(Arc::clone(&state.conn));
 
     log::info!("Starting server...");
 
@@ -293,6 +297,14 @@ async fn start() -> anyhow::Result<()> {
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         // Public routes (no authentication)
         .merge(welcome_route())
+        .route(
+            "/legal/documents",
+            get(http::legal_document_controller::list),
+        )
+        .route(
+            "/legal/documents/{document}",
+            get(http::legal_document_controller::get),
+        )
         .merge(auth_routes(state.clone()))
         // API routes with authentication - nested organization
         .nest(

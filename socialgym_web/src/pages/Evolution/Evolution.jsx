@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { AppHeader, Sidebar } from '../../commons/gui/index.js';
 import { addEvolutionCheckin, getEvolutionCheckins } from '../../redux/reducers/timeline/index.js';
 import './Evolution.scss';
+import axios from '../../axios.config.js';
 
 const toRange = (period, customStart, customEnd) => {
     const now = new Date();
@@ -47,6 +48,8 @@ const Evolution = () => {
     const [error, setError] = useState(checkinsError);
     const [period, setPeriod] = useState('week');
     const [form, setForm] = useState(emptyForm);
+    const [healthConsent, setHealthConsent] = useState(false);
+    const [healthConsentLoading, setHealthConsentLoading] = useState(true);
 
     const [customStart, setCustomStart] = useState(new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10));
     const [customEnd, setCustomEnd] = useState(new Date().toISOString().slice(0, 10));
@@ -58,7 +61,25 @@ const Evolution = () => {
 
     useEffect(() => {
         load();
+        axios.get('/workout/api/people/me/consents')
+            .then(({ data }) => setHealthConsent(data.some((item) => item.document === 'health_data' && !item.revokedAt)))
+            .finally(() => setHealthConsentLoading(false));
     }, [period]);
+
+    const acceptHealthConsent = async () => {
+        setHealthConsentLoading(true);
+        try {
+            const { data: legal } = await axios.get('/legal/documents/health_data');
+            await axios.post('/workout/api/people/me/consents', {
+                document: 'health_data', version: legal.version, accepted: true,
+            });
+            setHealthConsent(true);
+        } catch (err) {
+            setError(err?.response?.data?.message || 'Não foi possível registrar o consentimento.');
+        } finally {
+            setHealthConsentLoading(false);
+        }
+    };
 
     useEffect(() => {
         setError(checkinsError);
@@ -138,7 +159,16 @@ const Evolution = () => {
                         </section>
                     )}
 
-                    <form className="evolution-form" onSubmit={submitCheckin}>
+                    {!healthConsentLoading && !healthConsent && (
+                        <section className="evolution-form" aria-labelledby="health-consent-title">
+                            <h2 id="health-consent-title">Dados opcionais de saúde</h2>
+                            <p>Medidas corporais são opcionais e usadas somente para seu acompanhamento de bem-estar. Não constituem diagnóstico.</p>
+                            <p><a href="/health-consent" target="_blank" rel="noreferrer">Leia o consentimento destacado</a>.</p>
+                            <button type="button" onClick={acceptHealthConsent}>Concordar e habilitar medições</button>
+                        </section>
+                    )}
+
+                    {healthConsent && <form className="evolution-form" onSubmit={submitCheckin}>
                         <h3>{t('evolution.newCheckin')}</h3>
                         <div className="evolution-form__grid">
                             <input placeholder={t('evolution.form.weight')} value={form.weight} onChange={(e) => setForm((prev) => ({ ...prev, weight: e.target.value }))} />
@@ -150,7 +180,8 @@ const Evolution = () => {
                         </div>
                         <textarea placeholder={t('evolution.form.note')} value={form.note} onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))} />
                         <button type="submit" disabled={checkinsSubmitting}>{checkinsSubmitting ? t('evolution.saving') : t('evolution.save')}</button>
-                    </form>
+                        <p className="field-hint">Registros de bem-estar informados por você; não são diagnóstico ou orientação médica.</p>
+                    </form>}
 
                     {checkinsLoading && <p className="evolution-state">{t('evolution.loading')}</p>}
                     {error && <p className="evolution-state evolution-state--error">{error}</p>}

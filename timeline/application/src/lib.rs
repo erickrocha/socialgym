@@ -1,22 +1,23 @@
+use crate::http::welcome_controller::welcome;
+use crate::routes::content_report_routes::{moderation_routes, report_routes};
 use crate::routes::evolution_checkin_routes::evolution_checkin_routes;
 use crate::routes::feed_routes::feed_route;
 use crate::routes::internal_routes::internal_routes;
 use crate::routes::notification_routes::notification_routes;
 use crate::routes::post_routes::post_routes;
 use crate::routes::workout_session_routes::workout_session_routes;
+use axum::routing::get;
 use axum::{
-    http::{header, HeaderName, Method},
     Router,
+    http::{HeaderName, Method, header},
 };
 use mongodb::Database;
 use std::env;
 use std::sync::Arc;
-use axum::routing::get;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::{Modify, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
-use crate::http::welcome_controller::welcome;
 
 mod authentication;
 mod commons;
@@ -28,7 +29,9 @@ pub mod routes;
 /// var, or localhost dev origins when unset — mobile clients don't send an
 /// `Origin` header at all, so this only ever gates the web app.
 fn allowed_origins() -> AllowOrigin {
-    let configured = env::var("CORS_ALLOWED_ORIGINS").ok().filter(|s| !s.is_empty());
+    let configured = env::var("CORS_ALLOWED_ORIGINS")
+        .ok()
+        .filter(|s| !s.is_empty());
     let origins: Vec<axum::http::HeaderValue> = match configured {
         Some(raw) => raw
             .split(',')
@@ -178,6 +181,8 @@ async fn start() -> anyhow::Result<()> {
                 .nest("/posts", post_routes(state.clone()))
                 .nest("/feed", feed_route(state.clone()))
                 .nest("/notifications", notification_routes(state.clone()))
+                .nest("/reports", report_routes(state.clone()))
+                .nest("/moderation", moderation_routes(state.clone()))
                 .nest("/internal", internal_routes(state.clone())),
         )
         // 5 MiB cap: posts/workout-sessions carry JSON payloads (media metadata,

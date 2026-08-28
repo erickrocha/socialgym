@@ -11,25 +11,30 @@ use crate::http::json::sign_up_json::SignUpJson;
 use crate::infrastructure::mapper::{AccessTokenMapper, Mapper};
 use crate::AppState;
 use axum::extract::{Path, State};
+use axum::http::HeaderMap;
 use axum::http::StatusCode;
 use axum::{Extension, Form, Json};
 use business::commons::functions::parse_uuid;
-use business::domain::enums::Position;
+use business::commons::legal_documents;
 use business::domain::person::Person;
-use business::domain::settings::Settings;
 use business::domain::user::User;
-use business::gateway::settings_gateway::SettingsGateway;
 use business::use_cases::logout_use_case::LogoutUseCase;
-use business::use_cases::person_use_case::PersonUseCase;
-use business::use_cases::setings_use_case::SettingsUseCase;
+use business::use_cases::registration_use_case::{
+    RegistrationError, RegistrationRequest, RegistrationUseCase,
+};
 use business::use_cases::switch_business_profile::{
     SwitchBusinessProfile, SwitchBusinessProfileError,
 };
-use business::use_cases::user_use_case::{UserUseCase, UserUseCaseError};
 use business::use_cases::{
     authentication::{AuthenticatedContext, Authentication, AuthenticationError},
     refresh_token::RefreshToken,
 };
+
+fn is_at_least_eighteen(date_of_birth: chrono::NaiveDate, today: chrono::NaiveDate) -> bool {
+    date_of_birth
+        .checked_add_months(chrono::Months::new(18 * 12))
+        .is_some_and(|birthday| birthday <= today)
+}
 
 #[utoipa::path(
     post,
@@ -43,8 +48,37 @@ use business::use_cases::{
 pub async fn sign_up(
     state: State<AppState>,
     Extension(locale): Extension<Locale>,
+    headers: HeaderMap,
     Json(payload): Json<SignUpJson>,
 ) -> HttpResponse<Json<AccessTokenJson>> {
+    let today = chrono::Utc::now().date_naive();
+    if !is_at_least_eighteen(payload.date_of_birth, today) {
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::UnderageRegistration,
+        ));
+    }
+    if !payload.terms_accepted
+        || !payload.privacy_accepted
+        || !legal_documents::is_current(legal_documents::TERMS, &payload.terms_version)
+        || !legal_documents::is_current(legal_documents::PRIVACY, &payload.privacy_version)
+    {
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::ConsentRequired,
+        ));
+    }
+    let acceptance_ip = headers
+        .get("x-real-ip")
+        .or_else(|| headers.get("x-forwarded-for"))
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(',').next())
+        .map(str::trim)
+        .filter(|value| !value.is_empty() && value.len() <= 45)
+        .unwrap_or("unknown")
+        .to_string();
+    let terms_version = payload.terms_version.clone();
+    let privacy_version = payload.privacy_version.clone();
     let person = Person::new(
         payload.firstname,
         payload.surname,
@@ -52,57 +86,35 @@ pub async fn sign_up(
         payload.gender,
     );
 
-    let person_added = PersonUseCase::add(&state.conn, person).await;
-    if person_added.is_err() {
-        return Err(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::SignUpPersonFailed,
-        ));
-    }
-
-    let person_domain = person_added.unwrap();
-    let person_id = person_domain.id.unwrap();
-    let person_uuid = person_domain.uuid.unwrap();
-
-    let settings = Settings::new(
-        person_id,
-        person_uuid.clone(),
-        locale.to_string(),
-        "default".to_string(),
-        true,
-        Position::Left,
-        "Feed".to_string(),
-    );
-    let settings_use_case = SettingsUseCase::new(SettingsGateway::new((*state.conn).clone()));
-    let settings_added = settings_use_case.bootstrap_for_person(settings).await;
-    if settings_added.is_err() {
-        return Err(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::SettingsAddedFailed,
-        ));
-    }
-
-    let name = format!("{} {}", person_domain.firstname, person_domain.surname);
-    let user: User = User::new(
-        Some(name),
-        payload.email,
-        payload.password,
-        person_id,
-        person_uuid,
-    );
-
-    let password = user.password.clone();
-    let user_added = UserUseCase::add(&state.conn, user).await;
-
-    let current = match user_added {
+    let password = payload.password.clone();
+    let current = match RegistrationUseCase::execute(
+        &state.conn,
+        RegistrationRequest {
+            person,
+            email: payload.email,
+            password: payload.password,
+            language: locale.to_string(),
+            terms_version,
+            privacy_version,
+            ip: acceptance_ip,
+        },
+    )
+    .await
+    {
         Ok(current) => current,
-        Err(UserUseCaseError::WeakPassword(_violations)) => {
+        Err(RegistrationError::WeakPassword) => {
             return Err(ExceptionResponse::BadRequest(
                 locale,
                 ErrorKey::WeakPassword,
             ));
         }
-        Err(_e) => {
+        Err(RegistrationError::OutdatedLegalDocument) => {
+            return Err(ExceptionResponse::BadRequest(
+                locale,
+                ErrorKey::ConsentRequired,
+            ));
+        }
+        Err(_) => {
             return Err(ExceptionResponse::BadRequest(
                 locale,
                 ErrorKey::SignUpUserFailed,
@@ -117,6 +129,36 @@ pub async fn sign_up(
             locale,
             ErrorKey::UnknowAuthError,
         )),
+    }
+}
+
+#[cfg(test)]
+mod age_tests {
+    use super::is_at_least_eighteen;
+    use chrono::NaiveDate;
+
+    #[test]
+    fn rejects_the_day_before_the_eighteenth_birthday() {
+        assert!(!is_at_least_eighteen(
+            NaiveDate::from_ymd_opt(2008, 8, 28).unwrap(),
+            NaiveDate::from_ymd_opt(2026, 8, 27).unwrap(),
+        ));
+    }
+
+    #[test]
+    fn accepts_on_the_eighteenth_birthday() {
+        assert!(is_at_least_eighteen(
+            NaiveDate::from_ymd_opt(2008, 8, 27).unwrap(),
+            NaiveDate::from_ymd_opt(2026, 8, 27).unwrap(),
+        ));
+    }
+
+    #[test]
+    fn handles_leap_day_without_year_subtraction_errors() {
+        assert!(is_at_least_eighteen(
+            NaiveDate::from_ymd_opt(2008, 2, 29).unwrap(),
+            NaiveDate::from_ymd_opt(2026, 2, 28).unwrap(),
+        ));
     }
 }
 
@@ -233,7 +275,10 @@ pub async fn activate(
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<AccessTokenJson>> {
     if parse_uuid(&business_profile_uuid).is_err() {
-        return Err(ExceptionResponse::BadRequest(locale,ErrorKey::InvalidParameterValue,));
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::InvalidParameterValue,
+        ));
     }
 
     let result = SwitchBusinessProfile::activate(

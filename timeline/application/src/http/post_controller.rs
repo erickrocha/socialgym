@@ -41,6 +41,12 @@ pub async fn create_post(
     Extension(current_user): Extension<User>,
     Json(payload): Json<PostJson>,
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
+    if !payload.media.is_empty() && !payload.third_party_consent_confirmed {
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::PostCreateFailed,
+        ));
+    }
     let post = PostMapper::domain(payload);
 
     PostUseCase::create(&state.database, &current_user, post)

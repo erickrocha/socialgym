@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import Avatar from '../Avatar/Avatar';
 import './Post.scss';
 
-const Post = ({ post, userAvatar, userName, onReact, onComment }) => {
+const Post = ({ post, userAvatar, userName, onReact, onComment, onReport }) => {
     const { t } = useTranslation('common');
     const [showComments, setShowComments] = useState(false);
     const [commentText, setCommentText] = useState('');
@@ -13,6 +13,7 @@ const Post = ({ post, userAvatar, userName, onReact, onComment }) => {
     const createdAt = post.createdAt ? new Date(post.createdAt) : new Date();
     const likes = Array.isArray(post.reactions) ? post.reactions.length : 0;
     const comments = Array.isArray(post.comments) ? post.comments : [];
+    const postId = post.uuid || post.id;
 
     const handleLike = async () => {
         if (onReact) {
@@ -68,6 +69,7 @@ const Post = ({ post, userAvatar, userName, onReact, onComment }) => {
                             ) : (
                                 <video src={attachment.url} controls />
                             )}
+                            <button type="button" className="post__report-media" onClick={() => onReport?.({ targetType: 'media', targetId: attachment.uuid || attachment.objectKey, postId })}>Denunciar mídia</button>
                         </div>
                     ))}
                 </div>
@@ -105,6 +107,9 @@ const Post = ({ post, userAvatar, userName, onReact, onComment }) => {
                     <span>↗️</span>
                     <span>{t('feed.share')}</span>
                 </button>
+                <button type="button" className="post__action-btn" onClick={() => onReport?.({ targetType: 'post', targetId: postId, postId })}>
+                    <span>⚑</span><span>Denunciar</span>
+                </button>
             </div>
 
             {showComments && (
@@ -117,6 +122,7 @@ const Post = ({ post, userAvatar, userName, onReact, onComment }) => {
                                     <p className="post__comment-author">{comment.authorName || 'User'}</p>
                                     <p className="post__comment-text">{comment.content}</p>
                                     <p className="post__comment-time">{formatTime(new Date(comment.createdAt || Date.now()))}</p>
+                                    <button type="button" onClick={() => onReport?.({ targetType: 'comment', targetId: comment.uuid || comment.id, postId })}>Denunciar</button>
                                 </div>
                             </div>
                         ))}

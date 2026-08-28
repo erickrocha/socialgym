@@ -26,6 +26,9 @@ mod m20260826_000003_add_account_deletion_columns_to_user;
 mod m20260826_000004_drop_table_provinces;
 mod m20260826_000005_person_address_replace_latlong_with_location;
 mod m20260826_000006_business_profile_address_replace_latlong_with_location;
+mod m20260827_000001_create_table_consent;
+mod m20260827_000002_create_table_data_export;
+mod m20260827_000003_create_table_user_role;
 
 pub struct Migrator;
 
@@ -61,6 +64,9 @@ impl MigratorTrait for Migrator {
             Box::new(
                 m20260826_000006_business_profile_address_replace_latlong_with_location::Migration,
             ),
+            Box::new(m20260827_000001_create_table_consent::Migration),
+            Box::new(m20260827_000002_create_table_data_export::Migration),
+            Box::new(m20260827_000003_create_table_user_role::Migration),
         ]
     }
 }

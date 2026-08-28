@@ -1,5 +1,5 @@
-use fluent_templates::{static_loader, Loader};
-use unic_langid::{langid, LanguageIdentifier};
+use fluent_templates::{Loader, static_loader};
+use unic_langid::{LanguageIdentifier, langid};
 
 static_loader! {
     static LOCALES = {
@@ -77,6 +77,7 @@ pub enum ErrorKey {
 
     InternalAuthInvalid,
     AccountDataDeletionFailed,
+    ConsentRequired,
 
     Unknown,
 }
@@ -99,6 +100,7 @@ impl ErrorKey {
             ErrorKey::RateLimited => "RATE_LIMITED",
             ErrorKey::InternalAuthInvalid => "INTERNAL_AUTH_INVALID",
             ErrorKey::AccountDataDeletionFailed => "ACCOUNT_DATA_DELETION_FAILED",
+            ErrorKey::ConsentRequired => "CONSENT_REQUIRED",
             ErrorKey::Unknown => "UNKNOWN_ERROR",
         }
     }
@@ -120,6 +122,7 @@ impl ErrorKey {
             ErrorKey::RateLimited => "rate-limited",
             ErrorKey::InternalAuthInvalid => "internal-auth-invalid",
             ErrorKey::AccountDataDeletionFailed => "account-data-deletion-failed",
+            ErrorKey::ConsentRequired => "consent-required",
             ErrorKey::Unknown => "unknown-error",
         }
     }

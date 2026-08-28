@@ -9,8 +9,10 @@ use crate::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use business::commons::functions::parse_uuid;
+use business::commons::legal_documents;
 use business::domain::person::Person;
 use business::domain::user::User;
+use business::use_cases::consent_use_case::ConsentUseCase;
 use business::use_cases::person_use_case::PersonUseCase;
 use serde::Deserialize;
 
@@ -122,6 +124,16 @@ pub async fn update_person(
         Some(image_url) => image_url,
         None => person.cover.unwrap_or_default(),
     };
+
+    if payload
+        .person_info
+        .as_ref()
+        .is_some_and(|info| info.weight.is_some() || info.height.is_some())
+    {
+        ConsentUseCase::require_current(&state.conn, person_id, legal_documents::HEALTH_DATA)
+            .await
+            .map_err(|_| ExceptionResponse::Forbidden(locale, ErrorKey::ConsentRequired))?;
+    }
 
     let person_info = match payload.person_info {
         Some(json) => Some(PersonInfoMapper::domain(json)),

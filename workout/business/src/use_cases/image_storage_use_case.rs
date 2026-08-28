@@ -5,8 +5,8 @@ use aws_config::BehaviorVersion;
 use aws_sdk_s3::Client;
 use cloudfront_sign::{get_signed_url, SignedOptions};
 use std::borrow::Cow;
+use std::env;
 use std::time::Duration;
-use std::{env};
 use uuid::Uuid;
 
 const AWS_WORKOUT_BUCKET: &str = "AWS_WORKOUT_BUCKET";
@@ -18,7 +18,41 @@ const PRIVATE_KEY_RAW: &str = "PRIVATE_KEY_RAW";
 pub struct ImageStorageUseCase {}
 
 impl ImageStorageUseCase {
-    pub async fn update_presigned_url(person_id: i32,object_key: String,format: String) -> Result<ImageStorage, BusinessError> {
+    pub async fn upload_export(object_key: &str, bytes: Vec<u8>) -> Result<(), BusinessError> {
+        let bucket = env::var(AWS_WORKOUT_BUCKET).expect("AWS_WORKOUT_BUCKET must be set");
+        let shared_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
+        S3Gateway::upload_bytes(
+            &Client::new(&shared_config),
+            &bucket,
+            object_key,
+            bytes,
+            "application/zip",
+        )
+        .await
+    }
+
+    pub async fn download_object(object_key: &str) -> Result<Vec<u8>, BusinessError> {
+        let bucket = env::var(AWS_WORKOUT_BUCKET).expect("AWS_WORKOUT_BUCKET must be set");
+        let shared_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
+        S3Gateway::download_bytes(&Client::new(&shared_config), &bucket, object_key).await
+    }
+
+    pub async fn export_download_url(object_key: &str) -> Result<String, BusinessError> {
+        let bucket = env::var(AWS_WORKOUT_BUCKET).expect("AWS_WORKOUT_BUCKET must be set");
+        let shared_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
+        S3Gateway::get_object(
+            &Client::new(&shared_config),
+            &bucket,
+            object_key,
+            Duration::from_secs(900),
+        )
+        .await
+    }
+    pub async fn update_presigned_url(
+        person_id: i32,
+        object_key: String,
+        format: String,
+    ) -> Result<ImageStorage, BusinessError> {
         let extension = format.split("/").last().unwrap_or("jpg");
         let bucket = env::var(AWS_WORKOUT_BUCKET).expect("AWS WORKOUT_BUCKET must be set");
         let expiration_seconds = env::var(PRESIGNED_URL_EXPIRATION_SECONDS)
@@ -31,7 +65,8 @@ impl ImageStorageUseCase {
         let expires_in = Duration::from_secs(expiration_seconds);
         let content_type = format!("image/{}", extension);
 
-        let s3_response = S3Gateway::put_object(&client, &bucket, &object_key, &content_type, expires_in).await;
+        let s3_response =
+            S3Gateway::put_object(&client, &bucket, &object_key, &content_type, expires_in).await;
         if s3_response.is_err() {
             log::error!("Error generating pre-signed URL: {:?}", s3_response.err());
             return Err(BusinessError::new(
@@ -60,7 +95,12 @@ impl ImageStorageUseCase {
 
     /// Generates a pre-signed PUT URL using an album-based S3 key.
     /// Also accepts a raw content_type like `image/jpeg` or `video/mp4`.
-    pub async fn generate_presigned_url(entity_type: String, owner_id: i32, owner_uuid: &str, album: &str, content_type: &str,
+    pub async fn generate_presigned_url(
+        entity_type: String,
+        owner_id: i32,
+        owner_uuid: &str,
+        album: &str,
+        content_type: &str,
     ) -> Result<ImageStorage, BusinessError> {
         let object_key = Self::generate_album_object_key(&entity_type, owner_uuid, album);
         let bucket = env::var(AWS_WORKOUT_BUCKET).expect("AWS_WORKOUT_BUCKET must be set");
@@ -73,7 +113,8 @@ impl ImageStorageUseCase {
         let client = Client::new(&shared_config);
         let expires_in = Duration::from_secs(expiration_seconds);
 
-        let s3_response = S3Gateway::put_object(&client, &bucket, &object_key, content_type, expires_in).await;
+        let s3_response =
+            S3Gateway::put_object(&client, &bucket, &object_key, content_type, expires_in).await;
 
         match s3_response {
             Ok(uri) => {
@@ -89,7 +130,9 @@ impl ImageStorageUseCase {
         }
     }
 
-    pub async fn generate_cloud_front_signed_url(object_key: &str) -> Result<String, BusinessError> {
+    pub async fn generate_cloud_front_signed_url(
+        object_key: &str,
+    ) -> Result<String, BusinessError> {
         // 1. Load configs from environment variables
         let key_id = env::var(CLOUDFRONT_KEY_PAIR_ID).expect("CLOUDFRONT_KEY_PAIR_ID not defined");
         let domain = env::var(CLOUDFRONT_DOMAIN).expect("CLOUDFRONT_DOMAIN not defined");
@@ -112,12 +155,17 @@ impl ImageStorageUseCase {
 
         let signed_url = get_signed_url(&resource_url, &options);
         if signed_url.is_err() {
-            log::error!("Error generating CloudFront signed URL: {:?}",signed_url.err());
-            return Err(BusinessError::new("Failed to generate CloudFront signed URL".to_string()));
+            log::error!(
+                "Error generating CloudFront signed URL: {:?}",
+                signed_url.err()
+            );
+            return Err(BusinessError::new(
+                "Failed to generate CloudFront signed URL".to_string(),
+            ));
         }
         Ok(signed_url.unwrap())
     }
-    
+
     pub async fn delete_presigned_url(object_key: String) -> Result<(), BusinessError> {
         let bucket = env::var(AWS_WORKOUT_BUCKET).expect("AWS WORKOUT_BUCKET must be set");
         let shared_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
@@ -127,7 +175,9 @@ impl ImageStorageUseCase {
             Ok(_) => Ok(()),
             Err(e) => {
                 log::error!("Error deleting object from S3: {:?}", e);
-                Err(BusinessError::new("Failed to delete object from S3".to_string()))
+                Err(BusinessError::new(
+                    "Failed to delete object from S3".to_string(),
+                ))
             }
         }
     }

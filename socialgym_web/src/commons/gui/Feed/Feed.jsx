@@ -10,6 +10,7 @@ import {
     reactToPost,
 } from '../../../redux/reducers/timeline/index.js';
 import './Feed.scss';
+import axios from '../../../axios.config.js';
 
 const Feed = ({ person, userAvatar, defaultAvatar }) => {
     const { t } = useTranslation('common');
@@ -88,6 +89,16 @@ const Feed = ({ person, userAvatar, defaultAvatar }) => {
         }
     };
 
+    const handleReport = async ({ targetType, targetId, postId }) => {
+        const reason = window.prompt('Motivo da denúncia (ex.: harassment, intimate_image, illegal_content, other):', 'other');
+        if (!reason) return;
+        const details = window.prompt('Descreva o problema (opcional):', '') || null;
+        try {
+            await axios.post('/timeline/api/reports', { targetType, targetId, postId, reason, details });
+            setError('Denúncia recebida. Nossa equipe fará a análise.');
+        } catch (err) { setError(err?.response?.data?.message || 'Não foi possível enviar a denúncia.'); }
+    };
+
     return (
         <div className="feed">
             <div className="feed__container">
@@ -124,6 +135,7 @@ const Feed = ({ person, userAvatar, defaultAvatar }) => {
                                     userId={person?.id}
                                     onReact={handleReact}
                                     onComment={handleComment}
+                                    onReport={handleReport}
                                 />
                             ))}
 

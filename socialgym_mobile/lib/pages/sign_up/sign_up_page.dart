@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/sign_up_request.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/person_provider.dart';
+import '../../services/legal_document_service.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -33,6 +34,44 @@ class _SignUpPageState extends State<SignUpPage> {
   final _customGenderController = TextEditingController();
 
   bool _obscurePassword = true;
+  bool _termsAccepted = false;
+  bool _privacyAccepted = false;
+  String _termsVersion = '1.0.0';
+  String _privacyVersion = '1.0.0';
+
+  Future<void> _showLegalDocument(String document) async {
+    try {
+      final legal = await LegalDocumentService.get(document);
+      if (!mounted) return;
+      setState(() {
+        if (document == 'terms') _termsVersion = legal.version;
+        if (document == 'privacy') _privacyVersion = legal.version;
+      });
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(legal.title),
+          content: SizedBox(
+            width: 620,
+            child: SingleChildScrollView(child: SelectableText(legal.content)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Fechar'),
+            ),
+          ],
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Documento legal indisponível. Tente novamente.'),
+        ),
+      );
+    }
+  }
 
   List<Map<String, String>> _getMonths(AppLocalizations l10n) => [
     {'value': '01', 'label': l10n.monthJanuary},
@@ -49,7 +88,8 @@ class _SignUpPageState extends State<SignUpPage> {
     {'value': '12', 'label': l10n.monthDecember},
   ];
 
-  List<String> get _days => List.generate(31, (i) => (i + 1).toString().padLeft(2, '0'));
+  List<String> get _days =>
+      List.generate(31, (i) => (i + 1).toString().padLeft(2, '0'));
 
   List<String> get _years {
     final currentYear = DateTime.now().year;
@@ -75,7 +115,9 @@ class _SignUpPageState extends State<SignUpPage> {
     final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedMonth == null || _selectedDay == null || _selectedYear == null) {
+    if (_selectedMonth == null ||
+        _selectedDay == null ||
+        _selectedYear == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.validationDateOfBirthRequired),
@@ -87,7 +129,10 @@ class _SignUpPageState extends State<SignUpPage> {
 
     if (_selectedGender == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.validationGenderRequired), backgroundColor: AppColors.danger),
+        SnackBar(
+          content: Text(l10n.validationGenderRequired),
+          backgroundColor: AppColors.danger,
+        ),
       );
       return;
     }
@@ -97,6 +142,25 @@ class _SignUpPageState extends State<SignUpPage> {
         : _selectedGender!;
 
     final dateOfBirth = '$_selectedYear-$_selectedMonth-$_selectedDay';
+    final birthDate = DateTime.tryParse(dateOfBirth);
+    final now = DateTime.now();
+    final cutoff = DateTime(now.year - 18, now.month, now.day);
+    if (birthDate == null || birthDate.isAfter(cutoff)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Você deve ter pelo menos 18 anos.')),
+      );
+      return;
+    }
+    if (!_termsAccepted || !_privacyAccepted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Aceite os Termos e a Política de Privacidade para continuar.',
+          ),
+        ),
+      );
+      return;
+    }
 
     final request = SignUpRequest(
       firstname: _firstnameController.text.trim(),
@@ -105,6 +169,10 @@ class _SignUpPageState extends State<SignUpPage> {
       password: _passwordController.text,
       dateOfBirth: dateOfBirth,
       gender: gender,
+      termsVersion: _termsVersion,
+      privacyVersion: _privacyVersion,
+      termsAccepted: _termsAccepted,
+      privacyAccepted: _privacyAccepted,
     );
 
     final authProvider = context.read<AuthProvider>();
@@ -129,7 +197,10 @@ class _SignUpPageState extends State<SignUpPage> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: BorderSide(color: AppColors.primaryHoverFor(businessType), width: 2),
+        borderSide: BorderSide(
+          color: AppColors.primaryHoverFor(businessType),
+          width: 2,
+        ),
       ),
     );
   }
@@ -140,8 +211,10 @@ class _SignUpPageState extends State<SignUpPage> {
     final months = _getMonths(l10n);
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 640;
-    final businessType =
-        context.watch<PersonProvider>().activeBusinessProfile?.businessType;
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
 
     return Scaffold(
       body: Container(
@@ -155,10 +228,18 @@ class _SignUpPageState extends State<SignUpPage> {
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24, horizontal: isDesktop ? 48 : 0),
+                    padding: EdgeInsets.symmetric(
+                      vertical: 24,
+                      horizontal: isDesktop ? 48 : 0,
+                    ),
                     child: Center(
                       child: isDesktop
-                          ? _buildDesktopLayout(l10n, months, screenWidth, businessType)
+                          ? _buildDesktopLayout(
+                              l10n,
+                              months,
+                              screenWidth,
+                              businessType,
+                            )
                           : _buildMobileLayout(l10n, months, businessType),
                     ),
                   ),
@@ -188,14 +269,20 @@ class _SignUpPageState extends State<SignUpPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Logo on the left
-            Image.asset('assets/images/logo.png', width: logoWidth, height: logoWidth),
+            Image.asset(
+              'assets/images/logo.png',
+              width: logoWidth,
+              height: logoWidth,
+            ),
 
             const SizedBox(width: 32),
 
             // Form on the right
             Expanded(
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: screenWidth >= 1024 ? 500 : 450),
+                constraints: BoxConstraints(
+                  maxWidth: screenWidth >= 1024 ? 500 : 450,
+                ),
                 child: _buildFormCard(l10n, months, businessType),
               ),
             ),
@@ -240,7 +327,11 @@ class _SignUpPageState extends State<SignUpPage> {
         color: AppColors.background,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(25), blurRadius: 6, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withAlpha(25),
+            blurRadius: 6,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Consumer<AuthProvider>(
@@ -274,7 +365,10 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                     child: Text(
                       authProvider.error!,
-                      style: const TextStyle(color: AppColors.danger, fontSize: 14),
+                      style: const TextStyle(
+                        color: AppColors.danger,
+                        fontSize: 14,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -286,7 +380,10 @@ class _SignUpPageState extends State<SignUpPage> {
                   controller: _firstnameController,
                   focusNode: _firstnameFocus,
                   textInputAction: TextInputAction.next,
-                  decoration: _inputDecoration(l10n.signUpFirstName, businessType),
+                  decoration: _inputDecoration(
+                    l10n.signUpFirstName,
+                    businessType,
+                  ),
                   onFieldSubmitted: (_) {
                     FocusScope.of(context).requestFocus(_surnameFocus);
                   },
@@ -305,7 +402,10 @@ class _SignUpPageState extends State<SignUpPage> {
                   controller: _surnameController,
                   focusNode: _surnameFocus,
                   textInputAction: TextInputAction.next,
-                  decoration: _inputDecoration(l10n.signUpSurname, businessType),
+                  decoration: _inputDecoration(
+                    l10n.signUpSurname,
+                    businessType,
+                  ),
                   onFieldSubmitted: (_) {
                     final nextFocus = _selectedGender == 'Custom'
                         ? _customGenderFocus
@@ -330,13 +430,19 @@ class _SignUpPageState extends State<SignUpPage> {
                       flex: 4,
                       child: DropdownButtonFormField<String>(
                         initialValue: _selectedMonth,
-                        hint: Text(l10n.signUpBirthdayMonth, style: const TextStyle(fontSize: 14)),
+                        hint: Text(
+                          l10n.signUpBirthdayMonth,
+                          style: const TextStyle(fontSize: 14),
+                        ),
                         isExpanded: true,
                         decoration: _inputDecoration('', businessType),
                         items: months.map((m) {
                           return DropdownMenuItem(
                             value: m['value'],
-                            child: Text(m['label']!, style: const TextStyle(fontSize: 14)),
+                            child: Text(
+                              m['label']!,
+                              style: const TextStyle(fontSize: 14),
+                            ),
                           );
                         }).toList(),
                         onChanged: (value) {
@@ -352,13 +458,19 @@ class _SignUpPageState extends State<SignUpPage> {
                       flex: 3,
                       child: DropdownButtonFormField<String>(
                         initialValue: _selectedDay,
-                        hint: Text(l10n.signUpBirthdayDay, style: const TextStyle(fontSize: 14)),
+                        hint: Text(
+                          l10n.signUpBirthdayDay,
+                          style: const TextStyle(fontSize: 14),
+                        ),
                         isExpanded: true,
                         decoration: _inputDecoration('', businessType),
                         items: _days.map((d) {
                           return DropdownMenuItem(
                             value: d,
-                            child: Text(d, style: const TextStyle(fontSize: 14)),
+                            child: Text(
+                              d,
+                              style: const TextStyle(fontSize: 14),
+                            ),
                           );
                         }).toList(),
                         onChanged: (value) {
@@ -374,13 +486,19 @@ class _SignUpPageState extends State<SignUpPage> {
                       flex: 3,
                       child: DropdownButtonFormField<String>(
                         initialValue: _selectedYear,
-                        hint: Text(l10n.signUpBirthdayYear, style: const TextStyle(fontSize: 14)),
+                        hint: Text(
+                          l10n.signUpBirthdayYear,
+                          style: const TextStyle(fontSize: 14),
+                        ),
                         isExpanded: true,
                         decoration: _inputDecoration('', businessType),
                         items: _years.map((y) {
                           return DropdownMenuItem(
                             value: y,
-                            child: Text(y, style: const TextStyle(fontSize: 14)),
+                            child: Text(
+                              y,
+                              style: const TextStyle(fontSize: 14),
+                            ),
                           );
                         }).toList(),
                         onChanged: (value) {
@@ -407,9 +525,17 @@ class _SignUpPageState extends State<SignUpPage> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _genderRadio('Female', l10n.signUpGenderFemale, businessType),
+                    _genderRadio(
+                      'Female',
+                      l10n.signUpGenderFemale,
+                      businessType,
+                    ),
                     _genderRadio('Male', l10n.signUpGenderMale, businessType),
-                    _genderRadio('Custom', l10n.signUpGenderCustom, businessType),
+                    _genderRadio(
+                      'Custom',
+                      l10n.signUpGenderCustom,
+                      businessType,
+                    ),
                   ],
                 ),
 
@@ -438,7 +564,10 @@ class _SignUpPageState extends State<SignUpPage> {
                   focusNode: _emailFocus,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: _inputDecoration(l10n.signUpMobileOrEmail, businessType),
+                  decoration: _inputDecoration(
+                    l10n.signUpMobileOrEmail,
+                    businessType,
+                  ),
                   onFieldSubmitted: (_) {
                     FocusScope.of(context).requestFocus(_passwordFocus);
                   },
@@ -458,19 +587,25 @@ class _SignUpPageState extends State<SignUpPage> {
                   focusNode: _passwordFocus,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.done,
-                  decoration: _inputDecoration(l10n.signUpPassword, businessType).copyWith(
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                        color: AppColors.primaryFor(businessType),
+                  decoration:
+                      _inputDecoration(
+                        l10n.signUpPassword,
+                        businessType,
+                      ).copyWith(
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: AppColors.primaryFor(businessType),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                  ),
                   onFieldSubmitted: (_) {
                     if (!context.read<AuthProvider>().loading) {
                       _handleSignUp();
@@ -498,28 +633,87 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
 
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: _termsAccepted,
+                  onChanged: (value) =>
+                      setState(() => _termsAccepted = value ?? false),
+                  title: Wrap(
+                    children: [
+                      const Text('Li e aceito os '),
+                      InkWell(
+                        onTap: () => _showLegalDocument('terms'),
+                        child: const Text(
+                          'Termos de Uso',
+                          style: TextStyle(
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: _privacyAccepted,
+                  onChanged: (value) =>
+                      setState(() => _privacyAccepted = value ?? false),
+                  title: Wrap(
+                    children: [
+                      const Text('Li e aceito a '),
+                      InkWell(
+                        onTap: () => _showLegalDocument('privacy'),
+                        child: const Text(
+                          'Política de Privacidade',
+                          style: TextStyle(
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 const SizedBox(height: 24),
 
                 // Sign Up Button
                 SizedBox(
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: authProvider.loading ? null : _handleSignUp,
+                    onPressed:
+                        authProvider.loading ||
+                            !_termsAccepted ||
+                            !_privacyAccepted
+                        ? null
+                        : _handleSignUp,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryFor(businessType),
-                      disabledBackgroundColor: AppColors.primaryDisabledFor(businessType),
+                      disabledBackgroundColor: AppColors.primaryDisabledFor(
+                        businessType,
+                      ),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
                     child: authProvider.loading
                         ? const SizedBox(
                             width: 24,
                             height: 24,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
                         : Text(
                             l10n.signUpSubmit,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                   ),
                 ),
@@ -534,7 +728,10 @@ class _SignUpPageState extends State<SignUpPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         l10n.signInOr,
-                        style: const TextStyle(color: Colors.grey, fontSize: 14),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                     const Expanded(child: Divider()),
@@ -552,7 +749,10 @@ class _SignUpPageState extends State<SignUpPage> {
                     },
                     child: Text(
                       l10n.signUpAlreadyHaveAccount,
-                      style: TextStyle(color: AppColors.primaryFor(businessType), fontSize: 14),
+                      style: TextStyle(
+                        color: AppColors.primaryFor(businessType),
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -593,7 +793,9 @@ class _SignUpPageState extends State<SignUpPage> {
                 _selectedGender == value
                     ? Icons.radio_button_checked
                     : Icons.radio_button_unchecked,
-                color: _selectedGender == value ? AppColors.primaryFor(businessType) : Colors.grey,
+                color: _selectedGender == value
+                    ? AppColors.primaryFor(businessType)
+                    : Colors.grey,
                 size: 20,
               ),
               const SizedBox(width: 4),

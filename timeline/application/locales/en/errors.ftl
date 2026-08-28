@@ -17,3 +17,4 @@ unknown-error = Unexpected server error
 rate-limited = Too many requests. Please try again later.
 internal-auth-invalid = Invalid internal service credentials
 account-data-deletion-failed = Failed to delete account data
+consent-required = The required legal consent is missing or out of date

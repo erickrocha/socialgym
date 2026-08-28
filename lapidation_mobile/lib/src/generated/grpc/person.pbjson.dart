@@ -15,6 +15,58 @@ import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
+@$core.Deprecated('Use consentStatusRequestDescriptor instead')
+const ConsentStatusRequest$json = {
+  '1': 'ConsentStatusRequest',
+  '2': [
+    {'1': 'document', '3': 1, '4': 1, '5': 9, '10': 'document'},
+  ],
+};
+
+/// Descriptor for `ConsentStatusRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List consentStatusRequestDescriptor =
+    $convert.base64Decode(
+        'ChRDb25zZW50U3RhdHVzUmVxdWVzdBIaCghkb2N1bWVudBgBIAEoCVIIZG9jdW1lbnQ=');
+
+@$core.Deprecated('Use consentStatusResponseDescriptor instead')
+const ConsentStatusResponse$json = {
+  '1': 'ConsentStatusResponse',
+  '2': [
+    {'1': 'active', '3': 1, '4': 1, '5': 8, '10': 'active'},
+    {'1': 'version', '3': 2, '4': 1, '5': 9, '10': 'version'},
+  ],
+};
+
+/// Descriptor for `ConsentStatusResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List consentStatusResponseDescriptor = $convert.base64Decode(
+    'ChVDb25zZW50U3RhdHVzUmVzcG9uc2USFgoGYWN0aXZlGAEgASgIUgZhY3RpdmUSGAoHdmVyc2'
+    'lvbhgCIAEoCVIHdmVyc2lvbg==');
+
+@$core.Deprecated('Use roleStatusRequestDescriptor instead')
+const RoleStatusRequest$json = {
+  '1': 'RoleStatusRequest',
+  '2': [
+    {'1': 'role', '3': 1, '4': 1, '5': 9, '10': 'role'},
+  ],
+};
+
+/// Descriptor for `RoleStatusRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List roleStatusRequestDescriptor = $convert
+    .base64Decode('ChFSb2xlU3RhdHVzUmVxdWVzdBISCgRyb2xlGAEgASgJUgRyb2xl');
+
+@$core.Deprecated('Use roleStatusResponseDescriptor instead')
+const RoleStatusResponse$json = {
+  '1': 'RoleStatusResponse',
+  '2': [
+    {'1': 'active', '3': 1, '4': 1, '5': 8, '10': 'active'},
+  ],
+};
+
+/// Descriptor for `RoleStatusResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List roleStatusResponseDescriptor =
+    $convert.base64Decode(
+        'ChJSb2xlU3RhdHVzUmVzcG9uc2USFgoGYWN0aXZlGAEgASgIUgZhY3RpdmU=');
+
 @$core.Deprecated('Use getMeRequestDescriptor instead')
 const GetMeRequest$json = {
   '1': 'GetMeRequest',

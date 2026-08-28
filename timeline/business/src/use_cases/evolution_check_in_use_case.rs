@@ -1,4 +1,5 @@
 use crate::commons::authorization::ensure_owns;
+use crate::gateway::consent_gateway::ConsentGateway;
 use crate::gateway::evolution_check_in_gateway::EvolutionCheckInGateway;
 use crate::repositories::repository::Repository;
 use domain::business_error::BusinessError;
@@ -21,6 +22,7 @@ impl EvolutionCheckInUseCase {
         mut evolution: EvolutionCheckIn,
         acting_person_uuid: &str,
     ) -> Result<EvolutionCheckIn, BusinessError> {
+        ConsentGateway::require_health_consent().await?;
         evolution.person_uuid = acting_person_uuid.to_string();
         log::info!("Adding evolution check-in: {:?}", evolution);
         let persisted = self.gateway.persist(evolution).await;
@@ -51,8 +53,20 @@ impl EvolutionCheckInUseCase {
         Ok(check_in)
     }
 
-    pub async fn find_all_by_owner(&self,person_uuid: String,start: DateTime, end: DateTime) -> Vec<EvolutionCheckIn> {
-        log::info!("Finding all evolution check-ins by person uuid: {:?} start: {:?} end: {:?}",person_uuid, start, end);
-        self.gateway.find_all_by_person_uuid(person_uuid, start, end).await
+    pub async fn find_all_by_owner(
+        &self,
+        person_uuid: String,
+        start: DateTime,
+        end: DateTime,
+    ) -> Vec<EvolutionCheckIn> {
+        log::info!(
+            "Finding all evolution check-ins by person uuid: {:?} start: {:?} end: {:?}",
+            person_uuid,
+            start,
+            end
+        );
+        self.gateway
+            .find_all_by_person_uuid(person_uuid, start, end)
+            .await
     }
 }

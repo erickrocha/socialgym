@@ -15,7 +15,7 @@ where
 #[serde(rename_all = "camelCase")]
 pub struct SignUpJson {
     pub firstname: String,
-    pub surname:String,
+    pub surname: String,
     #[serde(deserialize_with = "deserialize_naive_date")]
     pub date_of_birth: NaiveDate,
     pub gender: String,
@@ -23,4 +23,8 @@ pub struct SignUpJson {
     pub password: String,
     pub enabled: Option<bool>,
     pub first_login: Option<bool>,
+    pub terms_version: String,
+    pub privacy_version: String,
+    pub terms_accepted: bool,
+    pub privacy_accepted: bool,
 }

@@ -1,11 +1,53 @@
-use std::time::Duration;
 use crate::domain::business_error::BusinessError;
 use aws_sdk_s3::presigning::PresigningConfig;
+use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::Client;
+use std::time::Duration;
 
 pub struct S3Gateway {}
 
 impl S3Gateway {
+    pub async fn upload_bytes(
+        client: &Client,
+        bucket: &str,
+        object: &str,
+        bytes: Vec<u8>,
+        content_type: &str,
+    ) -> Result<(), BusinessError> {
+        client
+            .put_object()
+            .bucket(bucket)
+            .key(object)
+            .content_type(content_type)
+            .server_side_encryption(aws_sdk_s3::types::ServerSideEncryption::Aes256)
+            .body(ByteStream::from(bytes))
+            .send()
+            .await
+            .map(|_| ())
+            .map_err(|e| BusinessError::infrastructure(format!("Failed to upload export: {e:?}")))
+    }
+
+    pub async fn download_bytes(
+        client: &Client,
+        bucket: &str,
+        object: &str,
+    ) -> Result<Vec<u8>, BusinessError> {
+        let output = client
+            .get_object()
+            .bucket(bucket)
+            .key(object)
+            .send()
+            .await
+            .map_err(|e| {
+                BusinessError::infrastructure(format!("Failed to download object: {e:?}"))
+            })?;
+        output
+            .body
+            .collect()
+            .await
+            .map(|data| data.into_bytes().to_vec())
+            .map_err(|e| BusinessError::infrastructure(format!("Failed to read object: {e:?}")))
+    }
     pub async fn put_object(
         client: &Client,
         bucket: &str,

@@ -19,6 +19,7 @@ import '../providers/feed_provider.dart';
 import '../services/grpc/grpc_person_service.dart';
 import '../pages/profile/person_profile_page.dart';
 import '../utils/mention_text_utils.dart';
+import '../services/content_report_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Post Card
@@ -33,7 +34,8 @@ class FeedPostWidget extends StatefulWidget {
   State<FeedPostWidget> createState() => _FeedPostWidgetState();
 }
 
-class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProviderStateMixin {
+class _FeedPostWidgetState extends State<FeedPostWidget>
+    with SingleTickerProviderStateMixin {
   bool _showReactionPicker = false;
   bool _submittingComment = false;
   String? _replyToCommentId;
@@ -51,8 +53,14 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
   void initState() {
     super.initState();
     _commentController.addListener(_onCommentTextChanged);
-    _reactionAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
-    _reactionFade = CurvedAnimation(parent: _reactionAnim, curve: Curves.easeInOut);
+    _reactionAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _reactionFade = CurvedAnimation(
+      parent: _reactionAnim,
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
@@ -64,9 +72,11 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
     super.dispose();
   }
 
-  String _token(BuildContext ctx) => ctx.read<AuthProvider>().auth?.accessToken ?? '';
+  String _token(BuildContext ctx) =>
+      ctx.read<AuthProvider>().auth?.accessToken ?? '';
 
-  int _personId(BuildContext ctx) => ctx.read<AuthProvider>().auth?.personId ?? 0;
+  int _personId(BuildContext ctx) =>
+      ctx.read<AuthProvider>().auth?.personId ?? 0;
 
   void _toggleReactionPicker() {
     setState(() => _showReactionPicker = !_showReactionPicker);
@@ -84,7 +94,10 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
       return;
     }
 
-    final query = findActiveMentionQuery(_commentController.text, selection.baseOffset);
+    final query = findActiveMentionQuery(
+      _commentController.text,
+      selection.baseOffset,
+    );
     if (query == null || query.token.length < 2) {
       _clearMentionSuggestions();
       return;
@@ -221,7 +234,91 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
     });
   }
 
-  Future<void> _navigateToMentionedProfile(BuildContext context, Mention mention) async {
+  Future<void> _reportPost(BuildContext context) async {
+    String reason = 'other';
+    final details = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Denunciar publicação'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                initialValue: reason,
+                items: const [
+                  DropdownMenuItem(
+                    value: 'harassment',
+                    child: Text('Assédio ou abuso'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'intimate_image',
+                    child: Text('Imagem íntima sem autorização'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'illegal_content',
+                    child: Text('Conteúdo ilegal'),
+                  ),
+                  DropdownMenuItem(value: 'other', child: Text('Outro')),
+                ],
+                onChanged: (value) =>
+                    setDialogState(() => reason = value ?? 'other'),
+              ),
+              TextField(
+                controller: details,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Detalhes (opcional)',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Enviar denúncia'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true) {
+      details.dispose();
+      return;
+    }
+    try {
+      await ContentReportService.create(
+        targetType: 'post',
+        targetId: widget.post.uuid,
+        postId: widget.post.uuid,
+        reason: reason,
+        details: details.text.trim(),
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Denúncia recebida para análise.')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível enviar a denúncia.')),
+        );
+      }
+    } finally {
+      details.dispose();
+    }
+  }
+
+  Future<void> _navigateToMentionedProfile(
+    BuildContext context,
+    Mention mention,
+  ) async {
     try {
       // Create a minimal Person object with the UUID we already have
       // PersonProfilePage will load the full profile data
@@ -266,8 +363,10 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
       },
       builder: (context, post, _) {
         final currentPost = post ?? widget.post;
-        final businessType =
-            context.watch<PersonProvider>().activeBusinessProfile?.businessType;
+        final businessType = context
+            .watch<PersonProvider>()
+            .activeBusinessProfile
+            ?.businessType;
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
           shape: const RoundedRectangleBorder(),
@@ -277,25 +376,35 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Header ──
-              _PostHeader(post: currentPost, businessType: businessType),
+              _PostHeader(
+                post: currentPost,
+                businessType: businessType,
+                onReport: () => _reportPost(context),
+              ),
 
               // ── Content ──
               if (currentPost.content.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   child: MentionText(
                     currentPost.content,
                     mentions: currentPost.mentions,
                     style: const TextStyle(fontSize: 15, height: 1.4),
-                    onMentionTapped: (mention) => _navigateToMentionedProfile(context, mention),
+                    onMentionTapped: (mention) =>
+                        _navigateToMentionedProfile(context, mention),
                   ),
                 ),
 
               // ── Media ──
-              if (currentPost.media.isNotEmpty) _MediaSection(media: currentPost.media),
+              if (currentPost.media.isNotEmpty)
+                _MediaSection(media: currentPost.media),
 
               // ── Reaction / Comment summary ──
-              if (currentPost.totalReactions > 0 || currentPost.comments.isNotEmpty)
+              if (currentPost.totalReactions > 0 ||
+                  currentPost.comments.isNotEmpty)
                 _ReactionSummaryBar(post: currentPost),
 
               const Divider(height: 1, thickness: 0.5),
@@ -355,8 +464,13 @@ class _FeedPostWidgetState extends State<FeedPostWidget> with SingleTickerProvid
 class _PostHeader extends StatelessWidget {
   final FeedPost post;
   final String? businessType;
+  final VoidCallback onReport;
 
-  const _PostHeader({required this.post, this.businessType});
+  const _PostHeader({
+    required this.post,
+    this.businessType,
+    required this.onReport,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -377,7 +491,10 @@ class _PostHeader extends StatelessWidget {
               children: [
                 Text(
                   post.authorName ?? 'Unknown',
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -387,11 +504,18 @@ class _PostHeader extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
+          PopupMenuButton<String>(
+            tooltip: 'Mais ações',
             icon: Icon(Icons.more_horiz, color: Colors.grey[600]),
-            onPressed: () {},
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            onSelected: (value) {
+              if (value == 'report') onReport();
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'report',
+                child: Text('Denunciar publicação'),
+              ),
+            ],
           ),
         ],
       ),
@@ -437,8 +561,10 @@ class _AuthorAvatar extends StatelessWidget {
             width: 40,
             height: 40,
             fit: BoxFit.cover,
-            placeholder: (_, _) =>
-                CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryFor(businessType)),
+            placeholder: (_, _) => CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.primaryFor(businessType),
+            ),
             errorWidget: (_, _, _) => _initials(name),
           ),
         ),
@@ -493,8 +619,10 @@ class _MediaSection extends StatelessWidget {
       PageRouteBuilder(
         opaque: false,
         barrierColor: Colors.black,
-        pageBuilder: (_, _, _) => FullScreenImageViewer(media: images, initialIndex: idx),
-        transitionsBuilder: (_, anim, _, child) => FadeTransition(opacity: anim, child: child),
+        pageBuilder: (_, _, _) =>
+            FullScreenImageViewer(media: images, initialIndex: idx),
+        transitionsBuilder: (_, anim, _, child) =>
+            FadeTransition(opacity: anim, child: child),
       ),
     );
   }
@@ -544,7 +672,11 @@ class _MediaSection extends StatelessWidget {
     );
   }
 
-  Widget _mediaItem(BuildContext context, FeedMedia item, {bool fullWidth = false}) {
+  Widget _mediaItem(
+    BuildContext context,
+    FeedMedia item, {
+    bool fullWidth = false,
+  }) {
     // Videos stay inline
     if (item.isVideo) {
       return _VideoItem(url: item.url, fullWidth: fullWidth);
@@ -567,7 +699,8 @@ class _MediaSection extends StatelessWidget {
                 color: Colors.grey[200],
                 child: const Center(child: CircularProgressIndicator()),
               ),
-              errorWidget: (_, _, _) => Container(height: 220, color: Colors.grey[300]),
+              errorWidget: (_, _, _) =>
+                  Container(height: 220, color: Colors.grey[300]),
             ),
           )
         : Hero(
@@ -582,7 +715,10 @@ class _MediaSection extends StatelessWidget {
           );
 
     // Wrap with tap → full-screen viewer
-    return GestureDetector(onTap: () => _openViewer(context, item), child: imageWidget);
+    return GestureDetector(
+      onTap: () => _openViewer(context, item),
+      child: imageWidget,
+    );
   }
 }
 
@@ -624,14 +760,18 @@ class _VideoItemState extends State<_VideoItem> {
   Widget build(BuildContext context) {
     final content = _initialized
         ? AspectRatio(
-            aspectRatio: widget.fullWidth ? 16 / 9 : _controller.value.aspectRatio,
+            aspectRatio: widget.fullWidth
+                ? 16 / 9
+                : _controller.value.aspectRatio,
             child: VideoPlayer(_controller),
           )
         : AspectRatio(
             aspectRatio: 16 / 9,
             child: Container(
               color: Colors.black,
-              child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
             ),
           );
 
@@ -648,9 +788,16 @@ class _VideoItemState extends State<_VideoItem> {
           content,
           if (!_playing)
             Container(
-              decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
+              decoration: const BoxDecoration(
+                color: Colors.black38,
+                shape: BoxShape.circle,
+              ),
               padding: const EdgeInsets.all(12),
-              child: const Icon(Icons.play_arrow, color: Colors.white, size: 36),
+              child: const Icon(
+                Icons.play_arrow,
+                color: Colors.white,
+                size: 36,
+              ),
             ),
         ],
       ),
@@ -684,10 +831,16 @@ class _ReactionSummaryBar extends StatelessWidget {
           if (post.totalReactions > 0) ...[
             ...sortedReactions.take(3).map((entry) {
               final reactionType = ReactionType.fromString(entry.key);
-              return Text(reactionType.emoji, style: const TextStyle(fontSize: 14));
+              return Text(
+                reactionType.emoji,
+                style: const TextStyle(fontSize: 14),
+              );
             }),
             const SizedBox(width: 4),
-            Text('${post.totalReactions}', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+            Text(
+              '${post.totalReactions}',
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ),
           ],
           const Spacer(),
           if (post.comments.isNotEmpty)
@@ -731,12 +884,16 @@ class _ActionBar extends StatelessWidget {
             icon: Icon(
               showReactionPicker ? Icons.thumb_up : Icons.thumb_up_outlined,
               size: 18,
-              color: showReactionPicker ? AppColors.primaryFor(businessType) : Colors.grey[700],
+              color: showReactionPicker
+                  ? AppColors.primaryFor(businessType)
+                  : Colors.grey[700],
             ),
             label: Text(
               l10n.feedLike,
               style: TextStyle(
-                color: showReactionPicker ? AppColors.primaryFor(businessType) : Colors.grey[700],
+                color: showReactionPicker
+                    ? AppColors.primaryFor(businessType)
+                    : Colors.grey[700],
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -747,10 +904,18 @@ class _ActionBar extends StatelessWidget {
         Expanded(
           child: TextButton.icon(
             onPressed: onCommentTap,
-            icon: Icon(Icons.chat_bubble_outline, size: 18, color: Colors.grey[700]),
+            icon: Icon(
+              Icons.chat_bubble_outline,
+              size: 18,
+              color: Colors.grey[700],
+            ),
             label: Text(
               l10n.feedComment,
-              style: TextStyle(color: Colors.grey[700], fontSize: 13, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             style: TextButton.styleFrom(padding: const EdgeInsets.all(8)),
           ),
@@ -810,7 +975,11 @@ class _CommentsSection extends StatelessWidget {
   final void Function(FeedComment)? onLongPress;
   final String? businessType;
 
-  const _CommentsSection({required this.post, this.onLongPress, this.businessType});
+  const _CommentsSection({
+    required this.post,
+    this.onLongPress,
+    this.businessType,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -826,7 +995,11 @@ class _CommentsSection extends StatelessWidget {
     return Column(
       children: post.comments
           .map(
-            (c) => _CommentItem(comment: c, onLongPress: onLongPress, businessType: businessType),
+            (c) => _CommentItem(
+              comment: c,
+              onLongPress: onLongPress,
+              businessType: businessType,
+            ),
           )
           .toList(),
     );
@@ -838,7 +1011,11 @@ class _CommentItem extends StatelessWidget {
   final void Function(FeedComment)? onLongPress;
   final String? businessType;
 
-  const _CommentItem({required this.comment, this.onLongPress, this.businessType});
+  const _CommentItem({
+    required this.comment,
+    this.onLongPress,
+    this.businessType,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -858,7 +1035,10 @@ class _CommentItem extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(12),
@@ -868,7 +1048,10 @@ class _CommentItem extends StatelessWidget {
                   children: [
                     Text(
                       comment.authorName ?? 'User',
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(comment.content, style: const TextStyle(fontSize: 13)),
@@ -930,7 +1113,11 @@ class _AddCommentRow extends StatelessWidget {
                   const Spacer(),
                   GestureDetector(
                     onTap: onCancelReply,
-                    child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                    child: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
                   ),
                 ],
               ),
@@ -945,7 +1132,10 @@ class _AddCommentRow extends StatelessWidget {
                     hintStyle: TextStyle(fontSize: 13, color: Colors.grey[500]),
                     filled: true,
                     fillColor: Colors.grey[100],
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide.none,
@@ -980,7 +1170,11 @@ class _AddCommentRow extends StatelessWidget {
                       color: AppColors.primaryFor(businessType),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.send, color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.send,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
             ],
@@ -1019,7 +1213,11 @@ class _CommentMentionSuggestions extends StatelessWidget {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 8),
         child: Center(
-          child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
         ),
       );
     }
@@ -1050,7 +1248,9 @@ class _CommentMentionSuggestions extends StatelessWidget {
                   : null,
               child: item.avatar == null || item.avatar!.isEmpty
                   ? Text(
-                      item.fullName.isNotEmpty ? item.fullName[0].toUpperCase() : '?',
+                      item.fullName.isNotEmpty
+                          ? item.fullName[0].toUpperCase()
+                          : '?',
                       style: TextStyle(
                         color: AppColors.primaryFor(businessType),
                         fontWeight: FontWeight.w700,
@@ -1058,7 +1258,11 @@ class _CommentMentionSuggestions extends StatelessWidget {
                     )
                   : null,
             ),
-            title: Text(item.fullName, maxLines: 1, overflow: TextOverflow.ellipsis),
+            title: Text(
+              item.fullName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             onTap: () => onSelected(item),
           );
         },

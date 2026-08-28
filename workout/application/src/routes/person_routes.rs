@@ -89,19 +89,21 @@ pub fn person_routes(state: AppState) -> Router<AppState> {
                 authentication,
             )),
         )
-		.route(
-			"/me/address/{person_address_id}",
+        .route(
+            "/me/address/{person_address_id}",
             put(update_person_address).route_layer(middleware::from_fn_with_state(
                 state.clone(),
                 authentication,
             )),
-		)
-		.route(
-			"/me/address/uuid/{uuid}",
-			delete(crate::http::person_address_controller::delete_person_address_by_uuid).route_layer(
-				middleware::from_fn_with_state(state.clone(), authentication),
-			),
-		)
+        )
+        .route(
+            "/me/address/uuid/{uuid}",
+            delete(crate::http::person_address_controller::delete_person_address_by_uuid)
+                .route_layer(middleware::from_fn_with_state(
+                    state.clone(),
+                    authentication,
+                )),
+        )
         .route(
             "/me/address/{person_address_id}",
             delete(delete_person_address).route_layer(middleware::from_fn_with_state(
@@ -129,5 +131,41 @@ pub fn person_routes(state: AppState) -> Router<AppState> {
                 state.clone(),
                 authentication,
             )),
+        )
+        .route(
+            "/me/consents",
+            get(crate::http::consent_controller::list)
+                .post(crate::http::consent_controller::accept)
+                .route_layer(middleware::from_fn_with_state(
+                    state.clone(),
+                    authentication,
+                )),
+        )
+        .route(
+            "/me/consents/{document}",
+            delete(crate::http::consent_controller::revoke).route_layer(
+                middleware::from_fn_with_state(state.clone(), authentication),
+            ),
+        )
+        .route(
+            "/me/data-exports",
+            get(crate::http::data_export_controller::list)
+                .post(crate::http::data_export_controller::create)
+                .route_layer(middleware::from_fn_with_state(
+                    state.clone(),
+                    authentication,
+                )),
+        )
+        .route(
+            "/me/data-exports/{id}",
+            get(crate::http::data_export_controller::get).route_layer(
+                middleware::from_fn_with_state(state.clone(), authentication),
+            ),
+        )
+        .route(
+            "/me/data-exports/{id}/download",
+            get(crate::http::data_export_controller::download).route_layer(
+                middleware::from_fn_with_state(state.clone(), authentication),
+            ),
         )
 }

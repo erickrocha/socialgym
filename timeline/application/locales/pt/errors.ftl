@@ -17,3 +17,4 @@ unknown-error = Erro interno inesperado
 rate-limited = Muitas solicitações. Tente novamente mais tarde.
 internal-auth-invalid = Credenciais de serviço interno inválidas
 account-data-deletion-failed = Falha ao excluir os dados da conta
+consent-required = O consentimento legal obrigatório está ausente ou desatualizado

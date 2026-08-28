@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 import 'package:socialgym_mobile/models/enums.dart';
 
 import '../../config/app_colors.dart';
@@ -11,6 +12,7 @@ import '../../providers/locale_provider.dart';
 import '../../providers/person_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/main_layout.dart';
+import '../../services/data_export_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -25,6 +27,8 @@ class _SettingsPageState extends State<SettingsPage> {
   late ContextMenuPosition _contextMenuPosition;
   late Pages _homePage;
   bool _dirty = false;
+  List<DataExportJob> _exports = const [];
+  bool _exportBusy = false;
 
   @override
   void initState() {
@@ -32,10 +36,71 @@ class _SettingsPageState extends State<SettingsPage> {
     final current = context.read<SettingsProvider>().settings ?? Settings();
     _language = current.language ?? 'en';
     _notificationsEnabled = current.notificationsEnabled ?? true;
-    _contextMenuPosition = current.contextMenuPosition ?? ContextMenuPosition.left;
+    _contextMenuPosition =
+        current.contextMenuPosition ?? ContextMenuPosition.left;
     _homePage = current.homePage ?? Pages.feed;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshFromServer());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshFromServer();
+      _refreshExports();
+    });
+  }
+
+  Future<void> _refreshExports() async {
+    try {
+      final jobs = await DataExportService.list();
+      if (mounted) setState(() => _exports = jobs);
+    } catch (_) {}
+  }
+
+  Future<void> _requestExport() async {
+    setState(() => _exportBusy = true);
+    try {
+      final job = await DataExportService.create();
+      if (!mounted) return;
+      setState(() => _exports = [job, ..._exports]);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Exportação solicitada. Atualize esta tela em alguns instantes.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível solicitar a exportação.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exportBusy = false);
+    }
+  }
+
+  Future<void> _copyDownloadLink(String id) async {
+    try {
+      final url = await DataExportService.downloadUrl(id);
+      await Clipboard.setData(ClipboardData(text: url));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Link de download copiado. Ele expira em 15 minutos.',
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('A exportação ainda não está disponível.'),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _refreshFromServer() async {
@@ -43,15 +108,20 @@ class _SettingsPageState extends State<SettingsPage> {
     if (person == null) return;
 
     final settingsProvider = context.read<SettingsProvider>();
-    await settingsProvider.fetchFromServer(personId: person.id, personUuid: person.uuid);
+    await settingsProvider.fetchFromServer(
+      personId: person.id,
+      personUuid: person.uuid,
+    );
     if (!mounted || _dirty) return;
 
     final refreshed = settingsProvider.settings;
     if (refreshed == null) return;
     setState(() {
       _language = refreshed.language ?? _language;
-      _notificationsEnabled = refreshed.notificationsEnabled ?? _notificationsEnabled;
-      _contextMenuPosition = refreshed.contextMenuPosition ?? _contextMenuPosition;
+      _notificationsEnabled =
+          refreshed.notificationsEnabled ?? _notificationsEnabled;
+      _contextMenuPosition =
+          refreshed.contextMenuPosition ?? _contextMenuPosition;
       _homePage = refreshed.homePage ?? _homePage;
     });
   }
@@ -80,10 +150,14 @@ class _SettingsPageState extends State<SettingsPage> {
     if (success) {
       setState(() => _dirty = false);
       if (languageChanged) {
-        await context.read<LocaleProvider>().applyUserSettingsLanguage(_language);
+        await context.read<LocaleProvider>().applyUserSettingsLanguage(
+          _language,
+        );
       }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.settingsSaveSuccess)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.settingsSaveSuccess)));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -105,27 +179,31 @@ class _SettingsPageState extends State<SettingsPage> {
           builder: (dialogContext, setDialogState) {
             return AlertDialog(
               title: Text(l10n.settingsDeleteAccountConfirmTitle),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l10n.settingsDeleteAccountConfirmBody),
-                  const SizedBox(height: 8),
-                  RadioListTile<bool>(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(l10n.settingsDeleteAccountOptionGracePeriod),
-                    value: false,
-                    groupValue: immediate,
-                    onChanged: (value) => setDialogState(() => immediate = value!),
-                  ),
-                  RadioListTile<bool>(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(l10n.settingsDeleteAccountOptionImmediate),
-                    value: true,
-                    groupValue: immediate,
-                    onChanged: (value) => setDialogState(() => immediate = value!),
-                  ),
-                ],
+              content: RadioGroup<bool>(
+                groupValue: immediate,
+                onChanged: (value) {
+                  if (value != null) {
+                    setDialogState(() => immediate = value);
+                  }
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.settingsDeleteAccountConfirmBody),
+                    const SizedBox(height: 8),
+                    RadioListTile<bool>(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(l10n.settingsDeleteAccountOptionGracePeriod),
+                      value: false,
+                    ),
+                    RadioListTile<bool>(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(l10n.settingsDeleteAccountOptionImmediate),
+                      value: true,
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -133,7 +211,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: Text(l10n.buttonCancel),
                 ),
                 TextButton(
-                  style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.danger,
+                  ),
                   onPressed: () => Navigator.of(dialogContext).pop(true),
                   child: Text(l10n.settingsDeleteAccountConfirmButton),
                 ),
@@ -153,17 +233,23 @@ class _SettingsPageState extends State<SettingsPage> {
     final l10n = AppLocalizations.of(context)!;
     final authProvider = context.read<AuthProvider>();
 
-    final status = await authProvider.requestAccountDeletion(immediate: immediate);
+    final status = await authProvider.requestAccountDeletion(
+      immediate: immediate,
+    );
     if (!mounted) return;
 
     if (status == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authProvider.error ?? l10n.settingsDeleteAccountError)),
+        SnackBar(
+          content: Text(authProvider.error ?? l10n.settingsDeleteAccountError),
+        ),
       );
       return;
     }
 
-    final formattedDate = DateFormat.yMMMd().format(status.scheduledAt.toLocal());
+    final formattedDate = DateFormat.yMMMd().format(
+      status.scheduledAt.toLocal(),
+    );
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -220,7 +306,10 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.settingsTitle, style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              l10n.settingsTitle,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 16),
             if (settingsProvider.error != null && !settingsProvider.saving)
               Padding(
@@ -230,12 +319,20 @@ class _SettingsPageState extends State<SettingsPage> {
                   style: const TextStyle(color: Colors.redAccent),
                 ),
               ),
-            Text(l10n.settingsLanguage, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              l10n.settingsLanguage,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: _language,
               items: LocaleProvider.localeNames.entries
-                  .map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value)))
+                  .map(
+                    (entry) => DropdownMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value),
+                    ),
+                  )
                   .toList(),
               onChanged: (value) {
                 if (value == null) return;
@@ -256,7 +353,10 @@ class _SettingsPageState extends State<SettingsPage> {
               }),
             ),
             const SizedBox(height: 16),
-            Text(l10n.settingsContextMenuPosition, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              l10n.settingsContextMenuPosition,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             SegmentedButton<ContextMenuPosition>(
               segments: ContextMenuPosition.values
@@ -274,12 +374,20 @@ class _SettingsPageState extends State<SettingsPage> {
               }),
             ),
             const SizedBox(height: 24),
-            Text(l10n.settingsHomePage, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              l10n.settingsHomePage,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             DropdownButtonFormField<Pages>(
               initialValue: _homePage,
               items: Pages.values
-                  .map((page) => DropdownMenuItem(value: page, child: Text(_homePageLabel(l10n, page))))
+                  .map(
+                    (page) => DropdownMenuItem(
+                      value: page,
+                      child: Text(_homePageLabel(l10n, page)),
+                    ),
+                  )
                   .toList(),
               onChanged: (value) {
                 if (value == null) return;
@@ -298,7 +406,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : Text(l10n.buttonSave),
               ),
@@ -307,8 +418,46 @@ class _SettingsPageState extends State<SettingsPage> {
             const Divider(),
             const SizedBox(height: 16),
             Text(
+              'Privacidade e seus dados',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Solicite uma cópia em ZIP dos dados e mídias vinculados à sua conta.',
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _exportBusy ? null : _requestExport,
+                icon: const Icon(Icons.download),
+                label: Text(_exportBusy ? 'Solicitando…' : 'Baixar meus dados'),
+              ),
+            ),
+            ..._exports.map(
+              (job) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  'Exportação ${DateFormat.yMMMd().add_Hm().format(job.createdAt.toLocal())}',
+                ),
+                subtitle: Text(job.status),
+                trailing: job.status == 'ready'
+                    ? IconButton(
+                        tooltip: 'Copiar link de download',
+                        onPressed: () => _copyDownloadLink(job.id),
+                        icon: const Icon(Icons.link),
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+            Text(
               l10n.settingsDangerZoneTitle,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.danger),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: AppColors.danger),
             ),
             const SizedBox(height: 8),
             Text(

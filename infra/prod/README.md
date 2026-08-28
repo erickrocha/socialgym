@@ -50,6 +50,14 @@ one is meant to run closer to how a real deployment looks.
    docker compose ps
    ```
 
+4. Run the compliance gate before every production release:
+   ```bash
+   bash verify-compliance-gate.sh
+   ```
+   The automated gate rejects legal placeholders and missing region/consent
+   configuration. The signed evidence listed in `docs/compliance/` remains a
+   manual release requirement.
+
 ## Network model
 
 Only `gateway` publishes ports to the host (`80`, `443`). Everything else —

@@ -17,3 +17,4 @@ unknown-error = Erreur interne inattendue
 rate-limited = Trop de requêtes. Veuillez réessayer plus tard.
 internal-auth-invalid = Identifiants de service interne invalides
 account-data-deletion-failed = Échec de la suppression des données du compte
+consent-required = Le consentement juridique requis est absent ou obsolète

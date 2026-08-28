@@ -51,12 +51,13 @@ const uploadMediaFiles = async (files = []) => {
     return uploadedMedia;
 };
 
-export const createFeedPost = async ({ content, files = [] }) => {
+export const createFeedPost = async ({ content, files = [], thirdPartyConsentConfirmed = false }) => {
     const media = await uploadMediaFiles(files);
 
     const payload = {
         content: content?.trim() || '',
         ...(media.length ? { media } : {}),
+        ...(media.length ? { thirdPartyConsentConfirmed } : {}),
     };
 
     const { data } = await axios.post('/timeline/api/posts', payload);

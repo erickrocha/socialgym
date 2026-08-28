@@ -65,6 +65,7 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
 
   bool _uploading = false;
   bool _posting = false;
+  bool _thirdPartyConsentConfirmed = false;
   String? _error;
   Timer? _mentionDebounce;
   MentionQuery? _activeMention;
@@ -336,6 +337,13 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
   Future<void> _submit() async {
     final content = _controller.text.trim();
     if (content.isEmpty && _mediaItems.isEmpty) return;
+    if (_mediaItems.isNotEmpty && !_thirdPartyConsentConfirmed) {
+      setState(
+        () =>
+            _error = 'Confirme que possui autorização das pessoas retratadas.',
+      );
+      return;
+    }
 
     setState(() {
       _uploading = _mediaItems.isNotEmpty;
@@ -395,6 +403,8 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
             ? (_businessProfileLogo ?? '')
             : (_person?.objectKey ?? ''),
         if (mediaPayload.isNotEmpty) 'media': mediaPayload,
+        if (mediaPayload.isNotEmpty)
+          'thirdPartyConsentConfirmed': _thirdPartyConsentConfirmed,
         'mentions': mentionsPayload,
       }, _token);
 
@@ -485,11 +495,18 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _submit,
+                        onPressed:
+                            _isLoading ||
+                                (_mediaItems.isNotEmpty &&
+                                    !_thirdPartyConsentConfirmed)
+                            ? null
+                            : _submit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryFor(businessType),
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: AppColors.primaryDisabledFor(businessType),
+                          disabledBackgroundColor: AppColors.primaryDisabledFor(
+                            businessType,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -634,6 +651,20 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
                       if (_mediaItems.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         _MediaGrid(items: _mediaItems, onRemove: _removeMedia),
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          value: _thirdPartyConsentConfirmed,
+                          onChanged: _isLoading
+                              ? null
+                              : (value) => setState(
+                                  () => _thirdPartyConsentConfirmed =
+                                      value ?? false,
+                                ),
+                          title: const Text(
+                            'Declaro que tenho autorização das pessoas retratadas para publicar estas mídias.',
+                          ),
+                        ),
                       ],
 
                       // Bottom spacing so keyboard doesn't cover content
@@ -673,7 +704,11 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
     );
   }
 
-  String _displayName(Person? p, bool isBusinessMode, String? businessProfileName) {
+  String _displayName(
+    Person? p,
+    bool isBusinessMode,
+    String? businessProfileName,
+  ) {
     if (isBusinessMode && (businessProfileName?.isNotEmpty ?? false)) {
       return businessProfileName!;
     }

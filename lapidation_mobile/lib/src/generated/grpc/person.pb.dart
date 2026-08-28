@@ -21,6 +21,235 @@ import 'user.pb.dart' as $3;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
+class ConsentStatusRequest extends $pb.GeneratedMessage {
+  factory ConsentStatusRequest({
+    $core.String? document,
+  }) {
+    final result = create();
+    if (document != null) result.document = document;
+    return result;
+  }
+
+  ConsentStatusRequest._();
+
+  factory ConsentStatusRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ConsentStatusRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ConsentStatusRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.person'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'document')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConsentStatusRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConsentStatusRequest copyWith(void Function(ConsentStatusRequest) updates) =>
+      super.copyWith((message) => updates(message as ConsentStatusRequest))
+          as ConsentStatusRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ConsentStatusRequest create() => ConsentStatusRequest._();
+  @$core.override
+  ConsentStatusRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ConsentStatusRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ConsentStatusRequest>(create);
+  static ConsentStatusRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get document => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set document($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasDocument() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearDocument() => $_clearField(1);
+}
+
+class ConsentStatusResponse extends $pb.GeneratedMessage {
+  factory ConsentStatusResponse({
+    $core.bool? active,
+    $core.String? version,
+  }) {
+    final result = create();
+    if (active != null) result.active = active;
+    if (version != null) result.version = version;
+    return result;
+  }
+
+  ConsentStatusResponse._();
+
+  factory ConsentStatusResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ConsentStatusResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ConsentStatusResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.person'),
+      createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'active')
+    ..aOS(2, _omitFieldNames ? '' : 'version')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConsentStatusResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ConsentStatusResponse copyWith(
+          void Function(ConsentStatusResponse) updates) =>
+      super.copyWith((message) => updates(message as ConsentStatusResponse))
+          as ConsentStatusResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ConsentStatusResponse create() => ConsentStatusResponse._();
+  @$core.override
+  ConsentStatusResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ConsentStatusResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ConsentStatusResponse>(create);
+  static ConsentStatusResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get active => $_getBF(0);
+  @$pb.TagNumber(1)
+  set active($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasActive() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearActive() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get version => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set version($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasVersion() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearVersion() => $_clearField(2);
+}
+
+class RoleStatusRequest extends $pb.GeneratedMessage {
+  factory RoleStatusRequest({
+    $core.String? role,
+  }) {
+    final result = create();
+    if (role != null) result.role = role;
+    return result;
+  }
+
+  RoleStatusRequest._();
+
+  factory RoleStatusRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory RoleStatusRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RoleStatusRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.person'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'role')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RoleStatusRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RoleStatusRequest copyWith(void Function(RoleStatusRequest) updates) =>
+      super.copyWith((message) => updates(message as RoleStatusRequest))
+          as RoleStatusRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RoleStatusRequest create() => RoleStatusRequest._();
+  @$core.override
+  RoleStatusRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static RoleStatusRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RoleStatusRequest>(create);
+  static RoleStatusRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get role => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set role($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasRole() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearRole() => $_clearField(1);
+}
+
+class RoleStatusResponse extends $pb.GeneratedMessage {
+  factory RoleStatusResponse({
+    $core.bool? active,
+  }) {
+    final result = create();
+    if (active != null) result.active = active;
+    return result;
+  }
+
+  RoleStatusResponse._();
+
+  factory RoleStatusResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory RoleStatusResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RoleStatusResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.person'),
+      createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'active')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RoleStatusResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RoleStatusResponse copyWith(void Function(RoleStatusResponse) updates) =>
+      super.copyWith((message) => updates(message as RoleStatusResponse))
+          as RoleStatusResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RoleStatusResponse create() => RoleStatusResponse._();
+  @$core.override
+  RoleStatusResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static RoleStatusResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RoleStatusResponse>(create);
+  static RoleStatusResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get active => $_getBF(0);
+  @$pb.TagNumber(1)
+  set active($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasActive() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearActive() => $_clearField(1);
+}
+
 class GetMeRequest extends $pb.GeneratedMessage {
   factory GetMeRequest() => create();
 
