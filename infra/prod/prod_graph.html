@@ -1,0 +1,530 @@
+
+<!-- saved from url=(0122)file:///tmp/claude-1000/-home-erick-workspace-socialgym/e8168841-536f-46b1-977c-d887c059d3e7/scratchpad/socialgym-k8s.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252"><title>SocialGym on Kubernetes</title>
+<link rel="stylesheet" href="./prod_graph_files/css2">
+<style>
+  :root {
+    --ground: #eef1f6;
+    --surface: #ffffff;
+    --surface-2: #f6f8fc;
+    --ink: #16202e;
+    --ink-soft: #57647a;
+    --line: #d3dbe7;
+    --line-strong: #b5c1d3;
+    --accent: #1f6feb;
+    --accent-tint: #e4edfd;
+    --wire-req: #b45309;
+    --wire-data: #0f766e;
+    --code-bg: #eef2f8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0e131b;
+      --surface: #141b25;
+      --surface-2: #1a222e;
+      --ink: #e5ebf3;
+      --ink-soft: #98a5b8;
+      --line: #29333f;
+      --line-strong: #3a4757;
+      --accent: #6aa6ff;
+      --accent-tint: #1b2a43;
+      --wire-req: #efaa42;
+      --wire-data: #3fc9b9;
+      --code-bg: #10171f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0e131b;
+    --surface: #141b25;
+    --surface-2: #1a222e;
+    --ink: #e5ebf3;
+    --ink-soft: #98a5b8;
+    --line: #29333f;
+    --line-strong: #3a4757;
+    --accent: #6aa6ff;
+    --accent-tint: #1b2a43;
+    --wire-req: #efaa42;
+    --wire-data: #3fc9b9;
+    --code-bg: #10171f;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1180px; margin: 0 auto; padding: 56px 28px 88px; }
+
+  header h1 {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 500;
+    font-size: clamp(2rem, 4.6vw, 3rem);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    text-wrap: balance;
+    margin: 0 0 18px;
+  }
+  .lede { font-size: 1.09rem; color: var(--ink-soft); max-width: 66ch; margin: 0 0 26px; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  pre.cmd {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin: 0;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.86rem;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+  pre.cmd .c { color: var(--ink-soft); }
+
+  section { margin-top: 60px; }
+  h2 {
+    font-size: 1.32rem;
+    font-weight: 600;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  .hint { color: var(--ink-soft); font-size: 0.92rem; margin: 0 0 22px; max-width: 68ch; }
+
+  figure { margin: 0; }
+  .fig-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    padding: 22px;
+  }
+  svg.diagram { display: block; width: 100%; height: auto; color: var(--ink); }
+  svg.diagram--topology { min-width: 940px; }
+  svg.diagram--install { min-width: 820px; }
+
+  figcaption {
+    font-size: 0.87rem;
+    color: var(--ink-soft);
+    margin-top: 14px;
+    max-width: 74ch;
+    line-height: 1.6;
+  }
+  figcaption code { font-size: 0.92em; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 12px 24px;
+    margin-top: 16px; font-size: 0.8rem; color: var(--ink-soft);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 9px; }
+  .legend i {
+    width: 24px; border-top: 2px solid var(--ink-soft);
+    display: inline-block; height: 0;
+  }
+  .legend i.req { border-color: var(--wire-req); }
+  .legend i.data { border-color: var(--wire-data); }
+  .legend i.dash { border-top-style: dashed; }
+
+  .tw {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 560px; }
+  th, td {
+    text-align: left; padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    font-size: 0.72rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--ink-soft);
+    background: var(--surface-2);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td code, th code { font-family: "IBM Plex Mono", monospace; }
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.88em;
+    background: var(--code-bg);
+    padding: 0.1em 0.36em;
+    border-radius: 4px;
+  }
+  td .muted { color: var(--ink-soft); }
+
+  dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 11px 22px; font-size: 0.92rem; margin: 0; }
+  dl.kv dt { font-family: "IBM Plex Mono", monospace; font-weight: 500; }
+  dl.kv dd { margin: 0; color: var(--ink-soft); }
+
+  ul.notes { padding-left: 1.1em; max-width: 74ch; font-size: 0.95rem; }
+  ul.notes li { margin: 9px 0; }
+  ul.notes code { font-size: 0.9em; }
+
+  footer {
+    margin-top: 64px; padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 0.82rem; color: var(--ink-soft);
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* diagram primitives (styled from page CSS; SVG carries no <style>) */
+  .d-boundary { fill: none; stroke: var(--line-strong); stroke-dasharray: 4 5; }
+  .d-box { fill: var(--surface-2); stroke: var(--line-strong); stroke-width: 1.5; }
+  .d-box--store { stroke: var(--wire-data); }
+  .d-box--entry { fill: var(--accent-tint); stroke: var(--accent); }
+  .d-name { fill: var(--ink); font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 13px; }
+  .d-sub { fill: var(--ink-soft); font-family: "IBM Plex Sans", sans-serif; font-size: 10.5px; }
+  .d-tab { fill: var(--ink-soft); font-family: "IBM Plex Sans", sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.05em; }
+  .d-wire { fill: none; stroke: var(--ink-soft); stroke-width: 1.5; }
+  .d-wire--req { fill: none; stroke: var(--wire-req); stroke-width: 2; }
+  .d-wire--data { fill: none; stroke: var(--wire-data); stroke-width: 1.75; }
+  .d-wire--dash { stroke-dasharray: 5 4; }
+  .d-el { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; }
+  .d-el--req { fill: var(--wire-req); }
+  .d-el--data { fill: var(--wire-data); }
+  .d-el--wire { fill: var(--ink-soft); }
+  .mk { fill: var(--ink-soft); }
+  .mk-req { fill: var(--wire-req); }
+  .mk-data { fill: var(--wire-data); }
+</style>
+
+</head><body><div class="page">
+  <header>
+    <h1>SocialGym on Kubernetes</h1>
+    <p class="lede">
+      The <code>infra/helm/socialgym</code> chart runs the whole backend —
+      <strong>gateway, Postgres, Mongo, workout, integration, timeline</strong> —
+      on a local <strong>minikube</strong> cluster in the <code>socialgym-dev</code> namespace.
+      It is the Kubernetes counterpart to the <code>infra/dev</code> and <code>infra/prod</code>
+      Docker Compose stacks. Every component is a single-replica Deployment fronted by a Service.
+    </p>
+    <pre class="cmd"><span class="c"># from the repo root</span>
+cd infra/helm/socialgym
+./scripts/up.sh                                  <span class="c"># start minikube, build images, helm upgrade --install</span>
+minikube service gateway -n socialgym-dev --url  <span class="c"># reachable gateway URL</span></pre>
+  </header>
+
+  <section>
+    <h2>Runtime topology</h2>
+    <p class="hint">
+      What talks to what once the release is installed — the route each client request takes
+      through the gateway, the one in-cluster service-to-service call, and where state lives.
+    </p>
+
+    <div class="fig-wrap">
+      <figure>
+        <svg class="diagram diagram--topology" viewBox="0 0 1120 620" role="img" aria-label="SocialGym backend in the socialgym-dev namespace on minikube. An nginx gateway Deployment exposed as a NodePort Service terminates TLS and HTTP/2 and routes client HTTPS requests: /login, /signup, /auth/ and /workout/api/ to the workout REST service on port 8090; /grpc.* to the integration gRPC service on port 50051 over TLS; /timeline/api/ to the timeline REST service on port 8091. The timeline service also calls integration directly over gRPC with TLS on 50051 for Person, Friend and User data. workout and integration read and write PostgreSQL/PostGIS on 5432; timeline reads and writes MongoDB on 27017. Postgres and Mongo are each backed by a 2Gi PersistentVolumeClaim.">
+          <defs>
+            <marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <polygon class="mk" points="0 0, 8 4, 0 8"></polygon>
+            </marker>
+            <marker id="ah-req" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <polygon class="mk-req" points="0 0, 8 4, 0 8"></polygon>
+            </marker>
+            <marker id="ah-data" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <polygon class="mk-data" points="0 0, 8 4, 0 8"></polygon>
+            </marker>
+          </defs>
+
+          <!-- namespace boundary -->
+          <rect class="d-boundary" x="24" y="104" width="1072" height="494" rx="12"></rect>
+          <text class="d-tab" x="42" y="126">namespace: socialgym-dev · minikube node · release “socialgym”</text>
+
+          <!-- outside actors -->
+          <rect class="d-box" x="40" y="24" width="340" height="60" rx="6"></rect>
+          <text class="d-name" x="58" y="47">Client apps</text>
+          <text class="d-sub" x="58" y="64">socialgym_mobile · socialgym_web · lapidation_mobile</text>
+
+          <rect class="d-box" x="740" y="24" width="340" height="60" rx="6"></rect>
+          <text class="d-name" x="758" y="47">Developer workstation</text>
+          <text class="d-sub" x="758" y="64">helm · kubectl · minikube</text>
+
+          <!-- gateway -->
+          <rect class="d-box" x="360" y="150" width="400" height="98" rx="8"></rect>
+          <text class="d-name" x="380" y="176">gateway</text>
+          <text class="d-sub" x="380" y="194">nginx:alpine · Deployment ×1 · Service NodePort</text>
+          <text class="d-sub" x="380" y="210">:80 &#8594; 301 &#8594; :443 · TLS + HTTP/2</text>
+          <text class="d-sub" x="380" y="226">mounts cm gateway (nginx.conf) · secret socialgym-tls</text>
+
+          <!-- services -->
+          <rect class="d-box" x="40" y="300" width="300" height="116" rx="8"></rect>
+          <text class="d-name" x="58" y="326">workout</text>
+          <text class="d-sub" x="58" y="345">workout-app:local · Deployment ×1</text>
+          <text class="d-sub" x="58" y="362">Service ClusterIP :8090 · REST (Axum)</text>
+          <text class="d-sub" x="58" y="379">env: socialgym-auth · secret workout · cm workout</text>
+
+          <rect class="d-box" x="410" y="300" width="300" height="116" rx="8"></rect>
+          <text class="d-name" x="428" y="326">integration</text>
+          <text class="d-sub" x="428" y="345">integration-app:local · Deployment ×1</text>
+          <text class="d-sub" x="428" y="362">Service ClusterIP :50051 · gRPC (Tonic) · TLS</text>
+          <text class="d-sub" x="428" y="379">mounts socialgym-tls · env socialgym-auth</text>
+
+          <rect class="d-box" x="780" y="300" width="300" height="116" rx="8"></rect>
+          <text class="d-name" x="798" y="326">timeline</text>
+          <text class="d-sub" x="798" y="345">timeline-app:local · Deployment ×1</text>
+          <text class="d-sub" x="798" y="362">Service ClusterIP :8091 · REST (Axum)</text>
+          <text class="d-sub" x="798" y="379">env: socialgym-auth · secret timeline · cm timeline</text>
+
+          <!-- stores -->
+          <rect class="d-box d-box--store" x="160" y="476" width="340" height="92" rx="8"></rect>
+          <text class="d-name" x="178" y="502">postgres</text>
+          <text class="d-sub" x="178" y="520">postgis/postgis:18-3.6 · Deployment (Recreate)</text>
+          <text class="d-sub" x="178" y="537">Service :5432 · PVC postgres 2Gi</text>
+          <text class="d-sub" x="178" y="554">secret postgres (auto-generated)</text>
+
+          <rect class="d-box d-box--store" x="620" y="476" width="340" height="92" rx="8"></rect>
+          <text class="d-name" x="638" y="502">mongo</text>
+          <text class="d-sub" x="638" y="520">mongo:8.2 · Deployment (Recreate)</text>
+          <text class="d-sub" x="638" y="537">Service :27017 · PVC mongo 2Gi</text>
+          <text class="d-sub" x="638" y="554">secret mongo · cm mongo-init (first-boot)</text>
+
+          <!-- client -> gateway -->
+          <path class="d-wire d-wire--req" marker-end="url(#ah-req)" d="M205,84 V206 H352"></path>
+          <text class="d-el d-el--req" x="214" y="130">HTTPS</text>
+          <text class="d-el d-el--req" x="214" y="146">NodePort</text>
+
+          <!-- developer -> API server -->
+          <path class="d-wire d-wire--dash" marker-end="url(#ah)" d="M910,84 V100"></path>
+          <text class="d-el d-el--wire" x="922" y="97">kubectl · helm</text>
+
+          <!-- gateway -> workout -->
+          <path class="d-wire d-wire--req" marker-end="url(#ah-req)" d="M460,248 V280 H190 V296"></path>
+          <text class="d-el d-el--req" x="250" y="262" text-anchor="middle">/login  /signup  /auth/  ·  /workout/api/  &#8594; :8090</text>
+
+          <!-- gateway -> integration -->
+          <path class="d-wire d-wire--req" marker-end="url(#ah-req)" d="M560,248 V296"></path>
+          <text class="d-el d-el--req" x="560" y="276" text-anchor="middle">/grpc.*  &#8594;  grpcs://:50051</text>
+
+          <!-- gateway -> timeline -->
+          <path class="d-wire d-wire--req" marker-end="url(#ah-req)" d="M650,248 V288 H930 V296"></path>
+          <text class="d-el d-el--req" x="880" y="290" text-anchor="middle">/timeline/api/  &#8594; :8091</text>
+
+          <!-- timeline -> integration (in-cluster) -->
+          <path class="d-wire" marker-end="url(#ah)" d="M840,416 V444 H560 V420"></path>
+          <text class="d-el d-el--wire" x="700" y="438" text-anchor="middle">timeline &#8594; integration · gRPC/TLS :50051 · Person · Friend · User</text>
+
+          <!-- workout -> postgres -->
+          <path class="d-wire d-wire--data" marker-end="url(#ah-data)" d="M150,416 V452 H320 V474"></path>
+          <text class="d-el d-el--data" x="248" y="446" text-anchor="middle">SQL :5432 · db workout</text>
+
+          <!-- integration -> postgres -->
+          <path class="d-wire d-wire--data" marker-end="url(#ah-data)" d="M520,416 V458 H420 V474"></path>
+          <text class="d-el d-el--data" x="486" y="452" text-anchor="middle">SQL :5432</text>
+
+          <!-- timeline -> mongo -->
+          <path class="d-wire d-wire--data" marker-end="url(#ah-data)" d="M950,416 V452 H790 V474"></path>
+          <text class="d-el d-el--data" x="878" y="446" text-anchor="middle">db :27017 · db timeline</text>
+        </svg>
+
+        <div class="legend">
+          <span><i class="req"></i> client request, routed by the gateway</span>
+          <span><i></i> in-cluster service call</span>
+          <span><i class="data"></i> database read / write</span>
+          <span><i class="dash"></i> control plane (kubectl / helm)</span>
+        </div>
+
+        <figcaption>
+          <code>login_service</code> and <code>workout_service</code> in <code>nginx.conf</code> both
+          point at <code>workout:8090</code>; <code>/grpc.</code> is proxied with
+          <code>grpc_pass grpcs://</code> so the gateway speaks TLS to <code>integration</code>.
+          The timeline&#8594;integration call is configured through the <code>timeline</code> ConfigMap
+          (<code>GRPC_HOST=integration</code>, <code>GRPC_USE_TLS=true</code>), with the CA cert taken
+          from the same <code>socialgym-tls</code> Secret. AWS S3/SQS/CloudFront (avatar &amp; cover
+          upload, signed URLs) sit outside this picture — the <code>workout.aws.*</code> /
+          <code>timeline.aws.*</code> values are <code>CHANGE_ME</code> by default and core endpoints
+          do not need them.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>How <code>./scripts/up.sh</code> brings it up</h2>
+    <p class="hint">
+      The install path, and the two things Helm deliberately does <em>not</em> own.
+    </p>
+
+    <div class="fig-wrap">
+      <figure>
+        <svg class="diagram diagram--install" viewBox="0 0 1120 300" role="img" aria-label="up.sh runs in sequence: start minikube with the docker driver at 4 CPU and 6 GB; run gen-dev-certs.sh which uses kubectl to create the socialgym-tls TLS Secret from a locally generated dev certificate; run build-images.sh which builds workout-app, integration-app and timeline-app at tag local straight into minikube&#39;s Docker daemon; then helm upgrade --install the socialgym release into the socialgym-dev namespace. Finally it waits with kubectl rollout status for postgres, mongo, workout, integration, timeline and gateway. The TLS Secret is mounted by gateway, integration and timeline; the images are consumed with pullPolicy IfNotPresent.">
+          <defs>
+            <marker id="ah2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <polygon class="mk" points="0 0, 8 4, 0 8"></polygon>
+            </marker>
+          </defs>
+
+          <rect class="d-box d-box--entry" x="20" y="60" width="200" height="104" rx="8"></rect>
+          <text class="d-name" x="36" y="98">./scripts/up.sh</text>
+          <text class="d-sub" x="36" y="116">single entry point</text>
+
+          <rect class="d-box" x="240" y="60" width="200" height="104" rx="8"></rect>
+          <text class="d-name" x="256" y="92">minikube start</text>
+          <text class="d-sub" x="256" y="110">--driver=docker</text>
+          <text class="d-sub" x="256" y="126">--cpus=4 --memory=6g</text>
+
+          <rect class="d-box" x="460" y="60" width="200" height="104" rx="8"></rect>
+          <text class="d-name" x="476" y="90">gen-dev-certs.sh</text>
+          <text class="d-sub" x="476" y="108">kubectl create</text>
+          <text class="d-sub" x="476" y="124">secret tls</text>
+          <text class="d-sub" x="476" y="140">socialgym-tls</text>
+
+          <rect class="d-box" x="680" y="60" width="200" height="104" rx="8"></rect>
+          <text class="d-name" x="696" y="90">build-images.sh</text>
+          <text class="d-sub" x="696" y="108">docker build into</text>
+          <text class="d-sub" x="696" y="124">minikube daemon</text>
+          <text class="d-sub" x="696" y="140">•-app:local ×3</text>
+
+          <rect class="d-box" x="900" y="60" width="200" height="104" rx="8"></rect>
+          <text class="d-name" x="916" y="90">helm upgrade</text>
+          <text class="d-sub" x="916" y="108">--install socialgym</text>
+          <text class="d-sub" x="916" y="124">-n socialgym-dev</text>
+          <text class="d-sub" x="916" y="140">--create-namespace</text>
+
+          <path class="d-wire" marker-end="url(#ah2)" d="M220,112 H236"></path>
+          <path class="d-wire" marker-end="url(#ah2)" d="M440,112 H456"></path>
+          <path class="d-wire" marker-end="url(#ah2)" d="M660,112 H676"></path>
+          <path class="d-wire" marker-end="url(#ah2)" d="M880,112 H896"></path>
+
+          <rect class="d-box" x="240" y="216" width="860" height="56" rx="8"></rect>
+          <text class="d-name" x="260" y="240">kubectl rollout status</text>
+          <text class="d-sub" x="260" y="258">postgres · mongo · workout · integration · timeline · gateway &nbsp;—&nbsp; waits up to 180s each</text>
+
+          <path class="d-wire" marker-end="url(#ah2)" d="M1000,164 V214"></path>
+
+          <path class="d-wire d-wire--dash" marker-end="url(#ah2)" d="M560,164 V190 H430 V214"></path>
+          <text class="d-el d-el--wire" x="150" y="186">mounted by gateway,</text>
+          <text class="d-el d-el--wire" x="150" y="200">integration, timeline</text>
+
+          <path class="d-wire d-wire--dash" marker-end="url(#ah2)" d="M780,164 V198 H900 V214"></path>
+          <text class="d-el d-el--wire" x="792" y="192">images already local · IfNotPresent</text>
+        </svg>
+
+        <figcaption>
+          Helm renders the gateway, both databases, every ConfigMap and the auto-generated Secrets.
+          It does <strong>not</strong> create the TLS Secret — <code>kubectl</code> does, from a
+          gitignored dev cert — and it does <strong>not</strong> build or pull the service images:
+          they are built straight into minikube's Docker daemon and run with
+          <code>pullPolicy: IfNotPresent</code>. Auto-generated Secret values
+          (<code>ACCESS_TOKEN_SECRET</code>, DB passwords) stay stable across
+          <code>helm upgrade</code> — the <code>secretValue</code> helper reads the existing
+          Secret back before generating a new one.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Deployments &amp; Services</h2>
+    <p class="hint">One Deployment per row, one replica each, one Service in front.</p>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th>Component</th><th>Image</th><th>Service</th><th>Port</th><th>Depends on</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>gateway</code></td>
+            <td><code>nginx:alpine</code></td>
+            <td>NodePort</td>
+            <td><code>80</code>, <code>443</code></td>
+            <td>workout, timeline, integration <span class="muted">(reverse proxy)</span></td>
+          </tr>
+          <tr>
+            <td><code>workout</code></td>
+            <td><code>workout-app:local</code></td>
+            <td>ClusterIP</td>
+            <td><code>8090</code></td>
+            <td>postgres</td>
+          </tr>
+          <tr>
+            <td><code>integration</code></td>
+            <td><code>integration-app:local</code></td>
+            <td>ClusterIP</td>
+            <td><code>50051</code> <span class="muted">gRPC/TLS</span></td>
+            <td>postgres</td>
+          </tr>
+          <tr>
+            <td><code>timeline</code></td>
+            <td><code>timeline-app:local</code></td>
+            <td>ClusterIP</td>
+            <td><code>8091</code></td>
+            <td>mongo, integration <span class="muted">(gRPC/TLS)</span></td>
+          </tr>
+          <tr>
+            <td><code>postgres</code></td>
+            <td><code>postgis/postgis:18-3.6</code></td>
+            <td>ClusterIP</td>
+            <td><code>5432</code></td>
+            <td><span class="muted">PVC <code>postgres</code> 2Gi · strategy Recreate</span></td>
+          </tr>
+          <tr>
+            <td><code>mongo</code></td>
+            <td><code>mongo:8.2</code></td>
+            <td>ClusterIP</td>
+            <td><code>27017</code></td>
+            <td><span class="muted">PVC <code>mongo</code> 2Gi · strategy Recreate</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Gateway routes</h2>
+    <p class="hint">From <code>templates/gateway/configmap.yaml</code> — the same route map as <code>infra/dev</code>, upstreams changed to in-cluster Service DNS.</p>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th>Request</th><th>Upstream</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>:80</code> anything</td><td>—</td><td><code>301</code> redirect to <code>https://</code></td></tr>
+          <tr><td><code>/login</code>, <code>/signup</code>, <code>/auth/</code></td><td><code>workout:8090</code></td><td>auth &amp; session</td></tr>
+          <tr><td><code>/workout/api/</code></td><td><code>workout:8090</code></td><td>identity, social graph, workouts, business profiles</td></tr>
+          <tr><td><code>/timeline/api/</code></td><td><code>timeline:8091</code></td><td>posts, feed, reactions, comments, notifications, check-ins</td></tr>
+          <tr><td><code>/grpc.*</code></td><td><code>integration:50051</code></td><td><code>grpc_pass grpcs://</code> · HTTP/2 · TLS verify off (dev cert)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Config &amp; secrets</h2>
+    <dl class="kv">
+      <dt>cm gateway</dt><dd><code>nginx.conf</code> — the route map above.</dd>
+      <dt>cm workout</dt><dd>HOST/PORT, password &amp; login-lockout policy, non-secret AWS settings (region, bucket, SQS URL, CloudFront domain).</dd>
+      <dt>cm timeline</dt><dd>HOST/PORT, Mongo DB name, and the gRPC client config that points at <code>integration</code> over TLS.</dd>
+      <dt>cm mongo-init</dt><dd><code>init-app-user.sh</code> — runs once on first boot to create the <code>timeline</code> app user.</dd>
+      <dt>secret socialgym-auth</dt><dd><code>ACCESS_TOKEN_SECRET</code> / <code>REFRESH_TOKEN_SECRET</code>, auto-generated (64 chars), shared by <strong>workout, integration and timeline</strong> so JWTs verify across all three.</dd>
+      <dt>secret postgres</dt><dd><code>POSTGRES_PASSWORD</code>, auto-generated. <code>DATABASE_URL</code> is assembled at container start so the Secret is the only copy.</dd>
+      <dt>secret mongo</dt><dd>root + app passwords, auto-generated.</dd>
+      <dt>secret workout / timeline</dt><dd>AWS access keys + CloudFront private key. Empty by default — image upload &amp; signed URLs stay off until overridden.</dd>
+      <dt>secret socialgym-tls</dt><dd><code>kubernetes.io/tls</code>. Created by <code>kubectl</code>, <em>not</em> templated by Helm; mounted by gateway, integration and timeline. SAN covers the <code>integration</code> Service name.</dd>
+    </dl>
+  </section>
+
+  <section>
+    <h2>Related, and worth not confusing</h2>
+    <ul class="notes">
+      <li><code>workout/k8s/</code> is a <strong>separate</strong> Kustomize scaffold — Ingress, HPA, PodDisruptionBudget, NetworkPolicy, ResourceQuota — for <code>workout-app</code> alone, shaped for a cloud cluster. It is not part of this chart.</li>
+      <li><code>infra/dev/</code> (Compose, infra containers only; services run on the host) and <code>infra/prod/</code> (Compose, everything containerized) are the non-Kubernetes ways to run the same stack.</li>
+      <li><strong>Persistence:</strong> the <code>postgres</code> and <code>mongo</code> PVCs survive <code>helm upgrade</code>, but <code>helm uninstall</code> / <code>./scripts/down.sh</code> deletes them — that wipes the data.</li>
+      <li><strong>AWS:</strong> <code>*.aws.*</code> values are <code>CHANGE_ME</code> by default. <code>AWS_SQS_QUEUE_URL</code> must stay non-empty or workout's SQS consumer busy-loops and starves the HTTP server.</li>
+    </ul>
+  </section>
+
+  <footer>
+    source: infra/helm/socialgym/ · Chart 0.1.0 · appVersion 1.0.0 · namespace socialgym-dev
+  </footer>
+</div>
+</body></html>
