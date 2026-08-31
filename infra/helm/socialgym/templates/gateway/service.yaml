@@ -12,6 +12,12 @@ spec:
     - name: http
       port: {{ .Values.gateway.httpPort }}
       targetPort: http
+      {{- if and (ne .Values.gateway.serviceType "ClusterIP") .Values.gateway.httpNodePort }}
+      nodePort: {{ .Values.gateway.httpNodePort }}
+      {{- end }}
     - name: https
       port: {{ .Values.gateway.httpsPort }}
       targetPort: https
+      {{- if and (ne .Values.gateway.serviceType "ClusterIP") .Values.gateway.httpsNodePort }}
+      nodePort: {{ .Values.gateway.httpsNodePort }}
+      {{- end }}

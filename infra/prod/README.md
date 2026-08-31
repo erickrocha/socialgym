@@ -89,10 +89,40 @@ otherwise only on the `internal: true` `data` network.
 docker compose -f compose.yml -f compose.db-access.yml up -d
 ```
 
-- **DBeaver / PostgreSQL** — `localhost:5433`, database `workout_prod`, user
-  `workout`, password `POSTGRES_PASSWORD` from `.env`.
-- **MongoDB Compass** —
-  `mongodb://root:<MONGO_ROOT_PASSWORD>@localhost:27018/?authSource=admin&directConnection=true`.
+#### Connecting to PostgreSQL with DBeaver
+
+1. Bring the stack up with the overlay (command above), then confirm the port
+   is published: `docker compose -f compose.yml -f compose.db-access.yml ps postgres`
+   should show `0.0.0.0:5433->5432/tcp`.
+2. In DBeaver: **Database → New Database Connection → PostgreSQL**.
+3. On the **Main** tab, fill in — all values come from `infra/prod/.env`:
+
+   | Field    | Value                                            |
+   |----------|--------------------------------------------------|
+   | Host     | `localhost`                                      |
+   | Port     | `5433`                                           |
+   | Database | `workout` (the value of `WORKOUT_DATABASE_NAME`) |
+   | Username | `workout` (the value of `POSTGRES_USER`)         |
+   | Password | the value of `POSTGRES_PASSWORD`                  |
+
+   Tick **Save password** so you're not re-prompted.
+4. **Test Connection** (DBeaver will offer to download the PostgreSQL driver
+   on first use), then **Finish**.
+5. The image is `postgis/postgis` — if you need the spatial types, run
+   `CREATE EXTENSION IF NOT EXISTS postgis;` once against the `workout`
+   database (SeaORM migrations already do this on `workout-app` boot, so
+   normally it's there).
+
+Notes:
+- No SSL — leave the SSL tab off. Traffic never leaves your machine.
+- Connect to `localhost`, not `postgres`: the `postgres` hostname only
+  resolves inside the Docker networks.
+- The overlay also offsets from `infra/dev/`'s `5432`, so both stacks'
+  databases can be open in DBeaver at the same time on `5432` and `5433`.
+
+#### Connecting to MongoDB with Compass
+
+`mongodb://root:<MONGO_ROOT_PASSWORD>@localhost:27018/?authSource=admin&directConnection=true`
 
 Plain `docker compose ...` (no `-f compose.db-access.yml`) leaves the databases
 unpublished. Don't use this overlay for a real deployment.

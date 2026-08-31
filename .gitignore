@@ -1,6 +1,8 @@
 /infra/prod/.env
 /infra/dev/.env
 /infra/helm/socialgym/.dev-certs/
+/infra/helm/socialgym/values.dev-aws.yaml
+/infra/helm/socialgym/values.*.local.yaml
 /infra/certs/server.key
 /infra/dev/certs/server.key
 .idea
