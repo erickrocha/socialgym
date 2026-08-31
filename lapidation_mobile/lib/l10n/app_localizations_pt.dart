@@ -283,6 +283,68 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível atualizar as configurações do servidor';
 
   @override
+  String get settingsDangerZoneTitle => 'Zona de Perigo';
+
+  @override
+  String get settingsDeleteAccountDescription =>
+      'Eliminar a sua conta remove o seu perfil, treinos, publicações e todos os dados associados.';
+
+  @override
+  String get settingsDeleteAccountButton => 'Eliminar Conta';
+
+  @override
+  String get settingsDeleteAccountConfirmTitle => 'Eliminar Conta';
+
+  @override
+  String get settingsDeleteAccountConfirmBody =>
+      'Isto não pode ser desfeito depois de concluído. Escolha quando pretende que isto aconteça:';
+
+  @override
+  String get settingsDeleteAccountOptionGracePeriod =>
+      'Eliminar após 30 dias (pode cancelar ao iniciar sessão novamente)';
+
+  @override
+  String get settingsDeleteAccountOptionImmediate => 'Eliminar imediatamente';
+
+  @override
+  String get settingsDeleteAccountConfirmButton => 'Eliminar Conta';
+
+  @override
+  String get settingsDeleteAccountScheduledTitle =>
+      'Eliminação de Conta Agendada';
+
+  @override
+  String settingsDeleteAccountScheduledBody(String date) {
+    return 'A sua conta será eliminada permanentemente em $date. A sua sessão foi terminada.';
+  }
+
+  @override
+  String get settingsDeleteAccountError =>
+      'Falha ao eliminar a conta. Tente novamente.';
+
+  @override
+  String get signInPendingDeletionTitle => 'Conta Agendada para Eliminação';
+
+  @override
+  String signInPendingDeletionBody(String date) {
+    return 'A sua conta está agendada para ser eliminada permanentemente em $date. Gostaria de manter a sua conta?';
+  }
+
+  @override
+  String get signInPendingDeletionKeepButton => 'Manter a Minha Conta';
+
+  @override
+  String get signInPendingDeletionDismissButton => 'Agora Não';
+
+  @override
+  String get signInPendingDeletionCancelSuccess =>
+      'Eliminação de conta cancelada. Bem-vindo de volta!';
+
+  @override
+  String get signInPendingDeletionCancelError =>
+      'Falha ao cancelar a eliminação da conta. Tente novamente.';
+
+  @override
   String get workoutTitle => 'Os Meus Treinos';
 
   @override
@@ -344,6 +406,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get workoutMuscleGroups => 'Grupos Musculares';
+
+  @override
+  String get workoutAssignToTeamMember => 'Criar para';
+
+  @override
+  String get workoutAssignToMyself => 'Eu mesmo';
+
+  @override
+  String get workoutSelectTeamMember => 'Selecionar membro da equipa';
+
+  @override
+  String get workoutNoTeamMembers => 'Ainda não tem membros de equipa aceites';
 
   @override
   String get workoutSets => 'Séries';
@@ -612,34 +686,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addressDelete => 'Eliminar Morada';
 
   @override
-  String get addressSetCurrent => 'Definir como Atual';
-
-  @override
   String get addressCurrent => 'Morada Atual';
 
   @override
-  String get addressStreet => 'Rua';
-
-  @override
-  String get addressNumber => 'Número';
-
-  @override
-  String get addressComplement => 'Complemento';
-
-  @override
-  String get addressNeighborhood => 'Bairro';
-
-  @override
-  String get addressCity => 'Cidade';
-
-  @override
-  String get addressState => 'Estado/Província';
-
-  @override
   String get addressCountry => 'País';
-
-  @override
-  String get addressZipCode => 'Código Postal';
 
   @override
   String get addressPostalCode => 'Código Postal';
@@ -657,28 +707,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addressAdministrativeArea => 'Estado/Província';
 
   @override
-  String get addressMarkCurrent => 'Marcar como morada atual';
-
-  @override
   String get addressSelectCountry => 'Selecionar país';
-
-  @override
-  String get addressSelectState => 'Selecionar estado';
-
-  @override
-  String get addressSelectCountryFirst => 'Selecione primeiro o país';
-
-  @override
-  String get addressLatitude => 'Latitude';
-
-  @override
-  String get addressLongitude => 'Longitude';
-
-  @override
-  String get addressGpsLocation => 'Localização GPS';
-
-  @override
-  String get addressGetCurrentLocation => 'Obter localização atual';
 
   @override
   String get addressLocationServicesDisabled =>
@@ -738,6 +767,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get friendsTabSuggestions => 'Sugestões';
+
+  @override
+  String get friendsTabFind => 'Procurar';
 
   @override
   String get friendsNoFriends => 'Ainda sem amigos';
@@ -800,6 +832,32 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get friendsActionError => 'Ação falhou. Por favor, tente novamente.';
+
+  @override
+  String get friendsLocationAnywhere => 'Em qualquer lugar';
+
+  @override
+  String get friendsLocationSavedAddress => 'Perto da minha morada';
+
+  @override
+  String get friendsLocationCurrentGps => 'Perto de mim agora';
+
+  @override
+  String get friendsFindSearchHint => 'Procurar por nome ou nome de utilizador';
+
+  @override
+  String get friendsFindPromptTitle => 'Encontrar amigos';
+
+  @override
+  String get friendsFindPromptHint =>
+      'Procure por nome ou use um filtro de localização para encontrar pessoas';
+
+  @override
+  String get friendsFindNoResults => 'Nenhuma pessoa encontrada';
+
+  @override
+  String get friendsFindNoResultsHint =>
+      'Tente outro nome ou filtro de localização';
 
   @override
   String get friendViewProfile => 'Ver Perfil';
@@ -1106,7 +1164,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tooltipSwipeToView =>
-      'Desliza para a esquerda para adicionar exercícios';
+      'Volta atrás e desliza um exercício para a direita para adicioná-lo';
+
+  @override
+  String get tooltipBackToExercises => 'Voltar aos exercícios';
 
   @override
   String get sortCreatedAtDesc => 'Mais Recente';
@@ -1410,6 +1471,46 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get businessProfileSwitchToPersonal => 'Conta pessoal';
+
+  @override
+  String get consentPendingTitle => 'Consentimento legal necessário';
+
+  @override
+  String get consentPendingSubtitle =>
+      'Reveja e aceite os documentos abaixo antes de continuar a usar a aplicação.';
+
+  @override
+  String get consentReadDocument => 'Ler';
+
+  @override
+  String get consentAgree => 'Concordo';
+
+  @override
+  String get consentReviewAndAccept => 'Rever e aceitar';
+
+  @override
+  String get consentAllAccepted => 'Tudo certo — obrigado por aceitar.';
+
+  @override
+  String get consentLogOut => 'Terminar sessão';
+
+  @override
+  String get consentClose => 'Fechar';
+
+  @override
+  String get consentLoading => 'A carregar…';
+
+  @override
+  String get consentLoadFailed =>
+      'Não foi possível carregar os seus consentimentos pendentes. Tente novamente.';
+
+  @override
+  String get consentNeverAccepted => 'Ainda não aceitou este documento.';
+
+  @override
+  String consentVersionOutdated(String version) {
+    return 'Está disponível uma nova versão ($version) que tem de ser aceite.';
+  }
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -1691,6 +1792,68 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Não foi possível atualizar as configurações do servidor';
 
   @override
+  String get settingsDangerZoneTitle => 'Zona de Perigo';
+
+  @override
+  String get settingsDeleteAccountDescription =>
+      'Excluir sua conta remove seu perfil, treinos, posts e todos os dados associados.';
+
+  @override
+  String get settingsDeleteAccountButton => 'Excluir Conta';
+
+  @override
+  String get settingsDeleteAccountConfirmTitle => 'Excluir Conta';
+
+  @override
+  String get settingsDeleteAccountConfirmBody =>
+      'Isso não pode ser desfeito depois de concluído. Escolha quando você quer que isso aconteça:';
+
+  @override
+  String get settingsDeleteAccountOptionGracePeriod =>
+      'Excluir após 30 dias (você pode cancelar fazendo login novamente)';
+
+  @override
+  String get settingsDeleteAccountOptionImmediate => 'Excluir imediatamente';
+
+  @override
+  String get settingsDeleteAccountConfirmButton => 'Excluir Conta';
+
+  @override
+  String get settingsDeleteAccountScheduledTitle =>
+      'Exclusão de Conta Agendada';
+
+  @override
+  String settingsDeleteAccountScheduledBody(String date) {
+    return 'Sua conta será excluída permanentemente em $date. Você foi desconectado.';
+  }
+
+  @override
+  String get settingsDeleteAccountError =>
+      'Falha ao excluir a conta. Tente novamente.';
+
+  @override
+  String get signInPendingDeletionTitle => 'Conta Agendada para Exclusão';
+
+  @override
+  String signInPendingDeletionBody(String date) {
+    return 'Sua conta está agendada para ser excluída permanentemente em $date. Você gostaria de manter sua conta?';
+  }
+
+  @override
+  String get signInPendingDeletionKeepButton => 'Manter Minha Conta';
+
+  @override
+  String get signInPendingDeletionDismissButton => 'Agora Não';
+
+  @override
+  String get signInPendingDeletionCancelSuccess =>
+      'Exclusão de conta cancelada. Bem-vindo de volta!';
+
+  @override
+  String get signInPendingDeletionCancelError =>
+      'Falha ao cancelar a exclusão da conta. Tente novamente.';
+
+  @override
   String get workoutTitle => 'Meus Treinos';
 
   @override
@@ -1752,6 +1915,19 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get workoutMuscleGroups => 'Grupos Musculares';
+
+  @override
+  String get workoutAssignToTeamMember => 'Criar para';
+
+  @override
+  String get workoutAssignToMyself => 'Eu mesmo';
+
+  @override
+  String get workoutSelectTeamMember => 'Selecionar membro da equipe';
+
+  @override
+  String get workoutNoTeamMembers =>
+      'Você ainda não tem membros de equipe aceitos';
 
   @override
   String get workoutSets => 'Séries';
@@ -2019,34 +2195,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get addressDelete => 'Excluir Endereço';
 
   @override
-  String get addressSetCurrent => 'Definir como Atual';
-
-  @override
   String get addressCurrent => 'Endereço Atual';
 
   @override
-  String get addressStreet => 'Rua';
-
-  @override
-  String get addressNumber => 'Número';
-
-  @override
-  String get addressComplement => 'Complemento';
-
-  @override
-  String get addressNeighborhood => 'Bairro';
-
-  @override
-  String get addressCity => 'Cidade';
-
-  @override
-  String get addressState => 'Estado';
-
-  @override
   String get addressCountry => 'País';
-
-  @override
-  String get addressZipCode => 'CEP';
 
   @override
   String get addressPostalCode => 'CEP';
@@ -2064,28 +2216,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get addressAdministrativeArea => 'Estado';
 
   @override
-  String get addressMarkCurrent => 'Marcar como endereço atual';
-
-  @override
   String get addressSelectCountry => 'Selecionar país';
-
-  @override
-  String get addressSelectState => 'Selecionar estado';
-
-  @override
-  String get addressSelectCountryFirst => 'Selecione primeiro o país';
-
-  @override
-  String get addressLatitude => 'Latitude';
-
-  @override
-  String get addressLongitude => 'Longitude';
-
-  @override
-  String get addressGpsLocation => 'Localização GPS';
-
-  @override
-  String get addressGetCurrentLocation => 'Obter localização atual';
 
   @override
   String get addressLocationServicesDisabled =>
@@ -2145,6 +2276,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get friendsTabSuggestions => 'Sugestões';
+
+  @override
+  String get friendsTabFind => 'Buscar';
 
   @override
   String get friendsNoFriends => 'Ainda sem amigos';
@@ -2207,6 +2341,32 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get friendsActionError => 'Ação falhou. Por favor, tente novamente.';
+
+  @override
+  String get friendsLocationAnywhere => 'Em qualquer lugar';
+
+  @override
+  String get friendsLocationSavedAddress => 'Perto do meu endereço';
+
+  @override
+  String get friendsLocationCurrentGps => 'Perto de mim agora';
+
+  @override
+  String get friendsFindSearchHint => 'Buscar por nome ou nome de usuário';
+
+  @override
+  String get friendsFindPromptTitle => 'Encontrar amigos';
+
+  @override
+  String get friendsFindPromptHint =>
+      'Busque por nome ou use um filtro de localização para encontrar pessoas';
+
+  @override
+  String get friendsFindNoResults => 'Nenhuma pessoa encontrada';
+
+  @override
+  String get friendsFindNoResultsHint =>
+      'Tente outro nome ou filtro de localização';
 
   @override
   String get friendViewProfile => 'Ver Perfil';
@@ -2514,7 +2674,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get tooltipSwipeToView =>
-      'Deslize para a esquerda para adicionar exercícios';
+      'Volte e deslize um exercício para a direita para adicioná-lo';
+
+  @override
+  String get tooltipBackToExercises => 'Voltar para exercícios';
 
   @override
   String get sortCreatedAtDesc => 'Mais Recente';
@@ -2818,4 +2981,44 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get businessProfileSwitchToPersonal => 'Conta pessoal';
+
+  @override
+  String get consentPendingTitle => 'Consentimento legal necessário';
+
+  @override
+  String get consentPendingSubtitle =>
+      'Revise e aceite os documentos abaixo antes de continuar usando o aplicativo.';
+
+  @override
+  String get consentReadDocument => 'Ler';
+
+  @override
+  String get consentAgree => 'Concordo';
+
+  @override
+  String get consentReviewAndAccept => 'Revisar e aceitar';
+
+  @override
+  String get consentAllAccepted => 'Tudo certo — obrigado por aceitar.';
+
+  @override
+  String get consentLogOut => 'Sair';
+
+  @override
+  String get consentClose => 'Fechar';
+
+  @override
+  String get consentLoading => 'Carregando…';
+
+  @override
+  String get consentLoadFailed =>
+      'Não foi possível carregar seus consentimentos pendentes. Tente novamente.';
+
+  @override
+  String get consentNeverAccepted => 'Você ainda não aceitou este documento.';
+
+  @override
+  String consentVersionOutdated(String version) {
+    return 'Uma nova versão ($version) está disponível e precisa ser aceita.';
+  }
 }

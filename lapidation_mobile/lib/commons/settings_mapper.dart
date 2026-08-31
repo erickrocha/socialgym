@@ -1,6 +1,7 @@
 import 'package:lapidation_mobile/commons/mapper.dart';
 import 'package:lapidation_mobile/models/enums.dart';
 import 'package:lapidation_mobile/models/settings.dart';
+import 'package:lapidation_mobile/services/grpc/grpc_settings_service.dart';
 import 'package:lapidation_mobile/src/generated/grpc/settings.pb.dart'
     as $settings;
 
@@ -15,7 +16,9 @@ class SettingsMapper implements Mapper<Settings, $settings.Setting> {
       language: domain.language,
       theme: domain.theme,
       notificationsEnabled: domain.notificationsEnabled,
-      contextMenuPosition: domain.contextMenuPosition?.toStringValue(),
+      contextMenuPosition: domain.contextMenuPosition != null
+          ? GrpcSettingsService.positionToWire(domain.contextMenuPosition!)
+          : null,
       homePage: domain.homePage?.toStringValue(),
       createdAt: domain.createdAt.toIso8601String(),
       updatedAt: domain.updatedAt.toIso8601String(),
@@ -36,8 +39,12 @@ class SettingsMapper implements Mapper<Settings, $settings.Setting> {
         proto.contextMenuPosition,
       ),
       homePage: Pages.fromString(proto.homePage),
-      createdAt: DateTime.parse(proto.createdAt),
-      updatedAt: DateTime.parse(proto.updatedAt),
+      createdAt: proto.createdAt.isNotEmpty
+          ? DateTime.parse(proto.createdAt)
+          : null,
+      updatedAt: proto.updatedAt.isNotEmpty
+          ? DateTime.parse(proto.updatedAt)
+          : null,
     );
   }
 

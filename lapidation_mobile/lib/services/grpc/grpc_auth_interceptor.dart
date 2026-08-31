@@ -14,7 +14,9 @@ class GrpcAuthInterceptor implements grpc.ClientInterceptor {
     grpc.ClientStreamingInvoker<Q, R> invoker,
   ) {
     // Injeta o provedor de metadados assíncrono também nos Streamings
-    final novasOptions = options.mergedWith(grpc.CallOptions(providers: [_tokenProvider]));
+    final novasOptions = options.mergedWith(
+      grpc.CallOptions(providers: [_tokenProvider]),
+    );
     return invoker(method, requests, novasOptions);
   }
 
@@ -26,7 +28,9 @@ class GrpcAuthInterceptor implements grpc.ClientInterceptor {
     grpc.ClientUnaryInvoker<Q, R> invoker,
   ) {
     // Injeta o provedor de metadados assíncrono nas chamadas Unary
-    final novasOptions = options.mergedWith(grpc.CallOptions(providers: [_tokenProvider]));
+    final novasOptions = options.mergedWith(
+      grpc.CallOptions(providers: [_tokenProvider]),
+    );
 
     // Agora o invoker retorna o tipo exato que o gRPC espera, sem hacks ou casts!
     return invoker(method, request, novasOptions);

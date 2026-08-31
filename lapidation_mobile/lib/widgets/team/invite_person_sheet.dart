@@ -12,7 +12,10 @@ import '../../services/grpc/grpc_person_service.dart';
 import 'team_member_card.dart';
 
 /// Search-and-invite bottom sheet for a business profile's Members tab.
-Future<void> showTeamInviteSheet(BuildContext context, {required int businessProfileId}) {
+Future<void> showTeamInviteSheet(
+  BuildContext context, {
+  required int businessProfileId,
+}) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -103,7 +106,12 @@ class _InvitePersonSheetState extends State<_InvitePersonSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final showNoResults = _results.isEmpty && !_searching && _controller.text.trim().length >= 2;
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
+    final showNoResults =
+        _results.isEmpty && !_searching && _controller.text.trim().length >= 2;
 
     return SafeArea(
       child: Padding(
@@ -117,7 +125,10 @@ class _InvitePersonSheetState extends State<_InvitePersonSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(l10n.teamInvite, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              l10n.teamInvite,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: _controller,
@@ -125,7 +136,10 @@ class _InvitePersonSheetState extends State<_InvitePersonSheet> {
               onChanged: _onChanged,
               decoration: InputDecoration(
                 hintText: l10n.teamInviteSearchHint,
-                prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: AppColors.primaryFor(businessType),
+                ),
                 suffixIcon: _searching
                     ? const Padding(
                         padding: EdgeInsets.all(12),
@@ -136,7 +150,9 @@ class _InvitePersonSheetState extends State<_InvitePersonSheet> {
                         ),
                       )
                     : null,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -158,7 +174,9 @@ class _InvitePersonSheetState extends State<_InvitePersonSheet> {
                         return TeamMemberCard(
                           person: person,
                           trailing: ElevatedButton(
-                            onPressed: _busyIds.contains(person.id) ? null : () => _invite(person),
+                            onPressed: _busyIds.contains(person.id)
+                                ? null
+                                : () => _invite(person),
                             child: Text(l10n.teamInviteSend),
                           ),
                         );

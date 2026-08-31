@@ -1,4 +1,3 @@
-
 class BusinessProfileAddress {
   final int? id;
   final String? uuid;

@@ -7,7 +7,12 @@ import 'package:lapidation_mobile/utils/dio_client.dart';
 class NotificationService {
   static final Dio _dio = DioClient().dio;
 
-  static Future<List<Notification>> fetchNotifications(String token,String ownerUuid,{bool unreadOnly = false,int limit = 50,}) async {
+  static Future<List<Notification>> fetchNotifications(
+    String token,
+    String ownerUuid, {
+    bool unreadOnly = false,
+    int limit = 50,
+  }) async {
     try {
       DioClient().setAuthToken(token);
       final response = await _dio.get(
@@ -34,7 +39,11 @@ class NotificationService {
     }
   }
 
-  static Future<Notification> markNotificationAsRead(String token,String ownerUuid,String idempotencyKey) async {
+  static Future<Notification> markNotificationAsRead(
+    String token,
+    String ownerUuid,
+    String idempotencyKey,
+  ) async {
     try {
       DioClient().setAuthToken(token);
       final response = await _dio.put(

@@ -1,19 +1,17 @@
-
 import 'package:lapidation_mobile/commons/mapper.dart';
 import 'package:lapidation_mobile/models/country.dart';
-import 'package:lapidation_mobile/src/generated/grpc/country.pb.dart' as $country;
+import 'package:lapidation_mobile/src/generated/grpc/country.pb.dart'
+    as $country;
 
-class CountryMapper implements Mapper<Country,$country.Country> {
-
-
+class CountryMapper implements Mapper<Country, $country.Country> {
   @override
   $country.Country toProto(Country domain) {
     return $country.Country(
       id: domain.id,
       ddi: domain.ddi,
-      name: domain.ddi,
+      name: domain.name,
       acronym: domain.acronym,
-      currency: domain.currency
+      currency: domain.currency,
     );
   }
 
@@ -25,11 +23,11 @@ class CountryMapper implements Mapper<Country,$country.Country> {
   @override
   Country fromProto($country.Country proto) {
     return Country(
-        id: proto.id,
-        ddi: proto.ddi,
-        name: proto.ddi,
-        acronym: proto.acronym,
-        currency: proto.currency
+      id: proto.id,
+      ddi: proto.ddi,
+      name: proto.name,
+      acronym: proto.acronym,
+      currency: proto.currency,
     );
   }
 

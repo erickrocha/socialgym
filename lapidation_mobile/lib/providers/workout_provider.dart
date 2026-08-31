@@ -36,10 +36,14 @@ class WorkoutProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _workouts = await GrpcWorkoutService.getWorkoutsByOwnerUuid(ownerUuid: ownerUuid);
+      _workouts = await GrpcWorkoutService.getWorkoutsByOwnerUuid(
+        ownerUuid: ownerUuid,
+      );
       // Update selected workout if it exists
       if (_selectedWorkout != null) {
-        final updated = _workouts.where((w) => w.id == _selectedWorkout!.id).firstOrNull;
+        final updated = _workouts
+            .where((w) => w.id == _selectedWorkout!.id)
+            .firstOrNull;
         _selectedWorkout = updated;
       }
       _loading = false;
@@ -55,13 +59,19 @@ class WorkoutProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> addWorkout(Workout workoutData) async {
+  Future<bool> addWorkout(
+    Workout workoutData, {
+    String? targetPersonUuid,
+  }) async {
     _loading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final workout = await GrpcWorkoutService.createWorkout(workout: workoutData);
+      final workout = await GrpcWorkoutService.createWorkout(
+        workout: workoutData,
+        targetPersonUuid: targetPersonUuid,
+      );
       _workouts = [..._workouts, workout];
       _loading = false;
       notifyListeners();
@@ -86,7 +96,9 @@ class WorkoutProvider extends ChangeNotifier {
 
     try {
       final updated = await GrpcWorkoutService.update(workout: workout);
-      _workouts = _workouts.map((w) => w.id == updated.id ? updated : w).toList();
+      _workouts = _workouts
+          .map((w) => w.id == updated.id ? updated : w)
+          .toList();
       if (_selectedWorkout?.id == updated.id) {
         _selectedWorkout = updated;
       }
@@ -133,13 +145,19 @@ class WorkoutProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> addExercisesToWorkout(String workoutUuid,List<Exercise> exercises) async {
+  Future<bool> addExercisesToWorkout(
+    String workoutUuid,
+    List<Exercise> exercises,
+  ) async {
     _loading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final workout = await GrpcWorkoutService.addExercisesToWorkout(workoutUuid: workoutUuid, exercises: exercises);
+      final workout = await GrpcWorkoutService.addExercisesToWorkout(
+        workoutUuid: workoutUuid,
+        exercises: exercises,
+      );
 
       // Update the workout in the list
       _workouts = _workouts.map((w) {

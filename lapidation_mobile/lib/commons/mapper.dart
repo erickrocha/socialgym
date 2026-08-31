@@ -1,6 +1,4 @@
-
-abstract interface class Mapper<DOMAIN,PROTO> {
-
+abstract interface class Mapper<DOMAIN, PROTO> {
   PROTO toProto(DOMAIN domain);
 
   DOMAIN fromProto(PROTO proto);

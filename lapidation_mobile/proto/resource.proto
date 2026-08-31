@@ -17,5 +17,3 @@ message ResourceResponse {
   repeated country.Country countries = 1;
   settings.Setting setting = 2;
 }
-
-

@@ -109,7 +109,8 @@ VitruvianProgressData computeVitruvianProgress({
     );
   }
 
-  final ordered = [...checkins]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  final ordered = [...checkins]
+    ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   final latest = ordered.last;
 
   final baselineReadings = <String, _MetricReading>{};
@@ -190,15 +191,26 @@ VitruvianProgressData computeVitruvianProgress({
 }
 
 /// Get region definitions based on view mode
-Map<VitruvianRegion, List<String>> _getRegionDefinitions(VitruvianViewMode viewMode) {
+Map<VitruvianRegion, List<String>> _getRegionDefinitions(
+  VitruvianViewMode viewMode,
+) {
   if (viewMode == VitruvianViewMode.back) {
     return <VitruvianRegion, List<String>>{
       VitruvianRegion.shouldersBack: const ['neck', 'chest', 'muscleMassPct'],
       VitruvianRegion.chestBack: const ['chest', 'muscleMassPct'],
       VitruvianRegion.back: const ['waist', 'abdomen', 'bodyFatPct', 'weight'],
-      VitruvianRegion.triceps: const ['bicepsRight', 'bicepsLeft', 'muscleMassPct'],
+      VitruvianRegion.triceps: const [
+        'bicepsRight',
+        'bicepsLeft',
+        'muscleMassPct',
+      ],
       VitruvianRegion.armsBack: const ['bicepsRight', 'bicepsLeft', 'weight'],
-      VitruvianRegion.glutes: const ['hip', 'thighRight', 'thighLeft', 'weight'],
+      VitruvianRegion.glutes: const [
+        'hip',
+        'thighRight',
+        'thighLeft',
+        'weight',
+      ],
       VitruvianRegion.calves: const ['thighRight', 'thighLeft', 'weight'],
     };
   }

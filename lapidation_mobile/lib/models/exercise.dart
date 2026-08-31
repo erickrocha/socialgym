@@ -1,4 +1,6 @@
-import 'package:lapidation_mobile/src/generated/grpc/exercise.pb.dart' as $exercise;
+import 'package:lapidation_mobile/src/generated/grpc/exercise.pb.dart'
+    as $exercise;
+
 class Exercise {
   final int? id;
   final String? uuid;
@@ -44,8 +46,12 @@ class Exercise {
       category: json['category'] ?? '',
       uuid: json['uuid'] ?? '',
       visibility: json['visibility'] ?? '',
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : null,
       repsOrDuration: json['repsOrDuration'] ?? 0,
       weight: (json['weight'] ?? 0).toDouble(),
     );

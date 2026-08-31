@@ -77,8 +77,12 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   /// Update the context menu position preference.
-  Future<void> setContextMenuPosition(ContextMenuPosition contextMenuPosition) async {
-    final updated = (_settings ?? Settings()).copyWith(contextMenuPosition: contextMenuPosition);
+  Future<void> setContextMenuPosition(
+    ContextMenuPosition contextMenuPosition,
+  ) async {
+    final updated = (_settings ?? Settings()).copyWith(
+      contextMenuPosition: contextMenuPosition,
+    );
     await applySettings(updated);
   }
 
@@ -96,7 +100,10 @@ class SettingsProvider extends ChangeNotifier {
   /// settings are left untouched (not an error — just nothing to sync yet).
   /// Any other failure sets [error] but does not clear the current settings,
   /// since the page already has cached/default values to show.
-  Future<void> fetchFromServer({required int personId, String personUuid = ''}) async {
+  Future<void> fetchFromServer({
+    required int personId,
+    String personUuid = '',
+  }) async {
     _loading = true;
     _error = null;
     notifyListeners();

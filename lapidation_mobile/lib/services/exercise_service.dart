@@ -7,12 +7,13 @@ import 'base_service.dart';
 class ExerciseService extends BaseService {
   static final _dio = DioClient().dio;
 
-
   /// Delete an exercise by ID.
   static Future<void> deleteExercise(int exerciseId, String token) async {
     try {
       DioClient().setAuthToken(token);
-      final response = await _dio.delete('${ApiConfig.exercisesEndpoint}/$exerciseId');
+      final response = await _dio.delete(
+        '${ApiConfig.exercisesEndpoint}/$exerciseId',
+      );
       if (response.statusCode != 200 && response.statusCode != 204) {
         throw AppException(
           statusCode: response.statusCode ?? 500,
@@ -44,7 +45,10 @@ class ExerciseService extends BaseService {
         'pageSize': pageSize,
         'sortBy': sortBy,
       };
-      final response = await _dio.post(ApiConfig.exercisesQueryEndpoint, data: body);
+      final response = await _dio.post(
+        ApiConfig.exercisesQueryEndpoint,
+        data: body,
+      );
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         return PaginatedExerciseResponse.fromJson(data);

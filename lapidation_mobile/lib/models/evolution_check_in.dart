@@ -21,7 +21,9 @@ class EvolutionCheckIn {
     return EvolutionCheckIn(
       uuid: json['uuid'] ?? '',
       personUuid: json['personUuid'] ?? '',
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
       note: json['note'] ?? '',
       visibility: json['visibility'] ?? 'Private',
       composition: json['composition'] != null
@@ -52,7 +54,12 @@ class EvolutionComposition {
   final double? muscleMassPct;
   final double? visceralFat;
 
-  EvolutionComposition({this.weight, this.bodyFatPct, this.muscleMassPct, this.visceralFat});
+  EvolutionComposition({
+    this.weight,
+    this.bodyFatPct,
+    this.muscleMassPct,
+    this.visceralFat,
+  });
 
   factory EvolutionComposition.fromJson(Map<String, dynamic> json) {
     return EvolutionComposition(

@@ -33,8 +33,10 @@ const List<BusinessProfileTypeOption> businessProfileTypeOptions = [
   ),
 ];
 
-String _personalTrainerTitle(AppLocalizations l10n) => l10n.addProfilePersonalTrainerTitle;
-String _personalTrainerDescription(AppLocalizations l10n) => l10n.addProfilePersonalTrainerDescription;
+String _personalTrainerTitle(AppLocalizations l10n) =>
+    l10n.addProfilePersonalTrainerTitle;
+String _personalTrainerDescription(AppLocalizations l10n) =>
+    l10n.addProfilePersonalTrainerDescription;
 String _gymTitle(AppLocalizations l10n) => l10n.addProfileGymTitle;
 String _gymDescription(AppLocalizations l10n) => l10n.addProfileGymDescription;
 
@@ -52,9 +54,15 @@ class AddProfilePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.addProfileTitle, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(
+              l10n.addProfileTitle,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
-            Text(l10n.addProfileSubtitle, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            Text(
+              l10n.addProfileSubtitle,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
             const SizedBox(height: 24),
             Wrap(
               spacing: 16,
@@ -86,22 +94,35 @@ class _BusinessProfileTypeCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           key: ValueKey('business_profile_type_card_${option.businessType}'),
-          onTap: () => Navigator.of(context).pushNamed(
-            '/add-profile/form',
-            arguments: option.businessType,
-          ),
+          onTap: () => Navigator.of(
+            context,
+          ).pushNamed('/add-profile/form', arguments: option.businessType),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.asset(option.imageAsset, height: 140, width: double.infinity, fit: BoxFit.cover),
+              Image.asset(
+                option.imageAsset,
+                height: 140,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(option.title(l10n), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    Text(
+                      option.title(l10n),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 6),
-                    Text(option.description(l10n), style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                    Text(
+                      option.description(l10n),
+                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    ),
                   ],
                 ),
               ),

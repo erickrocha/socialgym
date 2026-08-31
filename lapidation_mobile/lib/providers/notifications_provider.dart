@@ -84,7 +84,7 @@ class NotificationsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> markAsRead(String token,String ownerUuid, String uuid) async {
+  Future<void> markAsRead(String token, String ownerUuid, String uuid) async {
     if (token.isEmpty) return;
 
     final index = _notifications.indexWhere(
@@ -97,7 +97,11 @@ class NotificationsProvider extends ChangeNotifier {
 
     try {
       final updatedNotification =
-          await NotificationService.markNotificationAsRead(token,ownerUuid, uuid);
+          await NotificationService.markNotificationAsRead(
+            token,
+            ownerUuid,
+            uuid,
+          );
       final replacement = updatedNotification.uuid.isNotEmpty
           ? updatedNotification
           : currentNotification.copyWith(read: true, updatedAt: DateTime.now());

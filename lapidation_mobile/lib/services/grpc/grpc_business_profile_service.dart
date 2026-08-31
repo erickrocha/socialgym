@@ -13,7 +13,10 @@ class GrpcBusinessProfileService {
 
   static $bp.BusinessProfileServiceClient? _client;
 
-  static Future<BusinessProfile> getBusinessProfileById({int? id, String? uuid}) async {
+  static Future<BusinessProfile> getBusinessProfileById({
+    int? id,
+    String? uuid,
+  }) async {
     try {
       final response = await _ensureClient().getBusinessProfileById(
         $bp.BusinessProfileRequestId(id: id ?? 0, uuid: uuid ?? ''),
@@ -25,10 +28,16 @@ class GrpcBusinessProfileService {
     }
   }
 
-  static Future<List<BusinessProfile>> getBusinessProfileByOwnerId({int? ownerId, String? ownerUuid}) async {
+  static Future<List<BusinessProfile>> getBusinessProfileByOwnerId({
+    int? ownerId,
+    String? ownerUuid,
+  }) async {
     try {
       final response = await _ensureClient().getBusinessProfileByOwnerId(
-        $bp.BusinessProfileRequestOwnerId(ownerId: ownerId ?? 0, ownerUuid: ownerUuid ?? ''),
+        $bp.BusinessProfileRequestOwnerId(
+          ownerId: ownerId ?? 0,
+          ownerUuid: ownerUuid ?? '',
+        ),
         options: grpc.CallOptions(timeout: ApiConfig.timeout),
       );
       return BusinessProfileMapper().fromProtoList(response.businessProfiles);
@@ -37,7 +46,9 @@ class GrpcBusinessProfileService {
     }
   }
 
-  static Future<BusinessProfile> addBusinessProfile(BusinessProfile profile) async {
+  static Future<BusinessProfile> addBusinessProfile(
+    BusinessProfile profile,
+  ) async {
     try {
       final response = await _ensureClient().addBusinessProfile(
         BusinessProfileMapper().toProto(profile),
@@ -49,10 +60,12 @@ class GrpcBusinessProfileService {
     }
   }
 
-  static Future<BusinessProfile> updateBusinessProfile(BusinessProfile profile) async {
+  static Future<BusinessProfile> updateBusinessProfile(
+    BusinessProfile profile,
+  ) async {
     try {
       final response = await _ensureClient().updateBusinessProfile(
-          BusinessProfileMapper().toProto(profile),
+        BusinessProfileMapper().toProto(profile),
         options: grpc.CallOptions(timeout: ApiConfig.timeout),
       );
       return BusinessProfileMapper().fromProto(response);
@@ -61,7 +74,9 @@ class GrpcBusinessProfileService {
     }
   }
 
-  static Future<BusinessProfileAddress> addBusinessProfileAddress(BusinessProfileAddress address) async {
+  static Future<BusinessProfileAddress> addBusinessProfileAddress(
+    BusinessProfileAddress address,
+  ) async {
     try {
       final response = await _ensureClient().addBusinessProfileAddress(
         BusinessProfileAddressMapper().toProto(address),
@@ -69,11 +84,16 @@ class GrpcBusinessProfileService {
       );
       return BusinessProfileAddressMapper().fromProto(response);
     } on grpc.GrpcError catch (e) {
-      throw BaseService.handleGrpcError(e, 'Failed to add business profile address');
+      throw BaseService.handleGrpcError(
+        e,
+        'Failed to add business profile address',
+      );
     }
   }
 
-  static Future<BusinessProfileAddress> updateBusinessProfileAddress(BusinessProfileAddress address) async {
+  static Future<BusinessProfileAddress> updateBusinessProfileAddress(
+    BusinessProfileAddress address,
+  ) async {
     try {
       final response = await _ensureClient().updateBusinessProfileAddress(
         BusinessProfileAddressMapper().toProto(address),
@@ -81,11 +101,17 @@ class GrpcBusinessProfileService {
       );
       return BusinessProfileAddressMapper().fromProto(response);
     } on grpc.GrpcError catch (e) {
-      throw BaseService.handleGrpcError(e, 'Failed to update business profile address');
+      throw BaseService.handleGrpcError(
+        e,
+        'Failed to update business profile address',
+      );
     }
   }
 
-  static Future<bool> removeBusinessProfileAddress({int? id, String? uuid}) async {
+  static Future<bool> removeBusinessProfileAddress({
+    int? id,
+    String? uuid,
+  }) async {
     try {
       final response = await _ensureClient().removeBusinessProfileAddress(
         $bp.RemoveBusinessProfileAddressRequest(id: id ?? 0, uuid: uuid ?? ''),
@@ -93,7 +119,10 @@ class GrpcBusinessProfileService {
       );
       return response.success;
     } on grpc.GrpcError catch (e) {
-      throw BaseService.handleGrpcError(e, 'Failed to remove business profile address');
+      throw BaseService.handleGrpcError(
+        e,
+        'Failed to remove business profile address',
+      );
     }
   }
 
@@ -104,7 +133,10 @@ class GrpcBusinessProfileService {
       port: ApiConfig.grpcPort,
       authority: ApiConfig.grpcAuthority,
     );
-    _client = $bp.BusinessProfileServiceClient(channel, interceptors: GrpcChannelFactory.interceptors);
+    _client = $bp.BusinessProfileServiceClient(
+      channel,
+      interceptors: GrpcChannelFactory.interceptors,
+    );
     return _client!;
   }
 

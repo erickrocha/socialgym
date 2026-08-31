@@ -12,7 +12,10 @@ class PersonService {
     return await GrpcPersonService.getPerson(uuid: uuid);
   }
 
-  static Future<Person> updatePerson(Person current, Map<String, dynamic> data) async {
+  static Future<Person> updatePerson(
+    Person current,
+    Map<String, dynamic> data,
+  ) async {
     final domain = Person(
       id: current.id,
       uuid: current.uuid,
@@ -35,18 +38,33 @@ class PersonService {
     return await GrpcPersonService.updatePerson(domain);
   }
 
-  static Future<PersonInfo> updatePersonInfo(PersonInfo current, Map<String, dynamic> data) async {
+  static Future<PersonInfo> updatePersonInfo(
+    PersonInfo current,
+    Map<String, dynamic> data,
+  ) async {
     final domain = PersonInfo(
       id: current.id,
       uuid: current.uuid,
       personId: current.personId,
-      biography: data.containsKey('biography') ? data['biography'] as String? : current.biography,
-      relationship: data.containsKey('relationship') ? data['relationship'] as String? : current.relationship,
+      biography: data.containsKey('biography')
+          ? data['biography'] as String?
+          : current.biography,
+      relationship: data.containsKey('relationship')
+          ? data['relationship'] as String?
+          : current.relationship,
       job: data.containsKey('job') ? data['job'] as String? : current.job,
-      homeTown: data.containsKey('homeTown') ? data['homeTown'] as String? : current.homeTown,
-      currentCity: data.containsKey('currentCity') ? data['currentCity'] as String? : current.currentCity,
-      weight: data.containsKey('weight') ? data['weight'] as double? : current.weight,
-      height: data.containsKey('height') ? data['height'] as double? : current.height,
+      homeTown: data.containsKey('homeTown')
+          ? data['homeTown'] as String?
+          : current.homeTown,
+      currentCity: data.containsKey('currentCity')
+          ? data['currentCity'] as String?
+          : current.currentCity,
+      weight: data.containsKey('weight')
+          ? data['weight'] as double?
+          : current.weight,
+      height: data.containsKey('height')
+          ? data['height'] as double?
+          : current.height,
       createdAt: current.createdAt,
       updatedAt: current.updatedAt,
     );
@@ -88,7 +106,10 @@ class PersonService {
     return await GrpcPersonService.addPersonAddress(domain);
   }
 
-  static Future<PersonAddress> updateAddress(int addressId, Map<String, dynamic> data) async {
+  static Future<PersonAddress> updateAddress(
+    int addressId,
+    Map<String, dynamic> data,
+  ) async {
     final domain = PersonAddress(
       id: addressId,
       addressLine1: data['addressLine1'] as String?,

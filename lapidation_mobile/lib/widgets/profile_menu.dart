@@ -24,6 +24,10 @@ class _ProfileMenuState extends State<ProfileMenu> {
     final personProvider = context.watch<PersonProvider>();
     final person = personProvider.person;
     final businessLogo = personProvider.activeBusinessProfile?.logo;
+    final personalAvatarPlaceholder =
+        person?.gender?.trim().toLowerCase() == 'female'
+        ? 'assets/images/avatar_female.png'
+        : 'assets/images/avatar_male.png';
 
     if (personProvider.isProfessional) {
       return CircleAvatar(
@@ -34,10 +38,14 @@ class _ProfileMenuState extends State<ProfileMenu> {
               ? CachedNetworkImage(
                   imageUrl: businessLogo,
                   fit: BoxFit.cover,
-                  placeholder: (_, _) =>
-                      Image.asset(_businessAvatarPlaceholder, fit: BoxFit.cover),
-                  errorWidget: (_, _, _) =>
-                      Image.asset(_businessAvatarPlaceholder, fit: BoxFit.cover),
+                  placeholder: (_, _) => Image.asset(
+                    _businessAvatarPlaceholder,
+                    fit: BoxFit.cover,
+                  ),
+                  errorWidget: (_, _, _) => Image.asset(
+                    _businessAvatarPlaceholder,
+                    fit: BoxFit.cover,
+                  ),
                 )
               : Image.asset(_businessAvatarPlaceholder, fit: BoxFit.cover),
         ),
@@ -53,47 +61,24 @@ class _ProfileMenuState extends State<ProfileMenu> {
             imageUrl: person.avatar!,
             cacheKey: person.objectKey,
             fit: BoxFit.cover,
-            placeholder: (_, _) => Container(
-              color: AppColors.primary.withAlpha(51),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.5,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            errorWidget: (_, _, _) => Container(
-              color: AppColors.primary,
-              child: Center(
-                child: Text(
-                  person.firstname.isNotEmpty ? person.firstname[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ),
+            placeholder: (_, _) =>
+                Image.asset(personalAvatarPlaceholder, fit: BoxFit.cover),
+            errorWidget: (_, _, _) =>
+                Image.asset(personalAvatarPlaceholder, fit: BoxFit.cover),
           ),
         ),
       );
     }
 
-    // Fallback to initials
-    final initials = person != null && person.firstname.isNotEmpty
-        ? person.firstname[0].toUpperCase()
-        : '?';
-
     return CircleAvatar(
       radius: 14,
-      backgroundColor: AppColors.primary,
-      child: Text(
-        initials,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 10,
+      backgroundColor: Colors.transparent,
+      child: ClipOval(
+        child: Image.asset(
+          personalAvatarPlaceholder,
+          width: 28,
+          height: 28,
+          fit: BoxFit.cover,
         ),
       ),
     );
@@ -125,10 +110,17 @@ class _ProfileMenuState extends State<ProfileMenu> {
           final authProvider = context.read<AuthProvider>();
           final personProvider = context.read<PersonProvider>();
           final navigator = Navigator.of(context);
-          final newAuth = await personProvider.switchProfile(index, token);
+          final newAuth = await personProvider.switchProfile(
+            index,
+            token,
+            onTokenIssued: authProvider.applySwitchedToken,
+          );
           if (newAuth != null) {
-            await authProvider.applySwitchedToken(newAuth);
             navigator.pushNamedAndRemoveUntil('/feed', (route) => false);
+          } else if (context.mounted && personProvider.error != null) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(personProvider.error!)));
           }
         }
       }
@@ -141,10 +133,16 @@ class _ProfileMenuState extends State<ProfileMenu> {
         final authProvider = context.read<AuthProvider>();
         final personProvider = context.read<PersonProvider>();
         final navigator = Navigator.of(context);
-        final newAuth = await personProvider.switchToPersonal(token);
+        final newAuth = await personProvider.switchToPersonal(
+          token,
+          onTokenIssued: authProvider.applySwitchedToken,
+        );
         if (newAuth != null) {
-          await authProvider.applySwitchedToken(newAuth);
           navigator.pushNamedAndRemoveUntil('/feed', (route) => false);
+        } else if (context.mounted && personProvider.error != null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(personProvider.error!)));
         }
         break;
       case 'add_profile':
@@ -176,15 +174,18 @@ class _ProfileMenuState extends State<ProfileMenu> {
   }
 
   List<PopupMenuEntry<String>> _buildMenuItems(AppLocalizations l10n) {
-    final person = Provider.of<PersonProvider>(context, listen: false).person;
+    final personProvider = Provider.of<PersonProvider>(context, listen: false);
+    final person = personProvider.person;
+    final businessType = personProvider.activeBusinessProfile?.businessType;
     final profiles = person?.businessProfiles ?? [];
 
     final items = <PopupMenuEntry<String>>[
       // Profile list
       ...profiles.asMap().entries.map((entry) {
         final businessProfile = entry.value;
-        final displayData =
-            DisplayNameHelper.formatBusinessProfileForMenu(businessProfile);
+        final displayData = DisplayNameHelper.formatBusinessProfileForMenu(
+          businessProfile,
+        );
         return PopupMenuItem(
           value: 'profile_${entry.key}',
           child: Row(
@@ -193,7 +194,8 @@ class _ProfileMenuState extends State<ProfileMenu> {
                 radius: 12,
                 backgroundImage: (businessProfile.logo?.isNotEmpty ?? false)
                     ? CachedNetworkImageProvider(businessProfile.logo!)
-                    : const AssetImage(_businessAvatarPlaceholder) as ImageProvider,
+                    : const AssetImage(_businessAvatarPlaceholder)
+                          as ImageProvider,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -224,14 +226,14 @@ class _ProfileMenuState extends State<ProfileMenu> {
         );
       }),
 
-      if (Provider.of<PersonProvider>(context, listen: false).isProfessional)
+      if (personProvider.isProfessional)
         PopupMenuItem(
           value: 'switch_personal',
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.account_circle_outlined,
-                color: AppColors.primary,
+                color: AppColors.primaryFor(businessType),
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -249,9 +251,9 @@ class _ProfileMenuState extends State<ProfileMenu> {
         value: 'add_profile',
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.add_circle_outline,
-              color: AppColors.primary,
+              color: AppColors.primaryFor(businessType),
               size: 20,
             ),
             const SizedBox(width: 12),

@@ -19,7 +19,9 @@ import 'pages/workout/workout_page.dart';
 import 'pages/workout/workout_sessions_page.dart';
 import 'pages/team/team_page.dart';
 import 'pages/followers/followers_page.dart';
+import 'pages/legal/pending_consents_page.dart';
 import 'providers/auth_provider.dart';
+import 'providers/consent_provider.dart';
 import 'providers/exercise_selection_provider.dart';
 import 'providers/evolution_provider.dart';
 import 'providers/feed_provider.dart';
@@ -32,6 +34,7 @@ import 'providers/team_member_provider.dart';
 import 'providers/workout_provider.dart';
 import 'providers/workout_session_provider.dart';
 import 'services/grpc/grpc_channel_factory.dart';
+import 'utils/dio_client.dart';
 import 'pages/business_profile/add_profile_page.dart';
 import 'pages/business_profile/business_profile_page.dart';
 import 'pages/business_profile/business_profile_sign_up_page.dart';
@@ -51,11 +54,17 @@ void main() async {
 class LapidationApp extends StatelessWidget {
   const LapidationApp({super.key});
 
+  /// Navigator key for the app's `MaterialApp`. Used by the consent gate,
+  /// which renders above the navigator, to drive logout navigation.
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ConsentProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => PersonProvider()),
@@ -75,9 +84,13 @@ class LapidationApp extends StatelessWidget {
           return MaterialApp(
             title: 'Lapidation Clinic',
             debugShowCheckedModeBanner: false,
+            navigatorKey: navigatorKey,
             // DevicePreview configuration
             locale: DevicePreview.locale(context) ?? localeProvider.locale,
-            builder: DevicePreview.appBuilder,
+            builder: (context, child) => DevicePreview.appBuilder(
+              context,
+              ConsentGate(navigatorKey: navigatorKey, child: child),
+            ),
             // Localization
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -97,7 +110,10 @@ class LapidationApp extends StatelessWidget {
               '/workouts': (context) => const WorkoutPage(),
               '/exercises': (context) => const ExercisesPage(),
               '/workout-sessions': (context) => const WorkoutSessionsPage(),
-              '/evolution': (context) => const EvolutionPage(),
+              '/evolution': (context) =>
+                  context.read<PersonProvider>().isProfessional
+                  ? const WorkoutPage()
+                  : const EvolutionPage(),
               '/friends': (context) => const FriendsPage(),
               '/team': (context) => const TeamPage(),
               '/followers': (context) => const FollowersPage(),
@@ -107,6 +123,61 @@ class LapidationApp extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Sits between the device-preview frame and the app navigator. Wires the Dio
+/// client's consent hook to [ConsentProvider], and — while a required legal
+/// consent is missing / out of date — paints [PendingConsentsPage] over the
+/// whole app. The underlying navigator stays mounted, so screens resume with
+/// their state intact once every consent is accepted.
+class ConsentGate extends StatefulWidget {
+  final Widget? child;
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  const ConsentGate({
+    super.key,
+    required this.child,
+    required this.navigatorKey,
+  });
+
+  @override
+  State<ConsentGate> createState() => _ConsentGateState();
+}
+
+class _ConsentGateState extends State<ConsentGate> {
+  @override
+  void initState() {
+    super.initState();
+    final provider = context.read<ConsentProvider>();
+    DioClient.onConsentRequired = provider.trigger;
+  }
+
+  @override
+  void dispose() {
+    DioClient.onConsentRequired = null;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final blocking = context.select<ConsentProvider, bool>((p) => p.blocking);
+    return Stack(
+      children: [
+        if (widget.child != null) widget.child!,
+        if (blocking)
+          Positioned.fill(
+            // Own Navigator so the page has a working Overlay for its
+            // `showDialog` calls; logout still escapes via [navigatorKey].
+            child: Navigator(
+              onGenerateRoute: (_) => MaterialPageRoute<void>(
+                builder: (_) =>
+                    PendingConsentsPage(navigatorKey: widget.navigatorKey),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

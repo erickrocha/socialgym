@@ -39,7 +39,10 @@ class PersonProvider extends ChangeNotifier {
   /// UUID of whichever account is currently active: the active business
   /// profile if one is set, otherwise the person themself.
   int get activeAuthorId => _activeBusinessProfile?.id ?? _person?.id ?? 0;
-  String get activeAuthorUuid => _activeBusinessProfile?.uuid ?? _person?.uuid ?? '';
+  String get activeAuthorUuid =>
+      _activeBusinessProfile?.uuid ?? _person?.uuid ?? '';
+  String get activeAuthorName =>
+      _activeBusinessProfile?.businessName ?? _person?.fullName ?? 'Unknow';
 
   /// Avatar/logo image reference of whichever account is currently active.
   String? get activeAuthorObjectKeyOrLogo =>
@@ -95,12 +98,17 @@ class PersonProvider extends ChangeNotifier {
     await prefs.remove('person');
   }
 
-  Future<void> _saveActiveBusinessProfileToStorage(BusinessProfile? profile) async {
+  Future<void> _saveActiveBusinessProfileToStorage(
+    BusinessProfile? profile,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     if (profile == null) {
       await prefs.remove(_activeProfileStorageKey);
     } else {
-      await prefs.setString(_activeProfileStorageKey,jsonEncode(profile.toJson()));
+      await prefs.setString(
+        _activeProfileStorageKey,
+        jsonEncode(profile.toJson()),
+      );
     }
   }
 
@@ -146,11 +154,14 @@ class PersonProvider extends ChangeNotifier {
       return true;
     } on AppException catch (e) {
       _error = e.message;
+      debugPrint('Failed to update person: $e');
       _updating = false;
       notifyListeners();
       return false;
-    } catch (e) {
+    } catch (e, stackTrace) {
       _error = 'Failed to update profile. Please try again.';
+      debugPrint('Unexpected error while updating person: $e');
+      debugPrintStack(stackTrace: stackTrace);
       _updating = false;
       notifyListeners();
       return false;
@@ -175,11 +186,14 @@ class PersonProvider extends ChangeNotifier {
       return true;
     } on AppException catch (e) {
       _error = e.message;
+      debugPrint('Failed to update person info: $e');
       _updating = false;
       notifyListeners();
       return false;
-    } catch (e) {
+    } catch (e, stackTrace) {
       _error = 'Failed to update profile info. Please try again.';
+      debugPrint('Unexpected error while updating person info: $e');
+      debugPrintStack(stackTrace: stackTrace);
       _updating = false;
       notifyListeners();
       return false;
@@ -326,10 +340,7 @@ class PersonProvider extends ChangeNotifier {
   }
 
   /// Update an existing address.
-  Future<bool> updateAddress(
-    int addressId,
-    Map<String, dynamic> data,
-  ) async {
+  Future<bool> updateAddress(int addressId, Map<String, dynamic> data) async {
     if (_person == null) return false;
 
     _updating = true;
@@ -389,7 +400,16 @@ class PersonProvider extends ChangeNotifier {
   /// Switch to a profile by index. Activates the business profile on the
   /// backend (reissuing the JWT scoped to it) and returns the new token, or
   /// null on failure.
-  Future<AuthResponse?> switchProfile(int profileIndex, String token) async {
+  ///
+  /// The backend revokes the token used to authenticate the activate call as
+  /// part of rotating it, so [onTokenIssued] (if given) is invoked with the
+  /// new token immediately, before the follow-up gRPC call, so that call
+  /// authenticates with the new token rather than the just-revoked one.
+  Future<AuthResponse?> switchProfile(
+    int profileIndex,
+    String token, {
+    Future<void> Function(AuthResponse)? onTokenIssued,
+  }) async {
     if (_person == null ||
         profileIndex < 0 ||
         profileIndex >= _person!.businessProfiles.length) {
@@ -405,8 +425,17 @@ class PersonProvider extends ChangeNotifier {
       if (selectedProfile.uuid == null || selectedProfile.uuid!.isEmpty) {
         throw Exception('Business profile has no uuid');
       }
-      final newAuth = await BusinessProfileRestService.activate(businessProfileUuid: selectedProfile.uuid!,token: token);
-      _activeBusinessProfile = await GrpcBusinessProfileService.getBusinessProfileById(uuid: selectedProfile.uuid!);
+      final newAuth = await BusinessProfileRestService.activate(
+        businessProfileUuid: selectedProfile.uuid!,
+        token: token,
+      );
+      if (onTokenIssued != null) {
+        await onTokenIssued(newAuth);
+      }
+      _activeBusinessProfile =
+          await GrpcBusinessProfileService.getBusinessProfileById(
+            uuid: selectedProfile.uuid!,
+          );
       await _saveActiveBusinessProfileToStorage(_activeBusinessProfile);
       _updating = false;
       notifyListeners();
@@ -427,12 +456,18 @@ class PersonProvider extends ChangeNotifier {
   /// Deactivate the current business profile on the backend (reissuing the
   /// JWT back in personal context) and returns the new token, or null on
   /// failure.
-  Future<AuthResponse?> switchToPersonal(String token) async {
+  Future<AuthResponse?> switchToPersonal(
+    String token, {
+    Future<void> Function(AuthResponse)? onTokenIssued,
+  }) async {
     _updating = true;
     _error = null;
     notifyListeners();
     try {
       final newAuth = await BusinessProfileRestService.deactivate(token: token);
+      if (onTokenIssued != null) {
+        await onTokenIssued(newAuth);
+      }
       _activeBusinessProfile = null;
       await _saveActiveBusinessProfileToStorage(null);
       _updating = false;

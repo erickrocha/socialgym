@@ -64,22 +64,24 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
       return;
     }
     final personProvider = context.read<PersonProvider>();
-    final ownerId = personProvider.ownerId;
-    final ownerUuid = personProvider.ownerUuid;
-    final ownerName = personProvider.ownerName;
+    final ownerId = personProvider.activeAuthorId;
+    final ownerUuid = personProvider.activeAuthorUuid;
+    final ownerName = personProvider.activeAuthorName;
 
     setState(() {
-      _exercises.add(Exercise(
-        name: _nameController.text.trim(),
-        ownerId: ownerId,
-        ownerName: ownerName,
-        ownerUuid: ownerUuid,
-        description: _descriptionController.text.trim(),
-        category: _category,
-        visibility: _visibility,
-        sets: int.tryParse(_setsController.text) ?? 0,
-        repsOrDuration: int.tryParse(_repsController.text) ?? 0,
-      ));
+      _exercises.add(
+        Exercise(
+          name: _nameController.text.trim(),
+          ownerId: ownerId,
+          ownerName: ownerName,
+          ownerUuid: ownerUuid,
+          description: _descriptionController.text.trim(),
+          category: _category,
+          visibility: _visibility,
+          sets: int.tryParse(_setsController.text) ?? 0,
+          repsOrDuration: int.tryParse(_repsController.text) ?? 0,
+        ),
+      );
       _nameController.clear();
       _descriptionController.clear();
       _setsController.clear();
@@ -108,7 +110,7 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
 
     final success = await workoutProvider.addExercisesToWorkout(
       widget.workoutUuid,
-      _exercises
+      _exercises,
     );
 
     if (success && mounted) {
@@ -125,6 +127,10 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final workoutProvider = context.watch<WorkoutProvider>();
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -175,11 +181,16 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                         decoration: BoxDecoration(
                           color: AppColors.danger.withAlpha(25),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.danger.withAlpha(76)),
+                          border: Border.all(
+                            color: AppColors.danger.withAlpha(76),
+                          ),
                         ),
                         child: Text(
                           workoutProvider.error!,
-                          style: const TextStyle(color: AppColors.danger, fontSize: 13),
+                          style: const TextStyle(
+                            color: AppColors.danger,
+                            fontSize: 13,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -190,20 +201,36 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             initialValue: _category,
-                            decoration: _inputDecoration(l10n.exerciseCategory, ''),
+                            decoration: _inputDecoration(
+                              l10n.exerciseCategory,
+                              '',
+                              businessType,
+                            ),
                             items: [
-                              DropdownMenuItem(value: 'Force', child: Text(l10n.categoryForce)),
-                              DropdownMenuItem(value: 'Cardio', child: Text(l10n.categoryCardio)),
+                              DropdownMenuItem(
+                                value: 'Force',
+                                child: Text(l10n.categoryForce),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Cardio',
+                                child: Text(l10n.categoryCardio),
+                              ),
                             ],
-                            onChanged: (v) => setState(() => _category = v ?? 'Force'),
+                            onChanged: (v) =>
+                                setState(() => _category = v ?? 'Force'),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: VisibilityDropdownField(
                             value: _visibility,
-                            decoration: _inputDecoration(l10n.workoutVisibility, ''),
-                            onChanged: (v) => setState(() => _visibility = v ?? 'Private'),
+                            decoration: _inputDecoration(
+                              l10n.workoutVisibility,
+                              '',
+                              businessType,
+                            ),
+                            onChanged: (v) =>
+                                setState(() => _visibility = v ?? 'Private'),
                           ),
                         ),
                       ],
@@ -218,6 +245,7 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                       decoration: _inputDecoration(
                         l10n.workoutExerciseName,
                         l10n.workoutExerciseNamePlaceholder,
+                        businessType,
                       ),
                       onChanged: (_) => setState(() {}),
                       onFieldSubmitted: (_) {
@@ -235,6 +263,7 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                           _inputDecoration(
                             l10n.workoutExerciseDescription,
                             l10n.workoutExerciseDescriptionPlaceholder,
+                            businessType,
                           ).copyWith(
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -259,7 +288,11 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                             focusNode: _setsFocus,
                             keyboardType: TextInputType.number,
                             textInputAction: TextInputAction.next,
-                            decoration: _inputDecoration(l10n.workoutSets, ''),
+                            decoration: _inputDecoration(
+                              l10n.workoutSets,
+                              '',
+                              businessType,
+                            ),
                             onChanged: (_) => setState(() {}),
                             onFieldSubmitted: (_) {
                               FocusScope.of(context).requestFocus(_repsFocus);
@@ -273,7 +306,11 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                             focusNode: _repsFocus,
                             keyboardType: TextInputType.number,
                             textInputAction: TextInputAction.done,
-                            decoration: _inputDecoration(_getRepOurDuration(l10n), ''),
+                            decoration: _inputDecoration(
+                              _getRepOurDuration(l10n),
+                              '',
+                              businessType,
+                            ),
                             onChanged: (_) => setState(() {}),
                             onFieldSubmitted: (_) {
                               if (!_isFormValid) {
@@ -290,8 +327,11 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                             onPressed: _isFormValid ? null : _addExercise,
                             icon: const Icon(Icons.add, size: 20),
                             style: IconButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              disabledBackgroundColor: AppColors.primaryDisabled,
+                              backgroundColor: AppColors.primaryFor(
+                                businessType,
+                              ),
+                              disabledBackgroundColor:
+                                  AppColors.primaryDisabledFor(businessType),
                               foregroundColor: Colors.white,
                             ),
                           ),
@@ -319,14 +359,21 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                             dense: true,
                             title: Text(
                               ex.name,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
                             ),
                             subtitle: Text(
                               '${ex.sets} ${l10n.workoutSets} × ${ex.repsOrDuration} ${l10n.workoutReps}',
                               style: const TextStyle(fontSize: 12),
                             ),
                             trailing: IconButton(
-                              icon: const Icon(Icons.close, size: 18, color: AppColors.danger),
+                              icon: const Icon(
+                                Icons.close,
+                                size: 18,
+                                color: AppColors.danger,
+                              ),
                               onPressed: () => _removeExercise(i),
                             ),
                           ),
@@ -347,9 +394,13 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        foregroundColor: AppColors.primaryFor(businessType),
+                        side: BorderSide(
+                          color: AppColors.primaryFor(businessType),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       child: Text(l10n.buttonCancel),
@@ -358,19 +409,28 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _exercises.isEmpty || workoutProvider.loading ? null : _handleSave,
+                      onPressed: _exercises.isEmpty || workoutProvider.loading
+                          ? null
+                          : _handleSave,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.primaryFor(businessType),
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor: AppColors.primaryDisabled,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        disabledBackgroundColor: AppColors.primaryDisabledFor(
+                          businessType,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       child: workoutProvider.loading
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
                             )
                           : Text(l10n.buttonSave),
                     ),
@@ -384,22 +444,29 @@ class _ExerciseFormDialogState extends State<ExerciseFormDialog> {
     );
   }
 
-  InputDecoration _inputDecoration(String label, String hint) {
+  InputDecoration _inputDecoration(
+    String label,
+    String hint,
+    String? businessType,
+  ) {
     return InputDecoration(
       labelText: label,
       hintText: hint.isNotEmpty ? hint : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primaryHover, width: 2),
+        borderSide: BorderSide(
+          color: AppColors.primaryHoverFor(businessType),
+          width: 2,
+        ),
       ),
       isDense: true,
     );

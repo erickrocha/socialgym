@@ -7,22 +7,21 @@ import 'package:lapidation_mobile/l10n/app_localizations.dart';
 import 'package:lapidation_mobile/models/business_profile.dart';
 import 'package:lapidation_mobile/models/person.dart';
 import 'package:lapidation_mobile/providers/auth_provider.dart';
-import 'package:lapidation_mobile/providers/person_provider.dart';
 import 'package:lapidation_mobile/providers/locale_provider.dart';
+import 'package:lapidation_mobile/providers/person_provider.dart';
 import 'package:lapidation_mobile/widgets/sidebar_menu.dart';
 
 void main() {
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-  });
-
   group('SidebarMenu Reactivity', () {
     late PersonProvider personProvider;
     late AuthProvider authProvider;
+    late LocaleProvider localeProvider;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       personProvider = PersonProvider();
       authProvider = AuthProvider();
+      localeProvider = LocaleProvider();
     });
 
     testWidgets('header avatar updates when switching to business profile', (
@@ -62,7 +61,9 @@ void main() {
                 value: personProvider,
               ),
               ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-              ChangeNotifierProvider(create: (_) => LocaleProvider()),
+              ChangeNotifierProvider<LocaleProvider>.value(
+                value: localeProvider,
+              ),
             ],
             child: Scaffold(
               body: SidebarMenu(
@@ -125,7 +126,9 @@ void main() {
                 value: personProvider,
               ),
               ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-              ChangeNotifierProvider(create: (_) => LocaleProvider()),
+              ChangeNotifierProvider<LocaleProvider>.value(
+                value: localeProvider,
+              ),
             ],
             child: Scaffold(
               body: SidebarMenu(

@@ -24,23 +24,33 @@ class VisibilityDropdownField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final selectedVisibility = VisibilityOption.fromApiValue(value, fallback: fallback);
+    final selectedVisibility = VisibilityOption.fromApiValue(
+      value,
+      fallback: fallback,
+    );
 
     return DropdownButtonFormField<VisibilityOption>(
       key: ValueKey<String>(
-        selectedVisibility.apiValueFor(useFriendsOnlyAlias: useFriendsOnlyAlias),
+        selectedVisibility.apiValueFor(
+          useFriendsOnlyAlias: useFriendsOnlyAlias,
+        ),
       ),
       initialValue: selectedVisibility,
       isExpanded: isExpanded,
-      decoration: decoration ?? InputDecoration(labelText: l10n.labelVisibility),
+      decoration:
+          decoration ?? InputDecoration(labelText: l10n.labelVisibility),
       items: VisibilityOption.values.map((option) {
         return DropdownMenuItem<VisibilityOption>(
           value: option,
-          child: Text('${option.emoji} ${option.label(l10n)}', overflow: TextOverflow.ellipsis),
+          child: Text(
+            '${option.emoji} ${option.label(l10n)}',
+            overflow: TextOverflow.ellipsis,
+          ),
         );
       }).toList(),
-      onChanged: (option) =>
-          onChanged(option?.apiValueFor(useFriendsOnlyAlias: useFriendsOnlyAlias)),
+      onChanged: (option) => onChanged(
+        option?.apiValueFor(useFriendsOnlyAlias: useFriendsOnlyAlias),
+      ),
     );
   }
 }

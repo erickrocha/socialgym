@@ -38,7 +38,8 @@ enum ReactionType {
 class FeedMedia {
   final String url;
   final String mediaType; // "Image" or "Video"
-  final String? objectKey; // S3 object key – used as CachedNetworkImage cache key
+  final String?
+  objectKey; // S3 object key – used as CachedNetworkImage cache key
 
   const FeedMedia({required this.url, required this.mediaType, this.objectKey});
 
@@ -201,7 +202,8 @@ class FeedPost {
     for (final r in reactions) {
       counts[r.reactionType] = (counts[r.reactionType] ?? 0) + 1;
     }
-    final sorted = counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final sorted = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
     return sorted.take(3).map((e) => e.key).toList();
   }
 

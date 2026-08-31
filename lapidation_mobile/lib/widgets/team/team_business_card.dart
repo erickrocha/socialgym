@@ -11,7 +11,11 @@ class TeamBusinessCard extends StatelessWidget {
   final BusinessProfile business;
   final Widget trailing;
 
-  const TeamBusinessCard({super.key, required this.business, required this.trailing});
+  const TeamBusinessCard({
+    super.key,
+    required this.business,
+    required this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +36,10 @@ class TeamBusinessCard extends StatelessWidget {
                 children: [
                   Text(
                     business.businessName,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   Text(
                     business.businessType,
@@ -54,7 +61,10 @@ class TeamBusinessCard extends StatelessWidget {
       height: 50,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.professionalSecondary.withAlpha(51), width: 2),
+        border: Border.all(
+          color: AppColors.professionalPrimary.withAlpha(51),
+          width: 2,
+        ),
       ),
       child: ClipOval(
         child: business.logo != null
@@ -62,8 +72,10 @@ class TeamBusinessCard extends StatelessWidget {
                 imageUrl: business.logo!,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
-                  color: AppColors.professionalSecondary.withAlpha(51),
-                  child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  color: AppColors.professionalPrimary.withAlpha(51),
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
                 ),
                 errorWidget: (context, url, error) => _buildDefaultLogo(),
               )
@@ -73,6 +85,9 @@ class TeamBusinessCard extends StatelessWidget {
   }
 
   Widget _buildDefaultLogo() {
-    return Image.asset('assets/images/avatar_personal_trainer.png', fit: BoxFit.cover);
+    return Image.asset(
+      'assets/images/avatar_personal_trainer.png',
+      fit: BoxFit.cover,
+    );
   }
 }

@@ -44,7 +44,8 @@ class ResourceProvider extends ChangeNotifier {
 
   /// Fetch application resources from the API.
   /// Optionally apply settings through the provided callback.
-  Future<bool> fetchResources(int ownerId, {
+  Future<bool> fetchResources(
+    int ownerId, {
     Future<void> Function(Settings)? onSettingsReceived,
   }) async {
     _loading = true;
@@ -80,7 +81,9 @@ class ResourceProvider extends ChangeNotifier {
   Country? getCountryByName(String? name) {
     if (name == null || name.isEmpty) return null;
     try {
-      return countries.firstWhere((c) => c.name.toLowerCase() == name.toLowerCase());
+      return countries.firstWhere(
+        (c) => c.name.toLowerCase() == name.toLowerCase(),
+      );
     } catch (_) {
       return null;
     }
@@ -100,7 +103,9 @@ class ResourceProvider extends ChangeNotifier {
   Country? getCountryByCode(String? code) {
     if (code == null || code.isEmpty) return null;
     try {
-      return countries.firstWhere((c) => c.acronym.toLowerCase() == code.toLowerCase());
+      return countries.firstWhere(
+        (c) => c.acronym.toLowerCase() == code.toLowerCase(),
+      );
     } catch (_) {
       return null;
     }

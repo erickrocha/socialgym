@@ -55,7 +55,11 @@ class _VitruvianBodyCardState extends State<VitruvianBodyCard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 4, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.black.withAlpha(12),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -161,10 +165,14 @@ class _VitruvianBodyCardState extends State<VitruvianBodyCard> {
         const Color(0xFFD9C5A3);
   }
 
-  static String _subtitle(VitruvianProgressData progress, AppLocalizations l10n) {
+  static String _subtitle(
+    VitruvianProgressData progress,
+    AppLocalizations l10n,
+  ) {
     final baseline = progress.baselineDate;
     final latest = progress.latestDate;
-    final source = progress.baselineSource == BaselineSource.profileThenCheckinFallback
+    final source =
+        progress.baselineSource == BaselineSource.profileThenCheckinFallback
         ? l10n.evolutionVitruvianBaselineProfileCheckin
         : l10n.evolutionVitruvianBaselineCheckinOnly;
 
@@ -188,7 +196,11 @@ class _RegionBadge extends StatelessWidget {
   final int value;
   final Color color;
 
-  const _RegionBadge({required this.label, required this.value, required this.color});
+  const _RegionBadge({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -201,7 +213,11 @@ class _RegionBadge extends StatelessWidget {
       ),
       child: Text(
         '$label $value%',
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF1F2937),
+        ),
       ),
     );
   }

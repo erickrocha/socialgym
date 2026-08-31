@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../config/app_colors.dart';
 import '../models/exercise.dart';
 import '../models/visibility_option.dart';
+import '../providers/person_provider.dart';
 
 class ExerciseItemPaginatedWidget extends StatelessWidget {
   final Exercise exercise;
@@ -19,6 +21,10 @@ class ExerciseItemPaginatedWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visibility = VisibilityOption.fromApiValue(exercise.visibility);
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
 
     return GestureDetector(
       onTap: onTap,
@@ -27,10 +33,14 @@ class ExerciseItemPaginatedWidget extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey[300] ?? Colors.grey,
+            color: isSelected
+                ? AppColors.primaryFor(businessType)
+                : Colors.grey[300] ?? Colors.grey,
             width: isSelected ? 2 : 1,
           ),
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : Colors.white,
+          color: isSelected
+              ? AppColors.primaryFor(businessType).withValues(alpha: 0.05)
+              : Colors.white,
         ),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -41,7 +51,11 @@ class ExerciseItemPaginatedWidget extends StatelessWidget {
               Row(
                 children: [
                   const SizedBox(width: 8),
-                  const Icon(Icons.person, size: 18, color: AppColors.primary),
+                  Icon(
+                    Icons.person,
+                    size: 18,
+                    color: AppColors.primaryFor(businessType),
+                  ),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
@@ -57,17 +71,20 @@ class ExerciseItemPaginatedWidget extends StatelessWidget {
                   const Spacer(),
                   // Category and Visibility
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       exercise.category,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
+                        color: AppColors.primaryFor(businessType),
                       ),
                     ),
                   ),
@@ -91,11 +108,16 @@ class ExerciseItemPaginatedWidget extends StatelessWidget {
               // Sets and reps
               Row(
                 children: [
-                  _buildInfoChip(icon: Icons.repeat, label: '${exercise.sets} sets'),
+                  _buildInfoChip(
+                    icon: Icons.repeat,
+                    label: '${exercise.sets} sets',
+                    businessType: businessType,
+                  ),
                   const SizedBox(width: 12),
                   _buildInfoChip(
                     icon: Icons.fitness_center,
                     label: '${exercise.repsOrDuration} reps',
+                    businessType: businessType,
                   ),
                 ],
               ),
@@ -106,15 +128,23 @@ class ExerciseItemPaginatedWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoChip({required IconData icon, required String label}) {
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required String? businessType,
+  }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: AppColors.primary),
+        Icon(icon, size: 16, color: AppColors.primaryFor(businessType)),
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            fontSize: 13,
+            color: Colors.black54,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );

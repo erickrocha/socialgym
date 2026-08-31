@@ -28,8 +28,10 @@ class PersonAvatar extends StatelessWidget {
                   width: 40,
                   height: 40,
                   fit: BoxFit.cover,
-                  placeholder: (ctx, url) =>
-                      Image.asset(_businessAvatarPlaceholder, fit: BoxFit.cover),
+                  placeholder: (ctx, url) => Image.asset(
+                    _businessAvatarPlaceholder,
+                    fit: BoxFit.cover,
+                  ),
                   errorWidget: (ctx, url, err) => Image.asset(
                     _businessAvatarPlaceholder,
                     width: 40,

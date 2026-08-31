@@ -33,6 +33,18 @@ class Country {
     };
   }
 
+  /// Unicode regional-indicator flag emoji derived from [acronym] (ISO 3166-1 alpha-2).
+  String get flagEmoji {
+    if (acronym.length != 2) return '';
+    const base = 0x1F1E6;
+    final aCode = 'A'.codeUnitAt(0);
+    return acronym
+        .toUpperCase()
+        .codeUnits
+        .map((c) => String.fromCharCode(base + (c - aCode)))
+        .join();
+  }
+
   @override
   String toString() => name;
 

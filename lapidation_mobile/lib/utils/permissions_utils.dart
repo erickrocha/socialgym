@@ -25,7 +25,11 @@ class PermissionsUtils {
 
       return cameraGranted && photosGranted;
     } catch (e) {
-      developer.log('Error requesting permissions', error: e, name: 'PermissionsUtils');
+      developer.log(
+        'Error requesting permissions',
+        error: e,
+        name: 'PermissionsUtils',
+      );
       return false; // Deny access on error for security
     }
   }
@@ -41,7 +45,11 @@ class PermissionsUtils {
       final status = await Permission.camera.request();
       return status.isGranted;
     } catch (e) {
-      developer.log('Error requesting camera permission', error: e, name: 'PermissionsUtils');
+      developer.log(
+        'Error requesting camera permission',
+        error: e,
+        name: 'PermissionsUtils',
+      );
       return false; // Deny access on error for security
     }
   }
@@ -57,7 +65,11 @@ class PermissionsUtils {
       final status = await Permission.photos.request();
       return status.isGranted;
     } catch (e) {
-      developer.log('Error requesting photos permission', error: e, name: 'PermissionsUtils');
+      developer.log(
+        'Error requesting photos permission',
+        error: e,
+        name: 'PermissionsUtils',
+      );
       return false; // Deny access on error for security
     }
   }
@@ -72,7 +84,11 @@ class PermissionsUtils {
       final status = await Permission.camera.status;
       return status.isGranted;
     } catch (e) {
-      developer.log('Error checking camera permission', error: e, name: 'PermissionsUtils');
+      developer.log(
+        'Error checking camera permission',
+        error: e,
+        name: 'PermissionsUtils',
+      );
       return false; // Deny access on error for security
     }
   }
@@ -87,7 +103,11 @@ class PermissionsUtils {
       final status = await Permission.photos.status;
       return status.isGranted;
     } catch (e) {
-      developer.log('Error checking photos permission', error: e, name: 'PermissionsUtils');
+      developer.log(
+        'Error checking photos permission',
+        error: e,
+        name: 'PermissionsUtils',
+      );
       return false; // Deny access on error for security
     }
   }
@@ -102,7 +122,11 @@ class PermissionsUtils {
       final status = await Permission.camera.status;
       return status.isPermanentlyDenied;
     } catch (e) {
-      developer.log('Error checking camera permanent denial', error: e, name: 'PermissionsUtils');
+      developer.log(
+        'Error checking camera permanent denial',
+        error: e,
+        name: 'PermissionsUtils',
+      );
       return false; // Assume not permanently denied on error
     }
   }
@@ -117,7 +141,11 @@ class PermissionsUtils {
       final status = await Permission.photos.status;
       return status.isPermanentlyDenied;
     } catch (e) {
-      developer.log('Error checking photos permanent denial', error: e, name: 'PermissionsUtils');
+      developer.log(
+        'Error checking photos permanent denial',
+        error: e,
+        name: 'PermissionsUtils',
+      );
       return false; // Assume not permanently denied on error
     }
   }
@@ -131,7 +159,11 @@ class PermissionsUtils {
     try {
       await openAppSettings();
     } catch (e) {
-      developer.log('Error opening app settings', error: e, name: 'PermissionsUtils');
+      developer.log(
+        'Error opening app settings',
+        error: e,
+        name: 'PermissionsUtils',
+      );
     }
   }
 }

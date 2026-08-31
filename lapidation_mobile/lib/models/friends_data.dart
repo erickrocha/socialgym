@@ -50,7 +50,10 @@ class FriendsData {
 
   /// Returns true if there are no friends, requests, or suggestions.
   bool get isEmpty =>
-      suggestions.isEmpty && friends.isEmpty && receiveRequests.isEmpty && sentRequests.isEmpty;
+      suggestions.isEmpty &&
+      friends.isEmpty &&
+      receiveRequests.isEmpty &&
+      sentRequests.isEmpty;
 
   /// Returns the total count of pending requests (both received and sent).
   int get pendingRequestsCount => receiveRequests.length + sentRequests.length;

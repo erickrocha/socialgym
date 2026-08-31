@@ -1,13 +1,14 @@
-
-
 import 'package:lapidation_mobile/commons/business_profile_mapper.dart';
 import 'package:lapidation_mobile/commons/mapper.dart';
 import 'package:lapidation_mobile/models/person.dart';
-import 'package:lapidation_mobile/src/generated/grpc/person.pbgrpc.dart' as $person;
-import 'package:lapidation_mobile/src/generated/grpc/person_info.pb.dart' as $person_info;
-import 'package:lapidation_mobile/src/generated/grpc/person_address.pb.dart' as $person_address;
+import 'package:lapidation_mobile/src/generated/grpc/person.pbgrpc.dart'
+    as $person;
+import 'package:lapidation_mobile/src/generated/grpc/person_info.pb.dart'
+    as $person_info;
+import 'package:lapidation_mobile/src/generated/grpc/person_address.pb.dart'
+    as $person_address;
 
-class PersonMapper implements Mapper<Person,$person.Person>{
+class PersonMapper implements Mapper<Person, $person.Person> {
   @override
   Person fromProto($person.Person proto) {
     return Person(
@@ -67,7 +68,9 @@ class PersonMapper implements Mapper<Person,$person.Person>{
       addresses: PersonAddressMapper().toProtoList(domain.addresses),
       createdAt: domain.createdAt?.toIso8601String() ?? '',
       updatedAt: domain.updatedAt?.toIso8601String() ?? '',
-      businessProfiles: BusinessProfileMapper().toProtoList(domain.businessProfiles),
+      businessProfiles: BusinessProfileMapper().toProtoList(
+        domain.businessProfiles,
+      ),
     );
   }
 
@@ -77,7 +80,7 @@ class PersonMapper implements Mapper<Person,$person.Person>{
   }
 }
 
-class PersonInfoMapper implements Mapper<PersonInfo,$person_info.PersonInfo>{
+class PersonInfoMapper implements Mapper<PersonInfo, $person_info.PersonInfo> {
   @override
   PersonInfo fromProto($person_info.PersonInfo proto) {
     return PersonInfo(
@@ -91,8 +94,12 @@ class PersonInfoMapper implements Mapper<PersonInfo,$person_info.PersonInfo>{
       currentCity: proto.currentCity,
       weight: proto.weight,
       height: proto.height,
-      createdAt: proto.hasCreatedAt() ? DateTime.tryParse(proto.createdAt) : null,
-      updatedAt: proto.hasUpdatedAt() ? DateTime.tryParse(proto.updatedAt) : null,
+      createdAt: proto.hasCreatedAt()
+          ? DateTime.tryParse(proto.createdAt)
+          : null,
+      updatedAt: proto.hasUpdatedAt()
+          ? DateTime.tryParse(proto.updatedAt)
+          : null,
     );
   }
 
@@ -125,7 +132,8 @@ class PersonInfoMapper implements Mapper<PersonInfo,$person_info.PersonInfo>{
   }
 }
 
-class PersonAddressMapper implements Mapper<PersonAddress,$person_address.PersonAddress>{
+class PersonAddressMapper
+    implements Mapper<PersonAddress, $person_address.PersonAddress> {
   @override
   PersonAddress fromProto($person_address.PersonAddress proto) {
     return PersonAddress(
@@ -137,8 +145,8 @@ class PersonAddressMapper implements Mapper<PersonAddress,$person_address.Person
       administrativeArea: proto.administrativeArea,
       countryCode: proto.countryCode,
       postalCode: proto.postalCode,
-      latitude: proto.latitude,
-      longitude: proto.longitude,
+      latitude: proto.hasLatitude() ? proto.latitude : null,
+      longitude: proto.hasLongitude() ? proto.longitude : null,
       current: proto.current,
       uuid: proto.uuid,
       createdAt: proto.hasCreatedAt()
@@ -151,7 +159,9 @@ class PersonAddressMapper implements Mapper<PersonAddress,$person_address.Person
   }
 
   @override
-  List<PersonAddress> fromProtoList(List<$person_address.PersonAddress> protoList) {
+  List<PersonAddress> fromProtoList(
+    List<$person_address.PersonAddress> protoList,
+  ) {
     return protoList.map(fromProto).toList();
   }
 
@@ -176,7 +186,9 @@ class PersonAddressMapper implements Mapper<PersonAddress,$person_address.Person
   }
 
   @override
-  List<$person_address.PersonAddress> toProtoList(List<PersonAddress> domainList) {
+  List<$person_address.PersonAddress> toProtoList(
+    List<PersonAddress> domainList,
+  ) {
     return domainList.map(toProto).toList();
   }
 }

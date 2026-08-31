@@ -17,7 +17,9 @@ class GrpcChannelFactory {
       _authInterceptor != null ? [_authInterceptor!] : [];
 
   /// Call once at app startup (or lazy-call on first channel creation).
-  static Future<void> initialize({String certAssetPath = 'assets/certs/server.crt'}) async {
+  static Future<void> initialize({
+    String certAssetPath = 'assets/certs/server.crt',
+  }) async {
     _authInterceptor = GrpcAuthInterceptor();
     if (!ApiConfig.grpcUseTls) return;
     if (_trustedCertBytes != null) return; // Already initialized.
@@ -26,7 +28,11 @@ class GrpcChannelFactory {
     _trustedCertBytes = data.buffer.asUint8List();
   }
 
-  static grpc.ClientChannel channelFor({required String host,required int port,String? authority}) {
+  static grpc.ClientChannel channelFor({
+    required String host,
+    required int port,
+    String? authority,
+  }) {
     final key = '$host:$port:${ApiConfig.grpcUseTls ? "tls" : "insecure"}';
     final existing = _channels[key];
     if (existing != null) return existing;
@@ -40,7 +46,8 @@ class GrpcChannelFactory {
                 // ^ SE FOR NGROK: Usa a credencial padrão limpa. Ele vai confiar no TLS oficial do Ngrok automaticamente.
                 : grpc.ChannelCredentials.secure(
                     certificates: _trustedCertBytes,
-                    authority: authority, // Precisa ser apenas '192.168.15.4' (sem https)
+                    authority:
+                        authority, // Precisa ser apenas '192.168.15.4' (sem https)
                   ))
           // ^ SE FOR IP LOCAL: Usa os bytes do seu server.crt autoassinado.
           : const grpc.ChannelCredentials.insecure(),

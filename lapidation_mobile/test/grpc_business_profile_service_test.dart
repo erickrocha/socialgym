@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lapidation_mobile/src/generated/grpc/business_profile.pb.dart' as $bp;
+import 'package:lapidation_mobile/src/generated/grpc/business_profile.pb.dart'
+    as $bp;
 
 void main() {
   group('BusinessProfileRequestId', () {
@@ -16,7 +17,10 @@ void main() {
 
   group('BusinessProfileRequestOwnerId', () {
     test('round-trips ownerId and ownerUuid through protobuf encoding', () {
-      final request = $bp.BusinessProfileRequestOwnerId(ownerId: 42, ownerUuid: 'owner-uuid-123');
+      final request = $bp.BusinessProfileRequestOwnerId(
+        ownerId: 42,
+        ownerUuid: 'owner-uuid-123',
+      );
 
       final encoded = request.writeToBuffer();
       final decoded = $bp.BusinessProfileRequestOwnerId.fromBuffer(encoded);
@@ -28,10 +32,15 @@ void main() {
 
   group('RemoveBusinessProfileAddressRequest', () {
     test('round-trips id and uuid through protobuf encoding', () {
-      final request = $bp.RemoveBusinessProfileAddressRequest(id: 9, uuid: 'addr-uuid');
+      final request = $bp.RemoveBusinessProfileAddressRequest(
+        id: 9,
+        uuid: 'addr-uuid',
+      );
 
       final encoded = request.writeToBuffer();
-      final decoded = $bp.RemoveBusinessProfileAddressRequest.fromBuffer(encoded);
+      final decoded = $bp.RemoveBusinessProfileAddressRequest.fromBuffer(
+        encoded,
+      );
 
       expect(decoded.id, 9);
       expect(decoded.uuid, 'addr-uuid');

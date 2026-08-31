@@ -12,13 +12,17 @@ class WorkoutSessionService {
   ) async {
     try {
       DioClient().setAuthToken(token);
-      final response = await _dio.post(ApiConfig.workoutSessionsEndpoint, data: sessionData);
+      final response = await _dio.post(
+        ApiConfig.workoutSessionsEndpoint,
+        data: sessionData,
+      );
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data as Map<String, dynamic>;
       } else {
         throw AppException(
           statusCode: response.statusCode ?? 500,
-          message: response.data?['message'] ?? 'Failed to save workout session',
+          message:
+              response.data?['message'] ?? 'Failed to save workout session',
         );
       }
     } on DioException catch (e) {
@@ -43,11 +47,14 @@ class WorkoutSessionService {
       );
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        return data.map((e) => WorkoutSession.fromJson(e as Map<String, dynamic>)).toList();
+        return data
+            .map((e) => WorkoutSession.fromJson(e as Map<String, dynamic>))
+            .toList();
       } else {
         throw AppException(
           statusCode: response.statusCode ?? 500,
-          message: response.data?['message'] ?? 'Failed to fetch workout sessions',
+          message:
+              response.data?['message'] ?? 'Failed to fetch workout sessions',
         );
       }
     } on DioException catch (e) {

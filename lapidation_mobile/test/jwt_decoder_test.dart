@@ -4,8 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lapidation_mobile/utils/jwt_decoder.dart';
 
 String _fakeToken(Map<String, dynamic> payload) {
-  final header = base64Url.encode(utf8.encode(jsonEncode({'alg': 'none'}))).replaceAll('=', '');
-  final body = base64Url.encode(utf8.encode(jsonEncode(payload))).replaceAll('=', '');
+  final header = base64Url
+      .encode(utf8.encode(jsonEncode({'alg': 'none'})))
+      .replaceAll('=', '');
+  final body = base64Url
+      .encode(utf8.encode(jsonEncode(payload)))
+      .replaceAll('=', '');
   return '$header.$body.signature';
 }
 

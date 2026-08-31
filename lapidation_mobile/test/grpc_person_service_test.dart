@@ -4,20 +4,23 @@ import 'package:lapidation_mobile/src/generated/grpc/person.pb.dart' as $person;
 
 void main() {
   group('SearchMentionableFriendsRequest', () {
-    test('round-trips person_id, query and limit through protobuf encoding', () {
-      final request = SearchMentionableFriendsRequest(
-        personId: 132,
-        query: '@pe',
-        limit: 20,
-      );
+    test(
+      'round-trips person_id, query and limit through protobuf encoding',
+      () {
+        final request = SearchMentionableFriendsRequest(
+          personId: 132,
+          query: '@pe',
+          limit: 20,
+        );
 
-      final encoded = request.writeToBuffer();
-      final decoded = SearchMentionableFriendsRequest.fromBuffer(encoded);
+        final encoded = request.writeToBuffer();
+        final decoded = SearchMentionableFriendsRequest.fromBuffer(encoded);
 
-      expect(decoded.personId, 132);
-      expect(decoded.query, '@pe');
-      expect(decoded.limit, 20);
-    });
+        expect(decoded.personId, 132);
+        expect(decoded.query, '@pe');
+        expect(decoded.limit, 20);
+      },
+    );
   });
 
   group('Person.uuid field', () {

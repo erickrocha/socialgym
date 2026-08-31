@@ -20,21 +20,33 @@ class TeamPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // A business-profile switch always navigates away from this page, but key
     // on the flag anyway so the tab set can never get out of sync with it.
-    final isProfessional = context.watch<PersonProvider>().isProfessional;
-    return _TeamPageContent(key: ValueKey(isProfessional), isProfessional: isProfessional);
+    final personProvider = context.watch<PersonProvider>();
+    final isProfessional = personProvider.isProfessional;
+    final businessType = personProvider.activeBusinessProfile?.businessType;
+    return _TeamPageContent(
+      key: ValueKey(isProfessional),
+      isProfessional: isProfessional,
+      businessType: businessType,
+    );
   }
 }
 
 class _TeamPageContent extends StatefulWidget {
   final bool isProfessional;
+  final String? businessType;
 
-  const _TeamPageContent({super.key, required this.isProfessional});
+  const _TeamPageContent({
+    super.key,
+    required this.isProfessional,
+    required this.businessType,
+  });
 
   @override
   State<_TeamPageContent> createState() => _TeamPageContentState();
 }
 
-class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerProviderStateMixin {
+class _TeamPageContentState extends State<_TeamPageContent>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
   int get _tabCount => widget.isProfessional ? 4 : 2;
@@ -58,21 +70,29 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
     if (person == null) return;
 
     context.read<TeamMemberProvider>().fetchPage(
-      businessProfileId: widget.isProfessional ? personProvider.activeBusinessProfile?.id : null,
+      businessProfileId: widget.isProfessional
+          ? personProvider.activeBusinessProfile?.id
+          : null,
       personId: person.id,
     );
   }
 
   Future<void> _cancelSentInvite(Person invitee) async {
     final l10n = AppLocalizations.of(context)!;
-    final businessProfileId = context.read<PersonProvider>().activeBusinessProfile?.id;
+    final businessProfileId = context
+        .read<PersonProvider>()
+        .activeBusinessProfile
+        ?.id;
     if (businessProfileId == null) return;
 
     final success = await context.read<TeamMemberProvider>().cancelSentInvite(
       businessProfileId: businessProfileId,
       personId: invitee.id,
     );
-    _showActionSnackBar(success, success ? l10n.teamRequestCancelled : l10n.teamActionError);
+    _showActionSnackBar(
+      success,
+      success ? l10n.teamRequestCancelled : l10n.teamActionError,
+    );
   }
 
   Future<void> _acceptInvite(BusinessProfile business) async {
@@ -85,7 +105,10 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
       businessProfileId: businessProfileId,
       personId: personId,
     );
-    _showActionSnackBar(success, success ? l10n.teamRequestAccepted : l10n.teamActionError);
+    _showActionSnackBar(
+      success,
+      success ? l10n.teamRequestAccepted : l10n.teamActionError,
+    );
   }
 
   Future<void> _denyInvite(BusinessProfile business) async {
@@ -98,7 +121,10 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
       businessProfileId: businessProfileId,
       personId: personId,
     );
-    _showActionSnackBar(success, success ? l10n.teamRequestDenied : l10n.teamActionError);
+    _showActionSnackBar(
+      success,
+      success ? l10n.teamRequestDenied : l10n.teamActionError,
+    );
   }
 
   void _showActionSnackBar(bool success, String message) {
@@ -112,7 +138,10 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
   }
 
   void _openInviteSheet() {
-    final businessProfileId = context.read<PersonProvider>().activeBusinessProfile?.id;
+    final businessProfileId = context
+        .read<PersonProvider>()
+        .activeBusinessProfile
+        ?.id;
     if (businessProfileId == null) return;
     showTeamInviteSheet(context, businessProfileId: businessProfileId);
   }
@@ -140,8 +169,10 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
                     TabBarView(
                       controller: _tabController,
                       children: [
-                        if (widget.isProfessional) _buildMembersTab(provider, l10n),
-                        if (widget.isProfessional) _buildSentInvitesTab(provider, l10n),
+                        if (widget.isProfessional)
+                          _buildMembersTab(provider, l10n),
+                        if (widget.isProfessional)
+                          _buildSentInvitesTab(provider, l10n),
                         _buildMyTeamsTab(provider, l10n),
                         _buildReceivedInvitesTab(provider, l10n),
                       ],
@@ -166,14 +197,27 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          const Icon(Icons.group, color: AppColors.primary, size: 28),
+          Icon(
+            Icons.group,
+            color: AppColors.primaryFor(widget.businessType),
+            size: 28,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.teamTitle, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                Text(l10n.teamDescription, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                Text(
+                  l10n.teamTitle,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  l10n.teamDescription,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
               ],
             ),
           ),
@@ -195,25 +239,36 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
 
   Widget _buildTabBar(AppLocalizations l10n) {
     return Container(
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey[300]!))),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+      ),
       child: TabBar(
         controller: _tabController,
         isScrollable: widget.isProfessional,
-        labelColor: AppColors.primary,
+        labelColor: AppColors.primaryFor(widget.businessType),
         unselectedLabelColor: Colors.grey[600],
-        indicatorColor: AppColors.primary,
+        indicatorColor: AppColors.primaryFor(widget.businessType),
         tabs: [
           if (widget.isProfessional) Tab(text: l10n.teamTabMembers),
           if (widget.isProfessional)
-            _buildBadgedTab(l10n.teamTabSentInvites, (p) => p.sentRequests.length),
+            _buildBadgedTab(
+              l10n.teamTabSentInvites,
+              (p) => p.sentRequests.length,
+            ),
           Tab(text: l10n.teamTabMyTeams),
-          _buildBadgedTab(l10n.teamTabReceivedInvites, (p) => p.receivedRequests.length),
+          _buildBadgedTab(
+            l10n.teamTabReceivedInvites,
+            (p) => p.receivedRequests.length,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBadgedTab(String label, int Function(TeamMemberProvider) countOf) {
+  Widget _buildBadgedTab(
+    String label,
+    int Function(TeamMemberProvider) countOf,
+  ) {
     return Consumer<TeamMemberProvider>(
       builder: (context, provider, _) {
         final count = countOf(provider);
@@ -225,11 +280,21 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
               if (count > 0) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: AppColors.danger, borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.danger,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   child: Text(
                     '$count',
-                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -251,16 +316,27 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
     return RefreshIndicator(
       onRefresh: () async => _fetchTeamData(),
       child: ListView.builder(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: 80,
+        ),
         itemCount: provider.members.length,
         itemBuilder: (context, index) {
-          return TeamMemberCard(person: provider.members[index], trailing: const SizedBox.shrink());
+          return TeamMemberCard(
+            person: provider.members[index],
+            trailing: const SizedBox.shrink(),
+          );
         },
       ),
     );
   }
 
-  Widget _buildSentInvitesTab(TeamMemberProvider provider, AppLocalizations l10n) {
+  Widget _buildSentInvitesTab(
+    TeamMemberProvider provider,
+    AppLocalizations l10n,
+  ) {
     if (provider.sentRequests.isEmpty) {
       return _buildEmptyState(
         icon: Icons.outgoing_mail,
@@ -271,7 +347,12 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
     return RefreshIndicator(
       onRefresh: () async => _fetchTeamData(),
       child: ListView.builder(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: 80,
+        ),
         itemCount: provider.sentRequests.length,
         itemBuilder: (context, index) {
           final invitee = provider.sentRequests[index];
@@ -304,16 +385,27 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
     return RefreshIndicator(
       onRefresh: () async => _fetchTeamData(),
       child: ListView.builder(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: 80,
+        ),
         itemCount: provider.teams.length,
         itemBuilder: (context, index) {
-          return TeamBusinessCard(business: provider.teams[index], trailing: const SizedBox.shrink());
+          return TeamBusinessCard(
+            business: provider.teams[index],
+            trailing: const SizedBox.shrink(),
+          );
         },
       ),
     );
   }
 
-  Widget _buildReceivedInvitesTab(TeamMemberProvider provider, AppLocalizations l10n) {
+  Widget _buildReceivedInvitesTab(
+    TeamMemberProvider provider,
+    AppLocalizations l10n,
+  ) {
     if (provider.receivedRequests.isEmpty) {
       return _buildEmptyState(
         icon: Icons.mail_outline,
@@ -324,7 +416,12 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
     return RefreshIndicator(
       onRefresh: () async => _fetchTeamData(),
       child: ListView.builder(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: 80,
+        ),
         itemCount: provider.receivedRequests.length,
         itemBuilder: (context, index) {
           final business = provider.receivedRequests[index];
@@ -353,7 +450,11 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
     );
   }
 
-  Widget _buildEmptyState({required IconData icon, required String title, required String subtitle}) {
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -364,7 +465,11 @@ class _TeamPageContentState extends State<_TeamPageContent> with SingleTickerPro
             const SizedBox(height: 16),
             Text(
               title,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+              ),
             ),
             const SizedBox(height: 8),
             Text(

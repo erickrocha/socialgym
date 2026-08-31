@@ -28,7 +28,10 @@ class TeamMemberProvider extends ChangeNotifier {
   /// businessProfileId populates members/sentRequests (owner side, pass it only
   /// when the caller currently has an active business profile); personId
   /// populates teams/receivedRequests (person side, always available).
-  Future<void> fetchPage({int? businessProfileId, required int personId}) async {
+  Future<void> fetchPage({
+    int? businessProfileId,
+    required int personId,
+  }) async {
     _lastBusinessProfileId = businessProfileId;
     _lastPersonId = personId;
 
@@ -52,34 +55,61 @@ class TeamMemberProvider extends ChangeNotifier {
   }
 
   Future<void> _refresh() async {
-    await fetchPage(businessProfileId: _lastBusinessProfileId, personId: _lastPersonId ?? 0);
+    await fetchPage(
+      businessProfileId: _lastBusinessProfileId,
+      personId: _lastPersonId ?? 0,
+    );
   }
 
   /// Owner side: invite a person to join the active business profile's team.
-  Future<bool> inviteMember({required int businessProfileId, required int personId}) {
+  Future<bool> inviteMember({
+    required int businessProfileId,
+    required int personId,
+  }) {
     return _mutate(
-      () => GrpcTeamMemberService.sendTeamMemberRequest(businessProfileId: businessProfileId, personId: personId),
+      () => GrpcTeamMemberService.sendTeamMemberRequest(
+        businessProfileId: businessProfileId,
+        personId: personId,
+      ),
     );
   }
 
   /// Owner side: cancel a pending invite this business profile sent.
-  Future<bool> cancelSentInvite({required int businessProfileId, required int personId}) {
+  Future<bool> cancelSentInvite({
+    required int businessProfileId,
+    required int personId,
+  }) {
     return _mutate(
-      () => GrpcTeamMemberService.cancelTeamMemberRequest(businessProfileId: businessProfileId, personId: personId),
+      () => GrpcTeamMemberService.cancelTeamMemberRequest(
+        businessProfileId: businessProfileId,
+        personId: personId,
+      ),
     );
   }
 
   /// Person side: accept an invite received from a business profile.
-  Future<bool> acceptInvite({required int businessProfileId, required int personId}) {
+  Future<bool> acceptInvite({
+    required int businessProfileId,
+    required int personId,
+  }) {
     return _mutate(
-      () => GrpcTeamMemberService.acceptTeamMemberRequest(businessProfileId: businessProfileId, personId: personId),
+      () => GrpcTeamMemberService.acceptTeamMemberRequest(
+        businessProfileId: businessProfileId,
+        personId: personId,
+      ),
     );
   }
 
   /// Person side: deny an invite received from a business profile.
-  Future<bool> denyInvite({required int businessProfileId, required int personId}) {
+  Future<bool> denyInvite({
+    required int businessProfileId,
+    required int personId,
+  }) {
     return _mutate(
-      () => GrpcTeamMemberService.denyTeamMemberRequest(businessProfileId: businessProfileId, personId: personId),
+      () => GrpcTeamMemberService.denyTeamMemberRequest(
+        businessProfileId: businessProfileId,
+        personId: personId,
+      ),
     );
   }
 

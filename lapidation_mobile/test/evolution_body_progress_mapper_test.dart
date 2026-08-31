@@ -45,7 +45,10 @@ void main() {
       expect(result.hasRenderableData, isTrue);
       expect(result.baselineSource, BaselineSource.profileThenCheckinFallback);
       expect(result.progressByRegion[VitruvianRegion.chest], isNotNull);
-      expect(result.progressByRegion[VitruvianRegion.waist]!.intensity, greaterThan(0));
+      expect(
+        result.progressByRegion[VitruvianRegion.waist]!.intensity,
+        greaterThan(0),
+      );
     });
 
     test('interpolates when latest check-in misses fields', () {
@@ -84,9 +87,10 @@ void main() {
       expect(result.hasRenderableData, isTrue);
       expect(result.usedInterpolation, isTrue);
       expect(result.progressByRegion[VitruvianRegion.waist], isNotNull);
-      expect(result.progressByRegion[VitruvianRegion.waist]!.interpolated, isTrue);
+      expect(
+        result.progressByRegion[VitruvianRegion.waist]!.interpolated,
+        isTrue,
+      );
     });
   });
 }
-
-

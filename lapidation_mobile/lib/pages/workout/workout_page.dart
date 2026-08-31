@@ -16,6 +16,7 @@ import '../../widgets/workout_card.dart';
 import 'exercise_form_dialog.dart';
 import 'workout_execution_page.dart';
 import 'workout_form_dialog.dart';
+import 'workout_form_page.dart';
 
 class WorkoutPage extends StatefulWidget {
   const WorkoutPage({super.key});
@@ -38,26 +39,32 @@ class _WorkoutPageState extends State<WorkoutPage> {
     final personProvider = context.read<PersonProvider>();
     final workoutProvider = context.read<WorkoutProvider>();
     final token = authProvider.auth?.accessToken ?? '';
-    final ownerUuid = personProvider.isProfessional ? personProvider.activeBusinessProfile?.uuid : personProvider.person?.uuid;
+    final ownerUuid = personProvider.isProfessional
+        ? personProvider.activeBusinessProfile?.uuid
+        : personProvider.person?.uuid;
 
     if (ownerUuid != null) {
       workoutProvider.fetchWorkouts(ownerUuid, token);
     }
   }
 
-  void _showAddWorkoutDialog() {
+  void _navigateToAddWorkoutPage() {
     final personProvider = context.read<PersonProvider>();
     final ownerId = personProvider.activeAuthorId;
     final ownerUuid = personProvider.activeAuthorUuid;
 
-    showDialog(
-      context: context,
-      builder: (_) => WorkoutFormDialog(ownerId: ownerId, ownerUuid: ownerUuid),
-    ).then((result) {
-      if (result == true) {
-        _fetchWorkouts();
-      }
-    });
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) =>
+                WorkoutFormPage(ownerId: ownerId, ownerUuid: ownerUuid),
+          ),
+        )
+        .then((result) {
+          if (result == true) {
+            _fetchWorkouts();
+          }
+        });
   }
 
   void _showAddExerciseDialog(Workout workout) {
@@ -108,7 +115,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(l10n.buttonConfirm, style: const TextStyle(color: AppColors.danger)),
+            child: Text(
+              l10n.buttonConfirm,
+              style: const TextStyle(color: AppColors.danger),
+            ),
           ),
         ],
       ),
@@ -121,9 +131,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
   }
 
   void _startWorkout(Workout workout) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => WorkoutExecutionPage(workout: workout)));
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => WorkoutExecutionPage(workout: workout)),
+    );
   }
 
   void _onReorderExercises(Workout workout, int oldIndex, int newIndex) {
@@ -143,7 +153,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete exercise: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Failed to delete exercise: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -152,13 +165,17 @@ class _WorkoutPageState extends State<WorkoutPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
 
     return MainLayout(
       navSection: NavSection.workout,
       currentRoute: '/workouts',
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddWorkoutDialog,
-        backgroundColor: AppColors.primary,
+        onPressed: _navigateToAddWorkoutPage,
+        backgroundColor: AppColors.primaryFor(businessType),
         foregroundColor: Colors.white,
         tooltip: l10n.workoutAddNew,
         child: const Icon(Icons.add),
@@ -166,7 +183,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
       body: Consumer<WorkoutProvider>(
         builder: (context, workoutProvider, _) {
           if (workoutProvider.loading && workoutProvider.workouts.isEmpty) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primaryFor(businessType),
+              ),
+            );
           }
 
           return Column(
@@ -179,12 +200,19 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   color: AppColors.danger.withAlpha(25),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: AppColors.danger, size: 18),
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.danger,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           workoutProvider.error!,
-                          style: const TextStyle(color: AppColors.danger, fontSize: 13),
+                          style: const TextStyle(
+                            color: AppColors.danger,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                       IconButton(
@@ -197,7 +225,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
               // Header
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -215,7 +246,10 @@ class _WorkoutPageState extends State<WorkoutPage> {
                           const SizedBox(height: 4),
                           Text(
                             l10n.workoutDescription,
-                            style: const TextStyle(fontSize: 14, color: Color(0xFF888888)),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF888888),
+                            ),
                           ),
                         ],
                       ),
@@ -228,7 +262,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
               Expanded(
                 child: workoutProvider.workouts.isEmpty
                     ? _buildEmpty(l10n)
-                    : _buildWorkoutList(workoutProvider, l10n),
+                    : _buildWorkoutList(workoutProvider, l10n, businessType),
               ),
             ],
           );
@@ -253,9 +287,13 @@ class _WorkoutPageState extends State<WorkoutPage> {
     );
   }
 
-  Widget _buildWorkoutList(WorkoutProvider workoutProvider, AppLocalizations l10n) {
+  Widget _buildWorkoutList(
+    WorkoutProvider workoutProvider,
+    AppLocalizations l10n,
+    String? businessType,
+  ) {
     return RefreshIndicator(
-      color: AppColors.primary,
+      color: AppColors.primaryFor(businessType),
       onRefresh: () async => _fetchWorkouts(),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -281,12 +319,16 @@ class _WorkoutPageState extends State<WorkoutPage> {
                   },
                   background: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: AppColors.primaryFor(businessType),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     alignment: Alignment.centerLeft,
                     padding: const EdgeInsets.only(left: 20),
-                    child: const Icon(Icons.edit, color: Colors.white, size: 24),
+                    child: const Icon(
+                      Icons.edit,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
                   secondaryBackground: Container(
                     decoration: BoxDecoration(
@@ -295,7 +337,11 @@ class _WorkoutPageState extends State<WorkoutPage> {
                     ),
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 20),
-                    child: const Icon(Icons.delete, color: Colors.white, size: 24),
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
                   child: WorkoutCard(
                     workout: workout,
@@ -312,15 +358,23 @@ class _WorkoutPageState extends State<WorkoutPage> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () => _startWorkout(workout),
-                          icon: const Text('🚀', style: TextStyle(fontSize: 18)),
+                          icon: const Text(
+                            '🚀',
+                            style: TextStyle(fontSize: 18),
+                          ),
                           label: Text(
                             l10n.executionStartWorkout,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.secondary,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                         ),

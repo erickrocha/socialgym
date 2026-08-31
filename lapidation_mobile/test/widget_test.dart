@@ -11,11 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lapidation_mobile/main.dart';
 
 void main() {
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-  });
-
   testWidgets('App renders sign in page', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const LapidationApp());
     await tester.pumpAndSettle();
 

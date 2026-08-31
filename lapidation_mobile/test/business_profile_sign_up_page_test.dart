@@ -13,7 +13,9 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('shows validation errors when required fields are empty', (tester) async {
+  testWidgets('shows validation errors when required fields are empty', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -27,7 +29,9 @@ void main() {
           home: Builder(
             builder: (context) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                Navigator.of(context).pushNamed('/add-profile/form', arguments: 'Professional');
+                Navigator.of(
+                  context,
+                ).pushNamed('/add-profile/form', arguments: 'Professional');
               });
               return const Scaffold(body: SizedBox.shrink());
             },

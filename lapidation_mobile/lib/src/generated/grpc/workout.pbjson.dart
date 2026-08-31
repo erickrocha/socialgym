@@ -38,6 +38,13 @@ const Workout$json = {
     },
     {'1': 'created_at', '3': 11, '4': 1, '5': 9, '10': 'createdAt'},
     {'1': 'updated_at', '3': 12, '4': 1, '5': 9, '10': 'updatedAt'},
+    {
+      '1': 'target_person_uuid',
+      '3': 13,
+      '4': 1,
+      '5': 9,
+      '10': 'targetPersonUuid'
+    },
   ],
 };
 
@@ -49,7 +56,8 @@ final $typed_data.Uint8List workoutDescriptor = $convert.base64Decode(
     'N1bHR5GAcgASgJUgpkaWZmaWN1bHR5EiEKDG11c2NsZV9ncm91cBgIIAEoCVILbXVzY2xlR3Jv'
     'dXASHgoKdmlzaWJpbGl0eRgJIAEoCVIKdmlzaWJpbGl0eRI1CglleGVyY2lzZXMYCiADKAsyFy'
     '5ncnBjLmV4ZXJjaXNlLkV4ZXJjaXNlUglleGVyY2lzZXMSHQoKY3JlYXRlZF9hdBgLIAEoCVIJ'
-    'Y3JlYXRlZEF0Eh0KCnVwZGF0ZWRfYXQYDCABKAlSCXVwZGF0ZWRBdA==');
+    'Y3JlYXRlZEF0Eh0KCnVwZGF0ZWRfYXQYDCABKAlSCXVwZGF0ZWRBdBIsChJ0YXJnZXRfcGVyc2'
+    '9uX3V1aWQYDSABKAlSEHRhcmdldFBlcnNvblV1aWQ=');
 
 @$core.Deprecated('Use workoutRequestDescriptor instead')
 const WorkoutRequest$json = {

@@ -37,14 +37,20 @@ PersonInfo _personInfo({double? weight, double? height}) {
 
 void main() {
   group('computeVitruvianBodyState - defaults', () {
-    test('empty checkins returns medium/medium, scale 1.0, no composition data', () {
-      final state = computeVitruvianBodyState(checkins: const [], gender: 'male');
+    test(
+      'empty checkins returns medium/medium, scale 1.0, no composition data',
+      () {
+        final state = computeVitruvianBodyState(
+          checkins: const [],
+          gender: 'male',
+        );
 
-      expect(state.fatBucket, BodyLevel.medium);
-      expect(state.muscleBucket, BodyLevel.medium);
-      expect(state.scale, 1.0);
-      expect(state.hasCompositionData, isFalse);
-    });
+        expect(state.fatBucket, BodyLevel.medium);
+        expect(state.muscleBucket, BodyLevel.medium);
+        expect(state.scale, 1.0);
+        expect(state.hasCompositionData, isFalse);
+      },
+    );
 
     test('null gender defaults to male and reports hasGenderData false', () {
       final state = computeVitruvianBodyState(checkins: const [], gender: null);
@@ -53,15 +59,24 @@ void main() {
       expect(state.hasGenderData, isFalse);
     });
 
-    test('empty string gender defaults to male and reports hasGenderData false', () {
-      final state = computeVitruvianBodyState(checkins: const [], gender: '  ');
+    test(
+      'empty string gender defaults to male and reports hasGenderData false',
+      () {
+        final state = computeVitruvianBodyState(
+          checkins: const [],
+          gender: '  ',
+        );
 
-      expect(state.gender, 'male');
-      expect(state.hasGenderData, isFalse);
-    });
+        expect(state.gender, 'male');
+        expect(state.hasGenderData, isFalse);
+      },
+    );
 
     test('gender is case-insensitively normalized', () {
-      final state = computeVitruvianBodyState(checkins: const [], gender: 'FEMALE');
+      final state = computeVitruvianBodyState(
+        checkins: const [],
+        gender: 'FEMALE',
+      );
 
       expect(state.gender, 'female');
       expect(state.hasGenderData, isTrue);
@@ -102,48 +117,56 @@ void main() {
       );
     });
 
-    test('female: 21.9% is low, 22% is medium, 32% is medium, 32.1% is high', () {
-      final d = DateTime(2026, 1, 1);
+    test(
+      'female: 21.9% is low, 22% is medium, 32% is medium, 32.1% is high',
+      () {
+        final d = DateTime(2026, 1, 1);
 
-      expect(
-        computeVitruvianBodyState(
-          checkins: [_checkIn(createdAt: d, bodyFatPct: 21.9)],
-          gender: 'female',
-        ).fatBucket,
-        BodyLevel.low,
-      );
-      expect(
-        computeVitruvianBodyState(
-          checkins: [_checkIn(createdAt: d, bodyFatPct: 22)],
-          gender: 'female',
-        ).fatBucket,
-        BodyLevel.medium,
-      );
-      expect(
-        computeVitruvianBodyState(
-          checkins: [_checkIn(createdAt: d, bodyFatPct: 32)],
-          gender: 'female',
-        ).fatBucket,
-        BodyLevel.medium,
-      );
-      expect(
-        computeVitruvianBodyState(
-          checkins: [_checkIn(createdAt: d, bodyFatPct: 32.1)],
-          gender: 'female',
-        ).fatBucket,
-        BodyLevel.high,
-      );
-    });
+        expect(
+          computeVitruvianBodyState(
+            checkins: [_checkIn(createdAt: d, bodyFatPct: 21.9)],
+            gender: 'female',
+          ).fatBucket,
+          BodyLevel.low,
+        );
+        expect(
+          computeVitruvianBodyState(
+            checkins: [_checkIn(createdAt: d, bodyFatPct: 22)],
+            gender: 'female',
+          ).fatBucket,
+          BodyLevel.medium,
+        );
+        expect(
+          computeVitruvianBodyState(
+            checkins: [_checkIn(createdAt: d, bodyFatPct: 32)],
+            gender: 'female',
+          ).fatBucket,
+          BodyLevel.medium,
+        );
+        expect(
+          computeVitruvianBodyState(
+            checkins: [_checkIn(createdAt: d, bodyFatPct: 32.1)],
+            gender: 'female',
+          ).fatBucket,
+          BodyLevel.high,
+        );
+      },
+    );
 
-    test('missing bodyFatPct on latest checkin defaults to medium and hasCompositionData false', () {
-      final state = computeVitruvianBodyState(
-        checkins: [_checkIn(createdAt: DateTime(2026, 1, 1), muscleMassPct: 30)],
-        gender: 'male',
-      );
+    test(
+      'missing bodyFatPct on latest checkin defaults to medium and hasCompositionData false',
+      () {
+        final state = computeVitruvianBodyState(
+          checkins: [
+            _checkIn(createdAt: DateTime(2026, 1, 1), muscleMassPct: 30),
+          ],
+          gender: 'male',
+        );
 
-      expect(state.fatBucket, BodyLevel.medium);
-      expect(state.hasCompositionData, isFalse);
-    });
+        expect(state.fatBucket, BodyLevel.medium);
+        expect(state.hasCompositionData, isFalse);
+      },
+    );
   });
 
   group('computeVitruvianBodyState - muscle bucket thresholds', () {
@@ -180,31 +203,34 @@ void main() {
       );
     });
 
-    test('female: 23.9% is low, 24% is medium, 30% is medium, 30.1% is high', () {
-      final d = DateTime(2026, 1, 1);
+    test(
+      'female: 23.9% is low, 24% is medium, 30% is medium, 30.1% is high',
+      () {
+        final d = DateTime(2026, 1, 1);
 
-      expect(
-        computeVitruvianBodyState(
-          checkins: [_checkIn(createdAt: d, muscleMassPct: 23.9)],
-          gender: 'female',
-        ).muscleBucket,
-        BodyLevel.low,
-      );
-      expect(
-        computeVitruvianBodyState(
-          checkins: [_checkIn(createdAt: d, muscleMassPct: 30)],
-          gender: 'female',
-        ).muscleBucket,
-        BodyLevel.medium,
-      );
-      expect(
-        computeVitruvianBodyState(
-          checkins: [_checkIn(createdAt: d, muscleMassPct: 30.1)],
-          gender: 'female',
-        ).muscleBucket,
-        BodyLevel.high,
-      );
-    });
+        expect(
+          computeVitruvianBodyState(
+            checkins: [_checkIn(createdAt: d, muscleMassPct: 23.9)],
+            gender: 'female',
+          ).muscleBucket,
+          BodyLevel.low,
+        );
+        expect(
+          computeVitruvianBodyState(
+            checkins: [_checkIn(createdAt: d, muscleMassPct: 30)],
+            gender: 'female',
+          ).muscleBucket,
+          BodyLevel.medium,
+        );
+        expect(
+          computeVitruvianBodyState(
+            checkins: [_checkIn(createdAt: d, muscleMassPct: 30.1)],
+            gender: 'female',
+          ).muscleBucket,
+          BodyLevel.high,
+        );
+      },
+    );
   });
 
   group('computeVitruvianBodyState - scale', () {
@@ -256,43 +282,59 @@ void main() {
       expect(state.scale, 1.0);
     });
 
-    test('falls back to personInfo.weight when latest checkin has no weight', () {
-      final withCheckinWeight = computeVitruvianBodyState(
-        checkins: [_checkIn(createdAt: DateTime(2026, 1, 1), weight: 50)],
-        personInfo: _personInfo(weight: 110, height: 170),
-        gender: 'male',
-      );
-      final withFallbackWeight = computeVitruvianBodyState(
-        checkins: [_checkIn(createdAt: DateTime(2026, 1, 1))],
-        personInfo: _personInfo(weight: 110, height: 170),
-        gender: 'male',
-      );
+    test(
+      'falls back to personInfo.weight when latest checkin has no weight',
+      () {
+        final withCheckinWeight = computeVitruvianBodyState(
+          checkins: [_checkIn(createdAt: DateTime(2026, 1, 1), weight: 50)],
+          personInfo: _personInfo(weight: 110, height: 170),
+          gender: 'male',
+        );
+        final withFallbackWeight = computeVitruvianBodyState(
+          checkins: [_checkIn(createdAt: DateTime(2026, 1, 1))],
+          personInfo: _personInfo(weight: 110, height: 170),
+          gender: 'male',
+        );
 
-      expect(withCheckinWeight.scale, 0.9); // uses checkin's 50kg -> low BMI
-      expect(withFallbackWeight.scale, 1.15); // uses personInfo's 110kg -> high BMI
-    });
+        expect(withCheckinWeight.scale, 0.9); // uses checkin's 50kg -> low BMI
+        expect(
+          withFallbackWeight.scale,
+          1.15,
+        ); // uses personInfo's 110kg -> high BMI
+      },
+    );
   });
 
   group('computeVitruvianBodyState - latest checkin selection', () {
-    test('uses the most recent checkin by createdAt regardless of list order', () {
-      final state = computeVitruvianBodyState(
-        checkins: [
-          _checkIn(createdAt: DateTime(2026, 1, 10), bodyFatPct: 10),
-          _checkIn(createdAt: DateTime(2026, 3, 1), bodyFatPct: 30),
-          _checkIn(createdAt: DateTime(2026, 2, 1), bodyFatPct: 20),
-        ],
-        gender: 'male',
-      );
+    test(
+      'uses the most recent checkin by createdAt regardless of list order',
+      () {
+        final state = computeVitruvianBodyState(
+          checkins: [
+            _checkIn(createdAt: DateTime(2026, 1, 10), bodyFatPct: 10),
+            _checkIn(createdAt: DateTime(2026, 3, 1), bodyFatPct: 30),
+            _checkIn(createdAt: DateTime(2026, 2, 1), bodyFatPct: 20),
+          ],
+          gender: 'male',
+        );
 
-      expect(state.fatBucket, BodyLevel.high); // from the March (latest) checkin's 30%
-    });
+        expect(
+          state.fatBucket,
+          BodyLevel.high,
+        ); // from the March (latest) checkin's 30%
+      },
+    );
   });
 
   group('VitruvianBodyState.assetPath', () {
     test('builds the expected asset path', () {
       final state = computeVitruvianBodyState(
         checkins: [
-          _checkIn(createdAt: DateTime(2026, 1, 1), bodyFatPct: 10, muscleMassPct: 40),
+          _checkIn(
+            createdAt: DateTime(2026, 1, 1),
+            bodyFatPct: 10,
+            muscleMassPct: 40,
+          ),
         ],
         gender: 'female',
       );

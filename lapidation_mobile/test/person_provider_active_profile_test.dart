@@ -18,7 +18,7 @@ Person _personWithProfiles() {
         ownerUuid: 'person-uuid',
         businessType: "Professional",
         businessName: 'Personal',
-        taxId: '1234656'
+        taxId: '1234656',
       ),
     ],
   );
@@ -48,38 +48,50 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       provider.setPersonForTest(_personWithProfiles());
 
-      provider.setActiveBusinessProfile(_personWithProfiles().businessProfiles.first);
+      provider.setActiveBusinessProfile(
+        _personWithProfiles().businessProfiles.first,
+      );
 
       expect(provider.isProfessional, isTrue);
       expect(provider.activeBusinessProfile?.businessName, 'Personal');
     });
 
-    test('switchProfile returns null when the activate call cannot reach the backend', () async {
-      final provider = PersonProvider();
-      await Future<void>.delayed(Duration.zero);
-      provider.setPersonForTest(_personWithProfiles());
+    test(
+      'switchProfile returns null when the activate call cannot reach the backend',
+      () async {
+        final provider = PersonProvider();
+        await Future<void>.delayed(Duration.zero);
+        provider.setPersonForTest(_personWithProfiles());
 
-      final result = await provider.switchProfile(0, 'token');
+        final result = await provider.switchProfile(0, 'token');
 
-      expect(result, isNull);
-    });
+        expect(result, isNull);
+      },
+    );
 
-    test('switchToPersonal returns null when the deactivate call cannot reach the backend', () async {
-      final provider = PersonProvider();
-      await Future<void>.delayed(Duration.zero);
-      provider.setPersonForTest(_personWithProfiles());
-      provider.setActiveBusinessProfile(_personWithProfiles().businessProfiles.first);
+    test(
+      'switchToPersonal returns null when the deactivate call cannot reach the backend',
+      () async {
+        final provider = PersonProvider();
+        await Future<void>.delayed(Duration.zero);
+        provider.setPersonForTest(_personWithProfiles());
+        provider.setActiveBusinessProfile(
+          _personWithProfiles().businessProfiles.first,
+        );
 
-      final result = await provider.switchToPersonal('token');
+        final result = await provider.switchToPersonal('token');
 
-      expect(result, isNull);
-    });
+        expect(result, isNull);
+      },
+    );
 
     test('clear() resets both person and active profile', () async {
       final provider = PersonProvider();
       await Future<void>.delayed(Duration.zero);
       provider.setPersonForTest(_personWithProfiles());
-      provider.setActiveBusinessProfile(_personWithProfiles().businessProfiles.first);
+      provider.setActiveBusinessProfile(
+        _personWithProfiles().businessProfiles.first,
+      );
 
       provider.clear();
 
