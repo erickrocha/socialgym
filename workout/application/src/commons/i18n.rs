@@ -196,7 +196,9 @@ impl ErrorKey {
             ErrorKey::AccountDeletionRequestFailed => "AccountDeletionRequestFailed",
             ErrorKey::AccountDeletionCancelFailed => "AccountDeletionCancelFailed",
             ErrorKey::UnderageRegistration => "underage-registration",
-            ErrorKey::ConsentRequired => "consent-required",
+            // Cross-service contract: timeline emits the same value for this
+            // condition so clients can detect it with one check.
+            ErrorKey::ConsentRequired => "CONSENT_REQUIRED",
             ErrorKey::ConsentOperationFailed => "consent-operation-failed",
             ErrorKey::DataExportFailed => "data-export-failed",
             ErrorKey::DataExportNotReady => "data-export-not-ready",

@@ -6,7 +6,7 @@ enum ContextMenuPosition {
 
   static ContextMenuPosition fromString(String? value) {
     return ContextMenuPosition.values.firstWhere(
-          (e) => e.name.toLowerCase() == value?.toLowerCase(),
+      (e) => e.name.toLowerCase() == value?.toLowerCase(),
       orElse: () => ContextMenuPosition.left,
     );
   }
@@ -20,7 +20,7 @@ enum Pages {
 
   static Pages fromString(String? value) {
     return Pages.values.firstWhere(
-          (e) => e.name.toLowerCase() == value?.toLowerCase(),
+      (e) => e.name.toLowerCase() == value?.toLowerCase(),
       orElse: () => Pages.feed,
     );
   }

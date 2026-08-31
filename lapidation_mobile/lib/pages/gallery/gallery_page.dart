@@ -102,9 +102,16 @@ class _GalleryPageState extends State<GalleryPage> {
       currentRoute: '/gallery',
       body: Consumer<FeedProvider>(
         builder: (context, feedProvider, _) {
+          final businessType = context
+              .watch<PersonProvider>()
+              .activeBusinessProfile
+              ?.businessType;
+
           if (feedProvider.loading) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
+            return Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primaryFor(businessType),
+              ),
             );
           }
 
@@ -182,7 +189,7 @@ class _GalleryPageState extends State<GalleryPage> {
 
           // Vertical feed — one post per page, swipe up/down to navigate
           return RefreshIndicator(
-            color: AppColors.primary,
+            color: AppColors.primaryFor(businessType),
             onRefresh: () async {
               final token =
                   context.read<AuthProvider>().auth?.accessToken ?? '';
@@ -339,6 +346,10 @@ class _PostFeedCardState extends State<_PostFeedCard> {
       0,
       post.media.length - 1,
     );
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
 
     return Column(
       children: [
@@ -354,6 +365,7 @@ class _PostFeedCardState extends State<_PostFeedCard> {
                 itemBuilder: (context, index) {
                   return _MediaDisplay(
                     media: post.media[index],
+                    businessType: businessType,
                     onTap: () => _openFullScreenViewer(index),
                   );
                 },
@@ -384,6 +396,7 @@ class _PostFeedCardState extends State<_PostFeedCard> {
                               avatarUrl: post.authorAvatar,
                               cacheKey: post.authorObjectKey,
                               name: post.authorName ?? '',
+                              businessType: businessType,
                             ),
                             const SizedBox(width: 10),
                             Expanded(
@@ -510,8 +523,10 @@ class _PostFeedCardState extends State<_PostFeedCard> {
                       vertical: 8,
                     ),
                     itemCount: post.comments.length,
-                    itemBuilder: (context, index) =>
-                        _GalleryCommentBubble(comment: post.comments[index]),
+                    itemBuilder: (context, index) => _GalleryCommentBubble(
+                      comment: post.comments[index],
+                      businessType: businessType,
+                    ),
                   ),
                 ),
 
@@ -552,12 +567,12 @@ class _PostFeedCardState extends State<_PostFeedCard> {
                     ),
                     const SizedBox(width: 8),
                     if (_submittingComment)
-                      const SizedBox(
+                      SizedBox(
                         width: 32,
                         height: 32,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppColors.primary,
+                          color: AppColors.primaryFor(businessType),
                         ),
                       )
                     else
@@ -567,8 +582,8 @@ class _PostFeedCardState extends State<_PostFeedCard> {
                         child: Container(
                           width: 32,
                           height: 32,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryFor(businessType),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -596,8 +611,9 @@ class _PostFeedCardState extends State<_PostFeedCard> {
 class _MediaDisplay extends StatefulWidget {
   final FeedMedia media;
   final VoidCallback? onTap;
+  final String? businessType;
 
-  const _MediaDisplay({required this.media, this.onTap});
+  const _MediaDisplay({required this.media, this.onTap, this.businessType});
 
   @override
   State<_MediaDisplay> createState() => _MediaDisplayState();
@@ -647,8 +663,10 @@ class _MediaDisplayState extends State<_MediaDisplay> {
       fit: BoxFit.cover,
       placeholder: (_, _) => Container(
         color: Colors.grey[200],
-        child: const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primaryFor(widget.businessType),
+          ),
         ),
       ),
       errorWidget: (_, _, _) => Container(
@@ -758,11 +776,13 @@ class _AuthorAvatar extends StatelessWidget {
   final String? avatarUrl;
   final String? cacheKey;
   final String name;
+  final String? businessType;
 
   const _AuthorAvatar({
     required this.avatarUrl,
     required this.name,
     this.cacheKey,
+    this.businessType,
   });
 
   @override
@@ -778,9 +798,9 @@ class _AuthorAvatar extends StatelessWidget {
             width: 36,
             height: 36,
             fit: BoxFit.cover,
-            placeholder: (_, _) => const CircularProgressIndicator(
+            placeholder: (_, _) => CircularProgressIndicator(
               strokeWidth: 2,
-              color: AppColors.primary,
+              color: AppColors.primaryFor(businessType),
             ),
             errorWidget: (_, _, _) => _initials(name),
           ),
@@ -804,8 +824,8 @@ class _AuthorAvatar extends StatelessWidget {
         : '?';
     return Text(
       text,
-      style: const TextStyle(
-        color: AppColors.primary,
+      style: TextStyle(
+        color: AppColors.primaryFor(businessType),
         fontWeight: FontWeight.bold,
         fontSize: 14,
       ),
@@ -854,8 +874,9 @@ class _ReactionSummaryRow extends StatelessWidget {
 
 class _GalleryCommentBubble extends StatelessWidget {
   final FeedComment comment;
+  final String? businessType;
 
-  const _GalleryCommentBubble({required this.comment});
+  const _GalleryCommentBubble({required this.comment, this.businessType});
 
   @override
   Widget build(BuildContext context) {
@@ -873,14 +894,14 @@ class _GalleryCommentBubble extends StatelessWidget {
                     cacheKey: comment.authorObjectKey,
                   )
                 : null,
-            backgroundColor: AppColors.primary.withAlpha(40),
+            backgroundColor: AppColors.primaryFor(businessType).withAlpha(40),
             child: comment.authorAvatar == null
                 ? Text(
                     _getInitials(comment.authorName ?? 'U'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 8,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: AppColors.primaryFor(businessType),
                     ),
                   )
                 : null,

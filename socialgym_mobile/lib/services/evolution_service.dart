@@ -36,6 +36,7 @@ class EvolutionService {
         throw AppException(
           statusCode: response.statusCode ?? 500,
           message: response.data?['message'] ?? 'Failed to load evolution data',
+          errorKey: response.data?['errorKey'] as String?,
         );
       }
     } on DioException catch (e) {
@@ -65,6 +66,7 @@ class EvolutionService {
       throw AppException(
         statusCode: response.statusCode ?? 500,
         message: response.data?['message'] ?? 'Failed to create evolution check-in',
+        errorKey: response.data?['errorKey'] as String?,
       );
     } on DioException catch (e) {
       throw BaseService.handleDioError(e, 'Failed to create evolution check-in');

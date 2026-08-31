@@ -37,10 +37,15 @@ class FeedService {
   }) async {
     try {
       DioClient().setAuthToken(token);
-      final response = await _dio.get('${ApiConfig.businessFeedEndpoint}/$businessProfileUuid',queryParameters: {'page': page});
+      final response = await _dio.get(
+        '${ApiConfig.businessFeedEndpoint}/$businessProfileUuid',
+        queryParameters: {'page': page},
+      );
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        return data.map((e) => FeedPost.fromJson(e as Map<String, dynamic>)).toList();
+        return data
+            .map((e) => FeedPost.fromJson(e as Map<String, dynamic>))
+            .toList();
       } else {
         throw AppException(
           statusCode: response.statusCode ?? 500,

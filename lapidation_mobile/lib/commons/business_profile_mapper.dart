@@ -1,12 +1,13 @@
-
 import 'package:lapidation_mobile/commons/mapper.dart';
 import 'package:lapidation_mobile/models/business_profile.dart';
 import 'package:lapidation_mobile/models/business_profile_address.dart';
 
 import '../src/generated/grpc/business_profile.pb.dart' as $business_profile;
-import '../src/generated/grpc/business_profile_address.pb.dart' as $business_profile_address;
+import '../src/generated/grpc/business_profile_address.pb.dart'
+    as $business_profile_address;
 
-class BusinessProfileMapper implements Mapper<BusinessProfile,$business_profile.BusinessProfile>{
+class BusinessProfileMapper
+    implements Mapper<BusinessProfile, $business_profile.BusinessProfile> {
   @override
   BusinessProfile fromProto($business_profile.BusinessProfile proto) {
     return BusinessProfile(
@@ -27,7 +28,9 @@ class BusinessProfileMapper implements Mapper<BusinessProfile,$business_profile.
   }
 
   @override
-  List<BusinessProfile> fromProtoList(List<$business_profile.BusinessProfile> protoList) {
+  List<BusinessProfile> fromProtoList(
+    List<$business_profile.BusinessProfile> protoList,
+  ) {
     return protoList.map(fromProto).toList();
   }
 
@@ -51,15 +54,23 @@ class BusinessProfileMapper implements Mapper<BusinessProfile,$business_profile.
   }
 
   @override
-  List<$business_profile.BusinessProfile> toProtoList(List<BusinessProfile> domainList) {
+  List<$business_profile.BusinessProfile> toProtoList(
+    List<BusinessProfile> domainList,
+  ) {
     return domainList.map(toProto).toList();
   }
-  
 }
 
-class BusinessProfileAddressMapper implements Mapper<BusinessProfileAddress,$business_profile_address.BusinessProfileAddress> {
+class BusinessProfileAddressMapper
+    implements
+        Mapper<
+          BusinessProfileAddress,
+          $business_profile_address.BusinessProfileAddress
+        > {
   @override
-  BusinessProfileAddress fromProto($business_profile_address.BusinessProfileAddress proto) {
+  BusinessProfileAddress fromProto(
+    $business_profile_address.BusinessProfileAddress proto,
+  ) {
     return BusinessProfileAddress(
       id: proto.id != 0 ? proto.id : null,
       uuid: proto.uuid.isNotEmpty ? proto.uuid : null,
@@ -70,20 +81,24 @@ class BusinessProfileAddressMapper implements Mapper<BusinessProfileAddress,$bus
       administrativeArea: proto.administrativeArea,
       postalCode: proto.postalCode,
       countryCode: proto.countryCode,
-      latitude: proto.latitude != 0 ? proto.latitude : null,
-      longitude: proto.longitude != 0 ? proto.longitude : null,
+      latitude: proto.hasLatitude() ? proto.latitude : null,
+      longitude: proto.hasLongitude() ? proto.longitude : null,
       createdAt: proto.createdAt.isNotEmpty ? proto.createdAt : null,
       updatedAt: proto.updatedAt.isNotEmpty ? proto.updatedAt : null,
     );
   }
 
   @override
-  List<BusinessProfileAddress> fromProtoList(List<$business_profile_address.BusinessProfileAddress> protoList) {
+  List<BusinessProfileAddress> fromProtoList(
+    List<$business_profile_address.BusinessProfileAddress> protoList,
+  ) {
     return protoList.map(fromProto).toList();
   }
 
   @override
-  $business_profile_address.BusinessProfileAddress toProto(BusinessProfileAddress domain) {
+  $business_profile_address.BusinessProfileAddress toProto(
+    BusinessProfileAddress domain,
+  ) {
     return $business_profile_address.BusinessProfileAddress(
       id: domain.id ?? 0,
       uuid: domain.uuid ?? '',
@@ -94,16 +109,17 @@ class BusinessProfileAddressMapper implements Mapper<BusinessProfileAddress,$bus
       administrativeArea: domain.administrativeArea,
       postalCode: domain.postalCode,
       countryCode: domain.countryCode,
-      latitude: domain.latitude ?? 0,
-      longitude: domain.longitude ?? 0,
+      latitude: domain.latitude,
+      longitude: domain.longitude,
       createdAt: domain.createdAt ?? '',
       updatedAt: domain.updatedAt ?? '',
     );
   }
 
   @override
-  List<$business_profile_address.BusinessProfileAddress> toProtoList(List<BusinessProfileAddress> domainList) {
+  List<$business_profile_address.BusinessProfileAddress> toProtoList(
+    List<BusinessProfileAddress> domainList,
+  ) {
     return domainList.map(toProto).toList();
   }
-  
 }

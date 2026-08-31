@@ -11,7 +11,10 @@ class AuthService {
 
   /// Sign in with email and password.
   /// The web app sends form-urlencoded data to POST /login.
-  static Future<AuthResponse> signIn({required String email, required String password}) async {
+  static Future<AuthResponse> signIn({
+    required String email,
+    required String password,
+  }) async {
     try {
       final response = await _dio.post(
         ApiConfig.loginEndpoint,

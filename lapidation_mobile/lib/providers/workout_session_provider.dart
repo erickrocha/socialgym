@@ -23,7 +23,10 @@ class WorkoutSessionProvider extends ChangeNotifier {
 
   // ── Save ────────────────────────────────────────────────────────────────────
 
-  Future<bool> saveSession(Map<String, dynamic> sessionData, String token) async {
+  Future<bool> saveSession(
+    Map<String, dynamic> sessionData,
+    String token,
+  ) async {
     _saving = true;
     _saveError = null;
     notifyListeners();

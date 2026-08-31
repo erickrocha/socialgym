@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/person_provider.dart';
 
 /// Page to view and edit a single executed set from a workout session
 class SetDetailPage extends StatefulWidget {
@@ -105,11 +107,15 @@ class _SetDetailPageState extends State<SetDetailPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryFor(businessType),
         title: Text('${l10n.executionSet} ${l10n.menuSettings}'),
         elevation: 0,
       ),
@@ -172,7 +178,10 @@ class _SetDetailPageState extends State<SetDetailPage> {
                   Row(
                     children: [
                       Flexible(
-                        child: _buildInfoChip(l10n.executionSet, '${widget.set['setNumber'] ?? 0}'),
+                        child: _buildInfoChip(
+                          l10n.executionSet,
+                          '${widget.set['setNumber'] ?? 0}',
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Flexible(
@@ -253,10 +262,12 @@ class _SetDetailPageState extends State<SetDetailPage> {
                 icon: const Icon(Icons.save, size: 20),
                 label: Text(l10n.buttonSave),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.primaryFor(businessType),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
@@ -276,7 +287,10 @@ class _SetDetailPageState extends State<SetDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF999999))),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: Color(0xFF999999)),
+          ),
           const SizedBox(height: 2),
           Text(
             value,
@@ -329,7 +343,10 @@ class _EditValueBox extends StatelessWidget {
           children: [
             Text(icon, style: const TextStyle(fontSize: 20)),
             const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF888888))),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF888888)),
+            ),
             const SizedBox(height: 6),
             if (isEditing)
               SizedBox(
@@ -341,10 +358,15 @@ class _EditValueBox extends StatelessWidget {
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
                   autofocus: true,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     isDense: true,
                   ),
                   onFieldSubmitted: (_) => onSubmit(),

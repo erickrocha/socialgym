@@ -1,4 +1,3 @@
-
 import 'package:lapidation_mobile/models/enums.dart';
 
 class Settings {
@@ -27,7 +26,7 @@ class Settings {
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+       updatedAt = updatedAt ?? DateTime.now();
 
   factory Settings.fromJson(Map<String, dynamic> json) {
     return Settings(
@@ -39,9 +38,15 @@ class Settings {
       theme: json['theme'] as String?,
       notificationsEnabled: json['notificationsEnabled'] as bool?,
       homePage: Pages.fromString(json['homePage'] as String?),
-      contextMenuPosition: ContextMenuPosition.fromString(json['contextMenuPosition'] as String?),
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : null,
+      contextMenuPosition: ContextMenuPosition.fromString(
+        json['contextMenuPosition'] as String?,
+      ),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : null,
     );
   }
 

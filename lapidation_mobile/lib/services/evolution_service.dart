@@ -31,11 +31,14 @@ class EvolutionService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        return data.map((e) => EvolutionCheckIn.fromJson(e as Map<String, dynamic>)).toList();
+        return data
+            .map((e) => EvolutionCheckIn.fromJson(e as Map<String, dynamic>))
+            .toList();
       } else {
         throw AppException(
           statusCode: response.statusCode ?? 500,
           message: response.data?['message'] ?? 'Failed to load evolution data',
+          errorKey: response.data?['errorKey'] as String?,
         );
       }
     } on DioException catch (e) {
@@ -64,10 +67,15 @@ class EvolutionService {
 
       throw AppException(
         statusCode: response.statusCode ?? 500,
-        message: response.data?['message'] ?? 'Failed to create evolution check-in',
+        message:
+            response.data?['message'] ?? 'Failed to create evolution check-in',
+        errorKey: response.data?['errorKey'] as String?,
       );
     } on DioException catch (e) {
-      throw BaseService.handleDioError(e, 'Failed to create evolution check-in');
+      throw BaseService.handleDioError(
+        e,
+        'Failed to create evolution check-in',
+      );
     }
   }
 }

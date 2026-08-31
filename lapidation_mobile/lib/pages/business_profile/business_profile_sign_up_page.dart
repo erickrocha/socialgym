@@ -14,7 +14,8 @@ class BusinessProfileSignUpPage extends StatefulWidget {
   const BusinessProfileSignUpPage({super.key});
 
   @override
-  State<BusinessProfileSignUpPage> createState() => _BusinessProfileSignUpPageState();
+  State<BusinessProfileSignUpPage> createState() =>
+      _BusinessProfileSignUpPageState();
 }
 
 class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
@@ -33,22 +34,25 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
     super.dispose();
   }
 
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _inputDecoration(String hint, String? businessType) {
     return InputDecoration(
       hintText: hint,
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: AppColors.primaryFor(businessType)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(4),
-        borderSide: const BorderSide(color: AppColors.primaryHover, width: 2),
+        borderSide: BorderSide(
+          color: AppColors.primaryHoverFor(businessType),
+          width: 2,
+        ),
       ),
     );
   }
@@ -63,7 +67,9 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
     final person = personProvider.person;
 
     if (token.isEmpty || person == null) {
-      setState(() => _error = AppLocalizations.of(context)!.businessProfileFormError);
+      setState(
+        () => _error = AppLocalizations.of(context)!.businessProfileFormError,
+      );
       return;
     }
 
@@ -84,24 +90,33 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
         ),
       );
 
-      final refreshedPerson = await GrpcPersonService.getPerson(id: created.ownerId);
-      final index = refreshedPerson.businessProfiles.indexWhere((p) => p.uuid == created.uuid);
+      final refreshedPerson = await GrpcPersonService.getPerson(
+        id: created.ownerId,
+      );
+      final index = refreshedPerson.businessProfiles.indexWhere(
+        (p) => p.uuid == created.uuid,
+      );
 
       if (index == -1) {
-        throw Exception('Created business profile not found in refreshed profile list');
+        throw Exception(
+          'Created business profile not found in refreshed profile list',
+        );
       }
 
-      final newAuth = await personProvider.switchProfile(index, token);
-      if (newAuth != null) {
-        await authProvider.applySwitchedToken(newAuth);
-      }
+      await personProvider.switchProfile(
+        index,
+        token,
+        onTokenIssued: authProvider.applySwitchedToken,
+      );
       await businessProfileProvider.load(uuid: created.uuid);
 
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil('/feed', (route) => false);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = AppLocalizations.of(context)!.businessProfileFormError);
+      setState(
+        () => _error = AppLocalizations.of(context)!.businessProfileFormError,
+      );
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -113,6 +128,10 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final businessType = ModalRoute.of(context)!.settings.arguments as String;
+    final activeBusinessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
 
     return Scaffold(
       body: Container(
@@ -125,7 +144,9 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: Card(
                   elevation: 4,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Form(
@@ -138,7 +159,10 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
                             businessType == 'Company'
                                 ? l10n.businessProfileFormTitleGym
                                 : l10n.businessProfileFormTitlePersonalTrainer,
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           if (_error != null) ...[
@@ -147,17 +171,29 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
                               decoration: BoxDecoration(
                                 color: AppColors.danger.withAlpha(25),
                                 borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: AppColors.danger.withAlpha(76)),
+                                border: Border.all(
+                                  color: AppColors.danger.withAlpha(76),
+                                ),
                               ),
-                              child: Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 14)),
+                              child: Text(
+                                _error!,
+                                style: const TextStyle(
+                                  color: AppColors.danger,
+                                  fontSize: 14,
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 16),
                           ],
                           TextFormField(
                             key: const ValueKey('business_name_field'),
                             controller: _businessNameController,
-                            decoration: _inputDecoration(l10n.businessProfileFormBusinessName),
-                            validator: (value) => (value == null || value.trim().isEmpty)
+                            decoration: _inputDecoration(
+                              l10n.businessProfileFormBusinessName,
+                              activeBusinessType,
+                            ),
+                            validator: (value) =>
+                                (value == null || value.trim().isEmpty)
                                 ? l10n.businessProfileFormBusinessNameRequired
                                 : null,
                           ),
@@ -165,8 +201,12 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
                           TextFormField(
                             key: const ValueKey('social_name_field'),
                             controller: _socialNameController,
-                            decoration: _inputDecoration(l10n.businessProfileFormSocialName),
-                            validator: (value) => (value == null || value.trim().isEmpty)
+                            decoration: _inputDecoration(
+                              l10n.businessProfileFormSocialName,
+                              activeBusinessType,
+                            ),
+                            validator: (value) =>
+                                (value == null || value.trim().isEmpty)
                                 ? l10n.businessProfileFormSocialNameRequired
                                 : null,
                           ),
@@ -174,8 +214,12 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
                           TextFormField(
                             key: const ValueKey('tax_id_field'),
                             controller: _taxIdController,
-                            decoration: _inputDecoration(l10n.businessProfileFormTaxId),
-                            validator: (value) => (value == null || value.trim().isEmpty)
+                            decoration: _inputDecoration(
+                              l10n.businessProfileFormTaxId,
+                              activeBusinessType,
+                            ),
+                            validator: (value) =>
+                                (value == null || value.trim().isEmpty)
                                 ? l10n.businessProfileFormTaxIdRequired
                                 : null,
                           ),
@@ -183,18 +227,30 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: _submitting ? null : () => _handleSubmit(businessType),
+                              onPressed: _submitting
+                                  ? null
+                                  : () => _handleSubmit(businessType),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                disabledBackgroundColor: AppColors.primaryDisabled,
+                                backgroundColor: AppColors.primaryFor(
+                                  activeBusinessType,
+                                ),
+                                disabledBackgroundColor:
+                                    AppColors.primaryDisabledFor(
+                                      activeBusinessType,
+                                    ),
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
                               child: _submitting
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
                                     )
                                   : Text(l10n.businessProfileFormSubmit),
                             ),

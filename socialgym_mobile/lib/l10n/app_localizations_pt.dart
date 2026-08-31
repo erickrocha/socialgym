@@ -1471,6 +1471,46 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get businessProfileSwitchToPersonal => 'Conta pessoal';
+
+  @override
+  String get consentPendingTitle => 'Consentimento legal necessário';
+
+  @override
+  String get consentPendingSubtitle =>
+      'Reveja e aceite os documentos abaixo antes de continuar a usar a aplicação.';
+
+  @override
+  String get consentReadDocument => 'Ler';
+
+  @override
+  String get consentAgree => 'Concordo';
+
+  @override
+  String get consentReviewAndAccept => 'Rever e aceitar';
+
+  @override
+  String get consentAllAccepted => 'Tudo certo — obrigado por aceitar.';
+
+  @override
+  String get consentLogOut => 'Terminar sessão';
+
+  @override
+  String get consentClose => 'Fechar';
+
+  @override
+  String get consentLoading => 'A carregar…';
+
+  @override
+  String get consentLoadFailed =>
+      'Não foi possível carregar os seus consentimentos pendentes. Tente novamente.';
+
+  @override
+  String get consentNeverAccepted => 'Ainda não aceitou este documento.';
+
+  @override
+  String consentVersionOutdated(String version) {
+    return 'Está disponível uma nova versão ($version) que tem de ser aceite.';
+  }
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -2941,4 +2981,44 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get businessProfileSwitchToPersonal => 'Conta pessoal';
+
+  @override
+  String get consentPendingTitle => 'Consentimento legal necessário';
+
+  @override
+  String get consentPendingSubtitle =>
+      'Revise e aceite os documentos abaixo antes de continuar usando o aplicativo.';
+
+  @override
+  String get consentReadDocument => 'Ler';
+
+  @override
+  String get consentAgree => 'Concordo';
+
+  @override
+  String get consentReviewAndAccept => 'Revisar e aceitar';
+
+  @override
+  String get consentAllAccepted => 'Tudo certo — obrigado por aceitar.';
+
+  @override
+  String get consentLogOut => 'Sair';
+
+  @override
+  String get consentClose => 'Fechar';
+
+  @override
+  String get consentLoading => 'Carregando…';
+
+  @override
+  String get consentLoadFailed =>
+      'Não foi possível carregar seus consentimentos pendentes. Tente novamente.';
+
+  @override
+  String get consentNeverAccepted => 'Você ainda não aceitou este documento.';
+
+  @override
+  String consentVersionOutdated(String version) {
+    return 'Uma nova versão ($version) está disponível e precisa ser aceita.';
+  }
 }

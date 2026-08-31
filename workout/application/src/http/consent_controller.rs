@@ -1,6 +1,6 @@
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
 use crate::commons::i18n::{ErrorKey, Locale};
-use crate::http::json::consent_json::{AcceptConsentJson, ConsentJson};
+use crate::http::json::consent_json::{AcceptConsentJson, ConsentJson, PendingConsentJson};
 use crate::AppState;
 use axum::extract::{Path, State};
 use axum::http::HeaderMap;
@@ -31,6 +31,19 @@ pub async fn list(
     ConsentUseCase::list(&state.conn, current_user.person_id)
         .await
         .map(|rows| Json(rows.into_iter().map(ConsentJson::from).collect()))
+        .map_err(|e| ExceptionResponse::from_business(e, locale, ErrorKey::ConsentOperationFailed))
+}
+
+/// Legal documents whose current version the caller has not accepted. An empty
+/// list means nothing is blocking the caller. Reachable in restricted mode.
+pub async fn pending(
+    State(state): State<AppState>,
+    Extension(current_user): Extension<User>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<Vec<PendingConsentJson>>> {
+    ConsentUseCase::pending(&state.conn, current_user.person_id)
+        .await
+        .map(|rows| Json(rows.into_iter().map(PendingConsentJson::from).collect()))
         .map_err(|e| ExceptionResponse::from_business(e, locale, ErrorKey::ConsentOperationFailed))
 }
 

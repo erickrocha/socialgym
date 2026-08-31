@@ -102,11 +102,15 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
   }
 
   void _navigateBack() {
-    Navigator.of(context).pushNamedAndRemoveUntil('/workouts', (route) => false);
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil('/workouts', (route) => false);
   }
 
   void _navigateToSessions() {
-    Navigator.of(context).pushNamedAndRemoveUntil('/workout-sessions', (route) => false);
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil('/workout-sessions', (route) => false);
   }
 
   /// Builds the pre-filled workout summary to share as a post.
@@ -120,18 +124,25 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
         '⏱️ ${l10n.executionDuration}: ${_formatDuration(duration)}\n'
         '✅ ${l10n.executionSetsCompleted}: $sets\n'
         '📊 ${l10n.executionTotalVolume}: $volume ${l10n.workoutWeightUnit}\n'
-        '#Lapidation #Workout #Fitness';
+        '#LapidationClinic #Workout #Fitness';
   }
 
   Future<void> _shareWorkout() async {
     final l10n = AppLocalizations.of(context)!;
-    await PostComposerSheet.show(context, initialContent: _buildShareContent(l10n));
+    await PostComposerSheet.show(
+      context,
+      initialContent: _buildShareContent(l10n),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final duration = widget.workoutSession['duration'] as int? ?? 0;
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
 
     return Consumer<WorkoutSessionProvider>(
       builder: (context, provider, _) {
@@ -174,9 +185,9 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                     const SizedBox(height: 8),
                     Text(
                       widget.workoutSession['workoutName'] as String? ?? '',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
-                        color: AppColors.primary,
+                        color: AppColors.primaryFor(businessType),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -204,17 +215,26 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                             value: _formatDuration(duration),
                             label: l10n.executionDuration,
                           ),
-                          Container(width: 1, height: 48, color: Colors.grey.withAlpha(50)),
+                          Container(
+                            width: 1,
+                            height: 48,
+                            color: Colors.grey.withAlpha(50),
+                          ),
                           _StatItem(
                             icon: '✓',
                             value: '${_getCompletedSets()}',
                             label: l10n.executionSetsCompleted,
                           ),
-                          Container(width: 1, height: 48, color: Colors.grey.withAlpha(50)),
+                          Container(
+                            width: 1,
+                            height: 48,
+                            color: Colors.grey.withAlpha(50),
+                          ),
                           _StatItem(
                             icon: '🏋️',
                             value: _getTotalVolume().toStringAsFixed(3),
-                            label: '${l10n.executionTotalVolume} (${l10n.workoutWeightUnit})',
+                            label:
+                                '${l10n.executionTotalVolume} (${l10n.workoutWeightUnit})',
                           ),
                         ],
                       ),
@@ -225,15 +245,15 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(20),
+                        color: AppColors.primaryFor(businessType).withAlpha(20),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         l10n.executionGreatJob,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          color: AppColors.primaryFor(businessType),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -250,12 +270,19 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                            const Icon(
+                              Icons.error_outline,
+                              color: Colors.red,
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 provider.error!,
-                                style: const TextStyle(color: Colors.red, fontSize: 14),
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ],
@@ -274,9 +301,11 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                           icon: const Icon(Icons.bar_chart),
                           label: Text(l10n.sessionsViewProgress),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: AppColors.primaryFor(businessType),
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                         ),
@@ -291,7 +320,9 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.secondary,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                         ),
@@ -302,9 +333,13 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                         child: OutlinedButton(
                           onPressed: _navigateBack,
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: const BorderSide(color: AppColors.primary),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            foregroundColor: AppColors.primaryFor(businessType),
+                            side: BorderSide(
+                              color: AppColors.primaryFor(businessType),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: Text(l10n.executionClose),
@@ -317,12 +352,18 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                             child: OutlinedButton(
                               onPressed: provider.saving ? null : _navigateBack,
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.primary,
-                                side: const BorderSide(color: AppColors.primary),
+                                foregroundColor: AppColors.primaryFor(
+                                  businessType,
+                                ),
+                                side: BorderSide(
+                                  color: AppColors.primaryFor(businessType),
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
                               child: Text(l10n.executionClose),
                             ),
@@ -330,7 +371,9 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: provider.saving ? null : () => _saveSession(provider),
+                              onPressed: provider.saving
+                                  ? null
+                                  : () => _saveSession(provider),
                               icon: provider.saving
                                   ? const SizedBox(
                                       width: 16,
@@ -340,17 +383,26 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                                         color: Colors.white,
                                       ),
                                     )
-                                  : const Text('💾', style: TextStyle(fontSize: 16)),
+                                  : const Text(
+                                      '💾',
+                                      style: TextStyle(fontSize: 16),
+                                    ),
                               label: Text(
-                                provider.saving ? l10n.executionSaving : l10n.executionSaveSession,
+                                provider.saving
+                                    ? l10n.executionSaving
+                                    : l10n.executionSaveSession,
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
+                                backgroundColor: AppColors.primaryFor(
+                                  businessType,
+                                ),
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
                             ),
                           ),
@@ -373,7 +425,11 @@ class _StatItem extends StatelessWidget {
   final String value;
   final String label;
 
-  const _StatItem({required this.icon, required this.value, required this.label});
+  const _StatItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {

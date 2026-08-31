@@ -4,15 +4,17 @@ class ApiConfig {
   // static const String baseUrlDefault = 'https://192.168.15.4';
   static const String baseUrlDefault =
       'https://scrutiny-elevator-washstand.ngrok-free.dev';
-  // static const String grpcHost = 'https://192.168.15.4';
+  // static const String grpcHost = 'https://192.168.15.4';n
   static const String grpcHost = 'scrutiny-elevator-washstand.ngrok-free.dev';
   static const int grpcPort = 443;
   static const bool grpcUseTls = true;
   // static const String baseUrlDefault = 'https://pt6mn56fes.us-east-1.awsapprunner.com';
   static const String loginEndpoint = '/login';
   static const String signUpEndpoint = '/signup';
-  static String authProfileActivateEndpoint(String uuid) => '/auth/profile/$uuid/activate';
-  static const String authProfileDeactivateEndpoint = '/auth/profile/deactivate';
+  static String authProfileActivateEndpoint(String uuid) =>
+      '/auth/profile/$uuid/activate';
+  static const String authProfileDeactivateEndpoint =
+      '/auth/profile/deactivate';
 
   static const String workoutsEndpoint = '/workout/api/workouts';
   static const String peopleMe = '/workout/api/people/me';
@@ -27,11 +29,16 @@ class ApiConfig {
       '/workout/api/people/me/upload/avatar';
   static const String peopleUploadCoverEndpoint =
       '/workout/api/people/me/upload/cover';
+  static const String accountDeleteEndpoint =
+      '/workout/api/people/me/account/delete';
+  static const String accountCancelDeletionEndpoint =
+      '/workout/api/people/me/account/cancel-deletion';
 
   static const String businessProfilesEndpoint =
       '/workout/api/business-profiles';
 
   static const String friendsEndpoint = '/workout/api/friends';
+  static const String friendsSearchEndpoint = '/workout/api/friends/search';
   static const String friendsRequestEndpoint = '/workout/api/friends/request';
   static const String friendsAcceptEndpoint = '/workout/api/friends/accept';
   static const String friendsRejectEndpoint = '/workout/api/friends/reject';
@@ -50,6 +57,7 @@ class ApiConfig {
 
   static const String feedUploadEndpoint = '/workout/api/media/upload';
   static const String resourceEndpoint = '/workout/api/resource';
+  static const String addressSearchEndpoint = '/workout/api/address/search';
   static const String evolutionCheckInEndpoint =
       '/timeline/api/evolution-checkin';
 

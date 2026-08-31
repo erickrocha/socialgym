@@ -24,39 +24,45 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('renders both Personal Trainer and Gym cards and navigates with the right businessType', (tester) async {
-    final observer = _RecordingObserver();
+  testWidgets(
+    'renders both Personal Trainer and Gym cards and navigates with the right businessType',
+    (tester) async {
+      final observer = _RecordingObserver();
 
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => AuthProvider()),
-          ChangeNotifierProvider(create: (_) => LocaleProvider()),
-          ChangeNotifierProvider(create: (_) => PersonProvider()),
-          ChangeNotifierProvider(create: (_) => SettingsProvider()),
-          ChangeNotifierProvider(create: (_) => NotificationsProvider()),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          navigatorObservers: [observer],
-          home: const AddProfilePage(),
-          routes: {
-            '/add-profile/form': (context) => const Scaffold(body: Text('form')),
-          },
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => AuthProvider()),
+            ChangeNotifierProvider(create: (_) => LocaleProvider()),
+            ChangeNotifierProvider(create: (_) => PersonProvider()),
+            ChangeNotifierProvider(create: (_) => SettingsProvider()),
+            ChangeNotifierProvider(create: (_) => NotificationsProvider()),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            navigatorObservers: [observer],
+            home: const AddProfilePage(),
+            routes: {
+              '/add-profile/form': (context) =>
+                  const Scaffold(body: Text('form')),
+            },
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Personal Trainer'), findsOneWidget);
-    expect(find.text('Gym'), findsOneWidget);
+      expect(find.text('Personal Trainer'), findsOneWidget);
+      expect(find.text('Gym'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('business_profile_type_card_Professional')));
-    await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('business_profile_type_card_Professional')),
+      );
+      await tester.pumpAndSettle();
 
-    final pushedRoute = observer.pushed.last;
-    expect(pushedRoute.settings.name, '/add-profile/form');
-    expect(pushedRoute.settings.arguments, 'Professional');
-  });
+      final pushedRoute = observer.pushed.last;
+      expect(pushedRoute.settings.name, '/add-profile/form');
+      expect(pushedRoute.settings.arguments, 'Professional');
+    },
+  );
 }

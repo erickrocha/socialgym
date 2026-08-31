@@ -20,7 +20,8 @@ class VitruvianBodyState {
     required this.hasGenderData,
   });
 
-  String get assetPath => 'assets/vitruvian3d/${gender}_${fatBucket.name}_${muscleBucket.name}.glb';
+  String get assetPath =>
+      'assets/vitruvian3d/${gender}_${fatBucket.name}_${muscleBucket.name}.glb';
 }
 
 const double _minScale = 0.9;
@@ -34,7 +35,8 @@ VitruvianBodyState computeVitruvianBodyState({
   String? gender,
 }) {
   final hasGenderData = gender != null && gender.trim().isNotEmpty;
-  final normalizedGender = hasGenderData && gender.trim().toLowerCase() == 'female'
+  final normalizedGender =
+      hasGenderData && gender.trim().toLowerCase() == 'female'
       ? 'female'
       : 'male';
 
@@ -49,7 +51,8 @@ VitruvianBodyState computeVitruvianBodyState({
     );
   }
 
-  final ordered = [...checkins]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  final ordered = [...checkins]
+    ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   final latest = ordered.last;
 
   final bodyFatPct = latest.composition?.bodyFatPct;

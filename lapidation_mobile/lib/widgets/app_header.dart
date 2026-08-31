@@ -6,7 +6,6 @@ import '../config/nav_section.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/person_provider.dart';
 import 'profile_menu.dart';
-import 'brand_logo.dart';
 
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuPressed;
@@ -85,10 +84,10 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const BrandLogo(
-                        size: 30,
-                        showWordmark: false,
-                        light: true,
+                      Image.asset(
+                        'assets/images/logo.png',
+                        width: 32,
+                        height: 32,
                       ),
                       if (isDesktop) ...[
                         const SizedBox(width: 8),
@@ -97,8 +96,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 2,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
@@ -124,6 +122,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                                 isActive: s == currentSection,
                                 showLabel: isDesktop,
                                 label: _sectionLabel(s, l10n),
+                                isProfessional: isProfessional,
                               ),
                             )
                             .toList(),
@@ -175,12 +174,14 @@ class _SectionTab extends StatelessWidget {
   final bool isActive;
   final bool showLabel; // true on desktop
   final String label;
+  final bool isProfessional;
 
   const _SectionTab({
     required this.section,
     required this.isActive,
     required this.showLabel,
     required this.label,
+    required this.isProfessional,
   });
 
   @override
@@ -189,9 +190,10 @@ class _SectionTab extends StatelessWidget {
     final textColor = isActive ? Colors.white : Colors.white.withAlpha(153);
 
     return InkWell(
-      onTap: () => Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil(section.rootRoute, (route) => false),
+      onTap: () => Navigator.of(context).pushNamedAndRemoveUntil(
+        section.rootRouteFor(isProfessional),
+        (route) => false,
+      ),
       borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),

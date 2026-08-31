@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../config/app_colors.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/locale_provider.dart';
+import '../providers/person_provider.dart';
 
 class LanguageSelectorButton extends StatelessWidget {
   const LanguageSelectorButton({super.key});
@@ -11,6 +12,10 @@ class LanguageSelectorButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
     return Consumer<LocaleProvider>(
       builder: (context, localeProvider, _) {
         return PopupMenuButton<String>(
@@ -34,15 +39,23 @@ class LanguageSelectorButton extends StatelessWidget {
                 child: Row(
                   children: [
                     if (isSelected)
-                      const Icon(Icons.check, color: AppColors.primary, size: 18)
+                      Icon(
+                        Icons.check,
+                        color: AppColors.primaryFor(businessType),
+                        size: 18,
+                      )
                     else
                       const SizedBox(width: 18),
                     const SizedBox(width: 8),
                     Text(
                       entry.value,
                       style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? AppColors.primary : null,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isSelected
+                            ? AppColors.primaryFor(businessType)
+                            : null,
                       ),
                     ),
                   ],

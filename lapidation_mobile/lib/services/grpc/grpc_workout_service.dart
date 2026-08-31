@@ -5,7 +5,8 @@ import 'package:lapidation_mobile/models/exercise.dart';
 import 'package:lapidation_mobile/models/workout.dart';
 import 'package:lapidation_mobile/services/base_service.dart';
 import 'package:lapidation_mobile/services/grpc/grpc_channel_factory.dart';
-import 'package:lapidation_mobile/src/generated/grpc/workout.pbgrpc.dart' as $workout;
+import 'package:lapidation_mobile/src/generated/grpc/workout.pbgrpc.dart'
+    as $workout;
 
 import '../../config/api_config.dart';
 
@@ -34,8 +35,17 @@ class GrpcWorkoutService {
       authority: ApiConfig.grpcAuthority,
     );
     _client = $workout.WorkoutServiceClient(
-        channel, interceptors: GrpcChannelFactory.interceptors);
+      channel,
+      interceptors: GrpcChannelFactory.interceptors,
+    );
     return _client!;
+  }
+
+  /// Drops the cached client. Call after the underlying channel has been
+  /// shut down (e.g. on sign-out) so the next call rebuilds against a
+  /// fresh channel instead of reusing one that is closing/closed.
+  static Future<void> shutdown() async {
+    _client = null;
   }
 
   static Future<Workout> getWorkoutByUuid({required String uuid}) async {
@@ -50,8 +60,9 @@ class GrpcWorkoutService {
     }
   }
 
-  static Future<List<Workout>> getWorkoutsByOwnerUuid(
-      {required String ownerUuid}) async {
+  static Future<List<Workout>> getWorkoutsByOwnerUuid({
+    required String ownerUuid,
+  }) async {
     try {
       final response = await _ensureClient().getWorkoutsByOwner(
         $workout.WorkoutListRequest()..ownerUuid = ownerUuid,
@@ -63,11 +74,19 @@ class GrpcWorkoutService {
     }
   }
 
-  static Future<Workout> createWorkout({required Workout workout}) async {
+  static Future<Workout> createWorkout({
+    required Workout workout,
+    String? targetPersonUuid,
+  }) async {
     try {
       final mapper = WorkoutMapper();
+      final proto = $workout.Workout()
+        ..mergeFromMessage(mapper.toProto(workout));
+      if (targetPersonUuid != null && targetPersonUuid.isNotEmpty) {
+        proto.targetPersonUuid = targetPersonUuid;
+      }
       final response = await _ensureClient().addWorkout(
-        $workout.Workout()..mergeFromMessage(mapper.toProto(workout)),
+        proto,
         options: grpc.CallOptions(timeout: ApiConfig.timeout),
       );
       return mapper.fromProto(response);
@@ -100,7 +119,10 @@ class GrpcWorkoutService {
     }
   }
 
-  static Future<Workout> addExercisesToWorkout({required String workoutUuid, required List<Exercise> exercises}) async {
+  static Future<Workout> addExercisesToWorkout({
+    required String workoutUuid,
+    required List<Exercise> exercises,
+  }) async {
     try {
       final response = await _ensureClient().addExercisesToWorkout(
         $workout.WorkoutExercisesRequest()
@@ -110,7 +132,10 @@ class GrpcWorkoutService {
       );
       return WorkoutMapper().fromProto(response);
     } on grpc.GrpcError catch (e) {
-      throw BaseService.handleGrpcError(e, 'Failed to add exercises to workout');
+      throw BaseService.handleGrpcError(
+        e,
+        'Failed to add exercises to workout',
+      );
     }
   }
 }

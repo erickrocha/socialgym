@@ -9,7 +9,11 @@ class PresignedUrlResponse {
   final String url;
   final String objectKey;
   final int? ownerId;
-  PresignedUrlResponse({required this.url, required this.objectKey, this.ownerId});
+  PresignedUrlResponse({
+    required this.url,
+    required this.objectKey,
+    this.ownerId,
+  });
   factory PresignedUrlResponse.fromJson(Map<String, dynamic> json) {
     return PresignedUrlResponse(
       url: json['url'] as String,
@@ -38,7 +42,9 @@ class UploadService {
     }
   }
 
-  static Future<PresignedUrlResponse> getAvatarPresignedUrl(String format) async {
+  static Future<PresignedUrlResponse> getAvatarPresignedUrl(
+    String format,
+  ) async {
     final result = await GrpcPersonService.getPersonImageUploadUrl(
       imageType: 'avatar',
       format: format,
@@ -46,7 +52,9 @@ class UploadService {
     return PresignedUrlResponse(url: result.url, objectKey: result.objectKey);
   }
 
-  static Future<PresignedUrlResponse> getCoverPresignedUrl(String format) async {
+  static Future<PresignedUrlResponse> getCoverPresignedUrl(
+    String format,
+  ) async {
     final result = await GrpcPersonService.getPersonImageUploadUrl(
       imageType: 'cover',
       format: format,
@@ -65,7 +73,9 @@ class UploadService {
         '${ApiConfig.businessProfilesEndpoint}/upload/avatar?format=$format',
       );
       if (response.statusCode == 200) {
-        return PresignedUrlResponse.fromJson(response.data as Map<String, dynamic>);
+        return PresignedUrlResponse.fromJson(
+          response.data as Map<String, dynamic>,
+        );
       } else {
         throw AppException(
           statusCode: response.statusCode ?? 500,
@@ -87,7 +97,9 @@ class UploadService {
         '${ApiConfig.businessProfilesEndpoint}/upload/cover?format=$format',
       );
       if (response.statusCode == 200) {
-        return PresignedUrlResponse.fromJson(response.data as Map<String, dynamic>);
+        return PresignedUrlResponse.fromJson(
+          response.data as Map<String, dynamic>,
+        );
       } else {
         throw AppException(
           statusCode: response.statusCode ?? 500,
@@ -106,7 +118,9 @@ class UploadService {
     return (ext == 'mov') ? 'mp4' : ext;
   }
 
-  static (String mediaType, String format, String contentType) _mediaInfo(String filePath) {
+  static (String mediaType, String format, String contentType) _mediaInfo(
+    String filePath,
+  ) {
     final ext = filePath.split('.').last.toLowerCase();
     if (_isVideoExtension(ext)) {
       final fmt = _getVideoFormat(filePath);
@@ -126,18 +140,29 @@ class UploadService {
       DioClient().setAuthToken(token);
       final response = await _dio.get(
         ApiConfig.feedUploadEndpoint,
-        queryParameters: {'mediaType': mediaType, 'format': format, 'album': album},
+        queryParameters: {
+          'mediaType': mediaType,
+          'format': format,
+          'album': album,
+        },
       );
       if (response.statusCode == 200) {
-        return PresignedUrlResponse.fromJson(response.data as Map<String, dynamic>);
+        return PresignedUrlResponse.fromJson(
+          response.data as Map<String, dynamic>,
+        );
       } else {
         throw AppException(
           statusCode: response.statusCode ?? 500,
-          message: response.data?['message'] ?? 'Failed to get presigned URL for post media',
+          message:
+              response.data?['message'] ??
+              'Failed to get presigned URL for post media',
         );
       }
     } on DioException catch (e) {
-      throw BaseService.handleDioError(e, 'Failed to get presigned URL for post media');
+      throw BaseService.handleDioError(
+        e,
+        'Failed to get presigned URL for post media',
+      );
     }
   }
 
@@ -149,7 +174,12 @@ class UploadService {
     final (mediaType, format, contentType) = _mediaInfo(
       file.name.isNotEmpty ? file.name : file.path,
     );
-    final presigned = await getPostMediaPresignedUrl(token, mediaType, contentType, album);
+    final presigned = await getPostMediaPresignedUrl(
+      token,
+      mediaType,
+      contentType,
+      album,
+    );
     await uploadToS3(presigned.url, file, format, contentType: contentType);
     return presigned;
   }
@@ -213,14 +243,26 @@ class UploadService {
     final (mediaType, format, contentType) = _mediaInfo(
       imageFile.name.isNotEmpty ? imageFile.name : imageFile.path,
     );
-    final presignedResponse = await getBusinessProfileLogoPresignedUrl(token, businessProfileId, contentType);
+    final presignedResponse = await getBusinessProfileLogoPresignedUrl(
+      token,
+      businessProfileId,
+      contentType,
+    );
     await uploadToS3(presignedResponse.url, imageFile, format);
     return true;
   }
 
-  static Future<bool> uploadBusinessProfileCover(String token,XFile imageFile) async {
-    final (mediaType, format, contentType) = _mediaInfo(imageFile.name.isNotEmpty ? imageFile.name : imageFile.path);
-    final presignedResponse = await getBusinessProfileCoverPresignedUrl(token, contentType);
+  static Future<bool> uploadBusinessProfileCover(
+    String token,
+    XFile imageFile,
+  ) async {
+    final (mediaType, format, contentType) = _mediaInfo(
+      imageFile.name.isNotEmpty ? imageFile.name : imageFile.path,
+    );
+    final presignedResponse = await getBusinessProfileCoverPresignedUrl(
+      token,
+      contentType,
+    );
     await uploadToS3(presignedResponse.url, imageFile, format);
     return true;
   }

@@ -121,12 +121,18 @@ class _MainLayoutState extends State<MainLayout> {
           Navigator.of(context).pushNamed('/notifications');
         },
         onProfilePressed: () {
-          final destination = context.read<PersonProvider>().isProfessional ? '/business-profile' : '/profile';
-          Navigator.of(context).pushNamedAndRemoveUntil(destination, (route) => false);
+          final destination = context.read<PersonProvider>().isProfessional
+              ? '/business-profile'
+              : '/profile';
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil(destination, (route) => false);
         },
       ),
       drawer: (isDesktop || isSheetStyle || isRightSide) ? null : sidebarDrawer,
-      endDrawer: (isDesktop || isSheetStyle || !isRightSide) ? null : sidebarDrawer,
+      endDrawer: (isDesktop || isSheetStyle || !isRightSide)
+          ? null
+          : sidebarDrawer,
       body: (isDesktop && !isSheetStyle)
           ? Row(
               children: isRightSide

@@ -1,5 +1,3 @@
-
-
 import '../src/generated/grpc/profile.pb.dart' as $profile;
 
 class Profile {
@@ -17,7 +15,6 @@ class Profile {
     required this.personUuid,
     required this.businessProfileId,
     required this.businessProfileUuid,
-
   });
 
   factory Profile.fromProto($profile.Profile proto) {

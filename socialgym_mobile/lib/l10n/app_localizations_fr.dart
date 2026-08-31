@@ -1483,4 +1483,45 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get businessProfileSwitchToPersonal => 'Compte personnel';
+
+  @override
+  String get consentPendingTitle => 'Consentement légal requis';
+
+  @override
+  String get consentPendingSubtitle =>
+      'Veuillez consulter et accepter les documents ci-dessous avant de continuer à utiliser l\'application.';
+
+  @override
+  String get consentReadDocument => 'Lire';
+
+  @override
+  String get consentAgree => 'J\'accepte';
+
+  @override
+  String get consentReviewAndAccept => 'Consulter et accepter';
+
+  @override
+  String get consentAllAccepted => 'Tout est bon — merci d\'avoir accepté.';
+
+  @override
+  String get consentLogOut => 'Se déconnecter';
+
+  @override
+  String get consentClose => 'Fermer';
+
+  @override
+  String get consentLoading => 'Chargement…';
+
+  @override
+  String get consentLoadFailed =>
+      'Impossible de charger vos consentements en attente. Veuillez réessayer.';
+
+  @override
+  String get consentNeverAccepted =>
+      'Vous n\'avez pas encore accepté ce document.';
+
+  @override
+  String consentVersionOutdated(String version) {
+    return 'Une nouvelle version ($version) est disponible et doit être acceptée.';
+  }
 }

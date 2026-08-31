@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lapidation_mobile/commons/team_member_mapper.dart';
-import 'package:lapidation_mobile/src/generated/grpc/business_profile.pb.dart' as $business_profile;
+import 'package:lapidation_mobile/src/generated/grpc/business_profile.pb.dart'
+    as $business_profile;
 import 'package:lapidation_mobile/src/generated/grpc/person.pb.dart' as $person;
-import 'package:lapidation_mobile/src/generated/grpc/team_member.pb.dart' as $tm;
+import 'package:lapidation_mobile/src/generated/grpc/team_member.pb.dart'
+    as $tm;
 
 void main() {
   group('TeamMemberMapper', () {
@@ -45,49 +47,64 @@ void main() {
   });
 
   group('TeamMemberPageMapper', () {
-    test('fromProto maps members/sentRequests to Person and teams/receivedRequests to BusinessProfile', () {
-      final proto = $tm.TeamMemberPageResponse(
-        members: [
-          $person.Person(id: 1, uuid: 'p1', firstname: 'Carlos', surname: 'Silva', gender: 'Male'),
-        ],
-        sentRequests: [
-          $person.Person(id: 2, uuid: 'p2', firstname: 'Ines', surname: 'Invitee', gender: 'Female'),
-        ],
-        teams: [
-          $business_profile.BusinessProfile(
-            id: 10,
-            uuid: 'bp1',
-            ownerId: 1,
-            ownerUuid: 'p1',
-            taxId: '123',
-            businessName: 'Academia Teste',
-            businessType: 'Company',
-          ),
-        ],
-        receivedRequests: [
-          $business_profile.BusinessProfile(
-            id: 11,
-            uuid: 'bp2',
-            ownerId: 3,
-            ownerUuid: 'p3',
-            taxId: '456',
-            businessName: 'Studio X',
-            businessType: 'Company',
-          ),
-        ],
-      );
+    test(
+      'fromProto maps members/sentRequests to Person and teams/receivedRequests to BusinessProfile',
+      () {
+        final proto = $tm.TeamMemberPageResponse(
+          members: [
+            $person.Person(
+              id: 1,
+              uuid: 'p1',
+              firstname: 'Carlos',
+              surname: 'Silva',
+              gender: 'Male',
+            ),
+          ],
+          sentRequests: [
+            $person.Person(
+              id: 2,
+              uuid: 'p2',
+              firstname: 'Ines',
+              surname: 'Invitee',
+              gender: 'Female',
+            ),
+          ],
+          teams: [
+            $business_profile.BusinessProfile(
+              id: 10,
+              uuid: 'bp1',
+              ownerId: 1,
+              ownerUuid: 'p1',
+              taxId: '123',
+              businessName: 'Academia Teste',
+              businessType: 'Company',
+            ),
+          ],
+          receivedRequests: [
+            $business_profile.BusinessProfile(
+              id: 11,
+              uuid: 'bp2',
+              ownerId: 3,
+              ownerUuid: 'p3',
+              taxId: '456',
+              businessName: 'Studio X',
+              businessType: 'Company',
+            ),
+          ],
+        );
 
-      final page = TeamMemberPageMapper().fromProto(proto);
+        final page = TeamMemberPageMapper().fromProto(proto);
 
-      expect(page.members, hasLength(1));
-      expect(page.members.first.fullName, 'Carlos Silva');
-      expect(page.sentRequests, hasLength(1));
-      expect(page.sentRequests.first.fullName, 'Ines Invitee');
-      expect(page.teams, hasLength(1));
-      expect(page.teams.first.businessName, 'Academia Teste');
-      expect(page.receivedRequests, hasLength(1));
-      expect(page.receivedRequests.first.businessName, 'Studio X');
-    });
+        expect(page.members, hasLength(1));
+        expect(page.members.first.fullName, 'Carlos Silva');
+        expect(page.sentRequests, hasLength(1));
+        expect(page.sentRequests.first.fullName, 'Ines Invitee');
+        expect(page.teams, hasLength(1));
+        expect(page.teams.first.businessName, 'Academia Teste');
+        expect(page.receivedRequests, hasLength(1));
+        expect(page.receivedRequests.first.businessName, 'Studio X');
+      },
+    );
 
     test('fromProto handles empty lists', () {
       final proto = $tm.TeamMemberPageResponse();

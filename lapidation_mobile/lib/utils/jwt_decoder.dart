@@ -12,7 +12,8 @@ class JwtClaims {
   });
 
   bool get isBusinessProfile =>
-      activeBusinessProfileUuid != null && activeBusinessProfileUuid!.isNotEmpty;
+      activeBusinessProfileUuid != null &&
+      activeBusinessProfileUuid!.isNotEmpty;
 }
 
 class JwtDecoder {

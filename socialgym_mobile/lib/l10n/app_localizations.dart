@@ -2912,6 +2912,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Personal account'**
   String get businessProfileSwitchToPersonal;
+
+  /// No description provided for @consentPendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal consent required'**
+  String get consentPendingTitle;
+
+  /// No description provided for @consentPendingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Please review and accept the documents below before you continue using the app.'**
+  String get consentPendingSubtitle;
+
+  /// No description provided for @consentReadDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get consentReadDocument;
+
+  /// No description provided for @consentAgree.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree'**
+  String get consentAgree;
+
+  /// No description provided for @consentReviewAndAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Review and accept'**
+  String get consentReviewAndAccept;
+
+  /// No description provided for @consentAllAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'All set — thanks for accepting.'**
+  String get consentAllAccepted;
+
+  /// No description provided for @consentLogOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get consentLogOut;
+
+  /// No description provided for @consentClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get consentClose;
+
+  /// No description provided for @consentLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get consentLoading;
+
+  /// No description provided for @consentLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your pending consents. Please try again.'**
+  String get consentLoadFailed;
+
+  /// No description provided for @consentNeverAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not accepted this document yet.'**
+  String get consentNeverAccepted;
+
+  /// No description provided for @consentVersionOutdated.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version ({version}) is available and must be accepted.'**
+  String consentVersionOutdated(String version);
 }
 
 class _AppLocalizationsDelegate

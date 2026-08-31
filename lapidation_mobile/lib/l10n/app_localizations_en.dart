@@ -281,6 +281,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLoadError => 'Could not refresh settings from the server';
 
   @override
+  String get settingsDangerZoneTitle => 'Danger Zone';
+
+  @override
+  String get settingsDeleteAccountDescription =>
+      'Deleting your account removes your profile, workouts, posts, and all associated data.';
+
+  @override
+  String get settingsDeleteAccountButton => 'Delete Account';
+
+  @override
+  String get settingsDeleteAccountConfirmTitle => 'Delete Account';
+
+  @override
+  String get settingsDeleteAccountConfirmBody =>
+      'This can\'t be undone once completed. Choose when you\'d like this to happen:';
+
+  @override
+  String get settingsDeleteAccountOptionGracePeriod =>
+      'Delete after 30 days (you can cancel by logging back in)';
+
+  @override
+  String get settingsDeleteAccountOptionImmediate => 'Delete immediately';
+
+  @override
+  String get settingsDeleteAccountConfirmButton => 'Delete Account';
+
+  @override
+  String get settingsDeleteAccountScheduledTitle =>
+      'Account Deletion Scheduled';
+
+  @override
+  String settingsDeleteAccountScheduledBody(String date) {
+    return 'Your account will be permanently deleted on $date. You\'ve been signed out.';
+  }
+
+  @override
+  String get settingsDeleteAccountError =>
+      'Failed to delete account. Please try again.';
+
+  @override
+  String get signInPendingDeletionTitle => 'Account Scheduled for Deletion';
+
+  @override
+  String signInPendingDeletionBody(String date) {
+    return 'Your account is scheduled to be permanently deleted on $date. Would you like to keep your account?';
+  }
+
+  @override
+  String get signInPendingDeletionKeepButton => 'Keep My Account';
+
+  @override
+  String get signInPendingDeletionDismissButton => 'Not Now';
+
+  @override
+  String get signInPendingDeletionCancelSuccess =>
+      'Account deletion cancelled. Welcome back!';
+
+  @override
+  String get signInPendingDeletionCancelError =>
+      'Failed to cancel account deletion. Please try again.';
+
+  @override
   String get workoutTitle => 'My Workouts';
 
   @override
@@ -340,6 +402,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workoutMuscleGroups => 'Muscle Groups';
+
+  @override
+  String get workoutAssignToTeamMember => 'Create for';
+
+  @override
+  String get workoutAssignToMyself => 'Myself';
+
+  @override
+  String get workoutSelectTeamMember => 'Select team member';
+
+  @override
+  String get workoutNoTeamMembers => 'You have no accepted team members yet';
 
   @override
   String get workoutSets => 'Sets';
@@ -607,34 +681,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addressDelete => 'Delete Address';
 
   @override
-  String get addressSetCurrent => 'Set as Current';
-
-  @override
   String get addressCurrent => 'Current Address';
 
   @override
-  String get addressStreet => 'Street';
-
-  @override
-  String get addressNumber => 'Number';
-
-  @override
-  String get addressComplement => 'Complement';
-
-  @override
-  String get addressNeighborhood => 'Neighborhood';
-
-  @override
-  String get addressCity => 'City';
-
-  @override
-  String get addressState => 'State/Province';
-
-  @override
   String get addressCountry => 'Country';
-
-  @override
-  String get addressZipCode => 'ZIP Code';
 
   @override
   String get addressPostalCode => 'Postal Code';
@@ -652,28 +702,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addressAdministrativeArea => 'State/Province';
 
   @override
-  String get addressMarkCurrent => 'Mark as current address';
-
-  @override
   String get addressSelectCountry => 'Select country';
-
-  @override
-  String get addressSelectState => 'Select state';
-
-  @override
-  String get addressSelectCountryFirst => 'Select country first';
-
-  @override
-  String get addressLatitude => 'Latitude';
-
-  @override
-  String get addressLongitude => 'Longitude';
-
-  @override
-  String get addressGpsLocation => 'GPS Location';
-
-  @override
-  String get addressGetCurrentLocation => 'Get Current Location';
 
   @override
   String get addressLocationServicesDisabled =>
@@ -731,6 +760,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get friendsTabSuggestions => 'Suggestions';
+
+  @override
+  String get friendsTabFind => 'Find';
 
   @override
   String get friendsNoFriends => 'No friends yet';
@@ -792,6 +824,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get friendsActionError => 'Action failed. Please try again.';
+
+  @override
+  String get friendsLocationAnywhere => 'Anywhere';
+
+  @override
+  String get friendsLocationSavedAddress => 'Near my address';
+
+  @override
+  String get friendsLocationCurrentGps => 'Near me now';
+
+  @override
+  String get friendsFindSearchHint => 'Search by name or username';
+
+  @override
+  String get friendsFindPromptTitle => 'Find friends';
+
+  @override
+  String get friendsFindPromptHint =>
+      'Search by name or use a location filter to find people';
+
+  @override
+  String get friendsFindNoResults => 'No people found';
+
+  @override
+  String get friendsFindNoResultsHint =>
+      'Try a different name or location filter';
 
   @override
   String get friendViewProfile => 'View Profile';
@@ -1092,7 +1150,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Start workout feature coming soon';
 
   @override
-  String get tooltipSwipeToView => 'Swipe left to add exercises';
+  String get tooltipSwipeToView =>
+      'Go back and swipe an exercise right to add it';
+
+  @override
+  String get tooltipBackToExercises => 'Back to exercises';
 
   @override
   String get sortCreatedAtDesc => 'Newest First';
@@ -1395,4 +1457,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get businessProfileSwitchToPersonal => 'Personal account';
+
+  @override
+  String get consentPendingTitle => 'Legal consent required';
+
+  @override
+  String get consentPendingSubtitle =>
+      'Please review and accept the documents below before you continue using the app.';
+
+  @override
+  String get consentReadDocument => 'Read';
+
+  @override
+  String get consentAgree => 'I agree';
+
+  @override
+  String get consentReviewAndAccept => 'Review and accept';
+
+  @override
+  String get consentAllAccepted => 'All set — thanks for accepting.';
+
+  @override
+  String get consentLogOut => 'Log out';
+
+  @override
+  String get consentClose => 'Close';
+
+  @override
+  String get consentLoading => 'Loading…';
+
+  @override
+  String get consentLoadFailed =>
+      'Could not load your pending consents. Please try again.';
+
+  @override
+  String get consentNeverAccepted => 'You have not accepted this document yet.';
+
+  @override
+  String consentVersionOutdated(String version) {
+    return 'A new version ($version) is available and must be accepted.';
+  }
 }

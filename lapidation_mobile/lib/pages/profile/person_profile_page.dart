@@ -7,6 +7,7 @@ import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/person.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/person_provider.dart';
 import '../../services/person_service.dart';
 import '../../services/base_service.dart';
 
@@ -71,6 +72,10 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final coverHeight = screenWidth > 600 ? 250.0 : 180.0;
     final avatarSize = screenWidth > 600 ? 140.0 : 100.0;
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -82,7 +87,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
               SliverAppBar(
                 expandedHeight: coverHeight,
                 pinned: true,
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.primaryFor(businessType),
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () => Navigator.of(context).pop(),
@@ -92,15 +97,22 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                     fit: StackFit.expand,
                     children: [
                       // Default cover
-                      Image.asset('assets/images/cover_foto.png', fit: BoxFit.cover),
+                      Image.asset(
+                        'assets/images/cover_foto.png',
+                        fit: BoxFit.cover,
+                      ),
                       if (_person.cover != null)
                         CachedNetworkImage(
                           imageUrl: _person.cover!,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              Image.asset('assets/images/cover_foto.png', fit: BoxFit.cover),
-                          errorWidget: (context, url, error) =>
-                              Image.asset('assets/images/cover_foto.png', fit: BoxFit.cover),
+                          placeholder: (context, url) => Image.asset(
+                            'assets/images/cover_foto.png',
+                            fit: BoxFit.cover,
+                          ),
+                          errorWidget: (context, url, error) => Image.asset(
+                            'assets/images/cover_foto.png',
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       // Gradient overlay for readability
                       Container(
@@ -108,7 +120,10 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Colors.black.withAlpha(100)],
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withAlpha(100),
+                            ],
                           ),
                         ),
                       ),
@@ -123,7 +138,11 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                   children: [
                     // Avatar + name header row
                     Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 16, top: 40),
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: 40,
+                      ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -135,7 +154,10 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               height: avatarSize,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 4),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 4,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withAlpha(51),
@@ -149,21 +171,30 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                                     ? CachedNetworkImage(
                                         imageUrl: _person.avatar!,
                                         fit: BoxFit.cover,
-                                        placeholder: (context, url) => Container(
-                                          color: AppColors.primary,
-                                          child: const Center(
-                                            child: CircularProgressIndicator(color: Colors.white),
-                                          ),
-                                        ),
-                                        errorWidget: (context, url, error) => Image.asset(
-                                          _person.gender?.toLowerCase() == 'female'
-                                              ? 'assets/images/avatar_female.png'
-                                              : 'assets/images/avatar_male.png',
-                                          fit: BoxFit.cover,
-                                        ),
+                                        placeholder: (context, url) =>
+                                            Container(
+                                              color: AppColors.primaryFor(
+                                                businessType,
+                                              ),
+                                              child: const Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: Colors.white,
+                                                    ),
+                                              ),
+                                            ),
+                                        errorWidget: (context, url, error) =>
+                                            Image.asset(
+                                              _person.gender?.toLowerCase() ==
+                                                      'female'
+                                                  ? 'assets/images/avatar_female.png'
+                                                  : 'assets/images/avatar_male.png',
+                                              fit: BoxFit.cover,
+                                            ),
                                       )
                                     : Image.asset(
-                                        _person.gender?.toLowerCase() == 'female'
+                                        _person.gender?.toLowerCase() ==
+                                                'female'
                                             ? 'assets/images/avatar_female.png'
                                             : 'assets/images/avatar_male.png',
                                         fit: BoxFit.cover,
@@ -190,7 +221,10 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                                   const SizedBox(height: 2),
                                   Text(
                                     '${l10n.profileMemberSince} ${_person.createdAt?.toIso8601String() ?? ''}',
-                                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -202,12 +236,17 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
 
                     if (_error != null)
                       Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppColors.danger.withAlpha(20),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.danger.withAlpha(80)),
+                          border: Border.all(
+                            color: AppColors.danger.withAlpha(80),
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -220,7 +259,10 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                             Expanded(
                               child: Text(
                                 l10n.profileFriendLoadError,
-                                style: const TextStyle(color: AppColors.danger, fontSize: 13),
+                                style: const TextStyle(
+                                  color: AppColors.danger,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
@@ -229,12 +271,20 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
 
                     // Content sections
                     Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 40),
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 40,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Personal Information
-                          _buildSectionHeader(l10n.profilePersonalInfo, Icons.person_outline),
+                          _buildSectionHeader(
+                            l10n.profilePersonalInfo,
+                            Icons.person_outline,
+                            businessType,
+                          ),
                           const SizedBox(height: 12),
 
                           if (_person.personInfo?.biography != null &&
@@ -243,6 +293,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.description_outlined,
                               l10n.profileBiography,
                               _person.personInfo!.biography!,
+                              businessType,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -253,6 +304,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.work_outline,
                               l10n.profileJob,
                               _person.personInfo!.job!,
+                              businessType,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -261,7 +313,11 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                             _buildInfoRow(
                               Icons.favorite_outline,
                               l10n.profileRelationship,
-                              _getRelationshipLabel(_person.personInfo!.relationship!, l10n),
+                              _getRelationshipLabel(
+                                _person.personInfo!.relationship!,
+                                l10n,
+                              ),
+                              businessType,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -272,6 +328,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.home_outlined,
                               l10n.profileHomeTown,
                               _person.personInfo!.homeTown!,
+                              businessType,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -282,6 +339,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.location_city_outlined,
                               l10n.profileCurrentCity,
                               _person.personInfo!.currentCity!,
+                              businessType,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -291,6 +349,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.people_outline,
                               l10n.profileGender,
                               _getGenderLabel(_person.gender!, l10n),
+                              businessType,
                             ),
                             const SizedBox(height: 10),
                           ],
@@ -300,6 +359,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                               Icons.calendar_today_outlined,
                               l10n.profileDateOfBirth,
                               DateFormat.yMMMd().format(_person.dateOfBirth!),
+                              businessType,
                             ),
                           ],
 
@@ -311,6 +371,7 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                             _buildSectionHeader(
                               l10n.profilePhysicalStats,
                               Icons.fitness_center_outlined,
+                              businessType,
                             ),
                             const SizedBox(height: 12),
                             Row(
@@ -320,7 +381,9 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                                     child: _buildStatCard(
                                       icon: Icons.monitor_weight_outlined,
                                       label: l10n.profileWeight,
-                                      value: '${_person.personInfo!.weight!.toStringAsFixed(1)} kg',
+                                      value:
+                                          '${_person.personInfo!.weight!.toStringAsFixed(1)} kg',
+                                      businessType: businessType,
                                     ),
                                   ),
                                 if (_person.personInfo?.weight != null &&
@@ -331,7 +394,9 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                                     child: _buildStatCard(
                                       icon: Icons.height,
                                       label: l10n.profileHeight,
-                                      value: '${_person.personInfo!.height!.toStringAsFixed(0)} cm',
+                                      value:
+                                          '${_person.personInfo!.height!.toStringAsFixed(0)} cm',
+                                      businessType: businessType,
                                     ),
                                   ),
                               ],
@@ -341,9 +406,19 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
 
                           // Addresses
                           if (_person.addresses.isNotEmpty) ...[
-                            _buildSectionHeader(l10n.addressSection, Icons.location_on_outlined),
+                            _buildSectionHeader(
+                              l10n.addressSection,
+                              Icons.location_on_outlined,
+                              businessType,
+                            ),
                             const SizedBox(height: 12),
-                            ..._person.addresses.map((address) => _buildAddressCard(address, l10n)),
+                            ..._person.addresses.map(
+                              (address) => _buildAddressCard(
+                                address,
+                                l10n,
+                                businessType,
+                              ),
+                            ),
                           ],
                         ],
                       ),
@@ -371,7 +446,10 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                     child: const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     ),
                   ),
                 ),
@@ -382,21 +460,33 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon) {
+  Widget _buildSectionHeader(
+    String title,
+    IconData icon,
+    String? businessType,
+  ) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.primary, size: 22),
+        Icon(icon, color: AppColors.primaryFor(businessType), size: 22),
         const SizedBox(width: 8),
-        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value,
+    String? businessType,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: AppColors.primary, size: 18),
+        Icon(icon, color: AppColors.primaryFor(businessType), size: 18),
         const SizedBox(width: 8),
         Expanded(
           child: RichText(
@@ -405,7 +495,10 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
               children: [
                 TextSpan(
                   text: '$label: ',
-                  style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 TextSpan(
                   text: value,
@@ -419,7 +512,12 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
     );
   }
 
-  Widget _buildStatCard({required IconData icon, required String label, required String value}) {
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required String? businessType,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
@@ -427,19 +525,23 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[200]!),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withAlpha(30), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.grey.withAlpha(30),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
         children: [
-          Icon(icon, color: AppColors.primary, size: 28),
+          Icon(icon, color: AppColors.primaryFor(businessType), size: 28),
           const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: AppColors.primaryFor(businessType),
             ),
           ),
           const SizedBox(height: 2),
@@ -453,18 +555,30 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
     );
   }
 
-  Widget _buildAddressCard(PersonAddress address, AppLocalizations l10n) {
+  Widget _buildAddressCard(
+    PersonAddress address,
+    AppLocalizations l10n,
+    String? businessType,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: address.current ? AppColors.primary.withAlpha(15) : Colors.white,
+        color: address.current
+            ? AppColors.primaryFor(businessType).withAlpha(15)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: address.current ? AppColors.primary.withAlpha(100) : Colors.grey[200]!,
+          color: address.current
+              ? AppColors.primaryFor(businessType).withAlpha(100)
+              : Colors.grey[200]!,
         ),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withAlpha(25), blurRadius: 4, offset: const Offset(0, 1)),
+          BoxShadow(
+            color: Colors.grey.withAlpha(25),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
         ],
       ),
       child: Row(
@@ -472,7 +586,9 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
         children: [
           Icon(
             address.current ? Icons.location_on : Icons.location_on_outlined,
-            color: address.current ? AppColors.primary : Colors.grey[500],
+            color: address.current
+                ? AppColors.primaryFor(businessType)
+                : Colors.grey[500],
             size: 22,
           ),
           const SizedBox(width: 10),
@@ -483,9 +599,12 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                 if (address.current)
                   Container(
                     margin: const EdgeInsets.only(bottom: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: AppColors.primaryFor(businessType),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -497,7 +616,10 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                       ),
                     ),
                   ),
-                Text(address.formattedAddress, style: const TextStyle(fontSize: 14)),
+                Text(
+                  address.formattedAddress,
+                  style: const TextStyle(fontSize: 14),
+                ),
               ],
             ),
           ),

@@ -1,17 +1,24 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lapidation_mobile/src/generated/grpc/team_member.pb.dart' as $tm;
+import 'package:lapidation_mobile/src/generated/grpc/team_member.pb.dart'
+    as $tm;
 
 void main() {
   group('TeamMemberRequest', () {
-    test('round-trips businessProfileId and personId through protobuf encoding', () {
-      final request = $tm.TeamMemberRequest(businessProfileId: 5, personId: 42);
+    test(
+      'round-trips businessProfileId and personId through protobuf encoding',
+      () {
+        final request = $tm.TeamMemberRequest(
+          businessProfileId: 5,
+          personId: 42,
+        );
 
-      final encoded = request.writeToBuffer();
-      final decoded = $tm.TeamMemberRequest.fromBuffer(encoded);
+        final encoded = request.writeToBuffer();
+        final decoded = $tm.TeamMemberRequest.fromBuffer(encoded);
 
-      expect(decoded.businessProfileId, 5);
-      expect(decoded.personId, 42);
-    });
+        expect(decoded.businessProfileId, 5);
+        expect(decoded.personId, 42);
+      },
+    );
   });
 
   group('TeamMember', () {
@@ -39,13 +46,21 @@ void main() {
   });
 
   group('TeamMemberPageRequest', () {
-    test('round-trips businessProfileId and personId through protobuf encoding', () {
-      final request = $tm.TeamMemberPageRequest(businessProfileId: 5, personId: 42);
+    test(
+      'round-trips businessProfileId and personId through protobuf encoding',
+      () {
+        final request = $tm.TeamMemberPageRequest(
+          businessProfileId: 5,
+          personId: 42,
+        );
 
-      final decoded = $tm.TeamMemberPageRequest.fromBuffer(request.writeToBuffer());
+        final decoded = $tm.TeamMemberPageRequest.fromBuffer(
+          request.writeToBuffer(),
+        );
 
-      expect(decoded.businessProfileId, 5);
-      expect(decoded.personId, 42);
-    });
+        expect(decoded.businessProfileId, 5);
+        expect(decoded.personId, 42);
+      },
+    );
   });
 }

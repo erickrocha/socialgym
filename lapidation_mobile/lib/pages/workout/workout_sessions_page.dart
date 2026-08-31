@@ -73,7 +73,10 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
       case _FilterPeriod.custom:
         final s = _customStart ?? now.subtract(const Duration(days: 7));
         final e = _customEnd ?? now;
-        return (DateTime(s.year, s.month, s.day), DateTime(e.year, e.month, e.day, 23, 59, 59));
+        return (
+          DateTime(s.year, s.month, s.day),
+          DateTime(e.year, e.month, e.day, 23, 59, 59),
+        );
     }
   }
 
@@ -84,6 +87,10 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
 
   Future<void> _pickCustomRange() async {
     final now = DateTime.now();
+    final businessType = context
+        .read<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
@@ -93,9 +100,11 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
         end: _customEnd ?? now,
       ),
       builder: (context, child) => Theme(
-        data: Theme.of(
-          context,
-        ).copyWith(colorScheme: const ColorScheme.light(primary: AppColors.primary)),
+        data: Theme.of(context).copyWith(
+          colorScheme: ColorScheme.light(
+            primary: AppColors.primaryFor(businessType),
+          ),
+        ),
         child: child!,
       ),
     );
@@ -115,6 +124,10 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
 
     return MainLayout(
       navSection: NavSection.workout,
@@ -131,12 +144,12 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (provider.fetchError != null) {
-                  return _buildError(provider.fetchError!);
+                  return _buildError(provider.fetchError!, businessType);
                 }
                 if (provider.sessions.isEmpty) {
                   return _buildEmpty(l10n);
                 }
-                return _buildContent(l10n, provider.sessions);
+                return _buildContent(l10n, provider.sessions, businessType);
               },
             ),
           ),
@@ -154,7 +167,11 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
       decoration: const BoxDecoration(gradient: AppColors.gradient3),
       child: Text(
         l10n.sessionsTitle,
-        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -163,7 +180,9 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
 
   Widget _buildFilterRow(AppLocalizations l10n) {
     final customLabel =
-        _selectedPeriod == _FilterPeriod.custom && _customStart != null && _customEnd != null
+        _selectedPeriod == _FilterPeriod.custom &&
+            _customStart != null &&
+            _customEnd != null
         ? '${_fmtDate(_customStart!)} – ${_fmtDate(_customEnd!)}'
         : l10n.sessionsFilterCustom;
 
@@ -206,12 +225,20 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
 
   // ── Main content ─────────────────────────────────────────────────────────────
 
-  Widget _buildContent(AppLocalizations l10n, List<WorkoutSession> sessions) {
-    final totalVolume = sessions.fold<double>(0, (acc, s) => acc + s.totalVolume);
+  Widget _buildContent(
+    AppLocalizations l10n,
+    List<WorkoutSession> sessions,
+    String? businessType,
+  ) {
+    final totalVolume = sessions.fold<double>(
+      0,
+      (acc, s) => acc + s.totalVolume,
+    );
     final totalSets = sessions.fold<int>(0, (acc, s) => acc + s.totalSets);
     final avgDuration = sessions.isEmpty
         ? 0
-        : sessions.fold<int>(0, (acc, s) => acc + s.duration) ~/ sessions.length;
+        : sessions.fold<int>(0, (acc, s) => acc + s.duration) ~/
+              sessions.length;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -219,11 +246,19 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Summary cards
-          _buildSummaryRow(l10n, sessions.length, totalVolume, totalSets, avgDuration, sessions),
+          _buildSummaryRow(
+            l10n,
+            sessions.length,
+            totalVolume,
+            totalSets,
+            avgDuration,
+            sessions,
+            businessType,
+          ),
           const SizedBox(height: 20),
 
           // Bar chart
-          _buildBarChart(l10n, sessions),
+          _buildBarChart(l10n, sessions, businessType),
           const SizedBox(height: 20),
 
           // Session list
@@ -239,9 +274,11 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
           ...sessions.map(
             (s) => _SessionCard(
               session: s,
-              onTap: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => WorkoutSessionDetailPage(session: s))),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => WorkoutSessionDetailPage(session: s),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -259,6 +296,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
     int totalSets,
     int avgDuration,
     List<WorkoutSession> sessions,
+    String? businessType,
   ) {
     final mins = avgDuration ~/ 60;
     final secs = avgDuration % 60;
@@ -270,7 +308,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
           icon: Icons.fitness_center,
           value: '$count',
           label: l10n.sessionsCount,
-          color: AppColors.primary,
+          color: AppColors.primaryFor(businessType),
         ),
         const SizedBox(width: 8),
         _SummaryCard(
@@ -292,11 +330,20 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
 
   // ── Bar chart ─────────────────────────────────────────────────────────────────
 
-  Widget _buildBarChart(AppLocalizations l10n, List<WorkoutSession> sessions) {
+  Widget _buildBarChart(
+    AppLocalizations l10n,
+    List<WorkoutSession> sessions,
+    String? businessType,
+  ) {
     // Limit chart to last 10 sessions for readability
-    final displayed = sessions.length > 10 ? sessions.sublist(sessions.length - 10) : sessions;
+    final displayed = sessions.length > 10
+        ? sessions.sublist(sessions.length - 10)
+        : sessions;
 
-    final maxVolume = displayed.fold<double>(0, (m, s) => s.totalVolume > m ? s.totalVolume : m);
+    final maxVolume = displayed.fold<double>(
+      0,
+      (m, s) => s.totalVolume > m ? s.totalVolume : m,
+    );
     final maxY = maxVolume <= 0 ? 100.0 : (maxVolume * 1.2).ceilToDouble();
 
     final barGroups = displayed.asMap().entries.map((entry) {
@@ -308,7 +355,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
           BarChartRodData(
             toY: session.totalVolume,
             width: 16,
-            color: AppColors.primary,
+            color: AppColors.primaryFor(businessType),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
         ],
@@ -321,7 +368,11 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(15), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.black.withAlpha(15),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -345,15 +396,22 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
                 gridData: const FlGridData(show: true),
                 borderData: FlBorderData(show: false),
                 titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 40,
                       getTitlesWidget: (value, meta) => Text(
                         value.toInt().toString(),
-                        style: const TextStyle(fontSize: 10, color: Color(0xFF888888)),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFF888888),
+                        ),
                       ),
                     ),
                   ),
@@ -372,7 +430,10 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             '${date.day}/${date.month}',
-                            style: const TextStyle(fontSize: 10, color: Color(0xFF888888)),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Color(0xFF888888),
+                            ),
                           ),
                         );
                       },
@@ -420,7 +481,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
     );
   }
 
-  Widget _buildError(String msg) {
+  Widget _buildError(String msg, String? businessType) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -438,7 +499,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
             ElevatedButton(
               onPressed: _load,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.primaryFor(businessType),
                 foregroundColor: Colors.white,
               ),
               child: const Text('Retry'),
@@ -465,25 +526,44 @@ class _PeriodChip extends StatelessWidget {
   final IconData? icon;
   final VoidCallback onTap;
 
-  const _PeriodChip({required this.label, required this.selected, required this.onTap, this.icon});
+  const _PeriodChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.transparent,
+          color: selected
+              ? AppColors.primaryFor(businessType)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? AppColors.primary : const Color(0xFFCCCCCC)),
+          border: Border.all(
+            color: selected
+                ? AppColors.primaryFor(businessType)
+                : const Color(0xFFCCCCCC),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 14, color: selected ? Colors.white : const Color(0xFF666666)),
+              Icon(
+                icon,
+                size: 14,
+                color: selected ? Colors.white : const Color(0xFF666666),
+              ),
               const SizedBox(width: 4),
             ],
             Text(
@@ -527,7 +607,11 @@ class _SummaryCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
-            BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 4, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black.withAlpha(12),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Column(
@@ -537,7 +621,11 @@ class _SummaryCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               value,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
             Text(
@@ -564,6 +652,10 @@ class _SessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
     final date = session.completedAtDate;
     final dateStr = date != null
         ? '${date.day.toString().padLeft(2, '0')}/'
@@ -581,7 +673,11 @@ class _SessionCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
-            BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 4, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black.withAlpha(12),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Column(
@@ -600,8 +696,18 @@ class _SessionCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Icon(Icons.chevron_right, size: 18, color: Color(0xFFAAAAAA)),
-                Text(dateStr, style: const TextStyle(fontSize: 12, color: Color(0xFF888888))),
+                const Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: Color(0xFFAAAAAA),
+                ),
+                Text(
+                  dateStr,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF888888),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -612,7 +718,7 @@ class _SessionCard extends StatelessWidget {
                 _StatChip(
                   icon: Icons.timer_outlined,
                   label: session.formattedDuration,
-                  color: AppColors.primary,
+                  color: AppColors.primaryFor(businessType),
                 ),
                 _StatChip(
                   icon: Icons.repeat,
@@ -638,7 +744,11 @@ class _StatChip extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _StatChip({required this.icon, required this.label, required this.color});
+  const _StatChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {

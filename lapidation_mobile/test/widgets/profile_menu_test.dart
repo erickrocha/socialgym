@@ -11,15 +11,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-  });
-
   group('ProfileMenu Display Tests', () {
     late PersonProvider personProvider;
     late AuthProvider authProvider;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       personProvider = PersonProvider();
       authProvider = AuthProvider();
     });
@@ -42,6 +39,50 @@ void main() {
         ),
       );
     }
+
+    testWidgets('uses the female avatar fallback in the top bar', (
+      tester,
+    ) async {
+      personProvider.setPersonForTest(
+        Person(
+          id: 1,
+          uuid: 'test-uuid',
+          firstname: '',
+          surname: '',
+          gender: 'Female',
+        ),
+      );
+
+      await tester.pumpWidget(createTestWidget(const ProfileMenu()));
+
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(
+        (image.image as AssetImage).assetName,
+        'assets/images/avatar_female.png',
+      );
+      expect(find.text('?'), findsNothing);
+    });
+
+    testWidgets('uses the male avatar fallback in the top bar', (tester) async {
+      personProvider.setPersonForTest(
+        Person(
+          id: 1,
+          uuid: 'test-uuid',
+          firstname: '',
+          surname: '',
+          gender: 'Male',
+        ),
+      );
+
+      await tester.pumpWidget(createTestWidget(const ProfileMenu()));
+
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(
+        (image.image as AssetImage).assetName,
+        'assets/images/avatar_male.png',
+      );
+      expect(find.text('?'), findsNothing);
+    });
 
     testWidgets(
       'Personal account entry shows person full name in professional mode',

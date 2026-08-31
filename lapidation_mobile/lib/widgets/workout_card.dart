@@ -1,21 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../config/app_colors.dart';
 import '../l10n/app_localizations.dart';
 import '../models/visibility_option.dart';
 import '../models/workout.dart';
+import '../providers/person_provider.dart';
 
 class WorkoutCard extends StatelessWidget {
   final Workout workout;
   final bool isSelected;
   final VoidCallback? onTap;
 
-  const WorkoutCard({super.key, required this.workout, this.isSelected = false, this.onTap});
+  const WorkoutCard({
+    super.key,
+    required this.workout,
+    this.isSelected = false,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final visibility = VisibilityOption.fromApiValue(workout.visibility);
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
 
     return GestureDetector(
       onTap: onTap,
@@ -24,7 +35,12 @@ class WorkoutCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? AppColors.primary : Colors.transparent, width: 2),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primaryFor(businessType)
+                : Colors.transparent,
+            width: 2,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withAlpha(isSelected ? 30 : 15),
@@ -46,7 +62,7 @@ class WorkoutCard extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(25),
+                      color: AppColors.primaryFor(businessType).withAlpha(25),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
@@ -73,7 +89,10 @@ class WorkoutCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        _DifficultyBadge(difficulty: workout.difficulty, l10n: l10n),
+                        _DifficultyBadge(
+                          difficulty: workout.difficulty,
+                          l10n: l10n,
+                        ),
                       ],
                     ),
                   ),
@@ -83,11 +102,15 @@ class WorkoutCard extends StatelessWidget {
               ),
 
               // Description
-              if (workout.description != null && workout.description!.isNotEmpty) ...[
+              if (workout.description != null &&
+                  workout.description!.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
                   workout.description!,
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF666666)),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF666666),
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -101,11 +124,15 @@ class WorkoutCard extends StatelessWidget {
                 runSpacing: 4,
                 children: [
                   ...workout.muscleGroups.map(
-                    (mg) => _MetaChip(icon: '🎯', label: _getMuscleGroupLabel(mg, l10n)),
+                    (mg) => _MetaChip(
+                      icon: '🎯',
+                      label: _getMuscleGroupLabel(mg, l10n),
+                    ),
                   ),
                   _MetaChip(
                     icon: '📋',
-                    label: '${workout.exercises.length} ${l10n.workoutExercises}',
+                    label:
+                        '${workout.exercises.length} ${l10n.workoutExercises}',
                   ),
                 ],
               ),
@@ -113,7 +140,12 @@ class WorkoutCard extends StatelessWidget {
               // Expand indicator
               if (isSelected) ...[
                 const SizedBox(height: 8),
-                const Center(child: Icon(Icons.keyboard_arrow_down, color: AppColors.primary)),
+                Center(
+                  child: Icon(
+                    Icons.keyboard_arrow_down,
+                    color: AppColors.primaryFor(businessType),
+                  ),
+                ),
               ],
             ],
           ),
@@ -185,7 +217,11 @@ class _DifficultyBadge extends StatelessWidget {
       ),
       child: Text(
         _getLabel(),
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _getColor()),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: _getColor(),
+        ),
       ),
     );
   }
@@ -244,7 +280,10 @@ class _MetaChip extends StatelessWidget {
         children: [
           Text(icon, style: const TextStyle(fontSize: 12)),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF666666))),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF666666)),
+          ),
         ],
       ),
     );

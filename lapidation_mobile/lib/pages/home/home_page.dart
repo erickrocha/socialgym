@@ -115,8 +115,10 @@ class _FeedPageState extends State<FeedPage> {
       body: Consumer2<FeedProvider, PersonProvider>(
         builder: (context, feedProvider, personProvider, _) {
           final person = personProvider.person;
+          final businessType =
+              personProvider.activeBusinessProfile?.businessType;
           return RefreshIndicator(
-            color: AppColors.primary,
+            color: AppColors.primaryFor(businessType),
             onRefresh: () => feedProvider.fetchPostsForProfile(
               _token,
               businessProfileUuid: personProvider.activeBusinessProfile?.uuid,
@@ -179,11 +181,11 @@ class _FeedPageState extends State<FeedPage> {
 
                 // ── Loading ───────────────────────────────────────────
                 if (feedProvider.loading)
-                  const SliverFillRemaining(
+                  SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
                       child: CircularProgressIndicator(
-                        color: AppColors.primary,
+                        color: AppColors.primaryFor(businessType),
                       ),
                     ),
                   )
@@ -204,12 +206,12 @@ class _FeedPageState extends State<FeedPage> {
                   ),
 
                 if (feedProvider.loadingMore)
-                  const SliverToBoxAdapter(
+                  SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Center(
                         child: CircularProgressIndicator(
-                          color: AppColors.primary,
+                          color: AppColors.primaryFor(businessType),
                         ),
                       ),
                     ),
@@ -365,6 +367,10 @@ class _EmptyFeed extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -393,7 +399,7 @@ class _EmptyFeed extends StatelessWidget {
               icon: const Icon(Icons.add),
               label: Text(l10n.feedCreatePost),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.primaryFor(businessType),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,

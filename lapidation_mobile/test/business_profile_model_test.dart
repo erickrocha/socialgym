@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lapidation_mobile/commons/business_profile_mapper.dart';
 import 'package:lapidation_mobile/models/business_profile.dart';
-import 'package:lapidation_mobile/src/generated/grpc/business_profile.pb.dart' as $bp;
-import 'package:lapidation_mobile/src/generated/grpc/business_profile_address.pb.dart' as $bpa;
+import 'package:lapidation_mobile/src/generated/grpc/business_profile.pb.dart'
+    as $bp;
+import 'package:lapidation_mobile/src/generated/grpc/business_profile_address.pb.dart'
+    as $bpa;
 
 void main() {
   group('BusinessProfile.fromProto', () {

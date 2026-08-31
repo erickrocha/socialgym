@@ -512,5 +512,22 @@
   "businessProfilePageEdit": "Edit",
   "businessProfilePageSave": "Save",
   "businessProfilePageAddresses": "Addresses",
-  "businessProfileSwitchToPersonal": "Personal account"
+  "businessProfileSwitchToPersonal": "Personal account",
+  "consentPendingTitle": "Legal consent required",
+  "consentPendingSubtitle": "Please review and accept the documents below before you continue using the app.",
+  "consentReadDocument": "Read",
+  "consentAgree": "I agree",
+  "consentReviewAndAccept": "Review and accept",
+  "consentAllAccepted": "All set — thanks for accepting.",
+  "consentLogOut": "Log out",
+  "consentClose": "Close",
+  "consentLoading": "Loading…",
+  "consentLoadFailed": "Could not load your pending consents. Please try again.",
+  "consentNeverAccepted": "You have not accepted this document yet.",
+  "consentVersionOutdated": "A new version ({version}) is available and must be accepted.",
+  "@consentVersionOutdated": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  }
 }

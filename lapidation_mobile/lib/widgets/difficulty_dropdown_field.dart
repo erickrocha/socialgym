@@ -22,17 +22,24 @@ class DifficultyDropdownField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final selectedDifficulty = DifficultyOption.fromApiValue(value, fallback: fallback);
+    final selectedDifficulty = DifficultyOption.fromApiValue(
+      value,
+      fallback: fallback,
+    );
 
     return DropdownButtonFormField<DifficultyOption>(
       key: ValueKey<String>(selectedDifficulty.apiValue),
       initialValue: selectedDifficulty,
       isExpanded: isExpanded,
-      decoration: decoration ?? InputDecoration(labelText: l10n.workoutDifficulty),
+      decoration:
+          decoration ?? InputDecoration(labelText: l10n.workoutDifficulty),
       items: DifficultyOption.values.map((option) {
         return DropdownMenuItem<DifficultyOption>(
           value: option,
-          child: Text('${option.emoji} ${option.label(l10n)}', overflow: TextOverflow.ellipsis),
+          child: Text(
+            '${option.emoji} ${option.label(l10n)}',
+            overflow: TextOverflow.ellipsis,
+          ),
         );
       }).toList(),
       onChanged: (option) => onChanged(option?.apiValue),

@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lapidation_mobile/commons/business_profile_mapper.dart';
 import 'package:lapidation_mobile/models/business_profile_address.dart';
-import 'package:lapidation_mobile/src/generated/grpc/business_profile_address.pb.dart' as $bpa;
+import 'package:lapidation_mobile/src/generated/grpc/business_profile_address.pb.dart'
+    as $bpa;
 
 void main() {
   group('BusinessProfileAddress.fromProto', () {
@@ -58,7 +59,9 @@ void main() {
         longitude: -89.65,
       );
 
-      final encoded = BusinessProfileAddressMapper().toProto(model).writeToBuffer();
+      final encoded = BusinessProfileAddressMapper()
+          .toProto(model)
+          .writeToBuffer();
       final decoded = $bpa.BusinessProfileAddress.fromBuffer(encoded);
 
       expect(decoded.addressLine1, 'Main St 1');

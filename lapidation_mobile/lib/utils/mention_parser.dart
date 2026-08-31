@@ -31,12 +31,14 @@ class MentionParser {
     final spans = <MentionSpan>[];
     if (mentions == null || mentions.isEmpty) {
       // No mentions, return entire content as plain text
-      spans.add(MentionSpan(
-        start: 0,
-        end: content.length,
-        text: content,
-        isMention: false,
-      ));
+      spans.add(
+        MentionSpan(
+          start: 0,
+          end: content.length,
+          text: content,
+          isMention: false,
+        ),
+      );
       return spans;
     }
 
@@ -47,7 +49,8 @@ class MentionParser {
     }
 
     // Sort mention names by length (longest first) to match longer names first
-    final sortedMentions = mentionMap.keys.toList()..sort((a, b) => b.length.compareTo(a.length));
+    final sortedMentions = mentionMap.keys.toList()
+      ..sort((a, b) => b.length.compareTo(a.length));
 
     // Parse text by searching for exact mention names
     int currentPos = 0;
@@ -64,7 +67,8 @@ class MentionParser {
         // Check if this is a word boundary (not part of a larger word)
         final beforeOk = index == 0 || !isWordChar(content[index - 1]);
         final afterIdx = index + mentionText.length;
-        final afterOk = afterIdx >= content.length || !isWordChar(content[afterIdx]);
+        final afterOk =
+            afterIdx >= content.length || !isWordChar(content[afterIdx]);
 
         if (beforeOk && afterOk) {
           allMatches.add((
@@ -83,7 +87,8 @@ class MentionParser {
     allMatches.sort((a, b) => a.start.compareTo(b.start));
 
     // Remove overlapping matches (keep the first one)
-    final filteredMatches = <({String text, int start, int end, Mention mention})>[];
+    final filteredMatches =
+        <({String text, int start, int end, Mention mention})>[];
     for (final match in allMatches) {
       bool overlaps = false;
       for (final existing in filteredMatches) {
@@ -103,44 +108,52 @@ class MentionParser {
     for (final match in filteredMatches) {
       // Add text before this mention
       if (currentPos < match.start) {
-        spans.add(MentionSpan(
-          start: currentPos,
-          end: match.start,
-          text: content.substring(currentPos, match.start),
-          isMention: false,
-        ));
+        spans.add(
+          MentionSpan(
+            start: currentPos,
+            end: match.start,
+            text: content.substring(currentPos, match.start),
+            isMention: false,
+          ),
+        );
       }
 
       // Add the mention
-      spans.add(MentionSpan(
-        start: match.start,
-        end: match.end,
-        text: match.text,
-        mentionedUuid: match.mention.mentionedUuid,
-        isMention: true,
-      ));
+      spans.add(
+        MentionSpan(
+          start: match.start,
+          end: match.end,
+          text: match.text,
+          mentionedUuid: match.mention.mentionedUuid,
+          isMention: true,
+        ),
+      );
 
       currentPos = match.end;
     }
 
     // Add remaining text
     if (currentPos < content.length) {
-      spans.add(MentionSpan(
-        start: currentPos,
-        end: content.length,
-        text: content.substring(currentPos),
-        isMention: false,
-      ));
+      spans.add(
+        MentionSpan(
+          start: currentPos,
+          end: content.length,
+          text: content.substring(currentPos),
+          isMention: false,
+        ),
+      );
     }
 
     // If no spans were created, return entire content as plain text
     if (spans.isEmpty) {
-      spans.add(MentionSpan(
-        start: 0,
-        end: content.length,
-        text: content,
-        isMention: false,
-      ));
+      spans.add(
+        MentionSpan(
+          start: 0,
+          end: content.length,
+          text: content,
+          isMention: false,
+        ),
+      );
     }
 
     return spans;

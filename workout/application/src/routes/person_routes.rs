@@ -142,6 +142,12 @@ pub fn person_routes(state: AppState) -> Router<AppState> {
                 )),
         )
         .route(
+            "/me/consents/pending",
+            get(crate::http::consent_controller::pending).route_layer(
+                middleware::from_fn_with_state(state.clone(), authentication),
+            ),
+        )
+        .route(
             "/me/consents/{document}",
             delete(crate::http::consent_controller::revoke).route_layer(
                 middleware::from_fn_with_state(state.clone(), authentication),

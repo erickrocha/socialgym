@@ -71,7 +71,10 @@ class GrpcSettingsService {
       port: ApiConfig.grpcPort,
       authority: ApiConfig.grpcAuthority,
     );
-    _client = $settings.SettingsServiceClient(channel, interceptors: GrpcChannelFactory.interceptors);
+    _client = $settings.SettingsServiceClient(
+      channel,
+      interceptors: GrpcChannelFactory.interceptors,
+    );
     return _client!;
   }
 

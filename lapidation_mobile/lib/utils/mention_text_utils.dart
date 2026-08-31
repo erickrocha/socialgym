@@ -3,7 +3,11 @@ class MentionQuery {
   final int end;
   final String token;
 
-  const MentionQuery({required this.start, required this.end, required this.token});
+  const MentionQuery({
+    required this.start,
+    required this.end,
+    required this.token,
+  });
 }
 
 MentionQuery? findActiveMentionQuery(String text, int cursorOffset) {

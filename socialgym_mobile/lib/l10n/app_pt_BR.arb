@@ -512,5 +512,17 @@
   "businessProfilePageEdit": "Editar",
   "businessProfilePageSave": "Salvar",
   "businessProfilePageAddresses": "Endereços",
-  "businessProfileSwitchToPersonal": "Conta pessoal"
+  "businessProfileSwitchToPersonal": "Conta pessoal",
+  "consentPendingTitle": "Consentimento legal necessário",
+  "consentPendingSubtitle": "Revise e aceite os documentos abaixo antes de continuar usando o aplicativo.",
+  "consentReadDocument": "Ler",
+  "consentAgree": "Concordo",
+  "consentReviewAndAccept": "Revisar e aceitar",
+  "consentAllAccepted": "Tudo certo — obrigado por aceitar.",
+  "consentLogOut": "Sair",
+  "consentClose": "Fechar",
+  "consentLoading": "Carregando…",
+  "consentLoadFailed": "Não foi possível carregar seus consentimentos pendentes. Tente novamente.",
+  "consentNeverAccepted": "Você ainda não aceitou este documento.",
+  "consentVersionOutdated": "Uma nova versão ({version}) está disponível e precisa ser aceita."
 }

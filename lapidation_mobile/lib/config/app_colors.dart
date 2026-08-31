@@ -15,6 +15,17 @@ class AppColors {
   static const Color professionalSecondaryHover = Color(0xFF594E41);
   static const Color professionalSecondaryDisabled = Color(0xFFB9AFA2);
 
+  // Compatibility names used by the shared feature layer. They map onto
+  // Lapidation's existing warm professional palette.
+  static const Color professionalPrimary = professionalSecondary;
+  static const Color professionalPrimaryHover = professionalSecondaryHover;
+  static const Color professionalPrimaryDisabled =
+      professionalSecondaryDisabled;
+
+  static const Color companyPrimary = secondary;
+  static const Color companyPrimaryHover = secondaryHover;
+  static const Color companyPrimaryDisabled = secondaryDisabled;
+
   static const Color third = Color(0xFFD8CFC0);
   static const Color thirdHover = Color(0xFFC4B7A4);
   static const Color thirdDisabled = Color(0xFFEFE8DC);
@@ -41,4 +52,23 @@ class AppColors {
     end: Alignment.bottomRight,
     colors: [Color(0xFF594E41), professionalSecondary, darkSurface],
   );
+
+  static Color primaryFor(String? businessType) => switch (businessType) {
+    'Professional' => professionalPrimary,
+    'Company' => companyPrimary,
+    _ => primary,
+  };
+
+  static Color primaryHoverFor(String? businessType) => switch (businessType) {
+    'Professional' => professionalPrimaryHover,
+    'Company' => companyPrimaryHover,
+    _ => primaryHover,
+  };
+
+  static Color primaryDisabledFor(String? businessType) =>
+      switch (businessType) {
+        'Professional' => professionalPrimaryDisabled,
+        'Company' => companyPrimaryDisabled,
+        _ => primaryDisabled,
+      };
 }

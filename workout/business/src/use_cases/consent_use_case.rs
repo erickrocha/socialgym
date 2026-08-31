@@ -7,6 +7,15 @@ use sea_orm::DbConn;
 
 pub struct ConsentUseCase;
 
+/// A legal document whose current version the person has not accepted.
+#[derive(Debug, Clone)]
+pub struct PendingConsent {
+    pub document: String,
+    pub current_version: String,
+    /// The most recent version the person accepted for this document, if any.
+    pub accepted_version: Option<String>,
+}
+
 impl ConsentUseCase {
     pub async fn accept(
         db: &DbConn,
@@ -51,6 +60,41 @@ impl ConsentUseCase {
             return Err(BusinessError::not_found("No active consent found"));
         }
         Ok(())
+    }
+
+    /// Documents whose current version the person has not accepted. An empty
+    /// vec means the person is fully consented and nothing is blocking them.
+    pub async fn pending(
+        db: &DbConn,
+        person_id: i32,
+    ) -> Result<Vec<PendingConsent>, BusinessError> {
+        let rows = ConsentGateway::list(db, person_id)
+            .await
+            .map_err(|e| BusinessError::infrastructure(e.to_string()))?;
+
+        let mut pending = Vec::new();
+        for document in legal_documents::ALL {
+            let Some(current_version) = legal_documents::current_version(document) else {
+                continue;
+            };
+            let has_current = rows.iter().any(|r| {
+                r.document == document && r.version == current_version && r.revoked_at.is_none()
+            });
+            if has_current {
+                continue;
+            }
+            let accepted_version = rows
+                .iter()
+                .filter(|r| r.document == document && r.revoked_at.is_none())
+                .max_by_key(|r| r.accepted_at)
+                .map(|r| r.version.clone());
+            pending.push(PendingConsent {
+                document: document.to_string(),
+                current_version,
+                accepted_version,
+            });
+        }
+        Ok(pending)
     }
 
     pub async fn require_current(

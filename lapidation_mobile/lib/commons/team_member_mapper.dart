@@ -49,7 +49,9 @@ class TeamMemberPageMapper {
       members: PersonMapper().fromProtoList(proto.members),
       sentRequests: PersonMapper().fromProtoList(proto.sentRequests),
       teams: BusinessProfileMapper().fromProtoList(proto.teams),
-      receivedRequests: BusinessProfileMapper().fromProtoList(proto.receivedRequests),
+      receivedRequests: BusinessProfileMapper().fromProtoList(
+        proto.receivedRequests,
+      ),
     );
   }
 }

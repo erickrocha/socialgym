@@ -3,14 +3,16 @@ import 'package:lapidation_mobile/commons/person_mapper.dart';
 import 'package:lapidation_mobile/models/person.dart';
 import 'package:lapidation_mobile/services/base_service.dart';
 import 'package:lapidation_mobile/services/grpc/grpc_channel_factory.dart';
-import 'package:lapidation_mobile/src/generated/grpc/person.pbgrpc.dart' as $person;
+import 'package:lapidation_mobile/src/generated/grpc/person.pbgrpc.dart'
+    as $person;
 
 import '../../config/api_config.dart';
 import '../../models/mentionable_friend.dart';
 
 // Re-export so existing consumers (e.g. tests) can still import
 // SearchMentionableFriendsRequest from this file.
-export '../../src/generated/grpc/person.pb.dart' show SearchMentionableFriendsRequest;
+export '../../src/generated/grpc/person.pb.dart'
+    show SearchMentionableFriendsRequest;
 
 /// Pre-signed S3 upload URL for a person's avatar/cover image, returned by
 /// [GrpcPersonService.getPersonImageUploadUrl].
@@ -49,7 +51,11 @@ class GrpcPersonService {
 
     try {
       final response = await _ensureClient().searchMentionableFriends(
-        $person.SearchMentionableFriendsRequest(personId: personId, query: normalized, limit: limit),
+        $person.SearchMentionableFriendsRequest(
+          personId: personId,
+          query: normalized,
+          limit: limit,
+        ),
         options: grpc.CallOptions(timeout: ApiConfig.timeout),
       );
 
@@ -69,7 +75,7 @@ class GrpcPersonService {
     }
   }
 
-  static Future<Person> getPerson({int? id,String? uuid}) async {
+  static Future<Person> getPerson({int? id, String? uuid}) async {
     try {
       final response = await _ensureClient().getPerson(
         $person.PersonIdRequest(id: id, uuid: uuid),
@@ -165,7 +171,10 @@ class GrpcPersonService {
         $person.PersonImageUploadRequest(imageType: imageType, format: format),
         options: grpc.CallOptions(timeout: ApiConfig.timeout),
       );
-      return PersonImageUploadUrl(url: response.url, objectKey: response.objectKey);
+      return PersonImageUploadUrl(
+        url: response.url,
+        objectKey: response.objectKey,
+      );
     } on grpc.GrpcError catch (e) {
       throw BaseService.handleGrpcError(e, 'Failed to prepare image upload');
     }
@@ -191,7 +200,10 @@ class GrpcPersonService {
       port: ApiConfig.grpcPort,
       authority: ApiConfig.grpcAuthority,
     );
-    _client = $person.PersonServiceClient(channel, interceptors: GrpcChannelFactory.interceptors);
+    _client = $person.PersonServiceClient(
+      channel,
+      interceptors: GrpcChannelFactory.interceptors,
+    );
     return _client!;
   }
 
@@ -201,10 +213,15 @@ class GrpcPersonService {
     _client = null;
   }
 
-  static Future<List<Person>> searchPersonsByUuid({required String uuid, required String query, required int limit}) async {
+  static Future<List<Person>> searchPersonsByUuid({
+    required String uuid,
+    required String query,
+    required int limit,
+  }) async {
     try {
       final response = await _ensureClient().searchPersons(
-        $person.PersonParams()..uuid = uuid
+        $person.PersonParams()
+          ..uuid = uuid
           ..query = query
           ..limit = limit,
         options: grpc.CallOptions(timeout: ApiConfig.timeout),

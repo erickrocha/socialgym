@@ -1,5 +1,3 @@
-
-
 import 'package:lapidation_mobile/commons/mapper.dart';
 
 import '../models/exercise.dart';
@@ -49,6 +47,4 @@ class ExerciseMapper implements Mapper<Exercise, $exercise.Exercise> {
   List<$exercise.Exercise> toProtoList(List<Exercise> domainList) {
     return domainList.map((domain) => toProto(domain)).toList();
   }
-
-
 }

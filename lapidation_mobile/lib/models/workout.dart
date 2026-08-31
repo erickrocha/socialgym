@@ -45,8 +45,12 @@ class Workout {
               ?.map((e) => Exercise.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : null,
     );
   }
 
@@ -67,7 +71,8 @@ class Workout {
     };
   }
 
-  List<String> get muscleGroups => muscleGroup.isEmpty ? [] : muscleGroup.split('|');
+  List<String> get muscleGroups =>
+      muscleGroup.isEmpty ? [] : muscleGroup.split('|');
 
   Workout copyWith({
     int? id,

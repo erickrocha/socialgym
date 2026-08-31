@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/evolution_check_in.dart';
 import '../../models/person.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/consent_provider.dart';
 import '../../providers/evolution_provider.dart';
 import '../../providers/person_provider.dart';
 import '../../config/nav_section.dart';
@@ -46,7 +47,14 @@ class _EvolutionPageState extends State<EvolutionPage> {
   }
 
   Future<void> _initialize() async {
-    final active = await ConsentService.hasActive('health_data');
+    bool active;
+    try {
+      active = await ConsentService.hasActive('health_data');
+    } catch (_) {
+      // Don't hang on the spinner if the consent check itself fails — fall
+      // through and let the normal load path surface any real error.
+      active = true;
+    }
     if (!mounted) return;
     setState(() {
       _healthConsent = active;
@@ -273,7 +281,11 @@ class _EvolutionPageState extends State<EvolutionPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (provider.error != null) {
-                  return _buildError(provider.error!, businessType);
+                  return _buildError(
+                    provider.error!,
+                    businessType,
+                    isConsentRequired: provider.errorIsConsentRequired,
+                  );
                 }
                 if (provider.checkins.isEmpty) {
                   return _buildEmpty(l10n);
@@ -546,7 +558,12 @@ class _EvolutionPageState extends State<EvolutionPage> {
     );
   }
 
-  Widget _buildError(String msg, String? businessType) {
+  Widget _buildError(
+    String msg,
+    String? businessType, {
+    bool isConsentRequired = false,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -562,12 +579,20 @@ class _EvolutionPageState extends State<EvolutionPage> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _load,
+              // A plain retry can't clear a consent block — send the user to
+              // the consent gate instead.
+              onPressed: isConsentRequired
+                  ? () => context.read<ConsentProvider>().trigger()
+                  : _load,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryFor(businessType),
                 foregroundColor: Colors.white,
               ),
-              child: Text(context.read<AppLocalizations>().buttonRetry),
+              child: Text(
+                isConsentRequired
+                    ? l10n.consentReviewAndAccept
+                    : l10n.buttonRetry,
+              ),
             ),
           ],
         ),

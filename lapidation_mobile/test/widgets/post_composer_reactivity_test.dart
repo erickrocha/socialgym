@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lapidation_mobile/l10n/app_localizations.dart';
 import 'package:lapidation_mobile/models/business_profile.dart';
 import 'package:lapidation_mobile/models/person.dart';
@@ -12,16 +12,13 @@ import 'package:lapidation_mobile/providers/person_provider.dart';
 import 'package:lapidation_mobile/widgets/post_composer_sheet.dart';
 
 void main() {
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-  });
-
   group('PostComposerSheet Reactivity', () {
     late PersonProvider personProvider;
     late AuthProvider authProvider;
     late FeedProvider feedProvider;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       personProvider = PersonProvider();
       authProvider = AuthProvider();
       feedProvider = FeedProvider();

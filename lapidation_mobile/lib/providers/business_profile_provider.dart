@@ -23,7 +23,10 @@ class BusinessProfileProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _current = await GrpcBusinessProfileService.getBusinessProfileById(id: id, uuid: uuid);
+      _current = await GrpcBusinessProfileService.getBusinessProfileById(
+        id: id,
+        uuid: uuid,
+      );
       _loading = false;
       notifyListeners();
       return true;
@@ -45,7 +48,9 @@ class BusinessProfileProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _current = await GrpcBusinessProfileService.updateBusinessProfile(profile);
+      _current = await GrpcBusinessProfileService.updateBusinessProfile(
+        profile,
+      );
       _updating = false;
       notifyListeners();
       return true;
@@ -113,7 +118,11 @@ class BusinessProfileProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final removed = await GrpcBusinessProfileService.removeBusinessProfileAddress(id: id, uuid: uuid);
+      final removed =
+          await GrpcBusinessProfileService.removeBusinessProfileAddress(
+            id: id,
+            uuid: uuid,
+          );
       if (!removed) {
         _error = 'Failed to remove address.';
         _updating = false;
@@ -148,7 +157,11 @@ class BusinessProfileProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      await UploadService.uploadBusinessProfileLogo(token, businessProfileId, file);
+      await UploadService.uploadBusinessProfileLogo(
+        token,
+        businessProfileId,
+        file,
+      );
       final loadSuccess = await load(id: businessProfileId);
       _updating = false;
       notifyListeners();

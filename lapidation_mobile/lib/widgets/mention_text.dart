@@ -1,8 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../config/app_colors.dart';
 import '../models/feed_post.dart';
+import '../providers/person_provider.dart';
 import '../utils/mention_parser.dart';
 
 /// Widget to display text with clickable mention links
@@ -32,12 +34,18 @@ class MentionText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final businessType = context
+        .watch<PersonProvider>()
+        .activeBusinessProfile
+        ?.businessType;
+
     // Parse mentions from content
     final spans = MentionParser.parseMentions(content, mentions);
 
     // Ensure we have a base style with color
-    final baseStyle = style ?? const TextStyle(fontSize: 15, color: Colors.black);
-    final baseStyleWithColor = baseStyle.color == null 
+    final baseStyle =
+        style ?? const TextStyle(fontSize: 15, color: Colors.black);
+    final baseStyleWithColor = baseStyle.color == null
         ? baseStyle.copyWith(color: Colors.black)
         : baseStyle;
 
@@ -60,7 +68,7 @@ class MentionText extends StatelessWidget {
           TextSpan(
             text: span.text,
             style: baseStyleWithColor.copyWith(
-              color: AppColors.primary,
+              color: AppColors.primaryFor(businessType),
               fontWeight: FontWeight.w600,
             ),
             recognizer: TapGestureRecognizer()
@@ -74,20 +82,12 @@ class MentionText extends StatelessWidget {
         );
       } else {
         // Regular text - use base style
-        textSpans.add(
-          TextSpan(
-            text: span.text,
-            style: baseStyleWithColor,
-          ),
-        );
+        textSpans.add(TextSpan(text: span.text, style: baseStyleWithColor));
       }
     }
 
     return RichText(
-      text: TextSpan(
-        style: baseStyleWithColor,
-        children: textSpans,
-      ),
+      text: TextSpan(style: baseStyleWithColor, children: textSpans),
       textAlign: textAlign,
       maxLines: maxLines,
       overflow: overflow,

@@ -29,11 +29,19 @@ class GrpcExerciseService {
     return _client!;
   }
 
+  /// Drops the cached client. Call after the underlying channel has been
+  /// shut down (e.g. on sign-out) so the next call rebuilds against a
+  /// fresh channel instead of reusing one that is closing/closed.
+  static Future<void> shutdown() async {
+    _client = null;
+  }
+
   static Future<Exercise> getExercise({required int id}) async {
     try {
       final response = await _ensureClient().getExercise(
         $exercise.ExerciseRequest()..id = id,
-        options: grpc.CallOptions(timeout: ApiConfig.timeout));
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
       return ExerciseMapper().fromProto(response);
     } on grpc.GrpcError catch (e) {
       throw BaseService.handleGrpcError(e, 'Failed to load exercise');
@@ -44,7 +52,8 @@ class GrpcExerciseService {
     try {
       final response = await _ensureClient().getExercise(
         $exercise.ExerciseRequest()..uuid = uuid,
-        options: grpc.CallOptions(timeout: ApiConfig.timeout),);
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
       return ExerciseMapper().fromProto(response);
     } on grpc.GrpcError catch (e) {
       throw BaseService.handleGrpcError(e, 'Failed to load exercise');
@@ -55,7 +64,8 @@ class GrpcExerciseService {
     try {
       final response = await _ensureClient().addExercise(
         ExerciseMapper().toProto(exercise),
-        options: grpc.CallOptions(timeout: ApiConfig.timeout),);
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
       return ExerciseMapper().fromProto(response);
     } on grpc.GrpcError catch (e) {
       throw BaseService.handleGrpcError(e, 'Failed to create exercise');
@@ -66,7 +76,8 @@ class GrpcExerciseService {
     try {
       final response = await _ensureClient().updateExercise(
         ExerciseMapper().toProto(exercise),
-        options: grpc.CallOptions(timeout: ApiConfig.timeout),);
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
       return ExerciseMapper().fromProto(response);
     } on grpc.GrpcError catch (e) {
       throw BaseService.handleGrpcError(e, 'Failed to update exercise');
@@ -80,7 +91,7 @@ class GrpcExerciseService {
     required List<String> publicOwners,
     required int pageNumber,
     required int pageSize,
-    required String sortBy
+    required String sortBy,
   }) async {
     try {
       final response = await _ensureClient().getExercises(
@@ -92,15 +103,20 @@ class GrpcExerciseService {
           ..pageNumber = Int64(pageNumber)
           ..pageSize = Int64(pageSize)
           ..sortBy = sortBy,
-        options: grpc.CallOptions(timeout: ApiConfig.timeout),);
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
       return fromProtoPaginated(response);
     } on grpc.GrpcError catch (e) {
       throw BaseService.handleGrpcError(e, 'Failed to load exercises');
     }
   }
 
-  static PaginatedExerciseResponse fromProtoPaginated($exercise.PaginatedExercise proto) {
-    final exercises = proto.content.map((e) => ExerciseMapper().fromProto(e)).toList();
+  static PaginatedExerciseResponse fromProtoPaginated(
+    $exercise.PaginatedExercise proto,
+  ) {
+    final exercises = proto.content
+        .map((e) => ExerciseMapper().fromProto(e))
+        .toList();
     return PaginatedExerciseResponse(
       content: exercises,
       totalCount: proto.totalCount.toInt(),

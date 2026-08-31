@@ -33,7 +33,8 @@ enum VisibilityOption {
     String? value, {
     VisibilityOption fallback = VisibilityOption.privateAccess,
   }) {
-    final normalized = value?.trim().toLowerCase().replaceAll(RegExp(r'[^a-z]'), '') ?? '';
+    final normalized =
+        value?.trim().toLowerCase().replaceAll(RegExp(r'[^a-z]'), '') ?? '';
 
     switch (normalized) {
       case 'private':

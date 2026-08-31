@@ -18,22 +18,25 @@ class BusinessProfileRestService {
   }) async {
     try {
       DioClient().setAuthToken(token);
-      final response = await _dio.post(ApiConfig.authProfileActivateEndpoint(businessProfileUuid),
-          options: Options(
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          ));
+      final response = await _dio.post(
+        ApiConfig.authProfileActivateEndpoint(businessProfileUuid),
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
       if (response.statusCode == 200) {
         return AuthResponse.fromJson(response.data as Map<String, dynamic>);
       } else {
         throw AppException(
           statusCode: response.statusCode ?? 500,
-          message: response.data?['message'] ?? 'Failed to activate business profile',
+          message:
+              response.data?['message'] ??
+              'Failed to activate business profile',
         );
       }
     } on DioException catch (e) {
-      throw BaseService.handleDioError(e, 'Failed to activate business profile');
+      throw BaseService.handleDioError(
+        e,
+        'Failed to activate business profile',
+      );
     }
   }
 
@@ -42,23 +45,26 @@ class BusinessProfileRestService {
   static Future<AuthResponse> deactivate({required String token}) async {
     try {
       DioClient().setAuthToken(token);
-      final response = await _dio.post(ApiConfig.authProfileDeactivateEndpoint,
-          options: Options(
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          ));
+      final response = await _dio.post(
+        ApiConfig.authProfileDeactivateEndpoint,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
 
       if (response.statusCode == 200) {
         return AuthResponse.fromJson(response.data as Map<String, dynamic>);
       } else {
         throw AppException(
           statusCode: response.statusCode ?? 500,
-          message: response.data?['message'] ?? 'Failed to deactivate business profile',
+          message:
+              response.data?['message'] ??
+              'Failed to deactivate business profile',
         );
       }
     } on DioException catch (e) {
-      throw BaseService.handleDioError(e, 'Failed to deactivate business profile');
+      throw BaseService.handleDioError(
+        e,
+        'Failed to deactivate business profile',
+      );
     }
   }
 }
