@@ -31,3 +31,21 @@ impl From<entity::consent_entity::Model> for ConsentJson {
         }
     }
 }
+
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PendingConsentJson {
+    pub document: String,
+    pub current_version: String,
+    pub accepted_version: Option<String>,
+}
+
+impl From<business::use_cases::consent_use_case::PendingConsent> for PendingConsentJson {
+    fn from(value: business::use_cases::consent_use_case::PendingConsent) -> Self {
+        Self {
+            document: value.document,
+            current_version: value.current_version,
+            accepted_version: value.accepted_version,
+        }
+    }
+}

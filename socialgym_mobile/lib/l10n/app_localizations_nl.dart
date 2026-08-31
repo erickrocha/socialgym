@@ -1469,4 +1469,46 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get businessProfileSwitchToPersonal => 'Persoonlijk account';
+
+  @override
+  String get consentPendingTitle => 'Wettelijke toestemming vereist';
+
+  @override
+  String get consentPendingSubtitle =>
+      'Bekijk en accepteer de onderstaande documenten voordat u de app verder gebruikt.';
+
+  @override
+  String get consentReadDocument => 'Lezen';
+
+  @override
+  String get consentAgree => 'Ik ga akkoord';
+
+  @override
+  String get consentReviewAndAccept => 'Bekijken en accepteren';
+
+  @override
+  String get consentAllAccepted =>
+      'Helemaal klaar — bedankt voor het accepteren.';
+
+  @override
+  String get consentLogOut => 'Uitloggen';
+
+  @override
+  String get consentClose => 'Sluiten';
+
+  @override
+  String get consentLoading => 'Laden…';
+
+  @override
+  String get consentLoadFailed =>
+      'Kan uw openstaande toestemmingen niet laden. Probeer het opnieuw.';
+
+  @override
+  String get consentNeverAccepted =>
+      'U hebt dit document nog niet geaccepteerd.';
+
+  @override
+  String consentVersionOutdated(String version) {
+    return 'Er is een nieuwe versie ($version) beschikbaar die geaccepteerd moet worden.';
+  }
 }

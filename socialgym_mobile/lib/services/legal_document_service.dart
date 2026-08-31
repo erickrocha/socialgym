@@ -29,4 +29,16 @@ class LegalDocumentService {
     }
     return LegalDocument.fromJson(response.data as Map<String, dynamic>);
   }
+
+  /// All legal documents with their current versions (unauthenticated).
+  static Future<List<LegalDocument>> list() async {
+    final response = await DioClient().dio.get('/legal/documents');
+    if (response.statusCode != 200) {
+      throw StateError('Legal documents unavailable');
+    }
+    return (response.data as List<dynamic>)
+        .cast<Map<String, dynamic>>()
+        .map(LegalDocument.fromJson)
+        .toList();
+  }
 }

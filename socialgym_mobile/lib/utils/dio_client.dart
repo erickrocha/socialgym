@@ -6,6 +6,11 @@ class DioClient {
   static final DioClient _instance = DioClient._internal();
   late Dio _dio;
 
+  /// Invoked whenever any API call comes back with `403 CONSENT_REQUIRED`
+  /// (a missing/stale terms, privacy or health_data consent). Wired up once
+  /// in `main.dart` to route the user to the pending-consents gate.
+  static void Function()? onConsentRequired;
+
   factory DioClient() {
     return _instance;
   }
@@ -23,6 +28,7 @@ class DioClient {
 
     // Add interceptors
     _dio.interceptors.add(AuthInterceptor());
+    _dio.interceptors.add(ConsentInterceptor());
   }
 
   Dio get dio => _dio;
@@ -48,5 +54,37 @@ class AuthInterceptor extends Interceptor {
       options.headers['Content-Type'] = 'application/json';
     }
     super.onRequest(options, handler);
+  }
+}
+
+/// Detects `403 CONSENT_REQUIRED` on any response (the client's
+/// `validateStatus` lets < 500 through as a normal response, so this also
+/// checks `onError` for completeness) and notifies
+/// [DioClient.onConsentRequired]. The response/error is passed through
+/// untouched so existing call sites keep their own handling.
+class ConsentInterceptor extends Interceptor {
+  static bool _isConsentRequired(Response? response) {
+    if (response?.statusCode != 403) return false;
+    final data = response?.data;
+    if (data is! Map) return false;
+    final key = data['errorKey'];
+    return key is String &&
+        key.replaceAll('-', '_').toUpperCase() == 'CONSENT_REQUIRED';
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    if (_isConsentRequired(response)) {
+      DioClient.onConsentRequired?.call();
+    }
+    super.onResponse(response, handler);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    if (_isConsentRequired(err.response)) {
+      DioClient.onConsentRequired?.call();
+    }
+    super.onError(err, handler);
   }
 }

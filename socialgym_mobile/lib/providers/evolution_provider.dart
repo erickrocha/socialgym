@@ -11,11 +11,20 @@ class EvolutionProvider extends ChangeNotifier {
   bool _loading = false;
   bool _submitting = false;
   String? _error;
+  String? _errorKey;
   List<EvolutionCheckIn> _checkins = [];
 
   bool get loading => _loading;
   bool get submitting => _submitting;
   String? get error => _error;
+
+  /// Machine-readable code for the current [error], when the API supplied one.
+  String? get errorKey => _errorKey;
+
+  /// True when the current [error] is a missing / out-of-date legal consent.
+  bool get errorIsConsentRequired =>
+      _errorKey?.replaceAll('-', '_').toUpperCase() == 'CONSENT_REQUIRED';
+
   List<EvolutionCheckIn> get checkins => List.unmodifiable(_checkins);
 
   // ── Fetch ────────────────────────────────────────────────────────────────
@@ -27,6 +36,7 @@ class EvolutionProvider extends ChangeNotifier {
   }) async {
     _loading = true;
     _error = null;
+    _errorKey = null;
     notifyListeners();
 
     try {
@@ -39,6 +49,7 @@ class EvolutionProvider extends ChangeNotifier {
       notifyListeners();
     } on AppException catch (e) {
       _error = e.message;
+      _errorKey = e.errorKey;
       _loading = false;
       notifyListeners();
     } catch (_) {
@@ -51,6 +62,7 @@ class EvolutionProvider extends ChangeNotifier {
   Future<bool> addCheckIn({required Map<String, dynamic> payload, required String token}) async {
     _submitting = true;
     _error = null;
+    _errorKey = null;
     notifyListeners();
 
     try {
@@ -62,6 +74,7 @@ class EvolutionProvider extends ChangeNotifier {
       return true;
     } on AppException catch (e) {
       _error = e.message;
+      _errorKey = e.errorKey;
       _submitting = false;
       notifyListeners();
       return false;
@@ -77,6 +90,7 @@ class EvolutionProvider extends ChangeNotifier {
 
   void clearError() {
     _error = null;
+    _errorKey = null;
     notifyListeners();
   }
 }

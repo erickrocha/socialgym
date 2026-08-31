@@ -510,5 +510,17 @@
   "businessProfilePageEdit": "Bewerken",
   "businessProfilePageSave": "Opslaan",
   "businessProfilePageAddresses": "Adressen",
-  "businessProfileSwitchToPersonal": "Persoonlijk account"
+  "businessProfileSwitchToPersonal": "Persoonlijk account",
+  "consentPendingTitle": "Wettelijke toestemming vereist",
+  "consentPendingSubtitle": "Bekijk en accepteer de onderstaande documenten voordat u de app verder gebruikt.",
+  "consentReadDocument": "Lezen",
+  "consentAgree": "Ik ga akkoord",
+  "consentReviewAndAccept": "Bekijken en accepteren",
+  "consentAllAccepted": "Helemaal klaar — bedankt voor het accepteren.",
+  "consentLogOut": "Uitloggen",
+  "consentClose": "Sluiten",
+  "consentLoading": "Laden…",
+  "consentLoadFailed": "Kan uw openstaande toestemmingen niet laden. Probeer het opnieuw.",
+  "consentNeverAccepted": "U hebt dit document nog niet geaccepteerd.",
+  "consentVersionOutdated": "Er is een nieuwe versie ({version}) beschikbaar die geaccepteerd moet worden."
 }

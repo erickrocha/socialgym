@@ -512,5 +512,17 @@
   "businessProfilePageEdit": "Editar",
   "businessProfilePageSave": "Guardar",
   "businessProfilePageAddresses": "Moradas",
-  "businessProfileSwitchToPersonal": "Conta pessoal"
+  "businessProfileSwitchToPersonal": "Conta pessoal",
+  "consentPendingTitle": "Consentimento legal necessário",
+  "consentPendingSubtitle": "Reveja e aceite os documentos abaixo antes de continuar a usar a aplicação.",
+  "consentReadDocument": "Ler",
+  "consentAgree": "Concordo",
+  "consentReviewAndAccept": "Rever e aceitar",
+  "consentAllAccepted": "Tudo certo — obrigado por aceitar.",
+  "consentLogOut": "Terminar sessão",
+  "consentClose": "Fechar",
+  "consentLoading": "A carregar…",
+  "consentLoadFailed": "Não foi possível carregar os seus consentimentos pendentes. Tente novamente.",
+  "consentNeverAccepted": "Ainda não aceitou este documento.",
+  "consentVersionOutdated": "Está disponível uma nova versão ({version}) que tem de ser aceite."
 }

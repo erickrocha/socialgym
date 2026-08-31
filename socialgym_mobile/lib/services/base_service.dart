@@ -18,16 +18,22 @@ abstract class BaseService {
   static AppException handleDioError(DioException error, String fallback) {
     int statusCode = error.response?.statusCode ?? 0;
     String message = fallback;
+    String? errorKey;
 
     // Try to extract message from response body
     if (error.response?.data is Map<String, dynamic>) {
       final data = error.response!.data as Map<String, dynamic>;
       message = data['message'] ?? error.message ?? fallback;
+      errorKey = data['errorKey'] as String?;
     } else if (error.message != null) {
       message = error.message!;
     }
 
-    return AppException(statusCode: statusCode, message: message);
+    return AppException(
+      statusCode: statusCode,
+      message: message,
+      errorKey: errorKey,
+    );
   }
 
   /// Convert gRPC error to AppException
@@ -71,7 +77,22 @@ class AppException implements Exception {
   final int statusCode;
   final String message;
 
-  AppException({required this.statusCode, required this.message});
+  /// Machine-readable error code from the API response body (`errorKey`),
+  /// when present. Stable across locales, unlike [message].
+  final String? errorKey;
+
+  AppException({
+    required this.statusCode,
+    required this.message,
+    this.errorKey,
+  });
+
+  /// True when the backend rejected the request because a required legal
+  /// consent (terms / privacy / health_data) is missing or out of date.
+  /// Normalizes both `CONSENT_REQUIRED` (timeline) and `consent-required`
+  /// (older workout responses).
+  bool get isConsentRequired =>
+      errorKey?.replaceAll('-', '_').toUpperCase() == 'CONSENT_REQUIRED';
 
   @override
   String toString() => 'AppException($statusCode): $message';

@@ -1479,4 +1479,44 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get businessProfileSwitchToPersonal => 'Cuenta personal';
+
+  @override
+  String get consentPendingTitle => 'Se requiere consentimiento legal';
+
+  @override
+  String get consentPendingSubtitle =>
+      'Revisa y acepta los documentos siguientes antes de seguir usando la aplicación.';
+
+  @override
+  String get consentReadDocument => 'Leer';
+
+  @override
+  String get consentAgree => 'Acepto';
+
+  @override
+  String get consentReviewAndAccept => 'Revisar y aceptar';
+
+  @override
+  String get consentAllAccepted => 'Todo listo, gracias por aceptar.';
+
+  @override
+  String get consentLogOut => 'Cerrar sesión';
+
+  @override
+  String get consentClose => 'Cerrar';
+
+  @override
+  String get consentLoading => 'Cargando…';
+
+  @override
+  String get consentLoadFailed =>
+      'No se pudieron cargar tus consentimientos pendientes. Inténtalo de nuevo.';
+
+  @override
+  String get consentNeverAccepted => 'Aún no has aceptado este documento.';
+
+  @override
+  String consentVersionOutdated(String version) {
+    return 'Hay una nueva versión ($version) disponible que debe aceptarse.';
+  }
 }

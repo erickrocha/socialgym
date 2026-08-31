@@ -4,6 +4,9 @@ pub const TERMS: &str = "terms";
 pub const PRIVACY: &str = "privacy";
 pub const HEALTH_DATA: &str = "health_data";
 
+/// Every legal document the platform tracks consent for.
+pub const ALL: [&str; 3] = [TERMS, PRIVACY, HEALTH_DATA];
+
 pub fn current_version(document: &str) -> Option<String> {
     let (key, default) = match document {
         TERMS => ("TERMS_VERSION", "1.0.0"),
