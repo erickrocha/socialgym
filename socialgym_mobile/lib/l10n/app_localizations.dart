@@ -1917,6 +1917,144 @@ abstract class AppLocalizations {
   /// **'Action failed. Please try again.'**
   String get teamActionError;
 
+  /// No description provided for @workoutInvitesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout Invites'**
+  String get workoutInvitesTitle;
+
+  /// No description provided for @workoutInvitesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts assigned to you and to your team'**
+  String get workoutInvitesDescription;
+
+  /// No description provided for @workoutInvitesMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout Invites'**
+  String get workoutInvitesMenu;
+
+  /// No description provided for @workoutInvitesTabReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get workoutInvitesTabReceived;
+
+  /// No description provided for @workoutInvitesTabSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get workoutInvitesTabSent;
+
+  /// No description provided for @workoutInviteFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From {name}'**
+  String workoutInviteFrom(String name);
+
+  /// No description provided for @workoutInviteTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To {name}'**
+  String workoutInviteTo(String name);
+
+  /// No description provided for @workoutInviteFromTrainer.
+  ///
+  /// In en, this message translates to:
+  /// **'your trainer'**
+  String get workoutInviteFromTrainer;
+
+  /// No description provided for @workoutInviteAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get workoutInviteAccept;
+
+  /// No description provided for @workoutInviteReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get workoutInviteReject;
+
+  /// No description provided for @workoutInviteCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get workoutInviteCancel;
+
+  /// No description provided for @workoutInviteAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout accepted'**
+  String get workoutInviteAccepted;
+
+  /// No description provided for @workoutInviteRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout rejected'**
+  String get workoutInviteRejected;
+
+  /// No description provided for @workoutInviteCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment cancelled'**
+  String get workoutInviteCancelled;
+
+  /// No description provided for @workoutInviteActionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Action failed. Please try again.'**
+  String get workoutInviteActionError;
+
+  /// No description provided for @workoutInviteNoReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'No workout invites'**
+  String get workoutInviteNoReceived;
+
+  /// No description provided for @workoutInviteNoReceivedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts a trainer assigns you will appear here'**
+  String get workoutInviteNoReceivedHint;
+
+  /// No description provided for @workoutInviteNoSent.
+  ///
+  /// In en, this message translates to:
+  /// **'No assignments sent'**
+  String get workoutInviteNoSent;
+
+  /// No description provided for @workoutInviteNoSentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts you assign to team members will appear here'**
+  String get workoutInviteNoSentHint;
+
+  /// No description provided for @workoutStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get workoutStatusPending;
+
+  /// No description provided for @workoutStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get workoutStatusAccepted;
+
+  /// No description provided for @workoutStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get workoutStatusRejected;
+
+  /// No description provided for @workoutStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get workoutStatusCancelled;
+
   /// No description provided for @exerciseOwnerName.
   ///
   /// In en, this message translates to:

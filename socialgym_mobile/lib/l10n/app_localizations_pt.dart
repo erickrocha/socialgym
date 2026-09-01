@@ -952,6 +952,83 @@ class AppLocalizationsPt extends AppLocalizations {
   String get teamActionError => 'Ação falhou. Por favor, tente novamente.';
 
   @override
+  String get workoutInvitesTitle => 'Convites de treino';
+
+  @override
+  String get workoutInvitesDescription =>
+      'Treinos atribuídos a si e à sua equipa';
+
+  @override
+  String get workoutInvitesMenu => 'Convites de treino';
+
+  @override
+  String get workoutInvitesTabReceived => 'Recebidos';
+
+  @override
+  String get workoutInvitesTabSent => 'Enviados';
+
+  @override
+  String workoutInviteFrom(String name) {
+    return 'De $name';
+  }
+
+  @override
+  String workoutInviteTo(String name) {
+    return 'Para $name';
+  }
+
+  @override
+  String get workoutInviteFromTrainer => 'o seu treinador';
+
+  @override
+  String get workoutInviteAccept => 'Aceitar';
+
+  @override
+  String get workoutInviteReject => 'Recusar';
+
+  @override
+  String get workoutInviteCancel => 'Cancelar';
+
+  @override
+  String get workoutInviteAccepted => 'Treino aceite';
+
+  @override
+  String get workoutInviteRejected => 'Treino recusado';
+
+  @override
+  String get workoutInviteCancelled => 'Atribuição cancelada';
+
+  @override
+  String get workoutInviteActionError =>
+      'Ação falhou. Por favor, tente novamente.';
+
+  @override
+  String get workoutInviteNoReceived => 'Sem convites de treino';
+
+  @override
+  String get workoutInviteNoReceivedHint =>
+      'Os treinos que um treinador lhe atribuir aparecem aqui';
+
+  @override
+  String get workoutInviteNoSent => 'Sem atribuições enviadas';
+
+  @override
+  String get workoutInviteNoSentHint =>
+      'Os treinos que atribuir a membros da equipa aparecem aqui';
+
+  @override
+  String get workoutStatusPending => 'Pendente';
+
+  @override
+  String get workoutStatusAccepted => 'Aceite';
+
+  @override
+  String get workoutStatusRejected => 'Recusado';
+
+  @override
+  String get workoutStatusCancelled => 'Cancelado';
+
+  @override
   String get exerciseOwnerName => 'Nome do proprietário';
 
   @override
@@ -2463,6 +2540,83 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get teamActionError => 'Ação falhou. Por favor, tente novamente.';
+
+  @override
+  String get workoutInvitesTitle => 'Convites de treino';
+
+  @override
+  String get workoutInvitesDescription =>
+      'Treinos atribuídos a si e à sua equipa';
+
+  @override
+  String get workoutInvitesMenu => 'Convites de treino';
+
+  @override
+  String get workoutInvitesTabReceived => 'Recebidos';
+
+  @override
+  String get workoutInvitesTabSent => 'Enviados';
+
+  @override
+  String workoutInviteFrom(String name) {
+    return 'De $name';
+  }
+
+  @override
+  String workoutInviteTo(String name) {
+    return 'Para $name';
+  }
+
+  @override
+  String get workoutInviteFromTrainer => 'seu treinador';
+
+  @override
+  String get workoutInviteAccept => 'Aceitar';
+
+  @override
+  String get workoutInviteReject => 'Recusar';
+
+  @override
+  String get workoutInviteCancel => 'Cancelar';
+
+  @override
+  String get workoutInviteAccepted => 'Treino aceito';
+
+  @override
+  String get workoutInviteRejected => 'Treino recusado';
+
+  @override
+  String get workoutInviteCancelled => 'Atribuição cancelada';
+
+  @override
+  String get workoutInviteActionError =>
+      'Ação falhou. Por favor, tente novamente.';
+
+  @override
+  String get workoutInviteNoReceived => 'Sem convites de treino';
+
+  @override
+  String get workoutInviteNoReceivedHint =>
+      'Os treinos que um treinador lhe atribuir aparecem aqui';
+
+  @override
+  String get workoutInviteNoSent => 'Sem atribuições enviadas';
+
+  @override
+  String get workoutInviteNoSentHint =>
+      'Os treinos que atribuir a membros da equipa aparecem aqui';
+
+  @override
+  String get workoutStatusPending => 'Pendente';
+
+  @override
+  String get workoutStatusAccepted => 'Aceito';
+
+  @override
+  String get workoutStatusRejected => 'Recusado';
+
+  @override
+  String get workoutStatusCancelled => 'Cancelado';
 
   @override
   String get exerciseOwnerName => 'Nome do proprietário';

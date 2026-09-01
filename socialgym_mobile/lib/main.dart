@@ -15,6 +15,7 @@ import 'pages/profile/profile_page.dart';
 import 'pages/settings/settings_page.dart';
 import 'pages/sign_in/sign_in_page.dart';
 import 'pages/workout/exercises_page.dart';
+import 'pages/workout/workout_invites_page.dart';
 import 'pages/workout/workout_page.dart';
 import 'pages/workout/workout_sessions_page.dart';
 import 'pages/team/team_page.dart';
@@ -31,6 +32,7 @@ import 'providers/person_provider.dart';
 import 'providers/resource_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/team_member_provider.dart';
+import 'providers/workout_invite_provider.dart';
 import 'providers/workout_provider.dart';
 import 'providers/workout_session_provider.dart';
 import 'services/grpc/grpc_channel_factory.dart';
@@ -81,6 +83,7 @@ class SocialGymApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PersonProvider()),
         ChangeNotifierProvider(create: (_) => BusinessProfileProvider()),
         ChangeNotifierProvider(create: (_) => WorkoutProvider()),
+        ChangeNotifierProvider(create: (_) => WorkoutInviteProvider()),
         ChangeNotifierProvider(create: (_) => ExerciseSelectionProvider()),
         ChangeNotifierProvider(create: (_) => FriendsProvider()),
         ChangeNotifierProvider(create: (_) => TeamMemberProvider()),
@@ -128,6 +131,7 @@ class SocialGymApp extends StatelessWidget {
                   const BusinessProfileSignUpPage(),
               '/business-profile': (context) => const BusinessProfilePage(),
               '/workouts': (context) => const WorkoutPage(),
+              '/workout-invites': (context) => const WorkoutInvitesPage(),
               '/exercises': (context) => const ExercisesPage(),
               '/workout-sessions': (context) => const WorkoutSessionsPage(),
               '/evolution': (context) =>

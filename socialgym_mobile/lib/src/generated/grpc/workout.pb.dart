@@ -471,6 +471,96 @@ class WorkoutListRequest extends $pb.GeneratedMessage {
   void clearOwnerUuid() => $_clearField(2);
 }
 
+enum AssignedWorkoutListRequest_Identifier {
+  businessProfileId,
+  businessProfileUuid,
+  notSet
+}
+
+class AssignedWorkoutListRequest extends $pb.GeneratedMessage {
+  factory AssignedWorkoutListRequest({
+    $core.int? businessProfileId,
+    $core.String? businessProfileUuid,
+  }) {
+    final result = create();
+    if (businessProfileId != null) result.businessProfileId = businessProfileId;
+    if (businessProfileUuid != null)
+      result.businessProfileUuid = businessProfileUuid;
+    return result;
+  }
+
+  AssignedWorkoutListRequest._();
+
+  factory AssignedWorkoutListRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory AssignedWorkoutListRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static const $core.Map<$core.int, AssignedWorkoutListRequest_Identifier>
+      _AssignedWorkoutListRequest_IdentifierByTag = {
+    1: AssignedWorkoutListRequest_Identifier.businessProfileId,
+    2: AssignedWorkoutListRequest_Identifier.businessProfileUuid,
+    0: AssignedWorkoutListRequest_Identifier.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AssignedWorkoutListRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.workout'),
+      createEmptyInstance: create)
+    ..oo(0, [1, 2])
+    ..aI(1, _omitFieldNames ? '' : 'businessProfileId')
+    ..aOS(2, _omitFieldNames ? '' : 'businessProfileUuid')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AssignedWorkoutListRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AssignedWorkoutListRequest copyWith(
+          void Function(AssignedWorkoutListRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as AssignedWorkoutListRequest))
+          as AssignedWorkoutListRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static AssignedWorkoutListRequest create() => AssignedWorkoutListRequest._();
+  @$core.override
+  AssignedWorkoutListRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static AssignedWorkoutListRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AssignedWorkoutListRequest>(create);
+  static AssignedWorkoutListRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  AssignedWorkoutListRequest_Identifier whichIdentifier() =>
+      _AssignedWorkoutListRequest_IdentifierByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  void clearIdentifier() => $_clearField($_whichOneof(0));
+
+  @$pb.TagNumber(1)
+  $core.int get businessProfileId => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set businessProfileId($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasBusinessProfileId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBusinessProfileId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get businessProfileUuid => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set businessProfileUuid($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasBusinessProfileUuid() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBusinessProfileUuid() => $_clearField(2);
+}
+
 class WorkoutResponse extends $pb.GeneratedMessage {
   factory WorkoutResponse({
     $core.Iterable<Workout>? workouts,

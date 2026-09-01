@@ -788,6 +788,28 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
         assert_eq!(saved.status, InviteStatus::Accepted);
     }
 
+    #[tokio::test]
+    async fn test_workout_use_case_find_all_assigned_by_profile() {
+        let w1 = pending_assigned_workout_entity(Uuid::new_v4(), 42, Uuid::new_v4(), 10);
+        let mut w2 = pending_assigned_workout_entity(Uuid::new_v4(), 43, Uuid::new_v4(), 10);
+        w2.id = 8;
+        w2.status = "Accepted".to_string();
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![w1, w2]])
+            .append_query_results(vec![
+                Vec::<entity::workout_exercise_entity::WorkoutExerciseEntity>::new(),
+                Vec::<entity::workout_exercise_entity::WorkoutExerciseEntity>::new(),
+            ])
+            .into_connection();
+
+        let result = WorkoutUseCase::find_all_assigned_by_profile(&db, 10).await;
+
+        assert!(result.is_ok());
+        let workouts = result.unwrap();
+        assert_eq!(workouts.len(), 2);
+        assert_eq!(workouts[1].status, InviteStatus::Accepted);
+    }
+
     fn pending_assigned_workout_entity(
         uuid: Uuid,
         owner_id: i32,

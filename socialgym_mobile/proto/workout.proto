@@ -42,6 +42,9 @@ service WorkoutService {
   rpc AcceptWorkout(WorkoutRequest) returns (Workout);
   rpc RejectWorkout(WorkoutRequest) returns (Workout);
   rpc CancelWorkout(WorkoutRequest) returns (Workout);
+  // Workouts a business profile has assigned to its team members (every
+  // status). Only the acting profile itself may list them.
+  rpc GetWorkoutsAssignedByProfile(AssignedWorkoutListRequest) returns (WorkoutResponse);
 }
 
 message WorkoutRequest {
@@ -60,6 +63,13 @@ message WorkoutListRequest {
   oneof identifier {
     int32 owner_id = 1;
     string owner_uuid = 2;
+  }
+}
+
+message AssignedWorkoutListRequest {
+  oneof identifier {
+    int32 business_profile_id = 1;
+    string business_profile_uuid = 2;
   }
 }
 

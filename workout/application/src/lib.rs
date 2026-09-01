@@ -147,6 +147,7 @@ impl Modify for SecurityAddon {
 		http::workout_controller::get_workout_by_id,
 		http::workout_controller::get_workout_by_uuid,
 		http::workout_controller::get_workouts_by_owner_uuid,
+		http::workout_controller::get_workouts_assigned_by_profile,
 		http::workout_controller::update_workout,
 		http::workout_controller::delete_workout_by_id,
 		http::workout_controller::delete_workout_by_uuid,

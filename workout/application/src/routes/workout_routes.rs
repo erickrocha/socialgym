@@ -31,6 +31,12 @@ pub fn workout_routes(state: AppState) -> Router<AppState> {
             ),
         )
         .route(
+            "/assigned-by-profile",
+            get(http::workout_controller::get_workouts_assigned_by_profile).route_layer(
+                middleware::from_fn_with_state(state.clone(), authentication),
+            ),
+        )
+        .route(
             "/uuid/{uuid}/exercises",
             post(http::workout_controller::add_exercises_by_workout_uuid).route_layer(
                 middleware::from_fn_with_state(state.clone(), authentication),

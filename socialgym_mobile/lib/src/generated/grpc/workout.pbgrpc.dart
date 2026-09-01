@@ -98,6 +98,16 @@ class WorkoutServiceClient extends $grpc.Client {
     return $createUnaryCall(_$cancelWorkout, request, options: options);
   }
 
+  /// Workouts a business profile has assigned to its team members (every
+  /// status). Only the acting profile itself may list them.
+  $grpc.ResponseFuture<$0.WorkoutResponse> getWorkoutsAssignedByProfile(
+    $0.AssignedWorkoutListRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$getWorkoutsAssignedByProfile, request,
+        options: options);
+  }
+
   // method descriptors
 
   static final _$getWorkout = $grpc.ClientMethod<$0.WorkoutRequest, $0.Workout>(
@@ -142,6 +152,11 @@ class WorkoutServiceClient extends $grpc.Client {
           '/grpc.workout.WorkoutService/CancelWorkout',
           ($0.WorkoutRequest value) => value.writeToBuffer(),
           $0.Workout.fromBuffer);
+  static final _$getWorkoutsAssignedByProfile =
+      $grpc.ClientMethod<$0.AssignedWorkoutListRequest, $0.WorkoutResponse>(
+          '/grpc.workout.WorkoutService/GetWorkoutsAssignedByProfile',
+          ($0.AssignedWorkoutListRequest value) => value.writeToBuffer(),
+          $0.WorkoutResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('grpc.workout.WorkoutService')
@@ -214,6 +229,15 @@ abstract class WorkoutServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $0.WorkoutRequest.fromBuffer(value),
         ($0.Workout value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.AssignedWorkoutListRequest, $0.WorkoutResponse>(
+            'GetWorkoutsAssignedByProfile',
+            getWorkoutsAssignedByProfile_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.AssignedWorkoutListRequest.fromBuffer(value),
+            ($0.WorkoutResponse value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.Workout> getWorkout_Pre($grpc.ServiceCall $call,
@@ -288,4 +312,13 @@ abstract class WorkoutServiceBase extends $grpc.Service {
 
   $async.Future<$0.Workout> cancelWorkout(
       $grpc.ServiceCall call, $0.WorkoutRequest request);
+
+  $async.Future<$0.WorkoutResponse> getWorkoutsAssignedByProfile_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.AssignedWorkoutListRequest> $request) async {
+    return getWorkoutsAssignedByProfile($call, await $request);
+  }
+
+  $async.Future<$0.WorkoutResponse> getWorkoutsAssignedByProfile(
+      $grpc.ServiceCall call, $0.AssignedWorkoutListRequest request);
 }

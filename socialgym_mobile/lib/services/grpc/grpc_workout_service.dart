@@ -114,6 +114,60 @@ class GrpcWorkoutService {
     }
   }
 
+  /// The assigned person accepts a pending workout assignment.
+  static Future<Workout> acceptWorkout({required String uuid}) async {
+    try {
+      final response = await _ensureClient().acceptWorkout(
+        $workout.WorkoutRequest()..uuid = uuid,
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return WorkoutMapper().fromProto(response);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to accept workout');
+    }
+  }
+
+  /// The assigned person rejects a pending workout assignment.
+  static Future<Workout> rejectWorkout({required String uuid}) async {
+    try {
+      final response = await _ensureClient().rejectWorkout(
+        $workout.WorkoutRequest()..uuid = uuid,
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return WorkoutMapper().fromProto(response);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to reject workout');
+    }
+  }
+
+  /// The assigning business profile cancels a pending workout assignment.
+  static Future<Workout> cancelWorkout({required String uuid}) async {
+    try {
+      final response = await _ensureClient().cancelWorkout(
+        $workout.WorkoutRequest()..uuid = uuid,
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return WorkoutMapper().fromProto(response);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to cancel workout');
+    }
+  }
+
+  /// Workouts the given business profile has assigned to team members
+  /// (every status).
+  static Future<List<Workout>> getWorkoutsAssignedByProfile(
+      {required int businessProfileId}) async {
+    try {
+      final response = await _ensureClient().getWorkoutsAssignedByProfile(
+        $workout.AssignedWorkoutListRequest()..businessProfileId = businessProfileId,
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return WorkoutMapper().fromProtoList(response.workouts);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to load assigned workouts');
+    }
+  }
+
   static Future<Workout> addExercisesToWorkout({required String workoutUuid, required List<Exercise> exercises}) async {
     try {
       final response = await _ensureClient().addExercisesToWorkout(

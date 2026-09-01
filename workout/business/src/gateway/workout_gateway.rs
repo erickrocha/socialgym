@@ -6,7 +6,7 @@ use entity::workout_entity as workout;
 use entity::workout_entity::Entity;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, DeleteResult, EntityTrait,
-    IntoActiveModel, QueryFilter, Set,
+    IntoActiveModel, QueryFilter, QueryOrder, Set,
 };
 
 pub struct WorkoutGateway {}
@@ -50,6 +50,18 @@ impl WorkoutGateway {
     pub async fn find_by_owner_id(db: &DbConn, id: i32) -> Result<Vec<workout::WorkoutEntity>, DbErr> {
         WorkoutQuery::find()
             .filter(workout::Column::OwnerId.eq(id))
+            .all(db)
+            .await
+    }
+
+    /// Workouts a business profile has assigned to team members, newest first.
+    pub async fn find_by_assigned_by_profile_id(
+        db: &DbConn,
+        profile_id: i32,
+    ) -> Result<Vec<workout::WorkoutEntity>, DbErr> {
+        WorkoutQuery::find()
+            .filter(workout::Column::AssignedByProfileId.eq(profile_id))
+            .order_by_desc(workout::Column::UpdatedAt)
             .all(db)
             .await
     }

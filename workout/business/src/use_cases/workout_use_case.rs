@@ -317,6 +317,28 @@ impl WorkoutUseCase {
         Self::fill_exercises(db, workouts).await
     }
 
+    /// Every workout a business profile has assigned to a team member,
+    /// regardless of status (Pending / Accepted / Rejected / Cancelled).
+    pub async fn find_all_assigned_by_profile(
+        db: &DbConn,
+        profile_id: i32,
+    ) -> Result<Vec<Workout>, BusinessError> {
+        log::info!(
+            "[WorkoutUseCase::find_all_assigned_by_profile] Executing for profile_id={}",
+            profile_id
+        );
+
+        let domain = WorkoutGateway::find_by_assigned_by_profile_id(db, profile_id).await;
+
+        if domain.is_err() {
+            log::error!("Error finding assigned workouts: {}", domain.as_ref().err().unwrap());
+            return Err(BusinessError::infrastructure("Error finding workouts"));
+        }
+
+        let workouts = WorkoutEntityMapper::from_models(domain.unwrap());
+        Self::fill_exercises(db, workouts).await
+    }
+
     pub async fn find_all_by_owner_uuid(
         db: &DbConn,
         owner_uuid: String,
