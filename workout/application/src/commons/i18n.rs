@@ -71,7 +71,6 @@ impl Locale {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorKey {
-    SignUpPersonFailed,
     SignUpUserFailed,
 
     AuthHeaderMissing,
@@ -147,7 +146,6 @@ pub enum ErrorKey {
 impl ErrorKey {
     pub fn as_str(self) -> &'static str {
         match self {
-            ErrorKey::SignUpPersonFailed => "SignUpPersonFailed",
             ErrorKey::SignUpUserFailed => "SignUpUserFailed",
             ErrorKey::AuthHeaderMissing => "AuthHeaderMissing",
             ErrorKey::UnknowAuthError => "UnknowAuthError",
@@ -213,7 +211,6 @@ impl ErrorKey {
 
     pub fn message_id(self) -> &'static str {
         match self {
-            ErrorKey::SignUpPersonFailed => "sign-up-person-failed",
             ErrorKey::SignUpUserFailed => "sign-up-user-failed",
             ErrorKey::AuthHeaderMissing => "auth-header-missing",
             ErrorKey::UnknowAuthError => "unknown-auth-error",
@@ -304,8 +301,7 @@ mod tests {
         Locale::Dutch,
     ];
 
-    const ALL_KEYS: [ErrorKey; 42] = [
-        ErrorKey::SignUpPersonFailed,
+    const ALL_KEYS: [ErrorKey; 41] = [
         ErrorKey::SignUpUserFailed,
         ErrorKey::AuthHeaderMissing,
         ErrorKey::UnknowAuthError,
