@@ -527,6 +527,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get executionCompletedSets => 'Séries Complétées';
 
   @override
+  String get executionViewAll => 'Tout voir';
+
+  @override
   String get executionWorkoutComplete => 'Entraînement Terminé !';
 
   @override

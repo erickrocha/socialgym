@@ -192,6 +192,7 @@
   "executionKeepGoing": "Keep going! You're doing great!",
   "executionAlmostDone": "Almost done! Last effort!",
   "executionCompletedSets": "Completed Sets",
+  "executionViewAll": "View all",
   "executionWorkoutComplete": "Workout Complete!",
   "executionDuration": "Duration",
   "executionSetsCompleted": "Sets Completed",

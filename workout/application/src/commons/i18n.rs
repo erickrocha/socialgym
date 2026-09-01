@@ -118,6 +118,9 @@ pub enum ErrorKey {
 
     WorkoutNotFound,
     WorkoutAddFailed,
+    WorkoutAcceptAssignmentFailed,
+    WorkoutRejectAssignmentFailed,
+    WorkoutCancelAssignmentFailed,
     ExercisesFetchFailed,
     ExercisesNotAdded,
 
@@ -183,6 +186,9 @@ impl ErrorKey {
             ErrorKey::TeamMemberCancelRequestFailed => "TeamMemberCancelRequestFailed",
             ErrorKey::WorkoutNotFound => "WorkoutNotFound",
             ErrorKey::WorkoutAddFailed => "WorkoutAddFailed",
+            ErrorKey::WorkoutAcceptAssignmentFailed => "WorkoutAcceptAssignmentFailed",
+            ErrorKey::WorkoutRejectAssignmentFailed => "WorkoutRejectAssignmentFailed",
+            ErrorKey::WorkoutCancelAssignmentFailed => "WorkoutCancelAssignmentFailed",
             ErrorKey::ExercisesFetchFailed => "ExercisesFetchFailed",
             ErrorKey::ExercisesNotAdded => "ExercisesNotAdded",
             ErrorKey::SettingsNotFound => "SettingsNotFound",
@@ -246,6 +252,9 @@ impl ErrorKey {
             ErrorKey::TeamMemberCancelRequestFailed => "team-member-cancel-request-failed",
             ErrorKey::WorkoutNotFound => "workout-not-found",
             ErrorKey::WorkoutAddFailed => "workout-add-failed",
+            ErrorKey::WorkoutAcceptAssignmentFailed => "workout-accept-assignment-failed",
+            ErrorKey::WorkoutRejectAssignmentFailed => "workout-reject-assignment-failed",
+            ErrorKey::WorkoutCancelAssignmentFailed => "workout-cancel-assignment-failed",
             ErrorKey::ExercisesFetchFailed => "exercises-fetch-failed",
             ErrorKey::ExercisesNotAdded => "exercises-not-added",
             ErrorKey::SettingsNotFound => "settings-not-found",
@@ -295,7 +304,7 @@ mod tests {
         Locale::Dutch,
     ];
 
-    const ALL_KEYS: [ErrorKey; 39] = [
+    const ALL_KEYS: [ErrorKey; 42] = [
         ErrorKey::SignUpPersonFailed,
         ErrorKey::SignUpUserFailed,
         ErrorKey::AuthHeaderMissing,
@@ -333,6 +342,9 @@ mod tests {
         ErrorKey::TeamMemberCancelRequestFailed,
         ErrorKey::WorkoutNotFound,
         ErrorKey::WorkoutAddFailed,
+        ErrorKey::WorkoutAcceptAssignmentFailed,
+        ErrorKey::WorkoutRejectAssignmentFailed,
+        ErrorKey::WorkoutCancelAssignmentFailed,
         ErrorKey::ExercisesFetchFailed,
         ErrorKey::ExercisesNotAdded,
     ];

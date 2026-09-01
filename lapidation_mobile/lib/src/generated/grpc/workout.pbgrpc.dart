@@ -75,6 +75,29 @@ class WorkoutServiceClient extends $grpc.Client {
     return $createUnaryCall(_$addExercisesToWorkout, request, options: options);
   }
 
+  /// Team-member assignment lifecycle. Accept/Reject are for the assigned
+  /// person; Cancel is for the assigning business profile.
+  $grpc.ResponseFuture<$0.Workout> acceptWorkout(
+    $0.WorkoutRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$acceptWorkout, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Workout> rejectWorkout(
+    $0.WorkoutRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$rejectWorkout, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Workout> cancelWorkout(
+    $0.WorkoutRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$cancelWorkout, request, options: options);
+  }
+
   // method descriptors
 
   static final _$getWorkout = $grpc.ClientMethod<$0.WorkoutRequest, $0.Workout>(
@@ -103,6 +126,21 @@ class WorkoutServiceClient extends $grpc.Client {
       $grpc.ClientMethod<$0.WorkoutExercisesRequest, $0.Workout>(
           '/grpc.workout.WorkoutService/AddExercisesToWorkout',
           ($0.WorkoutExercisesRequest value) => value.writeToBuffer(),
+          $0.Workout.fromBuffer);
+  static final _$acceptWorkout =
+      $grpc.ClientMethod<$0.WorkoutRequest, $0.Workout>(
+          '/grpc.workout.WorkoutService/AcceptWorkout',
+          ($0.WorkoutRequest value) => value.writeToBuffer(),
+          $0.Workout.fromBuffer);
+  static final _$rejectWorkout =
+      $grpc.ClientMethod<$0.WorkoutRequest, $0.Workout>(
+          '/grpc.workout.WorkoutService/RejectWorkout',
+          ($0.WorkoutRequest value) => value.writeToBuffer(),
+          $0.Workout.fromBuffer);
+  static final _$cancelWorkout =
+      $grpc.ClientMethod<$0.WorkoutRequest, $0.Workout>(
+          '/grpc.workout.WorkoutService/CancelWorkout',
+          ($0.WorkoutRequest value) => value.writeToBuffer(),
           $0.Workout.fromBuffer);
 }
 
@@ -155,6 +193,27 @@ abstract class WorkoutServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.WorkoutExercisesRequest.fromBuffer(value),
         ($0.Workout value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.WorkoutRequest, $0.Workout>(
+        'AcceptWorkout',
+        acceptWorkout_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $0.WorkoutRequest.fromBuffer(value),
+        ($0.Workout value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.WorkoutRequest, $0.Workout>(
+        'RejectWorkout',
+        rejectWorkout_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $0.WorkoutRequest.fromBuffer(value),
+        ($0.Workout value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.WorkoutRequest, $0.Workout>(
+        'CancelWorkout',
+        cancelWorkout_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $0.WorkoutRequest.fromBuffer(value),
+        ($0.Workout value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.Workout> getWorkout_Pre($grpc.ServiceCall $call,
@@ -205,4 +264,28 @@ abstract class WorkoutServiceBase extends $grpc.Service {
 
   $async.Future<$0.Workout> addExercisesToWorkout(
       $grpc.ServiceCall call, $0.WorkoutExercisesRequest request);
+
+  $async.Future<$0.Workout> acceptWorkout_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.WorkoutRequest> $request) async {
+    return acceptWorkout($call, await $request);
+  }
+
+  $async.Future<$0.Workout> acceptWorkout(
+      $grpc.ServiceCall call, $0.WorkoutRequest request);
+
+  $async.Future<$0.Workout> rejectWorkout_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.WorkoutRequest> $request) async {
+    return rejectWorkout($call, await $request);
+  }
+
+  $async.Future<$0.Workout> rejectWorkout(
+      $grpc.ServiceCall call, $0.WorkoutRequest request);
+
+  $async.Future<$0.Workout> cancelWorkout_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.WorkoutRequest> $request) async {
+    return cancelWorkout($call, await $request);
+  }
+
+  $async.Future<$0.Workout> cancelWorkout(
+      $grpc.ServiceCall call, $0.WorkoutRequest request);
 }

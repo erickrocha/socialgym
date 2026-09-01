@@ -1095,6 +1095,12 @@ abstract class AppLocalizations {
   /// **'Completed Sets'**
   String get executionCompletedSets;
 
+  /// No description provided for @executionViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get executionViewAll;
+
   /// No description provided for @executionWorkoutComplete.
   ///
   /// In en, this message translates to:

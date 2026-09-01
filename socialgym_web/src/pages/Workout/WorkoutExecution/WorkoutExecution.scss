@@ -320,16 +320,38 @@
     }
 
     &__completed {
+        display: block;
+        width: 100%;
+        text-align: left;
+        font: inherit;
+        border: none;
+        cursor: pointer;
         background: white;
         border-radius: 16px;
         padding: 1rem;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        transition: box-shadow 0.2s ease;
+
+        &:hover {
+            box-shadow: 0 6px 22px rgba(0, 0, 0, 0.14);
+        }
     }
 
     &__completed-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
         margin: 0 0 0.75rem 0;
         font-size: 0.9rem;
         color: #666;
+    }
+
+    &__completed-viewall {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: c.$color-primary;
+        white-space: nowrap;
     }
 
     &__completed-list {
@@ -423,5 +445,15 @@
             font-size: 2rem;
         }
     }
+}
+
+// Route-level host: fills the viewport so the runner reads as its own screen
+// (replaces the old fullscreen <Modal> wrapper).
+.workout-execution-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    overflow-y: auto;
+    background: c.$background-color;
 }
 

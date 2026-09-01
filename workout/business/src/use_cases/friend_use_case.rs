@@ -1,7 +1,8 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::uuid_to_string;
 use crate::domain::business_error::BusinessError;
-use crate::domain::friend::{Friend, FriendEntityMapper, FriendStatus};
+use crate::domain::enums::InviteStatus;
+use crate::domain::friend::{Friend, FriendEntityMapper};
 use crate::gateway::friend_gateway::FriendGateway;
 use crate::gateway::person_gateway::PersonGateway;
 use entity::friends_entity as friends;
@@ -39,9 +40,9 @@ impl FriendUseCase {
             })?;
 
         if let Some(existing_request) = existing {
-            let status = FriendStatus::from_string(&existing_request.status);
+            let status = InviteStatus::from_string(&existing_request.status);
             return match status {
-                FriendStatus::Pending => {
+                InviteStatus::Pending => {
                     if existing_request.person_id == receiver_id
                         && existing_request.friend_id == sender_id
                     {
@@ -51,7 +52,7 @@ impl FriendUseCase {
                             sender_id
                         );
                         let mut req = existing_request;
-                        req.status = FriendStatus::Accepted.as_str().to_string();
+                        req.status = InviteStatus::Accepted.as_str().to_string();
                         let result = FriendGateway::update(db, FriendEntityMapper::from_model(req))
                             .await
                             .map_err(|e| {
@@ -72,7 +73,7 @@ impl FriendUseCase {
                         ))
                     }
                 }
-                FriendStatus::Accepted => {
+                InviteStatus::Accepted => {
                     log::warn!(
                         "Users {:?} and {:?} are already friends",
                         sender_id,
@@ -80,7 +81,7 @@ impl FriendUseCase {
                     );
                     Err(BusinessError::new("You are already friends".to_string()))
                 }
-                FriendStatus::Rejected | FriendStatus::Cancelled => {
+                InviteStatus::Rejected | InviteStatus::Cancelled => {
                     log::info!(
                         "Previous request was '{}'. Allowing new friend request from {:?} to {:?}.",
                         existing_request.status,
@@ -113,7 +114,7 @@ impl FriendUseCase {
             receiver_id,
             uuid_to_string(sender.uuid),
             uuid_to_string(receiver.uuid),
-            FriendStatus::Pending,
+            InviteStatus::Pending,
         );
         let result = FriendGateway::persist(db, friend_request).await;
         if result.is_err() {
@@ -137,7 +138,7 @@ impl FriendUseCase {
             friend_id
         );
         let result =
-            Self::update_friend_request(db, person_id, friend_id, FriendStatus::Accepted).await;
+            Self::update_friend_request(db, person_id, friend_id, InviteStatus::Accepted).await;
         if result.is_err() {
             log::error!("Error accepting friend request: {:?}", result.err());
             return Err(BusinessError::new(
@@ -152,7 +153,7 @@ impl FriendUseCase {
         db: &DbConn,
         person_id: i32,
         friend_id: i32,
-        status: FriendStatus,
+        status: InviteStatus,
     ) -> Result<Friend, BusinessError> {
         let friend_request = FriendGateway::find_friend_request(db, person_id, friend_id).await;
         if friend_request.is_err() {
@@ -195,7 +196,7 @@ impl FriendUseCase {
             friend_id
         );
         let result =
-            Self::update_friend_request(db, person_id, friend_id, FriendStatus::Rejected).await;
+            Self::update_friend_request(db, person_id, friend_id, InviteStatus::Rejected).await;
         if result.is_err() {
             log::error!("Error denying friend request: {:?}", result.err());
             return Err(BusinessError::new(
@@ -216,7 +217,7 @@ impl FriendUseCase {
             person_id
         );
         let result =
-            Self::update_friend_request(db, person_id, friend_id, FriendStatus::Cancelled).await;
+            Self::update_friend_request(db, person_id, friend_id, InviteStatus::Cancelled).await;
         if result.is_err() {
             log::error!("Error cancelling friend request: {:?}", result.err());
             return Err(BusinessError::new(

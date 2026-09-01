@@ -521,6 +521,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get executionCompletedSets => 'Completed Sets';
 
   @override
+  String get executionViewAll => 'View all';
+
+  @override
   String get executionWorkoutComplete => 'Workout Complete!';
 
   @override

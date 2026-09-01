@@ -1,5 +1,6 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
+use crate::domain::enums::InviteStatus;
 use chrono::NaiveDateTime;
 use entity::friends_entity::{ActiveModel, FriendsEntity};
 use sea_orm::{NotSet, Set};
@@ -14,36 +15,7 @@ pub struct Friend {
     pub friend_uuid: String,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
-    pub status: FriendStatus,
-}
-
-#[derive(Debug, Clone)]
-pub enum FriendStatus {
-    Pending,
-    Accepted,
-    Rejected,
-    Cancelled,
-}
-
-impl FriendStatus {
-    pub fn as_str(&self) -> String {
-        match self {
-            FriendStatus::Pending => "Pending".to_string(),
-            FriendStatus::Accepted => "Accepted".to_string(),
-            FriendStatus::Rejected => "Rejected".to_string(),
-            FriendStatus::Cancelled => "Cancelled".to_string(),
-        }
-    }
-
-    pub fn from_string(status: &str) -> FriendStatus {
-        match status {
-            "Pending" => FriendStatus::Pending,
-            "Accepted" => FriendStatus::Accepted,
-            "Rejected" => FriendStatus::Rejected,
-            "Cancelled" => FriendStatus::Cancelled,
-            _ => FriendStatus::Pending,
-        }
-    }
+    pub status: InviteStatus,
 }
 
 pub struct FriendEntityMapper {}
@@ -77,7 +49,7 @@ impl EntityMapper<Friend, FriendsEntity, ActiveModel> for FriendEntityMapper {
             person_uuid: uuid_to_string(e.person_uuid),
             friend_id: e.friend_id,
             friend_uuid: uuid_to_string(e.friend_uuid),
-            status: FriendStatus::from_string(e.status.as_str()),
+            status: InviteStatus::from_string(e.status.as_str()),
             created_at: Some(e.created_at.naive_utc()),
             updated_at: Some(e.updated_at.naive_utc()),
         }
@@ -91,7 +63,7 @@ impl EntityMapper<Friend, FriendsEntity, ActiveModel> for FriendEntityMapper {
             person_uuid: uuid_to_string(e.person_uuid.unwrap()),
             friend_id: e.friend_id.unwrap(),
             friend_uuid: uuid_to_string(e.friend_uuid.unwrap()),
-            status: FriendStatus::from_string(e.status.unwrap().as_str()),
+            status: InviteStatus::from_string(e.status.unwrap().as_str()),
             created_at: Some(e.created_at.unwrap().naive_utc()),
             updated_at: Some(e.updated_at.unwrap().naive_utc()),
         }
@@ -104,7 +76,7 @@ impl Friend {
         friend_id: i32,
         person_uuid: String,
         friend_uuid: String,
-        status: FriendStatus,
+        status: InviteStatus,
     ) -> Friend {
         Friend {
             id: None,
@@ -125,7 +97,7 @@ impl Friend {
         friend_id: i32,
         person_uuid: String,
         friend_uuid: String,
-        status: FriendStatus,
+        status: InviteStatus,
     ) -> Friend {
         Friend {
             id,

@@ -6,7 +6,7 @@ use entity::workout_entity as workout;
 use entity::workout_entity::Entity;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, DeleteResult, EntityTrait,
-    QueryFilter,
+    IntoActiveModel, QueryFilter, Set,
 };
 
 pub struct WorkoutGateway {}
@@ -15,6 +15,21 @@ impl WorkoutGateway {
     pub async fn persist(db: &DbConn, entity: Workout) -> Result<workout::ActiveModel, DbErr> {
         let active_model = WorkoutEntityMapper::build_active_model(entity);
         active_model.save(db).await
+    }
+
+    /// Flips only the `status` column on an existing workout row.
+    pub async fn update_status(
+        db: &DbConn,
+        id: i32,
+        status: String,
+    ) -> Result<workout::WorkoutEntity, DbErr> {
+        let existing = WorkoutQuery::find_by_id(id)
+            .one(db)
+            .await?
+            .ok_or_else(|| DbErr::RecordNotFound("workout".to_string()))?;
+        let mut active = existing.into_active_model();
+        active.status = Set(status);
+        active.update(db).await
     }
 
     pub async fn find_by_id(db: &DbConn, id: i32) -> Result<Option<workout::WorkoutEntity>, DbErr> {

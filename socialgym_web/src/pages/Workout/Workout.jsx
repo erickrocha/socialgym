@@ -1,16 +1,16 @@
 import React, {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router';
 import WorkoutCard from '../../commons/components/WorkoutCard/WorkoutCard';
 import ExerciseList from '../../commons/components/ExerciseList/ExerciseList';
 import * as handler from '../../redux/reducers/workout/index.js';
+import {startExecution} from '../../redux/reducers/workoutExecution/index.js';
 import './Workout.scss';
 import {AppHeader, Modal, Sidebar, Spinner, Toast} from "../../commons/gui/index.js";
 import WorkoutForm from "./WorkoutForm/index.js";
 import ExerciseForm from "./ExerciseForm/index.js";
 import StartWorkoutButton from "./StartWorkoutButton/index.js";
-import WorkoutExecution from "./WorkoutExecution/index.js";
-import WorkoutComplete from "./WorkoutComplete/index.js";
 
 // Custom hook to detect mobile screen
 const useIsMobile = (breakpoint = 768) => {
@@ -32,15 +32,13 @@ const useIsMobile = (breakpoint = 768) => {
 const Workout = () => {
     const {t} = useTranslation('common');
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const isMobile = useIsMobile();
 
     const [isShowModal, setShowModal] = useState(false);
     const [isAddingExercises, setIsAddingExercises] = useState(false);
     const [exerciseWorkoutId, setExerciseWorkoutId] = useState(null);
-    const [isExecutingWorkout, setIsExecutingWorkout] = useState(false);
-    const [executingWorkout, setExecutingWorkout] = useState(null);
-    const [completedSession, setCompletedSession] = useState(null);
 
     const {person} = useSelector((state) => state.person);
     const {workouts,selectedWorkout, error, loading } = useSelector((state) => state.workout);
@@ -76,29 +74,8 @@ const Workout = () => {
     };
 
     const handleStartWorkout = (workout) => {
-        setExecutingWorkout(workout);
-        setIsExecutingWorkout(true);
-    };
-
-    const handleWorkoutExecutionClose = () => {
-        setIsExecutingWorkout(false);
-        setExecutingWorkout(null);
-    };
-
-    const handleWorkoutComplete = (session) => {
-        setIsExecutingWorkout(false);
-        setExecutingWorkout(null);
-        setCompletedSession(session);
-    };
-
-    const handleSaveSession = (session) => {
-        // TODO: Dispatch action to save the workout session to the backend
-        console.log('Saving workout session:', session);
-        setCompletedSession(null);
-    };
-
-    const handleCloseComplete = () => {
-        setCompletedSession(null);
+        dispatch(startExecution(workout));
+        navigate(`/workouts/execution/${workout.id}`);
     };
 
     // Determine if we should show exercise form inline (mobile) or modal (desktop)
@@ -235,30 +212,6 @@ const Workout = () => {
                     )}
                 </main>
             </div>
-
-            {/* Workout Execution Modal */}
-            {isExecutingWorkout && executingWorkout && (
-                <Modal
-                    isOpen={isExecutingWorkout}
-                    onClose={handleWorkoutExecutionClose}
-                    isFullScreen={true}
-                >
-                    <WorkoutExecution
-                        workout={executingWorkout}
-                        onClose={handleWorkoutExecutionClose}
-                        onComplete={handleWorkoutComplete}
-                    />
-                </Modal>
-            )}
-
-            {/* Workout Complete Celebration */}
-            {completedSession && (
-                <WorkoutComplete
-                    workoutSession={completedSession}
-                    onClose={handleCloseComplete}
-                    onSave={handleSaveSession}
-                />
-            )}
         </div>
     );
 };

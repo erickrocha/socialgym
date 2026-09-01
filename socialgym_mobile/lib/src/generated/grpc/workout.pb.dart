@@ -33,6 +33,8 @@ class Workout extends $pb.GeneratedMessage {
     $core.String? createdAt,
     $core.String? updatedAt,
     $core.String? targetPersonUuid,
+    $core.String? status,
+    $core.String? assignedByProfileUuid,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -48,6 +50,9 @@ class Workout extends $pb.GeneratedMessage {
     if (createdAt != null) result.createdAt = createdAt;
     if (updatedAt != null) result.updatedAt = updatedAt;
     if (targetPersonUuid != null) result.targetPersonUuid = targetPersonUuid;
+    if (status != null) result.status = status;
+    if (assignedByProfileUuid != null)
+      result.assignedByProfileUuid = assignedByProfileUuid;
     return result;
   }
 
@@ -78,6 +83,8 @@ class Workout extends $pb.GeneratedMessage {
     ..aOS(11, _omitFieldNames ? '' : 'createdAt')
     ..aOS(12, _omitFieldNames ? '' : 'updatedAt')
     ..aOS(13, _omitFieldNames ? '' : 'targetPersonUuid')
+    ..aOS(14, _omitFieldNames ? '' : 'status')
+    ..aOS(15, _omitFieldNames ? '' : 'assignedByProfileUuid')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -212,6 +219,28 @@ class Workout extends $pb.GeneratedMessage {
   $core.bool hasTargetPersonUuid() => $_has(12);
   @$pb.TagNumber(13)
   void clearTargetPersonUuid() => $_clearField(13);
+
+  /// Consent state: "Pending" / "Accepted" / "Rejected" / "Cancelled".
+  /// Response-only — ignored on AddWorkout/UpdateWorkout.
+  @$pb.TagNumber(14)
+  $core.String get status => $_getSZ(13);
+  @$pb.TagNumber(14)
+  set status($core.String value) => $_setString(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasStatus() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearStatus() => $_clearField(14);
+
+  /// The business profile that assigned this workout (team-member assignment
+  /// only). Response-only.
+  @$pb.TagNumber(15)
+  $core.String get assignedByProfileUuid => $_getSZ(14);
+  @$pb.TagNumber(15)
+  set assignedByProfileUuid($core.String value) => $_setString(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasAssignedByProfileUuid() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearAssignedByProfileUuid() => $_clearField(15);
 }
 
 enum WorkoutRequest_Identifier { id, uuid, notSet }

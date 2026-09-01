@@ -1,7 +1,7 @@
 #[cfg(feature = "mock")]
 mod tests {
     use business::commons::functions::uuid_to_string;
-    use business::domain::enums::{Category, Difficulty, Visibility};
+    use business::domain::enums::{Category, Difficulty, InviteStatus, Visibility};
     use business::commons::entity_mapper::EntityMapper;
 use business::domain::business_error::BusinessErrorKind;
 use business::domain::exercise::{Exercise, ExerciseEntityMapper};
@@ -746,6 +746,9 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
                 owner_id: 1,
                 owner_uuid: person_uuid.clone(),
                 visibility: "Public".to_string(),
+                status: "Accepted".to_string(),
+                assigned_by_profile_id: None,
+                assigned_by_profile_uuid: None,
                 created_at: chrono::Utc::now(),
                 updated_at: chrono::Utc::now(),
             }]])
@@ -762,6 +765,9 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
             muscle_group: "Chest".to_string(),
             exercises: Vec::new(),
             visibility: Visibility::Public,
+            status: InviteStatus::Pending,
+            assigned_by_profile_id: None,
+            assigned_by_profile_uuid: None,
             created_at: None,
             updated_at: None,
         };
@@ -778,6 +784,135 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
         assert!(result.is_ok());
         let saved = result.unwrap();
         assert_eq!(saved.name, "Push ups");
+        // A self-created workout is Accepted regardless of the input status.
+        assert_eq!(saved.status, InviteStatus::Accepted);
+    }
+
+    fn pending_assigned_workout_entity(
+        uuid: Uuid,
+        owner_id: i32,
+        owner_uuid: Uuid,
+        assigned_by_profile_id: i32,
+    ) -> entity::workout_entity::WorkoutEntity {
+        entity::workout_entity::WorkoutEntity {
+            id: 7,
+            uuid,
+            name: "Assigned plan".to_string(),
+            description: None,
+            difficulty: "Easy".to_string(),
+            muscle_group: "Full body".to_string(),
+            owner_id,
+            owner_uuid,
+            visibility: "Private".to_string(),
+            status: "Pending".to_string(),
+            assigned_by_profile_id: Some(assigned_by_profile_id),
+            assigned_by_profile_uuid: Some(Uuid::new_v4()),
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_workout_use_case_accept_assignment() {
+        let uuid = Uuid::new_v4();
+        let member_uuid = Uuid::new_v4();
+        let pending = pending_assigned_workout_entity(uuid, 42, member_uuid, 10);
+        let mut accepted = pending.clone();
+        accepted.status = "Accepted".to_string();
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            // find_by_uuid, update_status' find_by_id, update ... RETURNING
+            .append_query_results(vec![vec![pending.clone()], vec![pending], vec![accepted]])
+            // fill_exercise: no workout_exercise rows
+            .append_query_results(vec![Vec::<entity::workout_exercise_entity::WorkoutExerciseEntity>::new()])
+            .append_exec_results(vec![sea_orm::MockExecResult {
+                last_insert_id: 7,
+                rows_affected: 1,
+            }])
+            .into_connection();
+
+        let result =
+            WorkoutUseCase::accept_assignment(&db, uuid.to_string(), 42).await;
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().status, InviteStatus::Accepted);
+    }
+
+    #[tokio::test]
+    async fn test_workout_use_case_accept_assignment_wrong_person_forbidden() {
+        let uuid = Uuid::new_v4();
+        let member_uuid = Uuid::new_v4();
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![pending_assigned_workout_entity(
+                uuid,
+                42,
+                member_uuid,
+                10,
+            )]])
+            .into_connection();
+
+        let result =
+            WorkoutUseCase::accept_assignment(&db, uuid.to_string(), 999).await;
+
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, BusinessErrorKind::Forbidden);
+    }
+
+    #[tokio::test]
+    async fn test_workout_use_case_cancel_assignment_by_profile() {
+        let uuid = Uuid::new_v4();
+        let member_uuid = Uuid::new_v4();
+        let pending = pending_assigned_workout_entity(uuid, 42, member_uuid, 10);
+        let mut cancelled = pending.clone();
+        cancelled.status = "Cancelled".to_string();
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![pending.clone()], vec![pending], vec![cancelled]])
+            .append_query_results(vec![Vec::<entity::workout_exercise_entity::WorkoutExerciseEntity>::new()])
+            .append_exec_results(vec![sea_orm::MockExecResult {
+                last_insert_id: 7,
+                rows_affected: 1,
+            }])
+            .into_connection();
+
+        let result =
+            WorkoutUseCase::cancel_assignment(&db, uuid.to_string(), 10).await;
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().status, InviteStatus::Cancelled);
+    }
+
+    #[tokio::test]
+    async fn test_workout_use_case_cancel_assignment_wrong_profile_forbidden() {
+        let uuid = Uuid::new_v4();
+        let member_uuid = Uuid::new_v4();
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![pending_assigned_workout_entity(
+                uuid,
+                42,
+                member_uuid,
+                10,
+            )]])
+            .into_connection();
+
+        let result =
+            WorkoutUseCase::cancel_assignment(&db, uuid.to_string(), 99).await;
+
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Forbidden);
+    }
+
+    #[tokio::test]
+    async fn test_workout_use_case_transition_requires_pending() {
+        let uuid = Uuid::new_v4();
+        let member_uuid = Uuid::new_v4();
+        let mut already_accepted = pending_assigned_workout_entity(uuid, 42, member_uuid, 10);
+        already_accepted.status = "Accepted".to_string();
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![already_accepted]])
+            .into_connection();
+
+        let result =
+            WorkoutUseCase::accept_assignment(&db, uuid.to_string(), 42).await;
+
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Validation);
     }
 
     // ========================

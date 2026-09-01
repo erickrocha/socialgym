@@ -1,5 +1,6 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
+use crate::domain::enums::InviteStatus;
 use chrono::NaiveDateTime;
 use entity::team_member_entity::{ActiveModel, TeamMemberEntity};
 use sea_orm::{NotSet, Set};
@@ -14,7 +15,7 @@ pub struct TeamMember {
     pub person_uuid: String,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
-    pub status: TeamMemberStatus,
+    pub status: InviteStatus,
 }
 
 impl TeamMember {
@@ -23,7 +24,7 @@ impl TeamMember {
         business_profile_uuid: String,
         person_id: i32,
         person_uuid: String,
-        status: TeamMemberStatus,
+        status: InviteStatus,
     ) -> TeamMember {
         TeamMember {
             id: None,
@@ -35,35 +36,6 @@ impl TeamMember {
             created_at: None,
             updated_at: None,
             status,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TeamMemberStatus {
-    Pending,
-    Accepted,
-    Rejected,
-    Cancelled,
-}
-
-impl TeamMemberStatus {
-    pub fn as_str(&self) -> String {
-        match self {
-            TeamMemberStatus::Pending => "Pending".to_string(),
-            TeamMemberStatus::Accepted => "Accepted".to_string(),
-            TeamMemberStatus::Rejected => "Rejected".to_string(),
-            TeamMemberStatus::Cancelled => "Cancelled".to_string(),
-        }
-    }
-
-    pub fn from_string(status: &str) -> TeamMemberStatus {
-        match status {
-            "Pending" => TeamMemberStatus::Pending,
-            "Accepted" => TeamMemberStatus::Accepted,
-            "Rejected" => TeamMemberStatus::Rejected,
-            "Cancelled" => TeamMemberStatus::Cancelled,
-            _ => TeamMemberStatus::Pending,
         }
     }
 }
@@ -99,7 +71,7 @@ impl EntityMapper<TeamMember, TeamMemberEntity, ActiveModel> for TeamMemberMappe
             business_profile_uuid: uuid_to_string(e.business_profile_uuid),
             person_id: e.person_id,
             person_uuid: uuid_to_string(e.person_uuid),
-            status: TeamMemberStatus::from_string(e.status.as_str()),
+            status: InviteStatus::from_string(e.status.as_str()),
             created_at: Some(e.created_at.naive_utc()),
             updated_at: Some(e.updated_at.naive_utc()),
         }
@@ -113,7 +85,7 @@ impl EntityMapper<TeamMember, TeamMemberEntity, ActiveModel> for TeamMemberMappe
             business_profile_uuid: uuid_to_string(e.business_profile_uuid.unwrap()),
             person_id: e.person_id.unwrap(),
             person_uuid: uuid_to_string(e.person_uuid.unwrap()),
-            status: TeamMemberStatus::from_string(e.status.unwrap().as_str()),
+            status: InviteStatus::from_string(e.status.unwrap().as_str()),
             created_at: Some(e.created_at.unwrap().naive_utc()),
             updated_at: Some(e.updated_at.unwrap().naive_utc()),
         }

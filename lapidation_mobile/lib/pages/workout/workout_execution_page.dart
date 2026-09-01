@@ -7,6 +7,7 @@ import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/workout.dart';
 import '../../providers/person_provider.dart';
+import 'completed_sets_page.dart';
 import 'set_detail_page.dart';
 import 'workout_complete_dialog.dart';
 
@@ -784,56 +785,94 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     );
   }
 
+  void _openAllCompletedSets() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CompletedSetsPage(
+          workoutName: widget.workout.name,
+          sets: List.of(_executedSets),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCompletedSets(AppLocalizations l10n) {
     final recentSets = _executedSets.length > 3
         ? _executedSets.sublist(_executedSets.length - 3)
         : _executedSets;
+    final hasMore = _executedSets.length > 3;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${l10n.executionCompletedSets} (${_executedSets.length})',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          ...recentSets.map(
-            (set) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.check_circle,
-                    color: AppColors.success,
-                    size: 16,
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: _openAllCompletedSets,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  '${l10n.executionCompletedSets} (${_executedSets.length})',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      set['exerciseName'] as String,
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                  ),
+                ),
+                const Spacer(),
+                if (hasMore) ...[
                   Text(
-                    '${l10n.executionSet} ${set['setNumber']} • '
-                    '${set['weight']}${l10n.workoutWeightUnit} × ${set['repsOrDuration']}',
+                    l10n.executionViewAll,
                     style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF888888),
                     ),
                   ),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: Color(0xFF888888),
+                  ),
                 ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...recentSets.map(
+              (set) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: AppColors.success,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        set['exerciseName'] as String,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                    Text(
+                      '${l10n.executionSet} ${set['setNumber']} • '
+                      '${set['weight']}${l10n.workoutWeightUnit} × ${set['repsOrDuration']}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF888888),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

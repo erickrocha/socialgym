@@ -22,6 +22,12 @@ message Workout {
   // itself. Requires an Accepted `team_members` relationship. Empty = normal
   // ownership (the acting identity).
   string target_person_uuid = 13;
+  // Consent state: "Pending" / "Accepted" / "Rejected" / "Cancelled".
+  // Response-only — ignored on AddWorkout/UpdateWorkout.
+  string status = 14;
+  // The business profile that assigned this workout (team-member assignment
+  // only). Response-only.
+  string assigned_by_profile_uuid = 15;
 }
 
 service WorkoutService {
@@ -31,6 +37,11 @@ service WorkoutService {
   rpc UpdateWorkout(Workout) returns (Workout);
   rpc DeleteWorkout(WorkoutRequest) returns (google.protobuf.Empty);
   rpc AddExercisesToWorkout(WorkoutExercisesRequest) returns (Workout);
+  // Team-member assignment lifecycle. Accept/Reject are for the assigned
+  // person; Cancel is for the assigning business profile.
+  rpc AcceptWorkout(WorkoutRequest) returns (Workout);
+  rpc RejectWorkout(WorkoutRequest) returns (Workout);
+  rpc CancelWorkout(WorkoutRequest) returns (Workout);
 }
 
 message WorkoutRequest {
@@ -55,3 +66,4 @@ message WorkoutListRequest {
 message WorkoutResponse {
   repeated Workout workouts = 1;
 }
+

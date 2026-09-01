@@ -523,6 +523,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get executionCompletedSets => 'Voltooide Sets';
 
   @override
+  String get executionViewAll => 'Toon alles';
+
+  @override
   String get executionWorkoutComplete => 'Training Voltooid!';
 
   @override

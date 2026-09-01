@@ -15,13 +15,13 @@ use business::domain::business_profile::BusinessProfile;
 use business::domain::business_profile_address::BusinessProfileAddress;
 use business::domain::country::Country;
 use business::domain::address_candidate::AddressCandidate;
-use business::domain::enums::{Difficulty, Position, ProfileType};
+use business::domain::enums::{Difficulty, InviteStatus, Position, ProfileType};
 use business::domain::exercise::{Category, Exercise};
 use business::domain::person::Person;
 use business::domain::person_address::PersonAddress;
 use business::domain::person_info::PersonInfo;
 use business::domain::settings::Settings;
-use business::domain::team_member::{TeamMember, TeamMemberStatus};
+use business::domain::team_member::TeamMember;
 use business::domain::user::User;
 use business::domain::workout::{Visibility, Workout};
 use crate::http::json::settings_json::SettingsJson;
@@ -268,6 +268,8 @@ impl Mapper<Workout, WorkoutJson> for WorkoutMapper {
             owner_uuid: workout.owner_uuid,
             exercises: ExerciseMapper::json_vec(workout.exercises),
             visibility: workout.visibility.to_string(),
+            status: Some(workout.status.as_str()),
+            assigned_by_profile_uuid: workout.assigned_by_profile_uuid,
             created_at: workout.created_at,
             updated_at: workout.updated_at,
             target_person_uuid: None,
@@ -286,6 +288,11 @@ impl Mapper<Workout, WorkoutJson> for WorkoutMapper {
             owner_uuid: u.owner_uuid,
             exercises: ExerciseMapper::domain_vec(u.exercises),
             visibility: Visibility::from_string(u.visibility.as_str()),
+            // The use case is authoritative for status/assignment; these are
+            // placeholders that `WorkoutUseCase::persist` overwrites.
+            status: InviteStatus::from_string(u.status.as_deref().unwrap_or("Accepted")),
+            assigned_by_profile_id: None,
+            assigned_by_profile_uuid: None,
             created_at: u.created_at,
             updated_at: u.updated_at,
         }
@@ -526,7 +533,7 @@ impl Mapper<TeamMember, TeamMemberJson> for TeamMemberMapper {
             business_profile_uuid: u.business_profile_uuid,
             person_id: u.person_id,
             person_uuid: u.person_uuid,
-            status: TeamMemberStatus::from_string(&u.status),
+            status: InviteStatus::from_string(&u.status),
             created_at: None,
             updated_at: None,
         }

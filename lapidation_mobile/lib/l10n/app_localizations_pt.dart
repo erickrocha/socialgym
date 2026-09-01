@@ -525,6 +525,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get executionCompletedSets => 'Séries Completas';
 
   @override
+  String get executionViewAll => 'Ver tudo';
+
+  @override
   String get executionWorkoutComplete => 'Treino Completo!';
 
   @override
@@ -2033,6 +2036,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get executionCompletedSets => 'Séries Completas';
+
+  @override
+  String get executionViewAll => 'Ver tudo';
 
   @override
   String get executionWorkoutComplete => 'Treino Completo!';

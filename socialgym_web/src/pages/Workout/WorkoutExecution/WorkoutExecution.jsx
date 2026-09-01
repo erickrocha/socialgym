@@ -1,19 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router';
 import Button from '../../../commons/gui/Button/Button.jsx';
+import {
+    confirmSet as confirmSetAction,
+    skipSet as skipSetAction,
+    finishExecution,
+    endExecution,
+} from '../../../redux/reducers/workoutExecution/index.js';
 import './WorkoutExecution.scss';
 
-const WorkoutExecution = ({ workout, onClose, onComplete }) => {
+const WorkoutExecution = () => {
     const { t } = useTranslation('common');
-    const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-    const [currentSetIndex, setCurrentSetIndex] = useState(0);
-    const [executedExercises, setExecutedExercises] = useState([]);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+
+    const {
+        workout,
+        currentExerciseIndex,
+        currentSetIndex,
+        executedSets,
+        startedAt,
+    } = useSelector((state) => state.workoutExecution);
+
     const [isEditMode, setIsEditMode] = useState(false);
     const [editValues, setEditValues] = useState({
         weight: 0,
         reps: 0
     });
-    const [workoutStartTime, setWorkoutStartTime] = useState(null);
     const [elapsedTime, setElapsedTime] = useState(0);
 
     const exercises = workout?.exercises || [];
@@ -23,18 +38,14 @@ const WorkoutExecution = ({ workout, onClose, onComplete }) => {
     const isLastSet = currentSetIndex === totalSets - 1;
 
     useEffect(() => {
-        setWorkoutStartTime(Date.now());
-    }, []);
-
-    useEffect(() => {
         const timer = setInterval(() => {
-            if (workoutStartTime) {
-                setElapsedTime(Math.floor((Date.now() - workoutStartTime) / 1000));
+            if (startedAt) {
+                setElapsedTime(Math.floor((Date.now() - startedAt) / 1000));
             }
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [workoutStartTime]);
+    }, [startedAt]);
 
     useEffect(() => {
         if (currentExercise) {
@@ -54,63 +65,49 @@ const WorkoutExecution = ({ workout, onClose, onComplete }) => {
     const getProgress = () => {
         if (exercises.length === 0) return 0;
         const totalSetsAll = exercises.reduce((acc, ex) => acc + (ex.sets || 0), 0);
-        const completedSets = executedExercises.length;
+        const completedSets = executedSets.length;
         return Math.round((completedSets / totalSetsAll) * 100);
     };
+
+    const buildSession = (finalSets) => ({
+        workoutId: workout.id,
+        workoutName: workout.name,
+        startTime: startedAt,
+        endTime: Date.now(),
+        duration: elapsedTime,
+        executedSets: finalSets
+    });
 
     const handleConfirmSet = () => {
         const executedSet = {
             exerciseId: currentExercise.id,
             exerciseName: currentExercise.name,
+            category: currentExercise.category,
             setNumber: currentSetIndex + 1,
             weight: editValues.weight,
             reps: editValues.reps,
             completedAt: new Date().toISOString()
         };
 
-        setExecutedExercises([...executedExercises, executedSet]);
+        dispatch(confirmSetAction(executedSet));
         setIsEditMode(false);
 
-        // Move to next set or exercise
-        if (isLastSet) {
-            if (isLastExercise) {
-                // Workout complete!
-                handleWorkoutComplete([...executedExercises, executedSet]);
-            } else {
-                setCurrentExerciseIndex(currentExerciseIndex + 1);
-                setCurrentSetIndex(0);
-            }
-        } else {
-            setCurrentSetIndex(currentSetIndex + 1);
+        if (isLastSet && isLastExercise) {
+            dispatch(finishExecution(buildSession([...executedSets, executedSet])));
         }
     };
 
     const handleSkipSet = () => {
-        if (isLastSet) {
-            if (isLastExercise) {
-                handleWorkoutComplete(executedExercises);
-            } else {
-                setCurrentExerciseIndex(currentExerciseIndex + 1);
-                setCurrentSetIndex(0);
-            }
+        if (isLastSet && isLastExercise) {
+            dispatch(finishExecution(buildSession(executedSets)));
         } else {
-            setCurrentSetIndex(currentSetIndex + 1);
+            dispatch(skipSetAction());
         }
     };
 
-    const handleWorkoutComplete = (finalExecutedExercises) => {
-        const workoutSession = {
-            workoutId: workout.id,
-            workoutName: workout.name,
-            startTime: workoutStartTime,
-            endTime: Date.now(),
-            duration: elapsedTime,
-            executedSets: finalExecutedExercises
-        };
-
-        if (onComplete) {
-            onComplete(workoutSession);
-        }
+    const handleClose = () => {
+        dispatch(endExecution());
+        navigate('/workouts');
     };
 
     const handleEditToggle = () => {
@@ -130,7 +127,7 @@ const WorkoutExecution = ({ workout, onClose, onComplete }) => {
                 <div className="workout-execution__empty">
                     <span className="workout-execution__empty-icon">🏋️</span>
                     <p>{t('workoutExecution.noExercises')}</p>
-                    <Button variant="secondary" onClick={onClose}>
+                    <Button variant="secondary" onClick={handleClose}>
                         {t('application.button.cancel')}
                     </Button>
                 </div>
@@ -142,7 +139,7 @@ const WorkoutExecution = ({ workout, onClose, onComplete }) => {
         <div className="workout-execution">
             {/* Header with timer and progress */}
             <div className="workout-execution__header">
-                <button className="workout-execution__close" onClick={onClose}>
+                <button className="workout-execution__close" onClick={handleClose}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M19 12H5M12 19l-7-7 7-7" />
                     </svg>
@@ -286,14 +283,23 @@ const WorkoutExecution = ({ workout, onClose, onComplete }) => {
                 </div>
             </div>
 
-            {/* Completed sets summary */}
-            {executedExercises.length > 0 && (
-                <div className="workout-execution__completed">
+            {/* Completed sets summary — tap to see all, grouped by exercise */}
+            {executedSets.length > 0 && (
+                <button
+                    type="button"
+                    className="workout-execution__completed"
+                    onClick={() => navigate(`/workouts/execution/${workout.id}/completed`)}
+                >
                     <h4 className="workout-execution__completed-title">
-                        {t('workoutExecution.completedSets')} ({executedExercises.length})
+                        <span>{t('workoutExecution.completedSets')} ({executedSets.length})</span>
+                        {executedSets.length > 3 && (
+                            <span className="workout-execution__completed-viewall">
+                                {t('workoutExecution.viewAllSets')} →
+                            </span>
+                        )}
                     </h4>
                     <div className="workout-execution__completed-list">
-                        {executedExercises.slice(-3).map((set, idx) => (
+                        {executedSets.slice(-3).map((set, idx) => (
                             <div key={idx} className="workout-execution__completed-item">
                                 <span className="workout-execution__completed-check">✓</span>
                                 <span className="workout-execution__completed-name">{set.exerciseName}</span>
@@ -303,11 +309,10 @@ const WorkoutExecution = ({ workout, onClose, onComplete }) => {
                             </div>
                         ))}
                     </div>
-                </div>
+                </button>
             )}
         </div>
     );
 };
 
 export default WorkoutExecution;
-

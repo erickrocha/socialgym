@@ -1,4 +1,4 @@
-use business::domain::team_member::TeamMemberStatus;
+use business::domain::enums::InviteStatus;
 use business::use_cases::team_member_use_case::TeamMemberUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
@@ -52,13 +52,13 @@ impl TeamMemberService for GrpcTeamMemberService {
 				TeamMemberUseCase::find_all_persons(
 					&self.conn,
 					payload.business_profile_id,
-					TeamMemberStatus::Accepted,
+					InviteStatus::Accepted,
 				)
 				.await,
 				TeamMemberUseCase::find_all_persons(
 					&self.conn,
 					payload.business_profile_id,
-					TeamMemberStatus::Pending,
+					InviteStatus::Pending,
 				)
 				.await,
 			)
@@ -71,13 +71,13 @@ impl TeamMemberService for GrpcTeamMemberService {
 				TeamMemberUseCase::find_all_business_profiles(
 					&self.conn,
 					payload.person_id,
-					TeamMemberStatus::Accepted,
+					InviteStatus::Accepted,
 				)
 				.await,
 				TeamMemberUseCase::find_all_business_profiles(
 					&self.conn,
 					payload.person_id,
-					TeamMemberStatus::Pending,
+					InviteStatus::Pending,
 				)
 				.await,
 			)

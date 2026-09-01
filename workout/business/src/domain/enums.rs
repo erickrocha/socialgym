@@ -25,6 +25,44 @@ impl ImageType {
     }
 }
 
+/// Consent lifecycle shared by friend requests, team-member requests and
+/// workout assignments: a request is created `Pending`, then the counterpart
+/// `Accepted` or `Rejected` it, or the originator `Cancelled` it.
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub enum InviteStatus {
+    Pending,
+    Accepted,
+    Rejected,
+    Cancelled,
+}
+
+impl Display for InviteStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl InviteStatus {
+    pub fn as_str(&self) -> String {
+        match self {
+            InviteStatus::Pending => "Pending".to_string(),
+            InviteStatus::Accepted => "Accepted".to_string(),
+            InviteStatus::Rejected => "Rejected".to_string(),
+            InviteStatus::Cancelled => "Cancelled".to_string(),
+        }
+    }
+
+    pub fn from_string(status: &str) -> InviteStatus {
+        match status {
+            "Pending" => InviteStatus::Pending,
+            "Accepted" => InviteStatus::Accepted,
+            "Rejected" => InviteStatus::Rejected,
+            "Cancelled" => InviteStatus::Cancelled,
+            _ => InviteStatus::Pending,
+        }
+    }
+}
+
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum ProfileType {
     Professional,

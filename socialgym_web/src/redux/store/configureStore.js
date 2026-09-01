@@ -6,6 +6,7 @@ import authReducer from "../reducers/auth/auth.slice.js";
 import personReducer from "../reducers/person/person.slice.js";
 import friendReducer from "../reducers/friend/friend.slice.js";
 import workoutReducer from "../reducers/workout/workout.slice.js";
+import workoutExecutionReducer from "../reducers/workoutExecution/workoutExecution.slice.js";
 import uploadReducer from "../reducers/upload/upload.slice.js";
 import businessReducer from "../reducers/business/business.slice.js";
 import timelineReducer from "../reducers/timeline/timeline.slice.js";
@@ -20,6 +21,7 @@ export const store = configureStore({
         person: personReducer,
         friend: friendReducer,
         workout: workoutReducer,
+        workoutExecution: workoutExecutionReducer,
         upload: uploadReducer,
         business: businessReducer,
         timeline: timelineReducer,

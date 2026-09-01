@@ -37,6 +37,24 @@ pub fn workout_routes(state: AppState) -> Router<AppState> {
             ),
         )
         .route(
+            "/uuid/{uuid}/accept",
+            put(http::workout_controller::accept_workout_assignment).route_layer(
+                middleware::from_fn_with_state(state.clone(), authentication),
+            ),
+        )
+        .route(
+            "/uuid/{uuid}/reject",
+            put(http::workout_controller::reject_workout_assignment).route_layer(
+                middleware::from_fn_with_state(state.clone(), authentication),
+            ),
+        )
+        .route(
+            "/uuid/{uuid}/cancel",
+            put(http::workout_controller::cancel_workout_assignment).route_layer(
+                middleware::from_fn_with_state(state.clone(), authentication),
+            ),
+        )
+        .route(
             "/",
             put(http::workout_controller::update_workout).route_layer(
                 middleware::from_fn_with_state(state.clone(), authentication),

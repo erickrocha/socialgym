@@ -528,6 +528,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get executionCompletedSets => 'Series Completadas';
 
   @override
+  String get executionViewAll => 'Ver todo';
+
+  @override
   String get executionWorkoutComplete => '¡Entrenamiento Completo!';
 
   @override

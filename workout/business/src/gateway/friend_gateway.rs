@@ -1,5 +1,6 @@
 use crate::commons::entity_mapper::EntityMapper;
-use crate::domain::friend::{Friend, FriendEntityMapper, FriendStatus};
+use crate::domain::enums::InviteStatus;
+use crate::domain::friend::{Friend, FriendEntityMapper};
 use entity::friends_entity as friends;
 use entity::friends_entity::Column;
 use entity::prelude::FriendsEntity as FriendsQuery;
@@ -53,7 +54,7 @@ impl FriendGateway {
         db: &DbConn,
         column: Column,
         person_id: i32,
-        status: FriendStatus,
+        status: InviteStatus,
     ) -> Result<Vec<friends::FriendsEntity>, DbErr> {
         FriendsQuery::find()
             .filter(column.eq(person_id))
@@ -72,7 +73,7 @@ impl FriendGateway {
                     .add(Column::PersonId.eq(person_id))
                     .add(Column::FriendId.eq(person_id)),
             )
-            .filter(Column::Status.eq(FriendStatus::Accepted.as_str()))
+            .filter(Column::Status.eq(InviteStatus::Accepted.as_str()))
             .all(db)
             .await
     }
@@ -88,7 +89,7 @@ impl FriendGateway {
                     .add(Column::PersonUuid.eq(person_uuid))
                     .add(Column::FriendUuid.eq(person_uuid)),
             )
-            .filter(Column::Status.eq(FriendStatus::Accepted.as_str()))
+            .filter(Column::Status.eq(InviteStatus::Accepted.as_str()))
             .all(db)
             .await
     }

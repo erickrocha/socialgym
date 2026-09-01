@@ -45,6 +45,14 @@ const Workout$json = {
       '5': 9,
       '10': 'targetPersonUuid'
     },
+    {'1': 'status', '3': 14, '4': 1, '5': 9, '10': 'status'},
+    {
+      '1': 'assigned_by_profile_uuid',
+      '3': 15,
+      '4': 1,
+      '5': 9,
+      '10': 'assignedByProfileUuid'
+    },
   ],
 };
 
@@ -57,7 +65,9 @@ final $typed_data.Uint8List workoutDescriptor = $convert.base64Decode(
     'dXASHgoKdmlzaWJpbGl0eRgJIAEoCVIKdmlzaWJpbGl0eRI1CglleGVyY2lzZXMYCiADKAsyFy'
     '5ncnBjLmV4ZXJjaXNlLkV4ZXJjaXNlUglleGVyY2lzZXMSHQoKY3JlYXRlZF9hdBgLIAEoCVIJ'
     'Y3JlYXRlZEF0Eh0KCnVwZGF0ZWRfYXQYDCABKAlSCXVwZGF0ZWRBdBIsChJ0YXJnZXRfcGVyc2'
-    '9uX3V1aWQYDSABKAlSEHRhcmdldFBlcnNvblV1aWQ=');
+    '9uX3V1aWQYDSABKAlSEHRhcmdldFBlcnNvblV1aWQSFgoGc3RhdHVzGA4gASgJUgZzdGF0dXMS'
+    'NwoYYXNzaWduZWRfYnlfcHJvZmlsZV91dWlkGA8gASgJUhVhc3NpZ25lZEJ5UHJvZmlsZVV1aW'
+    'Q=');
 
 @$core.Deprecated('Use workoutRequestDescriptor instead')
 const WorkoutRequest$json = {
