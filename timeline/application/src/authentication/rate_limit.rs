@@ -54,6 +54,15 @@ pub fn content_limiter() -> RateLimiter {
         .clone()
 }
 
+/// Chat sends and conversation creation get their own bucket so a chatty user
+/// can't exhaust the shared content budget (and vice versa). 120/minute per IP.
+pub fn chat_limiter() -> RateLimiter {
+    static LIMITER: OnceLock<RateLimiter> = OnceLock::new();
+    LIMITER
+        .get_or_init(|| RateLimiter::new(120, Duration::from_secs(60)))
+        .clone()
+}
+
 /// Per-IP throttle for abuse-prone endpoints. The acting IP is read from
 /// `X-Real-IP`, which the nginx gateway always sets (see
 /// infra/dev/locations.conf, infra/prod/nginx.conf) — falls back to the

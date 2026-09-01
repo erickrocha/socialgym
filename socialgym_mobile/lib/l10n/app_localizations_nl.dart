@@ -1590,4 +1590,32 @@ class AppLocalizationsNl extends AppLocalizations {
   String consentVersionOutdated(String version) {
     return 'Er is een nieuwe versie ($version) beschikbaar die geaccepteerd moet worden.';
   }
+
+  @override
+  String get chatConversationsTitle => 'Berichten';
+
+  @override
+  String get chatEmpty => 'Nog geen gesprekken';
+
+  @override
+  String get chatMessageHint => 'Schrijf een bericht…';
+
+  @override
+  String get chatSend => 'Versturen';
+
+  @override
+  String get chatYou => 'Jij';
+
+  @override
+  String get chatNotFriends =>
+      'Je kunt alleen je vrienden of team berichten sturen.';
+
+  @override
+  String get chatTeamGroup => 'Teamchat';
+
+  @override
+  String get chatBusinessDirect => 'Zakelijke chat';
+
+  @override
+  String get chatReconnecting => 'Opnieuw verbinden…';
 }

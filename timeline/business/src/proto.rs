@@ -32,6 +32,10 @@ pub mod proto {
         tonic::include_proto!("grpc.person_info");
     }
 
+    pub mod team_member {
+        tonic::include_proto!("grpc.team_member");
+    }
+
     pub mod settings {
         tonic::include_proto!("grpc.settings");
     }

@@ -50,5 +50,34 @@ impl InAppNotification {
             updated_at: now,
         }
     }
+
+    /// A new chat message notification, surfaced through the same pull path as
+    /// mentions so the unread badge keeps working. `uuid` is the idempotency
+    /// key `format!("{message_uuid}:{recipient_person_uuid}")`.
+    pub fn from_chat_message(
+        uuid: String,
+        recipient_person_uuid: String,
+        actor_person_uuid: String,
+        actor_name: String,
+        conversation_uuid: String,
+        snippet: String,
+    ) -> Self {
+        let now = DateTime::now();
+        Self {
+            uuid,
+            notification_type: "ChatMessage".to_string(),
+            recipient_person_uuid,
+            actor_person_uuid,
+            actor_name,
+            post_uuid: None,
+            comment_uuid: None,
+            entity_type: "conversation".to_string(),
+            entity_uuid: conversation_uuid,
+            snippet,
+            read: false,
+            created_at: now,
+            updated_at: now,
+        }
+    }
 }
 

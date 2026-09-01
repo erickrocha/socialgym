@@ -1,6 +1,8 @@
 use crate::gateway::content_report_gateway::ContentReportGateway;
+use crate::gateway::conversation_gateway::ConversationGateway;
 use crate::gateway::evolution_check_in_gateway::EvolutionCheckInGateway;
 use crate::gateway::mention_notification_gateway::MentionNotificationGateway;
+use crate::gateway::message_gateway::MessageGateway;
 use crate::gateway::post_gateway::PostGateway;
 use crate::gateway::workout_session_gateway::WorkoutSessionGateway;
 use domain::business_error::BusinessError;
@@ -43,6 +45,18 @@ impl AccountDataDeletionUseCase {
             .await?;
         ContentReportGateway::new(db)
             .delete_for_reporter(person_uuid)
+            .await?;
+
+        // Chat: drop the person from every conversation (deleting now
+        // single-sided direct/1:1 threads) and remove every message they sent.
+        let orphaned = ConversationGateway::new(db)
+            .delete_all_involving_person(person_uuid)
+            .await?;
+        MessageGateway::new(db)
+            .delete_all_by_conversations(&orphaned)
+            .await?;
+        MessageGateway::new(db)
+            .delete_all_by_sender(person_uuid)
             .await?;
 
         Ok(())

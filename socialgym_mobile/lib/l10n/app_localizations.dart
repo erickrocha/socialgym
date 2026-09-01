@@ -3128,6 +3128,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A new version ({version}) is available and must be accepted.'**
   String consentVersionOutdated(String version);
+
+  /// No description provided for @chatConversationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get chatConversationsTitle;
+
+  /// No description provided for @chatEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet'**
+  String get chatEmpty;
+
+  /// No description provided for @chatMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message…'**
+  String get chatMessageHint;
+
+  /// No description provided for @chatSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get chatSend;
+
+  /// No description provided for @chatYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get chatYou;
+
+  /// No description provided for @chatNotFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'You can only message your friends or team.'**
+  String get chatNotFriends;
+
+  /// No description provided for @chatTeamGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Team chat'**
+  String get chatTeamGroup;
+
+  /// No description provided for @chatBusinessDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Business chat'**
+  String get chatBusinessDirect;
+
+  /// No description provided for @chatReconnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting…'**
+  String get chatReconnecting;
 }
 
 class _AppLocalizationsDelegate

@@ -78,6 +78,7 @@ class SidebarContent extends StatelessWidget {
     Navigator.of(context).pushNamedAndRemoveUntil(route, (r) => false);
   }
 
+  // ignore: unused_element
   void _showComingSoon(BuildContext context, AppLocalizations l10n) {
     // Capture messenger before closing drawer to avoid context issues.
     final messenger = ScaffoldMessenger.of(context);
@@ -297,9 +298,9 @@ class SidebarContent extends StatelessWidget {
         icon: Icons.chat_bubble_outline,
         activeIcon: Icons.chat_bubble,
         label: l10n.menuMessages,
-        isActive: false,
+        isActive: currentRoute == '/chat',
         isCollapsed: isCollapsed,
-        onTap: () => _showComingSoon(context, l10n),
+        onTap: () => _go(context, '/chat'),
       ),
       _SidebarItem(
         icon: Icons.notifications_outlined,

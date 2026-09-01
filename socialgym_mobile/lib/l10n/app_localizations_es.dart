@@ -1599,4 +1599,32 @@ class AppLocalizationsEs extends AppLocalizations {
   String consentVersionOutdated(String version) {
     return 'Hay una nueva versión ($version) disponible que debe aceptarse.';
   }
+
+  @override
+  String get chatConversationsTitle => 'Mensajes';
+
+  @override
+  String get chatEmpty => 'Aún no hay conversaciones';
+
+  @override
+  String get chatMessageHint => 'Escribe un mensaje…';
+
+  @override
+  String get chatSend => 'Enviar';
+
+  @override
+  String get chatYou => 'Tú';
+
+  @override
+  String get chatNotFriends =>
+      'Solo puedes enviar mensajes a tus amigos o equipo.';
+
+  @override
+  String get chatTeamGroup => 'Chat del equipo';
+
+  @override
+  String get chatBusinessDirect => 'Chat del negocio';
+
+  @override
+  String get chatReconnecting => 'Reconectando…';
 }

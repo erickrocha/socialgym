@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:socialgym_mobile/pages/workout/evolution_page.dart';
 import 'package:socialgym_mobile/pages/notifications/notifications_page.dart';
+import 'package:socialgym_mobile/pages/chat/conversations_page.dart';
 import 'package:socialgym_mobile/providers/notifications_provider.dart';
+import 'package:socialgym_mobile/providers/chat_provider.dart';
 
 import 'config/app_colors.dart';
 import 'l10n/app_localizations.dart';
@@ -92,6 +94,7 @@ class SocialGymApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EvolutionProvider()),
         ChangeNotifierProvider(create: (_) => FeedProvider()),
         ChangeNotifierProvider(create: (_) => NotificationsProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: Consumer2<LocaleProvider, PersonProvider>(
         builder: (context, localeProvider, personProvider, _) {
@@ -142,6 +145,7 @@ class SocialGymApp extends StatelessWidget {
               '/team': (context) => const TeamPage(),
               '/followers': (context) => const FollowersPage(),
               '/notifications': (context) => const NotificationsPage(),
+              '/chat': (context) => const ConversationsPage(),
               '/settings': (context) => const SettingsPage(),
             },
           );

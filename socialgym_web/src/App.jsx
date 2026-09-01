@@ -23,6 +23,7 @@ const Gallery = lazy(() => import("./pages/Gallery/Gallery.jsx"));
 const WorkoutSessions = lazy(() => import("./pages/WorkoutSessions/WorkoutSessions.jsx"));
 const Evolution = lazy(() => import("./pages/Evolution/Evolution.jsx"));
 const Notifications = lazy(() => import("./pages/Notifications/Notifications.jsx"));
+const Chat = lazy(() => import("./pages/Chat/Chat.jsx"));
 const Settings = lazy(() => import("./pages/Settings/Settings.jsx"));
 const LegalDocument = lazy(() => import("./pages/Legal/LegalDocument.jsx"));
 const Moderation = lazy(() => import("./pages/Moderation/Moderation.jsx"));
@@ -46,6 +47,7 @@ function App() {
                     <Route path="/workout-sessions" element={<WorkoutSessions/>}/>
                     <Route path="/evolution" element={<Evolution/>}/>
                     <Route path="/friends" element={<Friends/>}/>
+                    <Route path="/chat" element={<Chat/>}/>
                     <Route path="/notifications" element={<Notifications/>}/>
                     <Route path="/settings" element={<Settings/>}/>
                     <Route path="/business" element={<Business/>}/>

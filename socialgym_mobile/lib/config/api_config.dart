@@ -52,6 +52,14 @@ class ApiConfig {
   static const String postEndpoint = '/timeline/api/posts';
   static const String notificationsEndpoint = '/timeline/api/notifications';
 
+  static const String chatConversationsEndpoint =
+      '/timeline/api/chat/conversations';
+
+  /// WebSocket base (wss://…) derived from [baseUrl]; append
+  /// `/timeline/api/chat/ws?access_token=<jwt>`.
+  static String get wsBaseUrl =>
+      baseUrl.replaceFirst(RegExp(r'^http', caseSensitive: false), 'ws');
+
   static const String feedUploadEndpoint = '/workout/api/media/upload';
   static const String resourceEndpoint = '/workout/api/resource';
   static const String addressSearchEndpoint = '/workout/api/address/search';

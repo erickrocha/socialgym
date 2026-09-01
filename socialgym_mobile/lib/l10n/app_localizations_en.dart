@@ -1576,4 +1576,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String consentVersionOutdated(String version) {
     return 'A new version ($version) is available and must be accepted.';
   }
+
+  @override
+  String get chatConversationsTitle => 'Messages';
+
+  @override
+  String get chatEmpty => 'No conversations yet';
+
+  @override
+  String get chatMessageHint => 'Write a message…';
+
+  @override
+  String get chatSend => 'Send';
+
+  @override
+  String get chatYou => 'You';
+
+  @override
+  String get chatNotFriends => 'You can only message your friends or team.';
+
+  @override
+  String get chatTeamGroup => 'Team chat';
+
+  @override
+  String get chatBusinessDirect => 'Business chat';
+
+  @override
+  String get chatReconnecting => 'Reconnecting…';
 }

@@ -18,6 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         proto_dir.join("person.proto"),
         proto_dir.join("person_address.proto"),
         proto_dir.join("person_info.proto"),
+        proto_dir.join("team_member.proto"),
         proto_dir.join("settings.proto"),
         proto_dir.join("user.proto"),
         proto_dir.join("workout.proto"),

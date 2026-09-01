@@ -18,7 +18,7 @@ utoipa = { workspace = true }
 utoipa-swagger-ui = { workspace = true }
 uuid = { workspace = true }
 
-axum = "0.8.9"
+axum = { version = "0.8.9", features = ["ws"] }
 tracing-subscriber = "0.3.23"
 anyhow = "1.0.102"
 log = "0.4.29"

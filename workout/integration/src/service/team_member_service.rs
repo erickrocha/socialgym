@@ -9,7 +9,8 @@ use crate::infrastructure::mapper::{
 };
 use crate::proto::team_member::team_member_service_server::TeamMemberService;
 use crate::proto::team_member::{
-    TeamMember, TeamMemberPageRequest, TeamMemberPageResponse, TeamMemberRequest,
+    TeamMember, TeamMemberPageRequest, TeamMemberPageResponse, TeamMemberRequest, TeamRosterRequest,
+    TeamRosterResponse,
 };
 
 pub struct GrpcTeamMemberService {
@@ -181,5 +182,34 @@ impl TeamMemberService for GrpcTeamMemberService {
 		.map_err(|e| Status::invalid_argument(e.message))?;
 
 		Ok(Response::new(TeamMemberMapper::response(team_member)))
+	}
+
+	async fn get_team_roster(
+		&self,
+		request: Request<TeamRosterRequest>,
+	) -> Result<Response<TeamRosterResponse>, Status> {
+		let payload = request.into_inner();
+
+		if payload.business_profile_uuid.trim().is_empty() {
+			return Err(Status::invalid_argument(
+				"business_profile_uuid must be informed",
+			));
+		}
+
+		let roster =
+			TeamMemberUseCase::find_roster(&self.conn, payload.business_profile_uuid.trim())
+				.await
+				.map_err(|e| Status::not_found(e.message))?;
+
+		Ok(Response::new(TeamRosterResponse {
+			business_profile_id: roster.business_profile_id,
+			business_profile_uuid: roster.business_profile_uuid,
+			business_profile_name: roster.business_profile_name,
+			business_profile_logo_object_key: roster
+				.business_profile_logo_object_key
+				.unwrap_or_default(),
+			owner_person_uuid: roster.owner_person_uuid,
+			accepted_member_person_uuids: roster.accepted_member_person_uuids,
+		}))
 	}
 }

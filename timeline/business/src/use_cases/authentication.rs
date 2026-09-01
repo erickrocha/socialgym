@@ -30,8 +30,17 @@ impl Authentication {
         let name = authentication.claims.name;
         let person_uuid = authentication.claims.person_uuid;
         let person_object_key = authentication.claims.person_object_key;
+        let active_business_profile_uuid = authentication.claims.active_business_profile_uuid;
 
-        let user = User::new(name, email, uuid, person_id, person_uuid, person_object_key);
+        let user = User::new(
+            name,
+            email,
+            uuid,
+            person_id,
+            person_uuid,
+            person_object_key,
+            active_business_profile_uuid,
+        );
         Ok(user)
     }
 
@@ -59,8 +68,17 @@ impl Authentication {
         let name = authentication.claims.name;
         let person_uuid = authentication.claims.person_uuid;
         let person_object_key = authentication.claims.person_object_key;
+        let active_business_profile_uuid = authentication.claims.active_business_profile_uuid;
 
-        let user = User::new(name, email, uuid, person_id, person_uuid, person_object_key);
+        let user = User::new(
+            name,
+            email,
+            uuid,
+            person_id,
+            person_uuid,
+            person_object_key,
+            active_business_profile_uuid,
+        );
         Ok(user)
     }
 }

@@ -13,6 +13,10 @@ service TeamMemberService {
   rpc AcceptTeamMemberRequest (TeamMemberRequest) returns (TeamMember);
   rpc DenyTeamMemberRequest (TeamMemberRequest) returns (TeamMember);
   rpc CancelTeamMemberRequest (TeamMemberRequest) returns (TeamMember);
+  // Consumed by timeline's chat feature: one uuid-keyed call returning
+  // everyone allowed in a business profile's team chat (owner + Accepted
+  // members) plus the business identity used to attribute owner messages.
+  rpc GetTeamRoster (TeamRosterRequest) returns (TeamRosterResponse);
 }
 
 message TeamMemberRequest {
@@ -42,4 +46,17 @@ message TeamMemberPageResponse {
   repeated person.Person sent_requests = 2;
   repeated business_profile.BusinessProfile teams = 3;
   repeated business_profile.BusinessProfile received_requests = 4;
+}
+
+message TeamRosterRequest {
+  string business_profile_uuid = 1;
+}
+
+message TeamRosterResponse {
+  int32 business_profile_id = 1;
+  string business_profile_uuid = 2;
+  string business_profile_name = 3;
+  string business_profile_logo_object_key = 4; // "" when unset
+  string owner_person_uuid = 5;
+  repeated string accepted_member_person_uuids = 6;
 }

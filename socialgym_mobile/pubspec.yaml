@@ -57,6 +57,8 @@ dependencies:
   protobuf: ^6.0.0
   fixnum: ^1.1.1
   flutter_3d_controller: ^2.3.0
+  web_socket_channel: ^3.0.1
+  uuid: ^4.4.0
 
 dev_dependencies:
   flutter_test:

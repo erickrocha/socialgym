@@ -26,6 +26,7 @@ const Sidebar = ({ person, isCollapsed = false, onToggle }) => {
     // Evolution check-in is personal-only: a business profile has no evolution data of its own.
     ...(!isBusinessProfileActive ? [{ id: 'evolution', label: t('sidebar.menu.evolution'), icon: '📈', action: () => navigate('/evolution') }] : []),
     { id: 'friends', label: t('sidebar.menu.friends'), icon: '👥', action: () => navigate('/friends') },
+    { id: 'chat', label: t('sidebar.menu.messages'), icon: '💬', action: () => navigate('/chat') },
     ...(person?.hasBusinessProfiles ? [{ id: 'business', label: t('sidebar.menu.business'), icon: '💼', action: () => navigate('/business') }] : []),
     { id: 'settings', label: t('sidebar.menu.settings'), icon: '⚙️', action: () => navigate('/settings') },
   ];

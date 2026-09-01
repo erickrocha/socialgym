@@ -1,3 +1,5 @@
+pub mod chat_controller;
+pub mod chat_ws_handler;
 pub mod content_report_controller;
 pub mod evolution_controller;
 pub mod feed_controller;

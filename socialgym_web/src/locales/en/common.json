@@ -138,7 +138,8 @@
       "settings": "Settings",
       "gallery": "Gallery",
       "sessions": "Sessions",
-      "evolution": "Evolution"
+      "evolution": "Evolution",
+      "messages": "Messages"
     },
     "defaultUser": "User",
     "toggleAriaLabel": "Toggle sidebar",
@@ -424,6 +425,18 @@
     "errors": {
       "load": "Could not load profile"
     }
+  },
+  "chat": {
+    "title": "Messages",
+    "conversationsEmpty": "No conversations yet",
+    "messagePlaceholder": "Write a message…",
+    "send": "Send",
+    "teamGroup": "Team chat",
+    "businessDirect": "Business chat",
+    "notFriendsError": "You can only message your friends or team.",
+    "reconnecting": "Reconnecting…",
+    "attachImage": "Attach image",
+    "you": "You",
+    "photo": "Photo"
   }
 }
-

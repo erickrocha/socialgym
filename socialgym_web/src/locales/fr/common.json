@@ -138,7 +138,8 @@
       "settings": "Paramètres",
       "gallery": "Galerie",
       "sessions": "Séances",
-      "evolution": "Évolution"
+      "evolution": "Évolution",
+      "messages": "Messages"
     },
     "defaultUser": "Utilisateur",
     "toggleAriaLabel": "Basculer la barre latérale",
@@ -424,5 +425,18 @@
     "errors": {
       "load": "Impossible de charger le profil"
     }
+  },
+  "chat": {
+    "title": "Messages",
+    "conversationsEmpty": "Aucune conversation pour le moment",
+    "messagePlaceholder": "Écrire un message…",
+    "send": "Envoyer",
+    "teamGroup": "Chat d'équipe",
+    "businessDirect": "Chat professionnel",
+    "notFriendsError": "Vous ne pouvez écrire qu'à vos amis ou à votre équipe.",
+    "reconnecting": "Reconnexion…",
+    "attachImage": "Joindre une image",
+    "you": "Vous",
+    "photo": "Photo"
   }
 }

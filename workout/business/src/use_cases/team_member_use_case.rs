@@ -12,7 +12,67 @@ use sea_orm::DbConn;
 
 pub struct TeamMemberUseCase {}
 
+/// Everyone allowed inside a business profile's team chat, plus the business
+/// identity used to attribute the owner's messages. Assembled for timeline's
+/// chat feature via the `GetTeamRoster` gRPC call.
+#[derive(Debug, Clone)]
+pub struct TeamRoster {
+    pub business_profile_id: i32,
+    pub business_profile_uuid: String,
+    pub business_profile_name: String,
+    pub business_profile_logo_object_key: Option<String>,
+    pub owner_person_uuid: String,
+    pub accepted_member_person_uuids: Vec<String>,
+}
+
 impl TeamMemberUseCase {
+    /// Resolves the full team roster for a business profile by its uuid: the
+    /// owner's person uuid, every Accepted member's person uuid, and the
+    /// business name/logo. Used only as a read model — no consent is granted
+    /// or implied here, it simply reports the memberships that already exist.
+    pub async fn find_roster(
+        db: &DbConn,
+        business_profile_uuid: &str,
+    ) -> Result<TeamRoster, BusinessError> {
+        let business_profile = BusinessProfileGateway::find_by_uuid(db, business_profile_uuid)
+            .await
+            .map_err(|e| {
+                log::error!("Error loading business profile {business_profile_uuid}: {e:?}");
+                BusinessError::infrastructure("Error loading business profile")
+            })?
+            .ok_or_else(|| BusinessError::not_found("Business profile not found"))?;
+
+        let owner = PersonGateway::find_by_id(db, business_profile.owner_id)
+            .await
+            .ok_or_else(|| BusinessError::not_found("Business profile owner not found"))?;
+
+        let memberships = TeamMemberGateway::find_all_by_business_profile_and_status(
+            db,
+            business_profile.id,
+            InviteStatus::Accepted,
+        )
+        .await
+        .map_err(|e| {
+            log::error!(
+                "Error loading team members for business profile {}: {e:?}",
+                business_profile.id
+            );
+            BusinessError::infrastructure("Error loading team members")
+        })?;
+
+        Ok(TeamRoster {
+            business_profile_id: business_profile.id,
+            business_profile_uuid: uuid_to_string(business_profile.uuid),
+            business_profile_name: business_profile.business_name,
+            business_profile_logo_object_key: business_profile.logo,
+            owner_person_uuid: uuid_to_string(owner.uuid),
+            accepted_member_person_uuids: memberships
+                .into_iter()
+                .map(|m| uuid_to_string(m.person_uuid))
+                .collect(),
+        })
+    }
+
     /// A business profile invites a person to its team. The person is the one who accepts or
     /// denies it — a profile never grants itself authority over a person.
     pub async fn send_team_member_request(

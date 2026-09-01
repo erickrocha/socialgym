@@ -1591,6 +1591,34 @@ class AppLocalizationsPt extends AppLocalizations {
   String consentVersionOutdated(String version) {
     return 'Está disponível uma nova versão ($version) que tem de ser aceite.';
   }
+
+  @override
+  String get chatConversationsTitle => 'Mensagens';
+
+  @override
+  String get chatEmpty => 'Nenhuma conversa ainda';
+
+  @override
+  String get chatMessageHint => 'Escreva uma mensagem…';
+
+  @override
+  String get chatSend => 'Enviar';
+
+  @override
+  String get chatYou => 'Você';
+
+  @override
+  String get chatNotFriends =>
+      'Você só pode conversar com seus amigos ou equipe.';
+
+  @override
+  String get chatTeamGroup => 'Chat da equipe';
+
+  @override
+  String get chatBusinessDirect => 'Chat do negócio';
+
+  @override
+  String get chatReconnecting => 'Reconectando…';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -3181,4 +3209,32 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String consentVersionOutdated(String version) {
     return 'Uma nova versão ($version) está disponível e precisa ser aceita.';
   }
+
+  @override
+  String get chatConversationsTitle => 'Mensagens';
+
+  @override
+  String get chatEmpty => 'Nenhuma conversa ainda';
+
+  @override
+  String get chatMessageHint => 'Escreva uma mensagem…';
+
+  @override
+  String get chatSend => 'Enviar';
+
+  @override
+  String get chatYou => 'Você';
+
+  @override
+  String get chatNotFriends =>
+      'Você só pode conversar com seus amigos ou equipe.';
+
+  @override
+  String get chatTeamGroup => 'Chat da equipe';
+
+  @override
+  String get chatBusinessDirect => 'Chat do negócio';
+
+  @override
+  String get chatReconnecting => 'Reconectando…';
 }
