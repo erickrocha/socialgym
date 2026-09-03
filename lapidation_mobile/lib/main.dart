@@ -1,5 +1,3 @@
-import 'package:device_preview/device_preview.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lapidation_mobile/pages/workout/evolution_page.dart';
@@ -45,12 +43,7 @@ import 'providers/business_profile_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GrpcChannelFactory.initialize(certAssetPath: 'assets/certs/server.crt');
-  runApp(
-    DevicePreview(
-      enabled: !kReleaseMode,
-      builder: (context) => const LapidationApp(),
-    ),
-  );
+  runApp(const LapidationApp());
 }
 
 class LapidationApp extends StatelessWidget {
@@ -88,12 +81,9 @@ class LapidationApp extends StatelessWidget {
             title: 'Lapidation Clinic',
             debugShowCheckedModeBanner: false,
             navigatorKey: navigatorKey,
-            // DevicePreview configuration
-            locale: DevicePreview.locale(context) ?? localeProvider.locale,
-            builder: (context, child) => DevicePreview.appBuilder(
-              context,
-              ConsentGate(navigatorKey: navigatorKey, child: child),
-            ),
+            locale: localeProvider.locale,
+            builder: (context, child) =>
+                ConsentGate(navigatorKey: navigatorKey, child: child),
             // Localization
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,

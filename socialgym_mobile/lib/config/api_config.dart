@@ -1,13 +1,24 @@
 class ApiConfig {
-  /// Android emulator uses 10.0.2.2 to reach host machine's localhost.
-  /// Linux desktop, web, and other platforms connect directly to localhost.
-  // static const String baseUrlDefault = 'https://192.168.15.4';
-  static const String baseUrlDefault = 'https://scrutiny-elevator-washstand.ngrok-free.dev';
-  // static const String grpcHost = 'https://192.168.15.4';n
-  static const String grpcHost = 'scrutiny-elevator-washstand.ngrok-free.dev';
-  static const int grpcPort = 443;
+  /// Base URL do backend. Passe `--dart-define=API_BASE_URL=https://seu.dominio`
+  /// no build de release; o default abaixo é só para desenvolvimento local.
+  /// Nunca deixe um host de túnel/dev como default de release — foi isso que
+  /// causou a rejeição 5.6 da Apple em 03/09/2026.
+  static const String baseUrlDefault = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://scrutiny-elevator-washstand.ngrok-free.dev',
+  );
+
+  /// gRPC usa o mesmo host do REST — uma fonte de verdade só.
+  static String get grpcHost => Uri.parse(baseUrlDefault).host;
+  static const int grpcPort = int.fromEnvironment('GRPC_PORT', defaultValue: 443);
   static const bool grpcUseTls = true;
-  // static const String baseUrlDefault = 'https://pt6mn56fes.us-east-1.awsapprunner.com';
+
+  /// true apenas em dev contra backend local com certificado autoassinado
+  /// (`--dart-define=GRPC_SELF_SIGNED=true`). Em release fica false e o cliente
+  /// confia na cadeia TLS pública normal.
+  static const bool grpcSelfSignedCert =
+      bool.fromEnvironment('GRPC_SELF_SIGNED', defaultValue: false);
+
   static const String loginEndpoint = '/login';
   static const String signUpEndpoint = '/signup';
   static String authProfileActivateEndpoint(String uuid) => '/auth/profile/$uuid/activate';
@@ -74,5 +85,4 @@ class ApiConfig {
   }
 
   static String? get grpcAuthority => grpcHost;
-  // static String? get grpcAuthority => '192.168.15.4';
 }
