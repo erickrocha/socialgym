@@ -620,31 +620,42 @@ Widget _buildEmptyState({
   required String title,
   required String subtitle,
 }) {
-  return Center(
-    child: Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
-            ),
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      // The available height gets tight when the keyboard is open on the search
+      // page, or on short viewports: shrink the artwork and let the content
+      // scroll instead of overflowing.
+      final tight = constraints.maxHeight < 220;
+      return Center(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: tight ? 12 : 32,
           ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: tight ? 40 : 64, color: Colors.grey[400]),
+              SizedBox(height: tight ? 8 : 16),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              ),
+            ],
           ),
-        ],
-      ),
-    ),
+        ),
+      );
+    },
   );
 }
 
