@@ -1,5 +1,6 @@
 use crate::commons::entity_mapper::EntityMapper;
-use crate::domain::team_member::{TeamMember, TeamMemberMapper, TeamMemberStatus};
+use crate::domain::enums::InviteStatus;
+use crate::domain::team_member::{TeamMember, TeamMemberMapper};
 use entity::prelude::TeamMemberEntity as TeamMemberQuery;
 use entity::team_member_entity as team_member;
 use entity::team_member_entity::Column;
@@ -41,7 +42,7 @@ impl TeamMemberGateway {
     pub async fn find_all_by_business_profile_and_status(
         db: &DbConn,
         business_profile_id: i32,
-        status: TeamMemberStatus,
+        status: InviteStatus,
     ) -> Result<Vec<team_member::TeamMemberEntity>, DbErr> {
         TeamMemberQuery::find()
             .filter(Column::BusinessProfileId.eq(business_profile_id))
@@ -53,7 +54,7 @@ impl TeamMemberGateway {
     pub async fn find_all_by_person_and_status(
         db: &DbConn,
         person_id: i32,
-        status: TeamMemberStatus,
+        status: InviteStatus,
     ) -> Result<Vec<team_member::TeamMemberEntity>, DbErr> {
         TeamMemberQuery::find()
             .filter(Column::PersonId.eq(person_id))

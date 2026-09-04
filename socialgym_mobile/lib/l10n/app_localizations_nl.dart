@@ -523,6 +523,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get executionCompletedSets => 'Voltooide Sets';
 
   @override
+  String get executionViewAll => 'Toon alles';
+
+  @override
   String get executionWorkoutComplete => 'Training Voltooid!';
 
   @override
@@ -946,6 +949,82 @@ class AppLocalizationsNl extends AppLocalizations {
   String get teamActionError => 'Actie mislukt. Probeer het opnieuw.';
 
   @override
+  String get workoutInvitesTitle => 'Trainingsuitnodigingen';
+
+  @override
+  String get workoutInvitesDescription =>
+      'Trainingen toegewezen aan jou en je team';
+
+  @override
+  String get workoutInvitesMenu => 'Trainingsuitnodigingen';
+
+  @override
+  String get workoutInvitesTabReceived => 'Ontvangen';
+
+  @override
+  String get workoutInvitesTabSent => 'Verzonden';
+
+  @override
+  String workoutInviteFrom(String name) {
+    return 'Van $name';
+  }
+
+  @override
+  String workoutInviteTo(String name) {
+    return 'Voor $name';
+  }
+
+  @override
+  String get workoutInviteFromTrainer => 'je trainer';
+
+  @override
+  String get workoutInviteAccept => 'Accepteren';
+
+  @override
+  String get workoutInviteReject => 'Weigeren';
+
+  @override
+  String get workoutInviteCancel => 'Annuleren';
+
+  @override
+  String get workoutInviteAccepted => 'Training geaccepteerd';
+
+  @override
+  String get workoutInviteRejected => 'Training geweigerd';
+
+  @override
+  String get workoutInviteCancelled => 'Toewijzing geannuleerd';
+
+  @override
+  String get workoutInviteActionError => 'Actie mislukt. Probeer het opnieuw.';
+
+  @override
+  String get workoutInviteNoReceived => 'Geen trainingsuitnodigingen';
+
+  @override
+  String get workoutInviteNoReceivedHint =>
+      'Trainingen die een trainer je toewijst verschijnen hier';
+
+  @override
+  String get workoutInviteNoSent => 'Geen toewijzingen verzonden';
+
+  @override
+  String get workoutInviteNoSentHint =>
+      'Trainingen die je aan teamleden toewijst verschijnen hier';
+
+  @override
+  String get workoutStatusPending => 'In afwachting';
+
+  @override
+  String get workoutStatusAccepted => 'Geaccepteerd';
+
+  @override
+  String get workoutStatusRejected => 'Geweigerd';
+
+  @override
+  String get workoutStatusCancelled => 'Geannuleerd';
+
+  @override
   String get exerciseOwnerName => 'Naam van eigenaar';
 
   @override
@@ -1087,6 +1166,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get feedReactions => 'reacties';
+
+  @override
+  String get labelHideKeyboard => 'Toetsenbord verbergen';
 
   @override
   String get feedAddPhoto => 'Foto';
@@ -1511,4 +1593,71 @@ class AppLocalizationsNl extends AppLocalizations {
   String consentVersionOutdated(String version) {
     return 'Er is een nieuwe versie ($version) beschikbaar die geaccepteerd moet worden.';
   }
+
+  @override
+  String get chatConversationsTitle => 'Berichten';
+
+  @override
+  String get chatEmpty => 'Nog geen gesprekken';
+
+  @override
+  String get chatMessageHint => 'Schrijf een bericht…';
+
+  @override
+  String get chatSend => 'Versturen';
+
+  @override
+  String get chatYou => 'Jij';
+
+  @override
+  String get chatNotFriends =>
+      'Je kunt alleen je vrienden of team berichten sturen.';
+
+  @override
+  String get chatTeamGroup => 'Teamchat';
+
+  @override
+  String get chatBusinessDirect => 'Zakelijke chat';
+
+  @override
+  String get chatReconnecting => 'Opnieuw verbinden…';
+
+  @override
+  String get chatNewConversation => 'Nieuw gesprek';
+
+  @override
+  String get chatStartConversationTitle => 'Gesprek starten';
+
+  @override
+  String get chatOnline => 'Online';
+
+  @override
+  String get chatOffline => 'Offline';
+
+  @override
+  String get chatNoFriendsYet => 'Voeg vrienden toe om een gesprek te starten';
+
+  @override
+  String get chatTyping => 'aan het typen…';
+
+  @override
+  String get chatSent => 'Verzonden';
+
+  @override
+  String get chatRead => 'Gelezen';
+
+  @override
+  String get chatFailedTap => 'Niet verzonden — tik om opnieuw te proberen';
+
+  @override
+  String get chatSearchHint => 'Vrienden zoeken';
+
+  @override
+  String get chatMessageAction => 'Bericht';
+
+  @override
+  String get chatToday => 'Vandaag';
+
+  @override
+  String get chatYesterday => 'Gisteren';
 }

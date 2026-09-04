@@ -1,10 +1,10 @@
-import 'package:device_preview/device_preview.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:socialgym_mobile/pages/workout/evolution_page.dart';
 import 'package:socialgym_mobile/pages/notifications/notifications_page.dart';
+import 'package:socialgym_mobile/pages/chat/conversations_page.dart';
 import 'package:socialgym_mobile/providers/notifications_provider.dart';
+import 'package:socialgym_mobile/providers/chat_provider.dart';
 
 import 'config/app_colors.dart';
 import 'l10n/app_localizations.dart';
@@ -15,6 +15,7 @@ import 'pages/profile/profile_page.dart';
 import 'pages/settings/settings_page.dart';
 import 'pages/sign_in/sign_in_page.dart';
 import 'pages/workout/exercises_page.dart';
+import 'pages/workout/workout_invites_page.dart';
 import 'pages/workout/workout_page.dart';
 import 'pages/workout/workout_sessions_page.dart';
 import 'pages/team/team_page.dart';
@@ -31,6 +32,7 @@ import 'providers/person_provider.dart';
 import 'providers/resource_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/team_member_provider.dart';
+import 'providers/workout_invite_provider.dart';
 import 'providers/workout_provider.dart';
 import 'providers/workout_session_provider.dart';
 import 'services/grpc/grpc_channel_factory.dart';
@@ -54,12 +56,7 @@ const List<String> _fontFamilyFallbacks = <String>[
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GrpcChannelFactory.initialize(certAssetPath: 'assets/certs/server.crt');
-  runApp(
-    DevicePreview(
-      enabled: !kReleaseMode,
-      builder: (context) => const SocialGymApp(),
-    ),
-  );
+  runApp(const SocialGymApp());
 }
 
 class SocialGymApp extends StatelessWidget {
@@ -81,6 +78,7 @@ class SocialGymApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PersonProvider()),
         ChangeNotifierProvider(create: (_) => BusinessProfileProvider()),
         ChangeNotifierProvider(create: (_) => WorkoutProvider()),
+        ChangeNotifierProvider(create: (_) => WorkoutInviteProvider()),
         ChangeNotifierProvider(create: (_) => ExerciseSelectionProvider()),
         ChangeNotifierProvider(create: (_) => FriendsProvider()),
         ChangeNotifierProvider(create: (_) => TeamMemberProvider()),
@@ -89,6 +87,7 @@ class SocialGymApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EvolutionProvider()),
         ChangeNotifierProvider(create: (_) => FeedProvider()),
         ChangeNotifierProvider(create: (_) => NotificationsProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: Consumer2<LocaleProvider, PersonProvider>(
         builder: (context, localeProvider, personProvider, _) {
@@ -96,12 +95,9 @@ class SocialGymApp extends StatelessWidget {
             title: 'Social Gym',
             debugShowCheckedModeBanner: false,
             navigatorKey: navigatorKey,
-            // DevicePreview configuration
-            locale: DevicePreview.locale(context) ?? localeProvider.locale,
-            builder: (context, child) => DevicePreview.appBuilder(
-              context,
-              ConsentGate(navigatorKey: navigatorKey, child: child),
-            ),
+            locale: localeProvider.locale,
+            builder: (context, child) =>
+                ConsentGate(navigatorKey: navigatorKey, child: child),
             // Localization
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -128,6 +124,7 @@ class SocialGymApp extends StatelessWidget {
                   const BusinessProfileSignUpPage(),
               '/business-profile': (context) => const BusinessProfilePage(),
               '/workouts': (context) => const WorkoutPage(),
+              '/workout-invites': (context) => const WorkoutInvitesPage(),
               '/exercises': (context) => const ExercisesPage(),
               '/workout-sessions': (context) => const WorkoutSessionsPage(),
               '/evolution': (context) =>
@@ -138,6 +135,7 @@ class SocialGymApp extends StatelessWidget {
               '/team': (context) => const TeamPage(),
               '/followers': (context) => const FollowersPage(),
               '/notifications': (context) => const NotificationsPage(),
+              '/chat': (context) => const ConversationsPage(),
               '/settings': (context) => const SettingsPage(),
             },
           );

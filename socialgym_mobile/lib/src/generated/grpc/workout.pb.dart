@@ -33,6 +33,8 @@ class Workout extends $pb.GeneratedMessage {
     $core.String? createdAt,
     $core.String? updatedAt,
     $core.String? targetPersonUuid,
+    $core.String? status,
+    $core.String? assignedByProfileUuid,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -48,6 +50,9 @@ class Workout extends $pb.GeneratedMessage {
     if (createdAt != null) result.createdAt = createdAt;
     if (updatedAt != null) result.updatedAt = updatedAt;
     if (targetPersonUuid != null) result.targetPersonUuid = targetPersonUuid;
+    if (status != null) result.status = status;
+    if (assignedByProfileUuid != null)
+      result.assignedByProfileUuid = assignedByProfileUuid;
     return result;
   }
 
@@ -78,6 +83,8 @@ class Workout extends $pb.GeneratedMessage {
     ..aOS(11, _omitFieldNames ? '' : 'createdAt')
     ..aOS(12, _omitFieldNames ? '' : 'updatedAt')
     ..aOS(13, _omitFieldNames ? '' : 'targetPersonUuid')
+    ..aOS(14, _omitFieldNames ? '' : 'status')
+    ..aOS(15, _omitFieldNames ? '' : 'assignedByProfileUuid')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -212,6 +219,28 @@ class Workout extends $pb.GeneratedMessage {
   $core.bool hasTargetPersonUuid() => $_has(12);
   @$pb.TagNumber(13)
   void clearTargetPersonUuid() => $_clearField(13);
+
+  /// Consent state: "Pending" / "Accepted" / "Rejected" / "Cancelled".
+  /// Response-only — ignored on AddWorkout/UpdateWorkout.
+  @$pb.TagNumber(14)
+  $core.String get status => $_getSZ(13);
+  @$pb.TagNumber(14)
+  set status($core.String value) => $_setString(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasStatus() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearStatus() => $_clearField(14);
+
+  /// The business profile that assigned this workout (team-member assignment
+  /// only). Response-only.
+  @$pb.TagNumber(15)
+  $core.String get assignedByProfileUuid => $_getSZ(14);
+  @$pb.TagNumber(15)
+  set assignedByProfileUuid($core.String value) => $_setString(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasAssignedByProfileUuid() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearAssignedByProfileUuid() => $_clearField(15);
 }
 
 enum WorkoutRequest_Identifier { id, uuid, notSet }
@@ -440,6 +469,96 @@ class WorkoutListRequest extends $pb.GeneratedMessage {
   $core.bool hasOwnerUuid() => $_has(1);
   @$pb.TagNumber(2)
   void clearOwnerUuid() => $_clearField(2);
+}
+
+enum AssignedWorkoutListRequest_Identifier {
+  businessProfileId,
+  businessProfileUuid,
+  notSet
+}
+
+class AssignedWorkoutListRequest extends $pb.GeneratedMessage {
+  factory AssignedWorkoutListRequest({
+    $core.int? businessProfileId,
+    $core.String? businessProfileUuid,
+  }) {
+    final result = create();
+    if (businessProfileId != null) result.businessProfileId = businessProfileId;
+    if (businessProfileUuid != null)
+      result.businessProfileUuid = businessProfileUuid;
+    return result;
+  }
+
+  AssignedWorkoutListRequest._();
+
+  factory AssignedWorkoutListRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory AssignedWorkoutListRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static const $core.Map<$core.int, AssignedWorkoutListRequest_Identifier>
+      _AssignedWorkoutListRequest_IdentifierByTag = {
+    1: AssignedWorkoutListRequest_Identifier.businessProfileId,
+    2: AssignedWorkoutListRequest_Identifier.businessProfileUuid,
+    0: AssignedWorkoutListRequest_Identifier.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AssignedWorkoutListRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.workout'),
+      createEmptyInstance: create)
+    ..oo(0, [1, 2])
+    ..aI(1, _omitFieldNames ? '' : 'businessProfileId')
+    ..aOS(2, _omitFieldNames ? '' : 'businessProfileUuid')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AssignedWorkoutListRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  AssignedWorkoutListRequest copyWith(
+          void Function(AssignedWorkoutListRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as AssignedWorkoutListRequest))
+          as AssignedWorkoutListRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static AssignedWorkoutListRequest create() => AssignedWorkoutListRequest._();
+  @$core.override
+  AssignedWorkoutListRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static AssignedWorkoutListRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AssignedWorkoutListRequest>(create);
+  static AssignedWorkoutListRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  AssignedWorkoutListRequest_Identifier whichIdentifier() =>
+      _AssignedWorkoutListRequest_IdentifierByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  void clearIdentifier() => $_clearField($_whichOneof(0));
+
+  @$pb.TagNumber(1)
+  $core.int get businessProfileId => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set businessProfileId($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasBusinessProfileId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBusinessProfileId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get businessProfileUuid => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set businessProfileUuid($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasBusinessProfileUuid() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBusinessProfileUuid() => $_clearField(2);
 }
 
 class WorkoutResponse extends $pb.GeneratedMessage {

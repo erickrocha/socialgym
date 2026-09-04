@@ -528,6 +528,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get executionCompletedSets => 'Series Completadas';
 
   @override
+  String get executionViewAll => 'Ver todo';
+
+  @override
   String get executionWorkoutComplete => '¡Entrenamiento Completo!';
 
   @override
@@ -952,6 +955,83 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get teamActionError =>
       'La acción falló. Por favor, inténtalo de nuevo.';
+
+  @override
+  String get workoutInvitesTitle => 'Invitaciones de entrenamiento';
+
+  @override
+  String get workoutInvitesDescription =>
+      'Entrenamientos asignados a ti y a tu equipo';
+
+  @override
+  String get workoutInvitesMenu => 'Invitaciones de entrenamiento';
+
+  @override
+  String get workoutInvitesTabReceived => 'Recibidas';
+
+  @override
+  String get workoutInvitesTabSent => 'Enviadas';
+
+  @override
+  String workoutInviteFrom(String name) {
+    return 'De $name';
+  }
+
+  @override
+  String workoutInviteTo(String name) {
+    return 'Para $name';
+  }
+
+  @override
+  String get workoutInviteFromTrainer => 'tu entrenador';
+
+  @override
+  String get workoutInviteAccept => 'Aceptar';
+
+  @override
+  String get workoutInviteReject => 'Rechazar';
+
+  @override
+  String get workoutInviteCancel => 'Cancelar';
+
+  @override
+  String get workoutInviteAccepted => 'Entrenamiento aceptado';
+
+  @override
+  String get workoutInviteRejected => 'Entrenamiento rechazado';
+
+  @override
+  String get workoutInviteCancelled => 'Asignación cancelada';
+
+  @override
+  String get workoutInviteActionError =>
+      'La acción falló. Por favor, inténtalo de nuevo.';
+
+  @override
+  String get workoutInviteNoReceived => 'No hay invitaciones de entrenamiento';
+
+  @override
+  String get workoutInviteNoReceivedHint =>
+      'Los entrenamientos que te asigne un entrenador aparecerán aquí';
+
+  @override
+  String get workoutInviteNoSent => 'No hay asignaciones enviadas';
+
+  @override
+  String get workoutInviteNoSentHint =>
+      'Los entrenamientos que asignes a miembros del equipo aparecerán aquí';
+
+  @override
+  String get workoutStatusPending => 'Pendiente';
+
+  @override
+  String get workoutStatusAccepted => 'Aceptado';
+
+  @override
+  String get workoutStatusRejected => 'Rechazado';
+
+  @override
+  String get workoutStatusCancelled => 'Cancelado';
 
   @override
   String get exerciseOwnerName => 'Nombre del propietario';

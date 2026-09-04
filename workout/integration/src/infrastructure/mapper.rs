@@ -7,10 +7,10 @@ use business::domain::{
     person_info::PersonInfo as DomainPersonInfo,
     user::User as DomainUser, workout::Workout as DomainWorkout,
     settings::Settings as DomainSettings,
-    team_member::{TeamMember as DomainTeamMember, TeamMemberStatus},
+    team_member::TeamMember as DomainTeamMember,
 };
 use chrono::NaiveDateTime;
-use business::domain::enums::{Difficulty, Position, ProfileType};
+use business::domain::enums::{Difficulty, InviteStatus, Position, ProfileType};
 use crate::proto;
 
 // ---------------------------------------------------------------------------
@@ -255,7 +255,7 @@ impl Mapper<DomainFriend, proto::friend::Friend> for FriendMapper {
             friend_uuid: u.friend_uuid,
             created_at: None,
             updated_at: None,
-            status: business::domain::friend::FriendStatus::Pending,
+            status: InviteStatus::Pending,
         }
     }
 }
@@ -351,6 +351,8 @@ impl Mapper<DomainWorkout, proto::workout::Workout> for WorkoutMapper {
             created_at: t.created_at.map(|d| d.to_string()).unwrap_or_default(),
             updated_at: t.updated_at.map(|d| d.to_string()).unwrap_or_default(),
             target_person_uuid: String::new(),
+            status: t.status.as_str(),
+            assigned_by_profile_uuid: t.assigned_by_profile_uuid.unwrap_or_default(),
         }
     }
 
@@ -369,6 +371,10 @@ impl Mapper<DomainWorkout, proto::workout::Workout> for WorkoutMapper {
             muscle_group: u.muscle_group,
             exercises: ExerciseMapper::domain_vec(u.exercises),
             visibility: Visibility::from_string(&u.visibility.to_lowercase()),
+            // Server-authoritative; `WorkoutUseCase::persist` overwrites these.
+            status: InviteStatus::from_string(&u.status),
+            assigned_by_profile_id: None,
+            assigned_by_profile_uuid: None,
             created_at: NaiveDateTime::parse_from_str(&u.created_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
             updated_at: NaiveDateTime::parse_from_str(&u.updated_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
         }
@@ -532,7 +538,7 @@ impl Mapper<DomainTeamMember, proto::team_member::TeamMember> for TeamMemberMapp
             business_profile_uuid: u.business_profile_uuid,
             person_id: u.person_id,
             person_uuid: u.person_uuid,
-            status: TeamMemberStatus::from_string(&u.status),
+            status: InviteStatus::from_string(&u.status),
             created_at: None,
             updated_at: None,
         }

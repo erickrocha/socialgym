@@ -523,6 +523,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get executionCompletedSets => 'Voltooide Sets';
 
   @override
+  String get executionViewAll => 'Toon alles';
+
+  @override
   String get executionWorkoutComplete => 'Training Voltooid!';
 
   @override
@@ -944,6 +947,82 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get teamActionError => 'Actie mislukt. Probeer het opnieuw.';
+
+  @override
+  String get workoutInvitesTitle => 'Trainingsuitnodigingen';
+
+  @override
+  String get workoutInvitesDescription =>
+      'Trainingen toegewezen aan jou en je team';
+
+  @override
+  String get workoutInvitesMenu => 'Trainingsuitnodigingen';
+
+  @override
+  String get workoutInvitesTabReceived => 'Ontvangen';
+
+  @override
+  String get workoutInvitesTabSent => 'Verzonden';
+
+  @override
+  String workoutInviteFrom(String name) {
+    return 'Van $name';
+  }
+
+  @override
+  String workoutInviteTo(String name) {
+    return 'Voor $name';
+  }
+
+  @override
+  String get workoutInviteFromTrainer => 'je trainer';
+
+  @override
+  String get workoutInviteAccept => 'Accepteren';
+
+  @override
+  String get workoutInviteReject => 'Weigeren';
+
+  @override
+  String get workoutInviteCancel => 'Annuleren';
+
+  @override
+  String get workoutInviteAccepted => 'Training geaccepteerd';
+
+  @override
+  String get workoutInviteRejected => 'Training geweigerd';
+
+  @override
+  String get workoutInviteCancelled => 'Toewijzing geannuleerd';
+
+  @override
+  String get workoutInviteActionError => 'Actie mislukt. Probeer het opnieuw.';
+
+  @override
+  String get workoutInviteNoReceived => 'Geen trainingsuitnodigingen';
+
+  @override
+  String get workoutInviteNoReceivedHint =>
+      'Trainingen die een trainer je toewijst verschijnen hier';
+
+  @override
+  String get workoutInviteNoSent => 'Geen toewijzingen verzonden';
+
+  @override
+  String get workoutInviteNoSentHint =>
+      'Trainingen die je aan teamleden toewijst verschijnen hier';
+
+  @override
+  String get workoutStatusPending => 'In afwachting';
+
+  @override
+  String get workoutStatusAccepted => 'Geaccepteerd';
+
+  @override
+  String get workoutStatusRejected => 'Geweigerd';
+
+  @override
+  String get workoutStatusCancelled => 'Geannuleerd';
 
   @override
   String get exerciseOwnerName => 'Naam van eigenaar';

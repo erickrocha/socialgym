@@ -174,6 +174,12 @@ class _WorkoutPageState extends State<WorkoutPage> {
             return Center(child: CircularProgressIndicator(color: AppColors.primaryFor(businessType)));
           }
 
+          // Pending / rejected / cancelled assignments live on the Workout
+          // Invites screen; the main list is only accepted workouts.
+          final workouts = workoutProvider.workouts
+              .where((w) => w.status == 'Accepted')
+              .toList();
+
           return Column(
             children: [
               // Error banner
@@ -231,9 +237,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
               // Workout list
               Expanded(
-                child: workoutProvider.workouts.isEmpty
+                child: workouts.isEmpty
                     ? _buildEmpty(l10n)
-                    : _buildWorkoutList(workoutProvider, l10n, businessType),
+                    : _buildWorkoutList(workoutProvider, workouts, l10n, businessType),
               ),
             ],
           );
@@ -260,6 +266,7 @@ class _WorkoutPageState extends State<WorkoutPage> {
 
   Widget _buildWorkoutList(
     WorkoutProvider workoutProvider,
+    List<Workout> workouts,
     AppLocalizations l10n,
     String? businessType,
   ) {
@@ -268,9 +275,9 @@ class _WorkoutPageState extends State<WorkoutPage> {
       onRefresh: () async => _fetchWorkouts(),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: workoutProvider.workouts.length,
+        itemCount: workouts.length,
         itemBuilder: (context, index) {
-          final workout = workoutProvider.workouts[index];
+          final workout = workouts[index];
           final isSelected = workoutProvider.selectedWorkout?.id == workout.id;
 
           return Padding(

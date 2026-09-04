@@ -21,7 +21,9 @@ class GrpcChannelFactory {
     String certAssetPath = 'assets/certs/server.crt',
   }) async {
     _authInterceptor = GrpcAuthInterceptor();
-    if (!ApiConfig.grpcUseTls) return;
+    // O certificado autoassinado só existe para o backend de desenvolvimento.
+    // Em release confiamos na cadeia TLS pública do host de produção.
+    if (!ApiConfig.grpcUseTls || !ApiConfig.grpcSelfSignedCert) return;
     if (_trustedCertBytes != null) return; // Already initialized.
 
     final data = await rootBundle.load(certAssetPath);
@@ -36,21 +38,18 @@ class GrpcChannelFactory {
     final key = '$host:$port:${ApiConfig.grpcUseTls ? "tls" : "insecure"}';
     final existing = _channels[key];
     if (existing != null) return existing;
-    // Identifica se o host atual é o Ngrok
-    final bool isNgrok = host.contains('ngrok-free.dev');
 
     final options = grpc.ChannelOptions(
-      credentials: ApiConfig.grpcUseTls
-          ? (isNgrok
-                ? const grpc.ChannelCredentials.secure()
-                // ^ SE FOR NGROK: Usa a credencial padrão limpa. Ele vai confiar no TLS oficial do Ngrok automaticamente.
-                : grpc.ChannelCredentials.secure(
-                    certificates: _trustedCertBytes,
-                    authority:
-                        authority, // Precisa ser apenas '192.168.15.4' (sem https)
-                  ))
-          // ^ SE FOR IP LOCAL: Usa os bytes do seu server.crt autoassinado.
-          : const grpc.ChannelCredentials.insecure(),
+      credentials: !ApiConfig.grpcUseTls
+          ? const grpc.ChannelCredentials.insecure()
+          : ApiConfig.grpcSelfSignedCert
+          // Dev: backend local com server.crt autoassinado.
+          ? grpc.ChannelCredentials.secure(
+              certificates: _trustedCertBytes,
+              authority: authority,
+            )
+          // Release: cadeia TLS pública normal.
+          : const grpc.ChannelCredentials.secure(),
     );
     final channel = grpc.ClientChannel(host, port: port, options: options);
     _channels[key] = channel;

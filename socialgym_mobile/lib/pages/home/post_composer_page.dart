@@ -6,18 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-import '../config/app_colors.dart';
-import '../l10n/app_localizations.dart';
-import '../models/mentionable_friend.dart';
-import '../models/person.dart';
-import '../providers/auth_provider.dart';
-import '../providers/feed_provider.dart';
-import '../providers/person_provider.dart';
-import '../services/grpc/grpc_person_service.dart';
-import '../services/upload_service.dart';
-import '../utils/display_name_helper.dart';
-import '../utils/mention_text_utils.dart';
-import '../utils/permissions_utils.dart';
+import '../../config/app_colors.dart';
+import '../../l10n/app_localizations.dart';
+import '../../models/mentionable_friend.dart';
+import '../../models/person.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/feed_provider.dart';
+import '../../providers/person_provider.dart';
+import '../../services/grpc/grpc_person_service.dart';
+import '../../services/upload_service.dart';
+import '../../utils/display_name_helper.dart';
+import '../../utils/mention_text_utils.dart';
+import '../../utils/permissions_utils.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Internal model for a selected media file
@@ -32,32 +32,41 @@ class _MediaItem {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PostComposerSheet
+// PostComposerPage
 // ─────────────────────────────────────────────────────────────────────────────
 
-class PostComposerSheet extends StatefulWidget {
+class PostComposerPage extends StatefulWidget {
   /// Optional pre-filled text content (e.g. workout share summary).
   final String? initialContent;
 
-  const PostComposerSheet({super.key, this.initialContent});
+  /// Optional images already picked by the caller (e.g. the gallery FAB),
+  /// attached to the post as soon as the page opens.
+  final List<XFile>? initialImages;
 
-  /// Convenience method to show the sheet and await result.
+  const PostComposerPage({super.key, this.initialContent, this.initialImages});
+
+  /// Pushes the composer and awaits its result.
   /// Returns `true` if a post was successfully created.
-  static Future<bool?> show(BuildContext context, {String? initialContent}) {
-    return showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      useSafeArea: true,
-      builder: (_) => PostComposerSheet(initialContent: initialContent),
+  static Future<bool?> push(
+    BuildContext context, {
+    String? initialContent,
+    List<XFile>? initialImages,
+  }) {
+    return Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => PostComposerPage(
+          initialContent: initialContent,
+          initialImages: initialImages,
+        ),
+      ),
     );
   }
 
   @override
-  State<PostComposerSheet> createState() => _PostComposerSheetState();
+  State<PostComposerPage> createState() => _PostComposerPageState();
 }
 
-class _PostComposerSheetState extends State<PostComposerSheet> {
+class _PostComposerPageState extends State<PostComposerPage> {
   late final TextEditingController _controller;
   final ImagePicker _picker = ImagePicker();
   final List<_MediaItem> _mediaItems = [];
@@ -78,6 +87,28 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
     super.initState();
     _controller = TextEditingController(text: widget.initialContent ?? '');
     _controller.addListener(_onComposerTextChanged);
+
+    final initialImages = widget.initialImages;
+    if (initialImages != null && initialImages.isNotEmpty) {
+      _attachImages(initialImages);
+    }
+  }
+
+  /// Reads each picked image into memory as a preview and appends it to
+  /// [_mediaItems]. Shared by the initial images and the gallery picker.
+  Future<void> _attachImages(List<XFile> files) async {
+    final items = <_MediaItem>[];
+    for (final xf in files) {
+      items.add(
+        _MediaItem(
+          file: xf,
+          isVideo: false,
+          previewBytes: await xf.readAsBytes(),
+        ),
+      );
+    }
+    if (!mounted) return;
+    setState(() => _mediaItems.addAll(items));
   }
 
   @override
@@ -213,18 +244,7 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
       final results = await _picker.pickMultiImage(imageQuality: 85);
       if (results.isEmpty) return;
 
-      final items = <_MediaItem>[];
-      for (final xf in results) {
-        items.add(
-          _MediaItem(
-            file: xf,
-            isVideo: false,
-            previewBytes: await xf.readAsBytes(),
-          ),
-        );
-      }
-      if (!mounted) return;
-      setState(() => _mediaItems.addAll(items));
+      await _attachImages(results);
     } catch (_) {
       if (!mounted) return;
       _showGenericMediaError();
@@ -431,8 +451,8 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final person = context.watch<PersonProvider>().person;
     final personProvider = context.watch<PersonProvider>();
+    final person = personProvider.person;
     final isBusinessMode = personProvider.isProfessional;
     final activeBusinessProfile = personProvider.activeBusinessProfile;
     final businessType = activeBusinessProfile?.businessType;
@@ -440,267 +460,263 @@ class _PostComposerSheetState extends State<PostComposerSheet> {
     final businessProfileName = activeBusinessProfile != null
         ? DisplayNameHelper.getBusinessProfileDisplayName(activeBusinessProfile)
         : null;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
 
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.88,
-      minChildSize: 0.5,
-      maxChildSize: 0.97,
-      builder: (ctx, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    return PopScope(
+      // Don't let a back gesture tear the page down mid upload/post.
+      canPop: !_isLoading,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          leadingWidth: 96,
+          leading: Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: _isLoading ? null : () => Navigator.pop(context),
+              child: Text(
+                l10n.buttonCancel,
+                style: TextStyle(
+                  color: _isLoading ? Colors.grey : Colors.black87,
+                ),
+              ),
+            ),
           ),
-          child: Column(
-            children: [
-              // ── Drag handle ───────────────────────────────────────────────
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+          centerTitle: true,
+          title: Text(
+            l10n.feedCreatePost,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ElevatedButton(
+                onPressed:
+                    _isLoading ||
+                        (_mediaItems.isNotEmpty && !_thirdPartyConsentConfirmed)
+                    ? null
+                    : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryFor(businessType),
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.primaryDisabledFor(
+                    businessType,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
                 ),
-              ),
-
-              // ── Header ────────────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Row(
-                  children: [
-                    TextButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => Navigator.pop(context),
-                      child: Text(
-                        l10n.buttonCancel,
-                        style: TextStyle(
-                          color: _isLoading ? Colors.grey : Colors.black87,
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
-                      ),
+                      )
+                    : Text(l10n.feedPostButton),
+              ),
+            ),
+          ],
+          bottom: const PreferredSize(
+            preferredSize: Size.fromHeight(1),
+            child: Divider(height: 1),
+          ),
+        ),
+        body: Column(
+          children: [
+            // ── Author row ──────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Row(
+                children: [
+                  _AvatarWidget(
+                    person: person,
+                    isBusinessMode: isBusinessMode,
+                    businessLogo: businessProfileLogo,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    _displayName(person, isBusinessMode, businessProfileName),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
                     ),
-                    Expanded(
-                      child: Text(
-                        l10n.feedCreatePost,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Scrollable body ─────────────────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Text input
+                    TextField(
+                      controller: _controller,
+                      autofocus:
+                          widget.initialContent == null &&
+                          (widget.initialImages?.isEmpty ?? true),
+                      maxLines: null,
+                      minLines: 5,
+                      decoration: InputDecoration(
+                        hintText: l10n.feedWriteSomething,
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(
+                          color: Colors.grey[400],
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
+                      style: const TextStyle(fontSize: 16),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ElevatedButton(
-                        onPressed:
-                            _isLoading ||
-                                (_mediaItems.isNotEmpty &&
-                                    !_thirdPartyConsentConfirmed)
-                            ? null
-                            : _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryFor(businessType),
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: AppColors.primaryDisabledFor(
-                            businessType,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(l10n.feedPostButton),
+
+                    if (_isSearchingMentions ||
+                        _mentionSuggestions.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      _MentionSuggestionsList(
+                        searching: _isSearchingMentions,
+                        suggestions: _mentionSuggestions,
+                        onSelected: _selectMention,
+                        businessType: businessType,
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                    ],
 
-              const Divider(height: 1),
-
-              // ── Author row ────────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: Row(
-                  children: [
-                    _AvatarWidget(
-                      person: person,
-                      isBusinessMode: isBusinessMode,
-                      businessLogo: businessProfileLogo,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _displayName(person, isBusinessMode, businessProfileName),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ── Scrollable body ───────────────────────────────────────────
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Text input
-                      TextField(
-                        controller: _controller,
-                        autofocus: widget.initialContent == null,
-                        maxLines: null,
-                        minLines: 5,
-                        decoration: InputDecoration(
-                          hintText: l10n.feedWriteSomething,
-                          border: InputBorder.none,
-                          hintStyle: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 16,
+                    // Upload progress
+                    if (_uploading) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primaryFor(businessType),
+                            ),
                           ),
-                        ),
-                        style: const TextStyle(fontSize: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.feedUploading,
+                            style: TextStyle(
+                              color: AppColors.primaryFor(businessType),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                       ),
+                    ],
 
-                      if (_isSearchingMentions ||
-                          _mentionSuggestions.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        _MentionSuggestionsList(
-                          searching: _isSearchingMentions,
-                          suggestions: _mentionSuggestions,
-                          onSelected: _selectMention,
-                          businessType: businessType,
+                    // Error banner
+                    if (_error != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.danger.withAlpha(20),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
-
-                      // Upload progress
-                      if (_uploading) ...[
-                        const SizedBox(height: 12),
-                        Row(
+                        child: Row(
                           children: [
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.primaryFor(businessType),
-                              ),
+                            const Icon(
+                              Icons.error_outline,
+                              color: AppColors.danger,
+                              size: 16,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              l10n.feedUploading,
-                              style: TextStyle(
-                                color: AppColors.primaryFor(businessType),
-                                fontSize: 13,
+                            Expanded(
+                              child: Text(
+                                _error!,
+                                style: const TextStyle(
+                                  color: AppColors.danger,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ],
-
-                      // Error banner
-                      if (_error != null) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.danger.withAlpha(20),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.error_outline,
-                                color: AppColors.danger,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _error!,
-                                  style: const TextStyle(
-                                    color: AppColors.danger,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-
-                      // Media thumbnails grid
-                      if (_mediaItems.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        _MediaGrid(items: _mediaItems, onRemove: _removeMedia),
-                        CheckboxListTile(
-                          contentPadding: EdgeInsets.zero,
-                          controlAffinity: ListTileControlAffinity.leading,
-                          value: _thirdPartyConsentConfirmed,
-                          onChanged: _isLoading
-                              ? null
-                              : (value) => setState(
-                                  () => _thirdPartyConsentConfirmed =
-                                      value ?? false,
-                                ),
-                          title: const Text(
-                            'Declaro que tenho autorização das pessoas retratadas para publicar estas mídias.',
-                          ),
-                        ),
-                      ],
-
-                      // Bottom spacing so keyboard doesn't cover content
-                      const SizedBox(height: 80),
-                    ],
-                  ),
-                ),
-              ),
-
-              // ── Bottom toolbar ────────────────────────────────────────────
-              const Divider(height: 1),
-              SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    children: [
-                      _MediaPickerMenu(
-                        enabled: !_isLoading,
-                        onPickGalleryImages: _pickImages,
-                        onPickCameraPhoto: _pickImageFromCamera,
-                        onPickGalleryVideo: _pickVideo,
-                        onPickCameraVideo: _recordVideo,
-                        businessType: businessType,
                       ),
                     ],
-                  ),
+
+                    // Media thumbnails grid
+                    if (_mediaItems.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      _MediaGrid(items: _mediaItems, onRemove: _removeMedia),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: _thirdPartyConsentConfirmed,
+                        onChanged: _isLoading
+                            ? null
+                            : (value) => setState(
+                                () => _thirdPartyConsentConfirmed =
+                                    value ?? false,
+                              ),
+                        title: const Text(
+                          'Declaro que tenho autorização das pessoas retratadas para publicar estas mídias.',
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ],
-          ),
-        );
-      },
+            ),
+
+            // ── Bottom toolbar ──────────────────────────────────────────────
+            // Sits inside the Scaffold body, so `resizeToAvoidBottomInset`
+            // lifts it above the software keyboard (iOS has no back gesture
+            // to dismiss the keyboard with).
+            const Divider(height: 1),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    _MediaPickerMenu(
+                      enabled: !_isLoading,
+                      onPickGalleryImages: _pickImages,
+                      onPickCameraPhoto: _pickImageFromCamera,
+                      onPickGalleryVideo: _pickVideo,
+                      onPickCameraVideo: _recordVideo,
+                      businessType: businessType,
+                    ),
+                    const Spacer(),
+                    if (keyboardVisible)
+                      IconButton(
+                        tooltip: l10n.labelHideKeyboard,
+                        icon: Icon(
+                          Icons.keyboard_hide_outlined,
+                          color: Colors.grey[700],
+                        ),
+                        onPressed: () => FocusScope.of(context).unfocus(),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

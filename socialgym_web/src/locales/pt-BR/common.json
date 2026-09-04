@@ -112,20 +112,14 @@
   },
   "header": {
     "homeTitle": "Início",
-    "homeAriaLabel": "Navegar para início",
-    "workoutTitle": "Treinos",
-    "workoutAriaLabel": "Navegar para treinos",
-    "friendsTitle": "Amigos",
-    "friendsAriaLabel": "Navegar para amigos",
-    "marketplaceTitle": "Marketplace",
-    "marketplaceAriaLabel": "Navegar para marketplace",
     "galleryTitle": "Galeria",
-    "galleryAriaLabel": "Navegar para galeria",
+    "workoutTitle": "Treinos",
+    "exercisesTitle": "Exercícios",
+    "friendsTitle": "Amigos",
     "sessionsTitle": "Sessões",
-    "sessionsAriaLabel": "Navegar para sessões",
     "evolutionTitle": "Evolução",
-    "evolutionAriaLabel": "Navegar para evolução",
     "profile": "Perfil",
+    "settings": "Configurações",
     "logout": "Sair"
   },
   "sidebar": {
@@ -138,7 +132,8 @@
       "settings": "Configurações",
       "gallery": "Galeria",
       "sessions": "Sessões",
-      "evolution": "Evolução"
+      "evolution": "Evolução",
+      "messages": "Mensagens"
     },
     "defaultUser": "Usuário",
     "toggleAriaLabel": "Alternar barra lateral",
@@ -328,23 +323,21 @@
     }
   },
   "workoutExecution": {
-    "startWorkout": "Iniciar Treino",
-    "noExercises": "Este treino não tem exercícios. Adicione alguns exercícios primeiro!",
-    "exercise": "Exercício",
+    "notFound": "Treino não encontrado",
+    "backToWorkouts": "Voltar aos Treinos",
+    "timer": "Tempo Decorrido",
+    "finishBtn": "Finalizar Treino",
+    "restTimer": "Descanso",
+    "noExercises": "Este treino não possui exercícios cadastrados.",
     "set": "Série",
-    "of": "de",
-    "editValues": "Editar valores",
-    "skip": "Pular",
-    "confirmSet": "Confirmar Série",
-    "keepGoing": "Continue assim! Você está mandando bem!",
-    "almostDone": "Quase lá! Último esforço!",
-    "completedSets": "Séries Concluídas",
-    "workoutComplete": "Treino Concluído!",
-    "duration": "Duração",
-    "setsCompleted": "Séries Feitas",
-    "totalVolume": "Volume Total",
-    "greatJob": "Parabéns! Você arrasou nesse treino! 💪",
-    "close": "Fechar",
+    "weight": "Carga (kg)",
+    "reps": "Reps",
+    "status": "Concluído",
+    "modalTitle": "Parabéns! Treino Concluído 🎉",
+    "duration": "Duração total",
+    "totalSets": "Séries completadas",
+    "notes": "Anotações sobre a sessão",
+    "notesPlaceholder": "Ex: Aumentei carga no supino, ótima energia!",
     "saveSession": "Salvar Sessão"
   },
   "gallery": {
@@ -424,18 +417,6 @@
       "load": "Não foi possível carregar o perfil"
     }
   },
-  "header": {
-    "homeTitle": "Início",
-    "galleryTitle": "Galeria",
-    "workoutTitle": "Treinos",
-    "exercisesTitle": "Exercícios",
-    "friendsTitle": "Amigos",
-    "sessionsTitle": "Sessões",
-    "evolutionTitle": "Evolução",
-    "profile": "Perfil",
-    "settings": "Configurações",
-    "logout": "Sair"
-  },
   "exercises": {
     "pageTitle": "Biblioteca de Exercícios",
     "pageSubtitle": "Explore, crie e gerencie os exercícios da sua rotina",
@@ -466,24 +447,6 @@
       "cardio": "Cardio",
       "other": "Outro"
     }
-  },
-  "workoutExecution": {
-    "notFound": "Treino não encontrado",
-    "backToWorkouts": "Voltar aos Treinos",
-    "timer": "Tempo Decorrido",
-    "finishBtn": "Finalizar Treino",
-    "restTimer": "Descanso",
-    "noExercises": "Este treino não possui exercícios cadastrados.",
-    "set": "Série",
-    "weight": "Carga (kg)",
-    "reps": "Reps",
-    "status": "Concluído",
-    "modalTitle": "Parabéns! Treino Concluído 🎉",
-    "duration": "Duração total",
-    "totalSets": "Séries completadas",
-    "notes": "Anotações sobre a sessão",
-    "notesPlaceholder": "Ex: Aumentei carga no supino, ótima energia!",
-    "saveSession": "Salvar Sessão"
   },
   "notifications": {
     "title": "Notificações",
@@ -529,6 +492,18 @@
     "errorLoading": "Não foi possível carregar a equipe",
     "errorInviting": "Não foi possível enviar o convite",
     "errorCancelling": "Não foi possível cancelar o convite"
+  },
+  "chat": {
+    "title": "Mensagens",
+    "conversationsEmpty": "Nenhuma conversa ainda",
+    "messagePlaceholder": "Escreva uma mensagem…",
+    "send": "Enviar",
+    "teamGroup": "Chat da equipe",
+    "businessDirect": "Chat do negócio",
+    "notFriendsError": "Você só pode conversar com seus amigos ou equipe.",
+    "reconnecting": "Reconectando…",
+    "attachImage": "Anexar imagem",
+    "you": "Você",
+    "photo": "Foto"
   }
 }
-

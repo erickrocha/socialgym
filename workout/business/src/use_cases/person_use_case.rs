@@ -3,7 +3,8 @@ use crate::commons::functions::is_valid_coordinate;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapper};
 use crate::domain::enums::ImageType;
-use crate::domain::friend::{Friend, FriendEntityMapper, FriendStatus};
+use crate::domain::enums::InviteStatus;
+use crate::domain::friend::{Friend, FriendEntityMapper};
 use crate::domain::image_storage::ImageStorage;
 use crate::domain::person::{Person, PersonEntityMapper};
 use crate::domain::person_address::{PersonAddress, PersonAddressEntityMapper};
@@ -289,7 +290,7 @@ impl PersonUseCase {
         db: &DbConn,
         column: entity::friends_entity::Column,
         person_id: i32,
-        status: FriendStatus,
+        status: InviteStatus,
     ) -> Vec<Person> {
         log::info!(
             "Attempting to find all friends for person_id: {:?}",
@@ -349,7 +350,7 @@ impl PersonUseCase {
             db,
             entity::friends_entity::Column::FriendId,
             person_id,
-            FriendStatus::Pending,
+            InviteStatus::Pending,
         )
         .await
     }
@@ -359,7 +360,7 @@ impl PersonUseCase {
             db,
             entity::friends_entity::Column::PersonId,
             person_id,
-            FriendStatus::Pending,
+            InviteStatus::Pending,
         )
         .await
     }
@@ -722,7 +723,8 @@ impl PersonUseCase {
 mod tests {
     use super::PersonUseCase;
     use crate::commons::functions::string_to_uuid;
-    use crate::domain::friend::{Friend, FriendStatus};
+    use crate::domain::enums::InviteStatus;
+    use crate::domain::friend::Friend;
     use chrono::Utc;
     use entity::person_address_entity as person_address;
     fn make_address(id: i32, person_id: i32) -> person_address::PersonAddressEntity {
@@ -750,7 +752,7 @@ mod tests {
             friend_id,
             created_at: Some(Utc::now().naive_utc()),
             updated_at: Some(Utc::now().naive_utc()),
-            status: FriendStatus::Accepted,
+            status: InviteStatus::Accepted,
             person_uuid: format!("person-{person_id}"),
             friend_uuid: format!("person-{friend_id}"),
         }

@@ -1095,6 +1095,12 @@ abstract class AppLocalizations {
   /// **'Completed Sets'**
   String get executionCompletedSets;
 
+  /// No description provided for @executionViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get executionViewAll;
+
   /// No description provided for @executionWorkoutComplete.
   ///
   /// In en, this message translates to:
@@ -1911,6 +1917,144 @@ abstract class AppLocalizations {
   /// **'Action failed. Please try again.'**
   String get teamActionError;
 
+  /// No description provided for @workoutInvitesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout Invites'**
+  String get workoutInvitesTitle;
+
+  /// No description provided for @workoutInvitesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts assigned to you and to your team'**
+  String get workoutInvitesDescription;
+
+  /// No description provided for @workoutInvitesMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout Invites'**
+  String get workoutInvitesMenu;
+
+  /// No description provided for @workoutInvitesTabReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get workoutInvitesTabReceived;
+
+  /// No description provided for @workoutInvitesTabSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get workoutInvitesTabSent;
+
+  /// No description provided for @workoutInviteFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From {name}'**
+  String workoutInviteFrom(String name);
+
+  /// No description provided for @workoutInviteTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To {name}'**
+  String workoutInviteTo(String name);
+
+  /// No description provided for @workoutInviteFromTrainer.
+  ///
+  /// In en, this message translates to:
+  /// **'your trainer'**
+  String get workoutInviteFromTrainer;
+
+  /// No description provided for @workoutInviteAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get workoutInviteAccept;
+
+  /// No description provided for @workoutInviteReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get workoutInviteReject;
+
+  /// No description provided for @workoutInviteCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get workoutInviteCancel;
+
+  /// No description provided for @workoutInviteAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout accepted'**
+  String get workoutInviteAccepted;
+
+  /// No description provided for @workoutInviteRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout rejected'**
+  String get workoutInviteRejected;
+
+  /// No description provided for @workoutInviteCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment cancelled'**
+  String get workoutInviteCancelled;
+
+  /// No description provided for @workoutInviteActionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Action failed. Please try again.'**
+  String get workoutInviteActionError;
+
+  /// No description provided for @workoutInviteNoReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'No workout invites'**
+  String get workoutInviteNoReceived;
+
+  /// No description provided for @workoutInviteNoReceivedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts a trainer assigns you will appear here'**
+  String get workoutInviteNoReceivedHint;
+
+  /// No description provided for @workoutInviteNoSent.
+  ///
+  /// In en, this message translates to:
+  /// **'No assignments sent'**
+  String get workoutInviteNoSent;
+
+  /// No description provided for @workoutInviteNoSentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts you assign to team members will appear here'**
+  String get workoutInviteNoSentHint;
+
+  /// No description provided for @workoutStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get workoutStatusPending;
+
+  /// No description provided for @workoutStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get workoutStatusAccepted;
+
+  /// No description provided for @workoutStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get workoutStatusRejected;
+
+  /// No description provided for @workoutStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get workoutStatusCancelled;
+
   /// No description provided for @exerciseOwnerName.
   ///
   /// In en, this message translates to:
@@ -2192,6 +2336,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'reactions'**
   String get feedReactions;
+
+  /// No description provided for @labelHideKeyboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide keyboard'**
+  String get labelHideKeyboard;
 
   /// No description provided for @feedAddPhoto.
   ///
@@ -2984,6 +3134,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A new version ({version}) is available and must be accepted.'**
   String consentVersionOutdated(String version);
+
+  /// No description provided for @chatConversationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get chatConversationsTitle;
+
+  /// No description provided for @chatEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet'**
+  String get chatEmpty;
+
+  /// No description provided for @chatMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message…'**
+  String get chatMessageHint;
+
+  /// No description provided for @chatSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get chatSend;
+
+  /// No description provided for @chatYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get chatYou;
+
+  /// No description provided for @chatNotFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'You can only message your friends or team.'**
+  String get chatNotFriends;
+
+  /// No description provided for @chatTeamGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Team chat'**
+  String get chatTeamGroup;
+
+  /// No description provided for @chatBusinessDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Business chat'**
+  String get chatBusinessDirect;
+
+  /// No description provided for @chatReconnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting…'**
+  String get chatReconnecting;
+
+  /// No description provided for @chatNewConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation'**
+  String get chatNewConversation;
+
+  /// No description provided for @chatStartConversationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a conversation'**
+  String get chatStartConversationTitle;
+
+  /// No description provided for @chatOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get chatOnline;
+
+  /// No description provided for @chatOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get chatOffline;
+
+  /// No description provided for @chatNoFriendsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add friends to start a conversation'**
+  String get chatNoFriendsYet;
+
+  /// No description provided for @chatTyping.
+  ///
+  /// In en, this message translates to:
+  /// **'typing…'**
+  String get chatTyping;
+
+  /// No description provided for @chatSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get chatSent;
+
+  /// No description provided for @chatRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get chatRead;
+
+  /// No description provided for @chatFailedTap.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent — tap to retry'**
+  String get chatFailedTap;
+
+  /// No description provided for @chatSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search friends'**
+  String get chatSearchHint;
+
+  /// No description provided for @chatMessageAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get chatMessageAction;
+
+  /// No description provided for @chatToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get chatToday;
+
+  /// No description provided for @chatYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get chatYesterday;
 }
 
 class _AppLocalizationsDelegate

@@ -33,11 +33,19 @@ class WorkoutMapper implements Mapper<domain.Workout, $workout.Workout> {
       name: proto.name,
       description: proto.description,
       difficulty: _difficultyFromProto(proto.difficulty),
-      createdAt: DateTime.parse(proto.createdAt),
-      updatedAt: DateTime.parse(proto.updatedAt),
+      createdAt: proto.createdAt.isEmpty
+          ? null
+          : DateTime.parse(proto.createdAt),
+      updatedAt: proto.updatedAt.isEmpty
+          ? null
+          : DateTime.parse(proto.updatedAt),
       exercises: ExerciseMapper().fromProtoList(proto.exercises),
       muscleGroup: proto.muscleGroup,
       visibility: proto.visibility,
+      status: proto.status.isEmpty ? 'Accepted' : proto.status,
+      assignedByProfileUuid: proto.assignedByProfileUuid.isEmpty
+          ? null
+          : proto.assignedByProfileUuid,
     );
   }
 

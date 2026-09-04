@@ -6,7 +6,7 @@ use entity::workout_entity as workout;
 use entity::workout_entity::Entity;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, DeleteResult, EntityTrait,
-    QueryFilter,
+    IntoActiveModel, QueryFilter, QueryOrder, Set,
 };
 
 pub struct WorkoutGateway {}
@@ -15,6 +15,21 @@ impl WorkoutGateway {
     pub async fn persist(db: &DbConn, entity: Workout) -> Result<workout::ActiveModel, DbErr> {
         let active_model = WorkoutEntityMapper::build_active_model(entity);
         active_model.save(db).await
+    }
+
+    /// Flips only the `status` column on an existing workout row.
+    pub async fn update_status(
+        db: &DbConn,
+        id: i32,
+        status: String,
+    ) -> Result<workout::WorkoutEntity, DbErr> {
+        let existing = WorkoutQuery::find_by_id(id)
+            .one(db)
+            .await?
+            .ok_or_else(|| DbErr::RecordNotFound("workout".to_string()))?;
+        let mut active = existing.into_active_model();
+        active.status = Set(status);
+        active.update(db).await
     }
 
     pub async fn find_by_id(db: &DbConn, id: i32) -> Result<Option<workout::WorkoutEntity>, DbErr> {
@@ -35,6 +50,18 @@ impl WorkoutGateway {
     pub async fn find_by_owner_id(db: &DbConn, id: i32) -> Result<Vec<workout::WorkoutEntity>, DbErr> {
         WorkoutQuery::find()
             .filter(workout::Column::OwnerId.eq(id))
+            .all(db)
+            .await
+    }
+
+    /// Workouts a business profile has assigned to team members, newest first.
+    pub async fn find_by_assigned_by_profile_id(
+        db: &DbConn,
+        profile_id: i32,
+    ) -> Result<Vec<workout::WorkoutEntity>, DbErr> {
+        WorkoutQuery::find()
+            .filter(workout::Column::AssignedByProfileId.eq(profile_id))
+            .order_by_desc(workout::Column::UpdatedAt)
             .all(db)
             .await
     }

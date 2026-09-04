@@ -521,6 +521,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get executionCompletedSets => 'Completed Sets';
 
   @override
+  String get executionViewAll => 'View all';
+
+  @override
   String get executionWorkoutComplete => 'Workout Complete!';
 
   @override
@@ -936,6 +939,82 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamActionError => 'Action failed. Please try again.';
+
+  @override
+  String get workoutInvitesTitle => 'Workout Invites';
+
+  @override
+  String get workoutInvitesDescription =>
+      'Workouts assigned to you and to your team';
+
+  @override
+  String get workoutInvitesMenu => 'Workout Invites';
+
+  @override
+  String get workoutInvitesTabReceived => 'Received';
+
+  @override
+  String get workoutInvitesTabSent => 'Sent';
+
+  @override
+  String workoutInviteFrom(String name) {
+    return 'From $name';
+  }
+
+  @override
+  String workoutInviteTo(String name) {
+    return 'To $name';
+  }
+
+  @override
+  String get workoutInviteFromTrainer => 'your trainer';
+
+  @override
+  String get workoutInviteAccept => 'Accept';
+
+  @override
+  String get workoutInviteReject => 'Reject';
+
+  @override
+  String get workoutInviteCancel => 'Cancel';
+
+  @override
+  String get workoutInviteAccepted => 'Workout accepted';
+
+  @override
+  String get workoutInviteRejected => 'Workout rejected';
+
+  @override
+  String get workoutInviteCancelled => 'Assignment cancelled';
+
+  @override
+  String get workoutInviteActionError => 'Action failed. Please try again.';
+
+  @override
+  String get workoutInviteNoReceived => 'No workout invites';
+
+  @override
+  String get workoutInviteNoReceivedHint =>
+      'Workouts a trainer assigns you will appear here';
+
+  @override
+  String get workoutInviteNoSent => 'No assignments sent';
+
+  @override
+  String get workoutInviteNoSentHint =>
+      'Workouts you assign to team members will appear here';
+
+  @override
+  String get workoutStatusPending => 'Pending';
+
+  @override
+  String get workoutStatusAccepted => 'Accepted';
+
+  @override
+  String get workoutStatusRejected => 'Rejected';
+
+  @override
+  String get workoutStatusCancelled => 'Cancelled';
 
   @override
   String get exerciseOwnerName => 'Owner Name';

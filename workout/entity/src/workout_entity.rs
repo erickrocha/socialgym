@@ -18,6 +18,9 @@ pub struct Model {
     pub difficulty: String,
     pub muscle_group: String,
     pub visibility: String,
+    pub status: String,
+    pub assigned_by_profile_id: Option<i32>,
+    pub assigned_by_profile_uuid: Option<Uuid>,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }

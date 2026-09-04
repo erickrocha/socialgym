@@ -71,7 +71,6 @@ impl Locale {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorKey {
-    SignUpPersonFailed,
     SignUpUserFailed,
 
     AuthHeaderMissing,
@@ -118,6 +117,9 @@ pub enum ErrorKey {
 
     WorkoutNotFound,
     WorkoutAddFailed,
+    WorkoutAcceptAssignmentFailed,
+    WorkoutRejectAssignmentFailed,
+    WorkoutCancelAssignmentFailed,
     ExercisesFetchFailed,
     ExercisesNotAdded,
 
@@ -144,7 +146,6 @@ pub enum ErrorKey {
 impl ErrorKey {
     pub fn as_str(self) -> &'static str {
         match self {
-            ErrorKey::SignUpPersonFailed => "SignUpPersonFailed",
             ErrorKey::SignUpUserFailed => "SignUpUserFailed",
             ErrorKey::AuthHeaderMissing => "AuthHeaderMissing",
             ErrorKey::UnknowAuthError => "UnknowAuthError",
@@ -183,6 +184,9 @@ impl ErrorKey {
             ErrorKey::TeamMemberCancelRequestFailed => "TeamMemberCancelRequestFailed",
             ErrorKey::WorkoutNotFound => "WorkoutNotFound",
             ErrorKey::WorkoutAddFailed => "WorkoutAddFailed",
+            ErrorKey::WorkoutAcceptAssignmentFailed => "WorkoutAcceptAssignmentFailed",
+            ErrorKey::WorkoutRejectAssignmentFailed => "WorkoutRejectAssignmentFailed",
+            ErrorKey::WorkoutCancelAssignmentFailed => "WorkoutCancelAssignmentFailed",
             ErrorKey::ExercisesFetchFailed => "ExercisesFetchFailed",
             ErrorKey::ExercisesNotAdded => "ExercisesNotAdded",
             ErrorKey::SettingsNotFound => "SettingsNotFound",
@@ -207,7 +211,6 @@ impl ErrorKey {
 
     pub fn message_id(self) -> &'static str {
         match self {
-            ErrorKey::SignUpPersonFailed => "sign-up-person-failed",
             ErrorKey::SignUpUserFailed => "sign-up-user-failed",
             ErrorKey::AuthHeaderMissing => "auth-header-missing",
             ErrorKey::UnknowAuthError => "unknown-auth-error",
@@ -246,6 +249,9 @@ impl ErrorKey {
             ErrorKey::TeamMemberCancelRequestFailed => "team-member-cancel-request-failed",
             ErrorKey::WorkoutNotFound => "workout-not-found",
             ErrorKey::WorkoutAddFailed => "workout-add-failed",
+            ErrorKey::WorkoutAcceptAssignmentFailed => "workout-accept-assignment-failed",
+            ErrorKey::WorkoutRejectAssignmentFailed => "workout-reject-assignment-failed",
+            ErrorKey::WorkoutCancelAssignmentFailed => "workout-cancel-assignment-failed",
             ErrorKey::ExercisesFetchFailed => "exercises-fetch-failed",
             ErrorKey::ExercisesNotAdded => "exercises-not-added",
             ErrorKey::SettingsNotFound => "settings-not-found",
@@ -295,8 +301,7 @@ mod tests {
         Locale::Dutch,
     ];
 
-    const ALL_KEYS: [ErrorKey; 39] = [
-        ErrorKey::SignUpPersonFailed,
+    const ALL_KEYS: [ErrorKey; 41] = [
         ErrorKey::SignUpUserFailed,
         ErrorKey::AuthHeaderMissing,
         ErrorKey::UnknowAuthError,
@@ -333,6 +338,9 @@ mod tests {
         ErrorKey::TeamMemberCancelRequestFailed,
         ErrorKey::WorkoutNotFound,
         ErrorKey::WorkoutAddFailed,
+        ErrorKey::WorkoutAcceptAssignmentFailed,
+        ErrorKey::WorkoutRejectAssignmentFailed,
+        ErrorKey::WorkoutCancelAssignmentFailed,
         ErrorKey::ExercisesFetchFailed,
         ErrorKey::ExercisesNotAdded,
     ];

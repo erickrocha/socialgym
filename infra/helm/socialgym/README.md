@@ -22,7 +22,7 @@ is a cloud/production-shaped Kustomize scaffold for `workout-app` alone.
 
 This starts minikube if it isn't running, generates a fresh self-signed dev
 TLS cert (gitignored, machine-local — see `scripts/gen-dev-certs.sh`),
-builds `workout-app:local`, `integration-app:local`, and `timeline-app:local`
+builds `workout-app:1.0.0`, `integration-app:1.0.0`, and `timeline-app:1.0.0`
 directly into minikube's Docker daemon (no registry needed), then
 `helm upgrade --install`s the chart into the `socialgym-dev` namespace and
 waits for every Deployment to become ready.
@@ -33,8 +33,16 @@ Reach the stack with:
 minikube service gateway -n socialgym-dev --url
 ```
 
-and hit the same routes documented for `infra/dev`'s gateway (`/login`,
-`/signup`, `/auth/`, `/workout/api/`, `/timeline/api/`, `/grpc.*`).
+The `gateway` Service uses fixed NodePorts — `30080` (HTTP) and `30443`
+(HTTPS / gRPC) — so the address is stable across `helm upgrade`:
+`https://$(minikube ip):30443`. Change them via `gateway.httpNodePort` /
+`gateway.httpsNodePort` in `values.yaml` (must sit inside the cluster's
+`--service-node-port-range`, default `30000-32767`; set to `null` to go back
+to random allocation).
+
+Either way, hit the same routes documented for `infra/dev`'s gateway
+(`/login`, `/signup`, `/auth/`, `/workout/api/`, `/timeline/api/`,
+`/grpc.*`).
 
 ## Tear it down
 
@@ -64,6 +72,71 @@ Nothing here is ever committed with a real value:
   as the `socialgym-tls` Secret directly via `kubectl` (not templated by
   Helm, so it never touches a values file).
 
+## Inspecting the databases from the host (DBeaver, Compass)
+
+`postgres` and `mongo` are `ClusterIP` Services — nothing is published to the
+host, and `minikube service` only works for `NodePort`/`LoadBalancer`, so use
+`kubectl port-forward`. Commands below assume the default namespace
+`socialgym-dev` (override with `SOCIALGYM_NAMESPACE` at install time).
+
+### PostgreSQL with DBeaver
+
+1. Forward the Service to a local port (kept in the foreground; use a
+   dedicated terminal or add `&`):
+   ```bash
+   kubectl port-forward -n socialgym-dev svc/postgres 55432:5432
+   ```
+   `55432` avoids colliding with `infra/dev` (`5432`) and `infra/prod`'s
+   `compose.db-access.yml` overlay (`5433`) if any of those are also up.
+2. Read the auto-generated password out of the Secret:
+   ```bash
+   kubectl get secret postgres -n socialgym-dev \
+     -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d; echo
+   ```
+3. In DBeaver: **New Database Connection → PostgreSQL**, then on the **Main**
+   tab:
+
+   | Field    | Value                                                  |
+   |----------|--------------------------------------------------------|
+   | Host     | `localhost`                                            |
+   | Port     | `55432`                                                |
+   | Database | `workout` (`postgres.database` in `values.yaml`)       |
+   | Username | `workout` (`postgres.user`)                            |
+   | Password | the value printed in step 2                            |
+
+   Leave SSL off. **Test Connection** (accept the driver download on first
+   use), then **Finish**. The image is `postgis/postgis`, so PostGIS types
+   are already available in the `workout` database.
+
+### MongoDB with Compass
+
+1. Forward the Service:
+   ```bash
+   kubectl port-forward -n socialgym-dev svc/mongo 37017:27017
+   ```
+2. Read a password. The root user (`root`, auth against `admin`) can see
+   everything:
+   ```bash
+   kubectl get secret mongo -n socialgym-dev \
+     -o jsonpath='{.data.MONGO_ROOT_PASSWORD}' | base64 -d; echo
+   ```
+   Or the app user (`timeline`, `readWrite` on the `timeline` DB only, auth
+   against `timeline`):
+   ```bash
+   kubectl get secret mongo -n socialgym-dev \
+     -o jsonpath='{.data.MONGO_APP_PASSWORD}' | base64 -d; echo
+   ```
+3. Connect Compass with one of:
+   ```
+   mongodb://root:<MONGO_ROOT_PASSWORD>@localhost:37017/?authSource=admin&directConnection=true
+   mongodb://timeline:<MONGO_APP_PASSWORD>@localhost:37017/timeline?authSource=timeline&directConnection=true
+   ```
+
+Stop a forward with `Ctrl-C` in its terminal (or `kill %1` if you
+backgrounded it). Port-forwarding is a debugging convenience — the apps
+inside the cluster always reach the DBs by Service name (`postgres:5432`,
+`mongo:27017`), never through these.
+
 ## Known limitation
 
 `workout.aws.*` / `timeline.aws.*` values are empty by default. Avatar/cover
@@ -71,3 +144,32 @@ image upload and CloudFront-signed URLs won't work against real AWS unless
 you override them with real credentials (`--set workout.aws.accessKeyId=...`
 etc, or a values file). Core social-graph, auth, and workout/timeline
 endpoints don't depend on AWS to come up.
+
+To use the same AWS setup as local dev, put the values from `workout/.env` /
+`timeline/.env` into a **gitignored** override file next to this chart and
+pass it to `helm`:
+
+```bash
+# infra/helm/socialgym/values.dev-aws.yaml  (matches /infra/helm/socialgym/values.dev-aws.yaml
+# in .gitignore — never commit it; it carries a live IAM key and the CloudFront signing key)
+workout:
+  aws:
+    bucket: "<AWS_WORKOUT_BUCKET from workout/.env>"
+    sqsQueueUrl: "<AWS_SQS_QUEUE_URL from workout/.env>"
+    region: "us-east-1"
+    cloudfrontKeyPairId: "<CLOUDFRONT_KEY_PAIR_ID>"
+    cloudfrontDomain: "<CLOUDFRONT_DOMAIN>"
+    accessKeyId: "<AWS_ACCESS_KEY_ID>"
+    secretAccessKey: "<AWS_SECRET_ACCESS_KEY>"
+    privateKeyRaw: '<PRIVATE_KEY_RAW — single-quoted so the \n stay literal>'
+timeline:
+  aws: { ... same, minus sqsQueueUrl ... }
+```
+
+```bash
+./scripts/up.sh -f values.dev-aws.yaml
+```
+
+`scripts/up.sh` forwards any extra args straight to `helm upgrade --install`.
+Keep `privateKeyRaw` in YAML single quotes so its `\n` markers survive as the
+two-character sequence the services expect (same form as in `workout/.env`).

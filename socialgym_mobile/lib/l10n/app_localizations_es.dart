@@ -528,6 +528,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get executionCompletedSets => 'Series Completadas';
 
   @override
+  String get executionViewAll => 'Ver todo';
+
+  @override
   String get executionWorkoutComplete => '¡Entrenamiento Completo!';
 
   @override
@@ -954,6 +957,83 @@ class AppLocalizationsEs extends AppLocalizations {
       'La acción falló. Por favor, inténtalo de nuevo.';
 
   @override
+  String get workoutInvitesTitle => 'Invitaciones de entrenamiento';
+
+  @override
+  String get workoutInvitesDescription =>
+      'Entrenamientos asignados a ti y a tu equipo';
+
+  @override
+  String get workoutInvitesMenu => 'Invitaciones de entrenamiento';
+
+  @override
+  String get workoutInvitesTabReceived => 'Recibidas';
+
+  @override
+  String get workoutInvitesTabSent => 'Enviadas';
+
+  @override
+  String workoutInviteFrom(String name) {
+    return 'De $name';
+  }
+
+  @override
+  String workoutInviteTo(String name) {
+    return 'Para $name';
+  }
+
+  @override
+  String get workoutInviteFromTrainer => 'tu entrenador';
+
+  @override
+  String get workoutInviteAccept => 'Aceptar';
+
+  @override
+  String get workoutInviteReject => 'Rechazar';
+
+  @override
+  String get workoutInviteCancel => 'Cancelar';
+
+  @override
+  String get workoutInviteAccepted => 'Entrenamiento aceptado';
+
+  @override
+  String get workoutInviteRejected => 'Entrenamiento rechazado';
+
+  @override
+  String get workoutInviteCancelled => 'Asignación cancelada';
+
+  @override
+  String get workoutInviteActionError =>
+      'La acción falló. Por favor, inténtalo de nuevo.';
+
+  @override
+  String get workoutInviteNoReceived => 'No hay invitaciones de entrenamiento';
+
+  @override
+  String get workoutInviteNoReceivedHint =>
+      'Los entrenamientos que te asigne un entrenador aparecerán aquí';
+
+  @override
+  String get workoutInviteNoSent => 'No hay asignaciones enviadas';
+
+  @override
+  String get workoutInviteNoSentHint =>
+      'Los entrenamientos que asignes a miembros del equipo aparecerán aquí';
+
+  @override
+  String get workoutStatusPending => 'Pendiente';
+
+  @override
+  String get workoutStatusAccepted => 'Aceptado';
+
+  @override
+  String get workoutStatusRejected => 'Rechazado';
+
+  @override
+  String get workoutStatusCancelled => 'Cancelado';
+
+  @override
   String get exerciseOwnerName => 'Nombre del propietario';
 
   @override
@@ -1096,6 +1176,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get feedReactions => 'reacciones';
+
+  @override
+  String get labelHideKeyboard => 'Ocultar teclado';
 
   @override
   String get feedAddPhoto => 'Foto';
@@ -1519,4 +1602,71 @@ class AppLocalizationsEs extends AppLocalizations {
   String consentVersionOutdated(String version) {
     return 'Hay una nueva versión ($version) disponible que debe aceptarse.';
   }
+
+  @override
+  String get chatConversationsTitle => 'Mensajes';
+
+  @override
+  String get chatEmpty => 'Aún no hay conversaciones';
+
+  @override
+  String get chatMessageHint => 'Escribe un mensaje…';
+
+  @override
+  String get chatSend => 'Enviar';
+
+  @override
+  String get chatYou => 'Tú';
+
+  @override
+  String get chatNotFriends =>
+      'Solo puedes enviar mensajes a tus amigos o equipo.';
+
+  @override
+  String get chatTeamGroup => 'Chat del equipo';
+
+  @override
+  String get chatBusinessDirect => 'Chat del negocio';
+
+  @override
+  String get chatReconnecting => 'Reconectando…';
+
+  @override
+  String get chatNewConversation => 'Nueva conversación';
+
+  @override
+  String get chatStartConversationTitle => 'Iniciar conversación';
+
+  @override
+  String get chatOnline => 'En línea';
+
+  @override
+  String get chatOffline => 'Desconectado';
+
+  @override
+  String get chatNoFriendsYet => 'Agrega amigos para iniciar una conversación';
+
+  @override
+  String get chatTyping => 'escribiendo…';
+
+  @override
+  String get chatSent => 'Enviado';
+
+  @override
+  String get chatRead => 'Leído';
+
+  @override
+  String get chatFailedTap => 'No enviado: toca para reintentar';
+
+  @override
+  String get chatSearchHint => 'Buscar amigos';
+
+  @override
+  String get chatMessageAction => 'Mensaje';
+
+  @override
+  String get chatToday => 'Hoy';
+
+  @override
+  String get chatYesterday => 'Ayer';
 }

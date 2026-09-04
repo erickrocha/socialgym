@@ -212,6 +212,14 @@ class SidebarContent extends StatelessWidget {
           onTap: () => _go(context, '/team'),
         ),
         _SidebarItem(
+          icon: Icons.assignment_outlined,
+          activeIcon: Icons.assignment,
+          label: l10n.workoutInvitesMenu,
+          isActive: currentRoute == '/workout-invites',
+          isCollapsed: isCollapsed,
+          onTap: () => _go(context, '/workout-invites'),
+        ),
+        _SidebarItem(
           icon: Icons.people_outline,
           activeIcon: Icons.people,
           label: l10n.menuFollowers,
@@ -274,6 +282,14 @@ class SidebarContent extends StatelessWidget {
         isActive: currentRoute == '/team',
         isCollapsed: isCollapsed,
         onTap: () => _go(context, '/team'),
+      ),
+      _SidebarItem(
+        icon: Icons.assignment_outlined,
+        activeIcon: Icons.assignment,
+        label: l10n.workoutInvitesMenu,
+        isActive: currentRoute == '/workout-invites',
+        isCollapsed: isCollapsed,
+        onTap: () => _go(context, '/workout-invites'),
       ),
       _SidebarItem(
         icon: Icons.chat_bubble_outline,

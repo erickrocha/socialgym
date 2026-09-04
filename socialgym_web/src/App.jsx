@@ -13,7 +13,8 @@ const Profile = lazy(() => import("./pages/Profile/Profile.jsx"));
 const PersonProfile = lazy(() => import("./pages/Profile/PersonProfile.jsx"));
 const Workout = lazy(() => import("./pages/Workout/Workout.jsx"));
 const Exercises = lazy(() => import("./pages/Exercises/Exercises.jsx"));
-const WorkoutExecution = lazy(() => import("./pages/WorkoutExecution/WorkoutExecution.jsx"));
+const WorkoutExecutionScreen = lazy(() => import("./pages/Workout/WorkoutExecution/WorkoutExecutionScreen.jsx"));
+const CompletedSets = lazy(() => import("./pages/Workout/WorkoutExecution/CompletedSets/CompletedSets.jsx"));
 const Friends = lazy(() => import("./pages/Friends/Friends.jsx"));
 const Business = lazy(() => import("./pages/Business/Business.jsx"));
 const BusinessProfile = lazy(() => import("./pages/Business/BusinessProfile/BusinessProfile.jsx"));
@@ -22,6 +23,7 @@ const Gallery = lazy(() => import("./pages/Gallery/Gallery.jsx"));
 const WorkoutSessions = lazy(() => import("./pages/WorkoutSessions/WorkoutSessions.jsx"));
 const Evolution = lazy(() => import("./pages/Evolution/Evolution.jsx"));
 const Notifications = lazy(() => import("./pages/Notifications/Notifications.jsx"));
+const Chat = lazy(() => import("./pages/Chat/Chat.jsx"));
 const Settings = lazy(() => import("./pages/Settings/Settings.jsx"));
 const LegalDocument = lazy(() => import("./pages/Legal/LegalDocument.jsx"));
 const Moderation = lazy(() => import("./pages/Moderation/Moderation.jsx"));
@@ -39,11 +41,13 @@ function App() {
                     <Route path="/profile" element={<Profile/>}/>
                     <Route path="/profile/:id" element={<PersonProfile/>}/>
                     <Route path="/workouts" element={<Workout/>}/>
-                    <Route path="/workouts/execution/:id" element={<WorkoutExecution/>}/>
+                    <Route path="/workouts/execution/:id" element={<WorkoutExecutionScreen/>}/>
+                    <Route path="/workouts/execution/:id/completed" element={<CompletedSets/>}/>
                     <Route path="/exercises" element={<Exercises/>}/>
                     <Route path="/workout-sessions" element={<WorkoutSessions/>}/>
                     <Route path="/evolution" element={<Evolution/>}/>
                     <Route path="/friends" element={<Friends/>}/>
+                    <Route path="/chat" element={<Chat/>}/>
                     <Route path="/notifications" element={<Notifications/>}/>
                     <Route path="/settings" element={<Settings/>}/>
                     <Route path="/business" element={<Business/>}/>

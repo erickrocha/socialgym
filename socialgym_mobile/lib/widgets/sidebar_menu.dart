@@ -78,6 +78,7 @@ class SidebarContent extends StatelessWidget {
     Navigator.of(context).pushNamedAndRemoveUntil(route, (r) => false);
   }
 
+  // ignore: unused_element
   void _showComingSoon(BuildContext context, AppLocalizations l10n) {
     // Capture messenger before closing drawer to avoid context issues.
     final messenger = ScaffoldMessenger.of(context);
@@ -212,20 +213,20 @@ class SidebarContent extends StatelessWidget {
           onTap: () => _go(context, '/team'),
         ),
         _SidebarItem(
+          icon: Icons.assignment_outlined,
+          activeIcon: Icons.assignment,
+          label: l10n.workoutInvitesMenu,
+          isActive: currentRoute == '/workout-invites',
+          isCollapsed: isCollapsed,
+          onTap: () => _go(context, '/workout-invites'),
+        ),
+        _SidebarItem(
           icon: Icons.people_outline,
           activeIcon: Icons.people,
           label: l10n.menuFollowers,
           isActive: currentRoute == '/followers',
           isCollapsed: isCollapsed,
           onTap: () => _go(context, '/followers'),
-        ),
-        _SidebarItem(
-          icon: Icons.notifications_outlined,
-          activeIcon: Icons.notifications,
-          label: l10n.menuNotifications,
-          isActive: currentRoute == '/notifications',
-          isCollapsed: isCollapsed,
-          onTap: () => _go(context, '/notifications'),
         ),
       ];
     }
@@ -278,20 +279,12 @@ class SidebarContent extends StatelessWidget {
         onTap: () => _go(context, '/team'),
       ),
       _SidebarItem(
-        icon: Icons.chat_bubble_outline,
-        activeIcon: Icons.chat_bubble,
-        label: l10n.menuMessages,
-        isActive: false,
+        icon: Icons.assignment_outlined,
+        activeIcon: Icons.assignment,
+        label: l10n.workoutInvitesMenu,
+        isActive: currentRoute == '/workout-invites',
         isCollapsed: isCollapsed,
-        onTap: () => _showComingSoon(context, l10n),
-      ),
-      _SidebarItem(
-        icon: Icons.notifications_outlined,
-        activeIcon: Icons.notifications,
-        label: l10n.menuNotifications,
-        isActive: currentRoute == '/notifications',
-        isCollapsed: isCollapsed,
-        onTap: () => _go(context, '/notifications'),
+        onTap: () => _go(context, '/workout-invites'),
       ),
     ];
   }
@@ -338,7 +331,7 @@ class SidebarContent extends StatelessWidget {
     ];
   }
 
-  // ── Always-visible items (settings + language) ───────────────────────────
+  // ── Always-visible items (inboxes + settings + language) ─────────────────
 
   List<Widget> _buildAlwaysItems(
     BuildContext context,
@@ -346,6 +339,24 @@ class SidebarContent extends StatelessWidget {
     String? businessType,
   ) {
     return [
+      // Messages and Notifications are cross-cutting inboxes: keep them visible
+      // in every nav section, immediately above Settings.
+      _SidebarItem(
+        icon: Icons.chat_bubble_outline,
+        activeIcon: Icons.chat_bubble,
+        label: l10n.menuMessages,
+        isActive: currentRoute == '/chat',
+        isCollapsed: isCollapsed,
+        onTap: () => _go(context, '/chat'),
+      ),
+      _SidebarItem(
+        icon: Icons.notifications_outlined,
+        activeIcon: Icons.notifications,
+        label: l10n.menuNotifications,
+        isActive: currentRoute == '/notifications',
+        isCollapsed: isCollapsed,
+        onTap: () => _go(context, '/notifications'),
+      ),
       _SidebarItem(
         icon: Icons.settings_outlined,
         activeIcon: Icons.settings,

@@ -98,6 +98,15 @@ const AppHeader = ({person}) => {
                 <div className="app-header__user-section" style={{ display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' }}>
                     <button
                         type="button"
+                        className="app-header__chat-btn"
+                        onClick={() => navigate('/chat')}
+                        aria-label={t('sidebar.menu.messages', 'Messages')}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+                    >
+                        💬
+                    </button>
+                    <button
+                        type="button"
                         className="app-header__notif-btn"
                         onClick={() => setNotifOpen(!notifOpen)}
                         style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem', position: 'relative' }}

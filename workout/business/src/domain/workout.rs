@@ -5,7 +5,7 @@ use crate::domain::exercise::Exercise;
 use chrono::NaiveDateTime;
 use entity::workout_entity::{ActiveModel, WorkoutEntity};
 use sea_orm::{NotSet, Set};
-use crate::domain::enums::Difficulty;
+use crate::domain::enums::{Difficulty, InviteStatus};
 
 #[derive(Debug, Clone)]
 pub struct Workout {
@@ -19,6 +19,13 @@ pub struct Workout {
     pub muscle_group: String,
     pub exercises: Vec<Exercise>,
     pub visibility: Visibility,
+    /// Consent state of the workout. Self-created workouts are `Accepted`;
+    /// a workout a business profile assigns to a team member starts `Pending`.
+    pub status: InviteStatus,
+    /// The business profile that assigned this workout (only set while it is a
+    /// team-member assignment); `None` for self-created workouts.
+    pub assigned_by_profile_id: Option<i32>,
+    pub assigned_by_profile_uuid: Option<String>,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
 }
@@ -43,6 +50,12 @@ impl EntityMapper<Workout, WorkoutEntity, ActiveModel> for WorkoutEntityMapper {
             difficulty: Set(d.difficulty.to_string()),
             muscle_group: Set(d.muscle_group),
             visibility: Set(d.visibility.to_string()),
+            status: Set(d.status.as_str()),
+            assigned_by_profile_id: Set(d.assigned_by_profile_id),
+            assigned_by_profile_uuid: Set(d
+                .assigned_by_profile_uuid
+                .as_deref()
+                .map(string_to_uuid)),
             created_at: NotSet,
             updated_at: NotSet,
         }
@@ -62,6 +75,9 @@ impl EntityMapper<Workout, WorkoutEntity, ActiveModel> for WorkoutEntityMapper {
             created_at: Some(e.created_at.naive_utc()),
             updated_at: Some(e.updated_at.naive_utc()),
             visibility: Visibility::from_string(e.visibility.as_str()),
+            status: InviteStatus::from_string(e.status.as_str()),
+            assigned_by_profile_id: e.assigned_by_profile_id,
+            assigned_by_profile_uuid: e.assigned_by_profile_uuid.map(uuid_to_string),
         }
     }
 
@@ -79,6 +95,9 @@ impl EntityMapper<Workout, WorkoutEntity, ActiveModel> for WorkoutEntityMapper {
             created_at: Some(e.created_at.unwrap().naive_utc()),
             updated_at: Some(e.updated_at.unwrap().naive_utc()),
             visibility: Visibility::from_string(e.visibility.unwrap().as_str()),
+            status: InviteStatus::from_string(e.status.unwrap().as_str()),
+            assigned_by_profile_id: e.assigned_by_profile_id.unwrap(),
+            assigned_by_profile_uuid: e.assigned_by_profile_uuid.unwrap().map(uuid_to_string),
         }
     }
 }

@@ -491,6 +491,112 @@ impl Mapper<InAppNotification, NotificationJson> for NotificationMapper {
     }
 }
 
+// ── Chat ─────────────────────────────────────────────────────────────────────
+
+use crate::http::json::chat_json::{
+    ConversationJson, ConversationParticipantJson, LastMessagePreviewJson, MessageJson,
+    MessageMediaJson,
+};
+use business::use_cases::chat_use_case::ConversationView;
+use domain::conversation::{Conversation, LastMessagePreview};
+use domain::message::{Message, MessageMedia};
+
+pub struct ConversationMapper {}
+
+impl ConversationMapper {
+    pub fn view(view: ConversationView) -> ConversationJson {
+        let ConversationView {
+            conversation,
+            unread,
+        } = view;
+        let Conversation {
+            uuid,
+            conversation_type,
+            business_profile_uuid,
+            business_profile_name,
+            business_profile_logo_object_key,
+            participant_person_uuids,
+            participants,
+            last_message,
+            created_at,
+            updated_at,
+            ..
+        } = conversation;
+
+        ConversationJson {
+            uuid,
+            conversation_type,
+            business_profile_uuid,
+            business_profile_name,
+            // `hydrate_conversation_logo` already replaced the object key with a
+            // signed URL (or left it as `None`).
+            business_profile_logo_url: business_profile_logo_object_key
+                .filter(|s| !s.is_empty()),
+            participant_person_uuids,
+            participants: participants
+                .into_iter()
+                .map(|p| ConversationParticipantJson {
+                    person_uuid: p.person_uuid,
+                    role: p.role,
+                    last_read_at: p.last_read_at.map(bson_datetime_to_naive),
+                    last_read_message_uuid: p.last_read_message_uuid,
+                })
+                .collect(),
+            last_message: last_message.map(Self::preview),
+            unread,
+            created_at: bson_datetime_to_naive(created_at),
+            updated_at: bson_datetime_to_naive(updated_at),
+        }
+    }
+
+    fn preview(p: LastMessagePreview) -> LastMessagePreviewJson {
+        LastMessagePreviewJson {
+            message_uuid: p.message_uuid,
+            sender_person_uuid: p.sender_person_uuid,
+            sender_display_name: p.sender_display_name,
+            snippet: p.snippet,
+            sent_at: bson_datetime_to_naive(p.sent_at),
+            has_media: p.has_media,
+        }
+    }
+}
+
+pub struct MessageMapper {}
+
+impl MessageMapper {
+    pub fn json(m: Message) -> MessageJson {
+        MessageJson {
+            uuid: m.uuid,
+            conversation_uuid: m.conversation_uuid,
+            sender_person_uuid: m.sender_person_uuid,
+            sender_kind: m.sender_kind,
+            sender_display_name: m.sender_display_name,
+            sender_avatar_url: m.sender_object_key.filter(|s| !s.is_empty()),
+            sender_business_profile_uuid: m.sender_business_profile_uuid,
+            body: m.body,
+            media: m.media.into_iter().map(Self::media).collect(),
+            client_message_id: m.client_message_id,
+            sent_at: bson_datetime_to_naive(m.sent_at),
+        }
+    }
+
+    fn media(m: MessageMedia) -> MessageMediaJson {
+        MessageMediaJson {
+            media_type: m.media_type,
+            object_key: m.object_key,
+            url: m.url,
+        }
+    }
+
+    pub fn to_domain_media(m: MessageMediaJson) -> MessageMedia {
+        MessageMedia {
+            media_type: m.media_type,
+            object_key: m.object_key,
+            url: String::new(),
+        }
+    }
+}
+
 pub struct MentionMapper {}
 
 impl Mapper<Mention, MentionJson> for MentionMapper {

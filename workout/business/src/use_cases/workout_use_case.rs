@@ -1,7 +1,9 @@
 use crate::commons::authorization::ensure_owns;
 use crate::commons::entity_mapper::EntityMapper;
+use crate::commons::functions::uuid_to_string;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::BusinessProfile;
+use crate::domain::enums::InviteStatus;
 use crate::domain::exercise::ExerciseEntityMapper;
 use crate::domain::workout::{Workout, WorkoutEntityMapper};
 use crate::gateway::exercise_gateway::ExerciseGateway;
@@ -15,6 +17,14 @@ use crate::use_cases::team_member_use_case::TeamMemberUseCase;
 use sea_orm::DbConn;
 
 pub struct WorkoutUseCase {}
+
+/// Who a workout-assignment transition is allowed to be performed by.
+enum AssignmentActor {
+    /// The person the workout was assigned to (may accept / reject).
+    Assignee(i32),
+    /// The business profile that made the assignment (may cancel).
+    Assigner(i32),
+}
 
 impl WorkoutUseCase {
     /// Create or update a workout on behalf of `actor` (acting as
@@ -43,6 +53,10 @@ impl WorkoutUseCase {
                 "Cannot assign an existing workout to a team member",
             ));
         }
+
+        // `Some` while this call is a team-member assignment: the assigning
+        // business profile's (id, uuid), recorded so only it can cancel later.
+        let mut assigned_by: Option<(i32, Option<String>)> = None;
 
         let (acting_owner_id, acting_owner_uuid) = match assign_to_person_uuid {
             Some(target_uuid) => {
@@ -73,6 +87,7 @@ impl WorkoutUseCase {
 
                 TeamMemberUseCase::ensure_accepted_member(db, profile_id, target_id).await?;
 
+                assigned_by = Some((profile_id, profile.uuid.clone()));
                 (target_id, target_uuid)
             }
             None => (
@@ -83,9 +98,33 @@ impl WorkoutUseCase {
             ),
         };
 
-        if let Some(id) = workout.id {
-            let existing = Self::find_entity_by_id(db, id).await?;
-            ensure_owns(existing.owner_id, acting_owner_id)?;
+        match workout.id {
+            None => match assigned_by {
+                Some((profile_id, profile_uuid)) => {
+                    workout.status = InviteStatus::Pending;
+                    workout.assigned_by_profile_id = Some(profile_id);
+                    workout.assigned_by_profile_uuid = profile_uuid;
+                }
+                None => {
+                    workout.status = InviteStatus::Accepted;
+                    workout.assigned_by_profile_id = None;
+                    workout.assigned_by_profile_uuid = None;
+                }
+            },
+            Some(id) => {
+                let existing = Self::find_entity_by_id(db, id).await?;
+                ensure_owns(existing.owner_id, acting_owner_id)?;
+                if InviteStatus::from_string(&existing.status) != InviteStatus::Accepted {
+                    return Err(BusinessError::validation(
+                        "Cannot edit a workout whose assignment is not accepted",
+                    ));
+                }
+                // Status/assignment are not editable through persist.
+                workout.status = InviteStatus::Accepted;
+                workout.assigned_by_profile_id = existing.assigned_by_profile_id;
+                workout.assigned_by_profile_uuid =
+                    existing.assigned_by_profile_uuid.map(uuid_to_string);
+            }
         }
 
         // `description` is a `text` column (migration m20260129_000007), so
@@ -166,6 +205,98 @@ impl WorkoutUseCase {
         Ok(workout)
     }
 
+    /// The assigned person accepts a `Pending` workout assignment.
+    pub async fn accept_assignment(
+        db: &DbConn,
+        uuid: String,
+        acting_person_id: i32,
+    ) -> Result<Workout, BusinessError> {
+        Self::transition_assignment(
+            db,
+            uuid,
+            AssignmentActor::Assignee(acting_person_id),
+            InviteStatus::Accepted,
+        )
+        .await
+    }
+
+    /// The assigned person rejects a `Pending` workout assignment.
+    pub async fn reject_assignment(
+        db: &DbConn,
+        uuid: String,
+        acting_person_id: i32,
+    ) -> Result<Workout, BusinessError> {
+        Self::transition_assignment(
+            db,
+            uuid,
+            AssignmentActor::Assignee(acting_person_id),
+            InviteStatus::Rejected,
+        )
+        .await
+    }
+
+    /// The assigning business profile cancels a `Pending` workout assignment.
+    pub async fn cancel_assignment(
+        db: &DbConn,
+        uuid: String,
+        acting_profile_id: i32,
+    ) -> Result<Workout, BusinessError> {
+        Self::transition_assignment(
+            db,
+            uuid,
+            AssignmentActor::Assigner(acting_profile_id),
+            InviteStatus::Cancelled,
+        )
+        .await
+    }
+
+    async fn transition_assignment(
+        db: &DbConn,
+        uuid: String,
+        actor: AssignmentActor,
+        new_status: InviteStatus,
+    ) -> Result<Workout, BusinessError> {
+        let existing = Self::find_entity_by_uuid(db, uuid).await?;
+
+        if InviteStatus::from_string(&existing.status) != InviteStatus::Pending {
+            return Err(BusinessError::validation(
+                "Workout assignment is not pending",
+            ));
+        }
+
+        match actor {
+            AssignmentActor::Assignee(person_id) => {
+                if existing.owner_id != person_id {
+                    return Err(BusinessError::forbidden(
+                        "Only the assigned person can respond to this workout",
+                    ));
+                }
+            }
+            AssignmentActor::Assigner(profile_id) => {
+                if existing.assigned_by_profile_id != Some(profile_id) {
+                    return Err(BusinessError::forbidden(
+                        "Only the assigning business profile can cancel this workout",
+                    ));
+                }
+            }
+        }
+
+        let model = WorkoutGateway::update_status(db, existing.id, new_status.as_str())
+            .await
+            .map_err(|error| {
+                log::error!(
+                    "[WorkoutUseCase::transition_assignment] Failed for id={}: {}",
+                    existing.id,
+                    error
+                );
+                BusinessError::infrastructure("Failed to update workout status")
+            })?;
+
+        let mut workout = WorkoutEntityMapper::from_model(model);
+        Self::fill_exercise(db, &mut workout).await?;
+        Ok(workout)
+    }
+
     pub async fn find_all_by_owner_id(
         db: &DbConn,
         owner_id: i32,
@@ -179,6 +310,28 @@ impl WorkoutUseCase {
 
         if domain.is_err() {
             log::error!("Error finding workouts: {}", domain.as_ref().err().unwrap());
+            return Err(BusinessError::infrastructure("Error finding workouts"));
+        }
+
+        let workouts = WorkoutEntityMapper::from_models(domain.unwrap());
+        Self::fill_exercises(db, workouts).await
+    }
+
+    /// Every workout a business profile has assigned to a team member,
+    /// regardless of status (Pending / Accepted / Rejected / Cancelled).
+    pub async fn find_all_assigned_by_profile(
+        db: &DbConn,
+        profile_id: i32,
+    ) -> Result<Vec<Workout>, BusinessError> {
+        log::info!(
+            "[WorkoutUseCase::find_all_assigned_by_profile] Executing for profile_id={}",
+            profile_id
+        );
+
+        let domain = WorkoutGateway::find_by_assigned_by_profile_id(db, profile_id).await;
+
+        if domain.is_err() {
+            log::error!("Error finding assigned workouts: {}", domain.as_ref().err().unwrap());
             return Err(BusinessError::infrastructure("Error finding workouts"));
         }
 

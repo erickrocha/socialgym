@@ -10,6 +10,10 @@ pub struct User {
     pub name: String,
     pub person_uuid: String,
     pub person_object_key: String,
+    /// The business profile the caller is currently acting as, if any. Copied
+    /// from the JWT `active_business_profile_uuid` claim; drives whether a chat
+    /// message in a business thread is attributed to the business profile.
+    pub active_business_profile_uuid: Option<String>,
 }
 
 impl User {
@@ -20,10 +24,21 @@ impl User {
         person_id: i32,
         person_uuid: String,
         person_object_key: String,
+        active_business_profile_uuid: Option<String>,
     ) -> Self {
-        Self::update(None, name, email, uuid, person_id, person_uuid,person_object_key)
+        Self::update(
+            None,
+            name,
+            email,
+            uuid,
+            person_id,
+            person_uuid,
+            person_object_key,
+            active_business_profile_uuid,
+        )
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn update(
         id: Option<i32>,
         name: String,
@@ -32,6 +47,7 @@ impl User {
         person_id: i32,
         person_uuid: String,
         person_object_key: String,
+        active_business_profile_uuid: Option<String>,
     ) -> Self {
         Self {
             id,
@@ -40,7 +56,8 @@ impl User {
             person_id,
             name,
             person_uuid,
-            person_object_key
+            person_object_key,
+            active_business_profile_uuid,
         }
     }
 }

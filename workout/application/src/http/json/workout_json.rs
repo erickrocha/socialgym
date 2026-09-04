@@ -16,6 +16,14 @@ pub struct WorkoutJson {
     pub visibility: String,
     #[serde(default)]
     pub exercises: Vec<ExerciseJson>,
+    /// Consent state: `Pending` / `Accepted` / `Rejected` / `Cancelled`.
+    /// Response-only — ignored on create/update, where the server decides it.
+    #[serde(default)]
+    pub status: Option<String>,
+    /// The business profile that assigned this workout, when it is a
+    /// team-member assignment. Response-only.
+    #[serde(default)]
+    pub assigned_by_profile_uuid: Option<String>,
     pub created_at: Option<chrono::NaiveDateTime>,
     pub updated_at: Option<chrono::NaiveDateTime>,
     /// Only used on create, by a caller acting as a business profile, to

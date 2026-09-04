@@ -1,12 +1,15 @@
 use crate::infrastructure::mapper::{ExerciseMapper, Mapper, WorkoutMapper};
+use crate::proto::workout::assigned_workout_list_request::Identifier as AssignedIdentifier;
 use crate::proto::workout::workout_list_request::Identifier as OwnerIdentifier;
 use crate::proto::workout::workout_request::Identifier;
 use crate::proto::workout::workout_service_server::WorkoutService;
 use crate::proto::workout::{
-    Workout, WorkoutExercisesRequest, WorkoutListRequest, WorkoutRequest, WorkoutResponse,
+    AssignedWorkoutListRequest, Workout, WorkoutExercisesRequest, WorkoutListRequest,
+    WorkoutRequest, WorkoutResponse,
 };
 use business::commons::authorization::ensure_owns;
 use business::domain::exercise::Exercise;
+use business::gateway::business_profile_gateway::BusinessProfileGateway;
 use business::use_cases::exercise_use_case::ExerciseUseCase;
 use business::use_cases::workout_use_case::WorkoutUseCase;
 use sea_orm::DatabaseConnection;
@@ -23,6 +26,26 @@ pub struct GrpcWorkoutService {
 impl GrpcWorkoutService {
     pub fn new(conn: Arc<DatabaseConnection>) -> Self {
         Self { conn }
+    }
+
+    /// Resolves a `WorkoutRequest` identifier to the workout's uuid (the
+    /// assignment-transition use cases are uuid-addressed).
+    async fn resolve_uuid(&self, req: WorkoutRequest) -> Result<String, Status> {
+        match req.identifier {
+            Some(Identifier::Uuid(uuid)) => {
+                validate_uuid(&uuid, "uuid")?;
+                Ok(uuid)
+            }
+            Some(Identifier::Id(id)) => {
+                let workout = WorkoutUseCase::get(&self.conn, id)
+                    .await
+                    .map_err(business_status)?;
+                workout
+                    .uuid
+                    .ok_or_else(|| Status::internal("Workout missing uuid"))
+            }
+            None => Err(Status::invalid_argument("Identifier is required")),
+        }
     }
 }
 
@@ -72,6 +95,43 @@ impl WorkoutService for GrpcWorkoutService {
             }
             None => Err(Status::invalid_argument("Identifier is required")),
         }
+    }
+
+    async fn get_workouts_assigned_by_profile(
+        &self,
+        request: Request<AssignedWorkoutListRequest>,
+    ) -> Result<Response<WorkoutResponse>, Status> {
+        require_actor(&request)?;
+        let acting_profile = require_active_profile(&request).ok_or_else(|| {
+            Status::failed_precondition("An active business profile is required")
+        })?;
+        let req = request.into_inner();
+
+        let profile_id = match req.identifier {
+            Some(AssignedIdentifier::BusinessProfileId(id)) => id,
+            Some(AssignedIdentifier::BusinessProfileUuid(uuid)) => {
+                validate_uuid(&uuid, "business_profile_uuid")?;
+                BusinessProfileGateway::find_by_uuid(&self.conn, &uuid)
+                    .await
+                    .map_err(|e| Status::internal(format!("Error finding business profile: {e}")))?
+                    .ok_or_else(|| Status::not_found("Business profile not found"))?
+                    .id
+            }
+            None => return Err(Status::invalid_argument("Identifier is required")),
+        };
+
+        if acting_profile.id != Some(profile_id) {
+            return Err(Status::permission_denied(
+                "Cannot list assignments for another business profile",
+            ));
+        }
+
+        let workouts = WorkoutUseCase::find_all_assigned_by_profile(&self.conn, profile_id)
+            .await
+            .map_err(business_status)?;
+        Ok(Response::new(WorkoutResponse {
+            workouts: WorkoutMapper::response_vec(workouts),
+        }))
     }
 
     async fn add_workout(&self, request: Request<Workout>) -> Result<Response<Workout>, Status> {
@@ -127,6 +187,47 @@ impl WorkoutService for GrpcWorkoutService {
             }
             None => Err(Status::invalid_argument("Identifier is required")),
         }
+    }
+
+    async fn accept_workout(
+        &self,
+        request: Request<WorkoutRequest>,
+    ) -> Result<Response<Workout>, Status> {
+        let actor = require_actor(&request)?;
+        let uuid = self.resolve_uuid(request.into_inner()).await?;
+        let workout = WorkoutUseCase::accept_assignment(&self.conn, uuid, actor.person_id)
+            .await
+            .map_err(business_status)?;
+        Ok(Response::new(WorkoutMapper::response(workout)))
+    }
+
+    async fn reject_workout(
+        &self,
+        request: Request<WorkoutRequest>,
+    ) -> Result<Response<Workout>, Status> {
+        let actor = require_actor(&request)?;
+        let uuid = self.resolve_uuid(request.into_inner()).await?;
+        let workout = WorkoutUseCase::reject_assignment(&self.conn, uuid, actor.person_id)
+            .await
+            .map_err(business_status)?;
+        Ok(Response::new(WorkoutMapper::response(workout)))
+    }
+
+    async fn cancel_workout(
+        &self,
+        request: Request<WorkoutRequest>,
+    ) -> Result<Response<Workout>, Status> {
+        require_actor(&request)?;
+        let profile_id = require_active_profile(&request)
+            .and_then(|p| p.id)
+            .ok_or_else(|| {
+                Status::failed_precondition("An active business profile is required to cancel")
+            })?;
+        let uuid = self.resolve_uuid(request.into_inner()).await?;
+        let workout = WorkoutUseCase::cancel_assignment(&self.conn, uuid, profile_id)
+            .await
+            .map_err(business_status)?;
+        Ok(Response::new(WorkoutMapper::response(workout)))
     }
 
     async fn add_exercises_to_workout(&self,request: Request<WorkoutExercisesRequest>) -> Result<Response<Workout>, Status> {

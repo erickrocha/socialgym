@@ -1,3 +1,4 @@
+pub mod chat_routes;
 pub mod content_report_routes;
 pub mod evolution_checkin_routes;
 pub mod feed_routes;

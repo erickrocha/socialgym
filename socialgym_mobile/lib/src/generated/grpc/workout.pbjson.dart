@@ -45,6 +45,14 @@ const Workout$json = {
       '5': 9,
       '10': 'targetPersonUuid'
     },
+    {'1': 'status', '3': 14, '4': 1, '5': 9, '10': 'status'},
+    {
+      '1': 'assigned_by_profile_uuid',
+      '3': 15,
+      '4': 1,
+      '5': 9,
+      '10': 'assignedByProfileUuid'
+    },
   ],
 };
 
@@ -57,7 +65,9 @@ final $typed_data.Uint8List workoutDescriptor = $convert.base64Decode(
     'dXASHgoKdmlzaWJpbGl0eRgJIAEoCVIKdmlzaWJpbGl0eRI1CglleGVyY2lzZXMYCiADKAsyFy'
     '5ncnBjLmV4ZXJjaXNlLkV4ZXJjaXNlUglleGVyY2lzZXMSHQoKY3JlYXRlZF9hdBgLIAEoCVIJ'
     'Y3JlYXRlZEF0Eh0KCnVwZGF0ZWRfYXQYDCABKAlSCXVwZGF0ZWRBdBIsChJ0YXJnZXRfcGVyc2'
-    '9uX3V1aWQYDSABKAlSEHRhcmdldFBlcnNvblV1aWQ=');
+    '9uX3V1aWQYDSABKAlSEHRhcmdldFBlcnNvblV1aWQSFgoGc3RhdHVzGA4gASgJUgZzdGF0dXMS'
+    'NwoYYXNzaWduZWRfYnlfcHJvZmlsZV91dWlkGA8gASgJUhVhc3NpZ25lZEJ5UHJvZmlsZVV1aW'
+    'Q=');
 
 @$core.Deprecated('Use workoutRequestDescriptor instead')
 const WorkoutRequest$json = {
@@ -114,6 +124,39 @@ const WorkoutListRequest$json = {
 final $typed_data.Uint8List workoutListRequestDescriptor = $convert.base64Decode(
     'ChJXb3Jrb3V0TGlzdFJlcXVlc3QSGwoIb3duZXJfaWQYASABKAVIAFIHb3duZXJJZBIfCgpvd2'
     '5lcl91dWlkGAIgASgJSABSCW93bmVyVXVpZEIMCgppZGVudGlmaWVy');
+
+@$core.Deprecated('Use assignedWorkoutListRequestDescriptor instead')
+const AssignedWorkoutListRequest$json = {
+  '1': 'AssignedWorkoutListRequest',
+  '2': [
+    {
+      '1': 'business_profile_id',
+      '3': 1,
+      '4': 1,
+      '5': 5,
+      '9': 0,
+      '10': 'businessProfileId'
+    },
+    {
+      '1': 'business_profile_uuid',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'businessProfileUuid'
+    },
+  ],
+  '8': [
+    {'1': 'identifier'},
+  ],
+};
+
+/// Descriptor for `AssignedWorkoutListRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List assignedWorkoutListRequestDescriptor =
+    $convert.base64Decode(
+        'ChpBc3NpZ25lZFdvcmtvdXRMaXN0UmVxdWVzdBIwChNidXNpbmVzc19wcm9maWxlX2lkGAEgAS'
+        'gFSABSEWJ1c2luZXNzUHJvZmlsZUlkEjQKFWJ1c2luZXNzX3Byb2ZpbGVfdXVpZBgCIAEoCUgA'
+        'UhNidXNpbmVzc1Byb2ZpbGVVdWlkQgwKCmlkZW50aWZpZXI=');
 
 @$core.Deprecated('Use workoutResponseDescriptor instead')
 const WorkoutResponse$json = {

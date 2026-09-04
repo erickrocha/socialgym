@@ -1,4 +1,6 @@
 use crate::http::welcome_controller::welcome;
+use crate::infrastructure::chat_hub::ChatHub;
+use crate::routes::chat_routes::chat_routes;
 use crate::routes::content_report_routes::{moderation_routes, report_routes};
 use crate::routes::evolution_checkin_routes::evolution_checkin_routes;
 use crate::routes::feed_routes::feed_route;
@@ -70,6 +72,14 @@ fn allowed_origins() -> AllowOrigin {
         http::notification_controller::mark_notification_read,
         http::evolution_controller::add,
         http::evolution_controller::get_by_owner,
+        http::chat_controller::list_conversations,
+        http::chat_controller::create_direct,
+        http::chat_controller::create_business_team_group,
+        http::chat_controller::create_business_direct,
+        http::chat_controller::list_messages,
+        http::chat_controller::send_message,
+        http::chat_controller::mark_read,
+        http::chat_controller::presence,
     ),
     components(
         schemas(
@@ -82,6 +92,18 @@ fn allowed_origins() -> AllowOrigin {
             http::json::post_json::MentionJson,
             http::json::notification_json::NotificationJson,
             http::json::notification_json::MarkNotificationReadJson,
+            http::json::chat_json::ConversationJson,
+            http::json::chat_json::ConversationParticipantJson,
+            http::json::chat_json::LastMessagePreviewJson,
+            http::json::chat_json::MessageJson,
+            http::json::chat_json::MessageMediaJson,
+            http::json::chat_json::SendMessageJson,
+            http::json::chat_json::CreateDirectConversationJson,
+            http::json::chat_json::CreateBusinessTeamGroupJson,
+            http::json::chat_json::CreateBusinessDirectJson,
+            http::json::chat_json::MarkReadJson,
+            http::json::chat_json::MarkReadResultJson,
+            http::json::chat_json::PresenceJson,
             http::json::evolution_check_in_json::EvolutionCheckInJson,
             http::json::error_response_json::ErrorResponseJson,
             http::json::error_response_json::BadRequestErrorJson,
@@ -138,6 +160,7 @@ async fn start() -> anyhow::Result<()> {
 
     let state = AppState {
         database: Arc::new(database),
+        chat_hub: ChatHub::new(),
     };
 
     infrastructure::mongo_indexes::ensure_indexes(&state.database).await;
@@ -181,6 +204,8 @@ async fn start() -> anyhow::Result<()> {
                 .nest("/posts", post_routes(state.clone()))
                 .nest("/feed", feed_route(state.clone()))
                 .nest("/notifications", notification_routes(state.clone()))
+                .nest("/chat", chat_routes(state.clone()))
+                .route("/chat/ws", get(http::chat_ws_handler::ws))
                 .nest("/reports", report_routes(state.clone()))
                 .nest("/moderation", moderation_routes(state.clone()))
                 .nest("/internal", internal_routes(state.clone())),
@@ -201,6 +226,7 @@ async fn start() -> anyhow::Result<()> {
 #[derive(Clone)]
 pub struct AppState {
     pub database: Arc<Database>,
+    pub chat_hub: ChatHub,
 }
 
 pub fn main() {

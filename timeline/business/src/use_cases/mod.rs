@@ -1,5 +1,6 @@
 pub mod account_data_deletion_use_case;
 pub mod authentication;
+pub mod chat_use_case;
 pub mod content_report_use_case;
 pub mod evolution_check_in_use_case;
 pub mod media_use_case;

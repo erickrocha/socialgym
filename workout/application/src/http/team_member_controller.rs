@@ -12,7 +12,7 @@ use crate::AppState;
 use axum::extract::{Path, Request, State};
 use axum::{Extension, Json};
 use business::domain::business_profile::BusinessProfile;
-use business::domain::team_member::TeamMemberStatus;
+use business::domain::enums::InviteStatus;
 use business::domain::user::User;
 use business::use_cases::team_member_use_case::TeamMemberUseCase;
 
@@ -65,13 +65,13 @@ pub async fn get_team_members(
                 TeamMemberUseCase::find_all_persons(
                     &state.conn,
                     business_profile_id,
-                    TeamMemberStatus::Accepted,
+                    InviteStatus::Accepted,
                 )
                 .await,
                 TeamMemberUseCase::find_all_persons(
                     &state.conn,
                     business_profile_id,
-                    TeamMemberStatus::Pending,
+                    InviteStatus::Pending,
                 )
                 .await,
             )
@@ -84,13 +84,13 @@ pub async fn get_team_members(
     let teams = TeamMemberUseCase::find_all_business_profiles(
         &state.conn,
         person_id,
-        TeamMemberStatus::Accepted,
+        InviteStatus::Accepted,
     )
     .await;
     let received_requests = TeamMemberUseCase::find_all_business_profiles(
         &state.conn,
         person_id,
-        TeamMemberStatus::Pending,
+        InviteStatus::Pending,
     )
     .await;
 

@@ -527,6 +527,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get executionCompletedSets => 'Séries Complétées';
 
   @override
+  String get executionViewAll => 'Tout voir';
+
+  @override
   String get executionWorkoutComplete => 'Entraînement Terminé !';
 
   @override
@@ -952,6 +955,83 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get teamActionError => 'L\'action a échoué. Veuillez réessayer.';
+
+  @override
+  String get workoutInvitesTitle => 'Invitations d\'entraînement';
+
+  @override
+  String get workoutInvitesDescription =>
+      'Entraînements attribués à vous et à votre équipe';
+
+  @override
+  String get workoutInvitesMenu => 'Invitations d\'entraînement';
+
+  @override
+  String get workoutInvitesTabReceived => 'Reçues';
+
+  @override
+  String get workoutInvitesTabSent => 'Envoyées';
+
+  @override
+  String workoutInviteFrom(String name) {
+    return 'De $name';
+  }
+
+  @override
+  String workoutInviteTo(String name) {
+    return 'Pour $name';
+  }
+
+  @override
+  String get workoutInviteFromTrainer => 'votre coach';
+
+  @override
+  String get workoutInviteAccept => 'Accepter';
+
+  @override
+  String get workoutInviteReject => 'Refuser';
+
+  @override
+  String get workoutInviteCancel => 'Annuler';
+
+  @override
+  String get workoutInviteAccepted => 'Entraînement accepté';
+
+  @override
+  String get workoutInviteRejected => 'Entraînement refusé';
+
+  @override
+  String get workoutInviteCancelled => 'Attribution annulée';
+
+  @override
+  String get workoutInviteActionError =>
+      'L\'action a échoué. Veuillez réessayer.';
+
+  @override
+  String get workoutInviteNoReceived => 'Aucune invitation d\'entraînement';
+
+  @override
+  String get workoutInviteNoReceivedHint =>
+      'Les entraînements qu\'un coach vous attribue apparaîtront ici';
+
+  @override
+  String get workoutInviteNoSent => 'Aucune attribution envoyée';
+
+  @override
+  String get workoutInviteNoSentHint =>
+      'Les entraînements que vous attribuez à des membres apparaîtront ici';
+
+  @override
+  String get workoutStatusPending => 'En attente';
+
+  @override
+  String get workoutStatusAccepted => 'Accepté';
+
+  @override
+  String get workoutStatusRejected => 'Refusé';
+
+  @override
+  String get workoutStatusCancelled => 'Annulé';
 
   @override
   String get exerciseOwnerName => 'Nom du propriétaire';

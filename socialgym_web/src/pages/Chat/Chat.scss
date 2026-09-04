@@ -1,0 +1,202 @@
+.chat-page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+
+    .chat-container {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        max-width: 1100px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .chat-list {
+        width: 300px;
+        flex-shrink: 0;
+        border: 1px solid #e2e2e2;
+        border-radius: 12px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+
+        &__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #eee;
+
+            h1 {
+                font-size: 1.1rem;
+                margin: 0;
+            }
+        }
+
+        &__empty {
+            padding: 1rem;
+            color: #888;
+        }
+
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        &__item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f2f2f2;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+
+            &--active {
+                background: #eef4ff;
+            }
+
+            &--unread .chat-list__name {
+                font-weight: 700;
+            }
+        }
+
+        &__name {
+            font-size: 0.95rem;
+        }
+
+        &__preview {
+            font-size: 0.8rem;
+            color: #888;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .chat-status {
+        font-size: 0.75rem;
+        color: #999;
+
+        &--connected {
+            color: #29a745;
+        }
+    }
+
+    .chat-thread {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid #e2e2e2;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+
+        &__placeholder {
+            margin: auto;
+            color: #999;
+        }
+
+        &__header {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #eee;
+            font-weight: 600;
+        }
+
+        &__messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+    }
+
+    .chat-bubble {
+        max-width: 70%;
+        padding: 0.5rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.9rem;
+
+        p {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        &__sender {
+            display: block;
+            font-size: 0.72rem;
+            color: #666;
+            margin-bottom: 0.15rem;
+        }
+
+        &__image {
+            margin-top: 0.35rem;
+            max-width: 220px;
+            border-radius: 8px;
+            display: block;
+        }
+
+        &--mine {
+            align-self: flex-end;
+            background: #2f6bff;
+            color: #fff;
+        }
+
+        &--theirs {
+            align-self: flex-start;
+            background: #f1f1f1;
+        }
+    }
+
+    .chat-composer {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        border-top: 1px solid #eee;
+
+        input[type='text'] {
+            flex: 1;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        button[type='submit'] {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 20px;
+            background: #2f6bff;
+            color: #fff;
+            cursor: pointer;
+
+            &:disabled {
+                opacity: 0.6;
+            }
+        }
+
+        &__attach {
+            background: transparent;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        &__files {
+            font-size: 0.8rem;
+            color: #666;
+        }
+    }
+
+    .chat-error {
+        padding: 0.5rem 1rem;
+        color: #b02a37;
+        font-size: 0.85rem;
+    }
+}

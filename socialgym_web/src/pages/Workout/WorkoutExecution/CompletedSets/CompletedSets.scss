@@ -1,0 +1,163 @@
+@use '../../../../assets/scss/colors' as c;
+
+.completed-sets {
+    min-height: 100vh;
+    background: c.$background-color;
+    display: flex;
+    flex-direction: column;
+
+    &__header {
+        background: linear-gradient(135deg, #{c.$color-primary} 0%, #{c.$color-primary-hover} 100%);
+        color: white;
+        padding: 1rem 1.25rem 1.25rem;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        grid-template-areas:
+            'back heading'
+            'chips chips';
+        column-gap: 0.75rem;
+        row-gap: 0.75rem;
+    }
+
+    &__back {
+        grid-area: back;
+        background: none;
+        border: none;
+        padding: 0.25rem;
+        cursor: pointer;
+        color: white;
+        display: flex;
+        align-items: center;
+
+        svg {
+            width: 24px;
+            height: 24px;
+        }
+    }
+
+    &__heading {
+        grid-area: heading;
+        min-width: 0;
+
+        h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    &__subheader {
+        margin: 0.15rem 0 0;
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.8);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__chips {
+        grid-area: chips;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    &__chip {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.18);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    &__body {
+        flex: 1;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        max-width: 720px;
+        width: 100%;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    &__group {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+    }
+
+    &__group-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.75rem;
+        padding: 0.75rem 0.9rem;
+        background: rgba(c.$color-primary, 0.08);
+    }
+
+    &__group-name {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: c.$color-primary;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__group-total {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: c.$color-primary;
+        white-space: nowrap;
+    }
+
+    &__rows {
+        list-style: none;
+        margin: 0;
+        padding: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+
+    &__row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem;
+        background: #f8f8f8;
+        border-radius: 8px;
+    }
+
+    &__row-check {
+        width: 22px;
+        height: 22px;
+        flex-shrink: 0;
+        background: c.$color-success;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+    }
+
+    &__row-set {
+        flex: 1;
+        font-weight: 500;
+        color: c.$foreground-color;
+        font-size: 0.9rem;
+    }
+
+    &__row-details {
+        font-size: 0.8rem;
+        color: #666;
+        white-space: nowrap;
+    }
+}

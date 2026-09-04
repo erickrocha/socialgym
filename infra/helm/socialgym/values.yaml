@@ -38,7 +38,7 @@ tls:
 workout:
   image:
     repository: workout-app
-    tag: local
+    tag: 1.0.0
     pullPolicy: IfNotPresent
   port: 8090
   rustLog: info
@@ -78,7 +78,7 @@ workout:
 integration:
   image:
     repository: integration-app
-    tag: local
+    tag: 1.0.0
     pullPolicy: IfNotPresent
   port: 50051
   resources:
@@ -92,7 +92,7 @@ integration:
 timeline:
   image:
     repository: timeline-app
-    tag: local
+    tag: 1.0.0
     pullPolicy: IfNotPresent
   port: 8091
   rustLog: info
@@ -120,3 +120,9 @@ gateway:
   serviceType: NodePort
   httpPort: 80
   httpsPort: 443
+  # Fixed NodePorts so the URL stays stable across `helm upgrade`. Must fall
+  # within the cluster's --service-node-port-range (default 30000-32767).
+  # Set to null to let Kubernetes allocate a random port instead. Ignored
+  # when serviceType is ClusterIP.
+  httpNodePort: 30080
+  httpsNodePort: 30443

@@ -3,7 +3,8 @@ use crate::commons::functions::uuid_to_string;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapper};
 use crate::domain::person::{Person, PersonEntityMapper};
-use crate::domain::team_member::{TeamMember, TeamMemberMapper, TeamMemberStatus};
+use crate::domain::enums::InviteStatus;
+use crate::domain::team_member::{TeamMember, TeamMemberMapper};
 use crate::gateway::business_profile_gateway::BusinessProfileGateway;
 use crate::gateway::person_gateway::PersonGateway;
 use crate::gateway::team_member_gateway::TeamMemberGateway;
@@ -11,7 +12,67 @@ use sea_orm::DbConn;
 
 pub struct TeamMemberUseCase {}
 
+/// Everyone allowed inside a business profile's team chat, plus the business
+/// identity used to attribute the owner's messages. Assembled for timeline's
+/// chat feature via the `GetTeamRoster` gRPC call.
+#[derive(Debug, Clone)]
+pub struct TeamRoster {
+    pub business_profile_id: i32,
+    pub business_profile_uuid: String,
+    pub business_profile_name: String,
+    pub business_profile_logo_object_key: Option<String>,
+    pub owner_person_uuid: String,
+    pub accepted_member_person_uuids: Vec<String>,
+}
+
 impl TeamMemberUseCase {
+    /// Resolves the full team roster for a business profile by its uuid: the
+    /// owner's person uuid, every Accepted member's person uuid, and the
+    /// business name/logo. Used only as a read model — no consent is granted
+    /// or implied here, it simply reports the memberships that already exist.
+    pub async fn find_roster(
+        db: &DbConn,
+        business_profile_uuid: &str,
+    ) -> Result<TeamRoster, BusinessError> {
+        let business_profile = BusinessProfileGateway::find_by_uuid(db, business_profile_uuid)
+            .await
+            .map_err(|e| {
+                log::error!("Error loading business profile {business_profile_uuid}: {e:?}");
+                BusinessError::infrastructure("Error loading business profile")
+            })?
+            .ok_or_else(|| BusinessError::not_found("Business profile not found"))?;
+
+        let owner = PersonGateway::find_by_id(db, business_profile.owner_id)
+            .await
+            .ok_or_else(|| BusinessError::not_found("Business profile owner not found"))?;
+
+        let memberships = TeamMemberGateway::find_all_by_business_profile_and_status(
+            db,
+            business_profile.id,
+            InviteStatus::Accepted,
+        )
+        .await
+        .map_err(|e| {
+            log::error!(
+                "Error loading team members for business profile {}: {e:?}",
+                business_profile.id
+            );
+            BusinessError::infrastructure("Error loading team members")
+        })?;
+
+        Ok(TeamRoster {
+            business_profile_id: business_profile.id,
+            business_profile_uuid: uuid_to_string(business_profile.uuid),
+            business_profile_name: business_profile.business_name,
+            business_profile_logo_object_key: business_profile.logo,
+            owner_person_uuid: uuid_to_string(owner.uuid),
+            accepted_member_person_uuids: memberships
+                .into_iter()
+                .map(|m| uuid_to_string(m.person_uuid))
+                .collect(),
+        })
+    }
+
     /// A business profile invites a person to its team. The person is the one who accepts or
     /// denies it — a profile never grants itself authority over a person.
     pub async fn send_team_member_request(
@@ -53,7 +114,7 @@ impl TeamMemberUseCase {
             })?;
 
         if let Some(existing_request) = existing {
-            let status = TeamMemberStatus::from_string(&existing_request.status);
+            let status = InviteStatus::from_string(&existing_request.status);
             Self::reject_duplicated_request(&status)?;
 
             log::info!(
@@ -63,7 +124,7 @@ impl TeamMemberUseCase {
                 person_id
             );
             let mut request = TeamMemberMapper::from_model(existing_request);
-            request.status = TeamMemberStatus::Pending;
+            request.status = InviteStatus::Pending;
             return Self::persist_update(db, request, "reopening team member request").await;
         }
 
@@ -72,7 +133,7 @@ impl TeamMemberUseCase {
             uuid_to_string(business_profile.uuid),
             person_id,
             uuid_to_string(person.uuid),
-            TeamMemberStatus::Pending,
+            InviteStatus::Pending,
         );
 
         let result = TeamMemberGateway::persist(db, request).await.map_err(|e| {
@@ -85,15 +146,15 @@ impl TeamMemberUseCase {
     }
 
     /// An open request can only be created when no other one is already open or already honoured.
-    fn reject_duplicated_request(status: &TeamMemberStatus) -> Result<(), BusinessError> {
+    fn reject_duplicated_request(status: &InviteStatus) -> Result<(), BusinessError> {
         match status {
-            TeamMemberStatus::Pending => Err(BusinessError::new(
+            InviteStatus::Pending => Err(BusinessError::new(
                 "A pending team member request already exists".to_string(),
             )),
-            TeamMemberStatus::Accepted => Err(BusinessError::new(
+            InviteStatus::Accepted => Err(BusinessError::new(
                 "This person is already a team member".to_string(),
             )),
-            TeamMemberStatus::Rejected | TeamMemberStatus::Cancelled => Ok(()),
+            InviteStatus::Rejected | InviteStatus::Cancelled => Ok(()),
         }
     }
 
@@ -106,7 +167,7 @@ impl TeamMemberUseCase {
             db,
             business_profile_id,
             person_id,
-            TeamMemberStatus::Accepted,
+            InviteStatus::Accepted,
         )
         .await
     }
@@ -120,7 +181,7 @@ impl TeamMemberUseCase {
             db,
             business_profile_id,
             person_id,
-            TeamMemberStatus::Rejected,
+            InviteStatus::Rejected,
         )
         .await
     }
@@ -134,7 +195,7 @@ impl TeamMemberUseCase {
             db,
             business_profile_id,
             person_id,
-            TeamMemberStatus::Cancelled,
+            InviteStatus::Cancelled,
         )
         .await
     }
@@ -143,7 +204,7 @@ impl TeamMemberUseCase {
         db: &DbConn,
         business_profile_id: i32,
         person_id: i32,
-        status: TeamMemberStatus,
+        status: InviteStatus,
     ) -> Result<TeamMember, BusinessError> {
         log::info!(
             "Attempting to move team member request of business profile {:?} and person {:?} to {:?}",
@@ -167,7 +228,7 @@ impl TeamMemberUseCase {
                 BusinessError::new("Team member request not found".to_string())
             })?;
 
-        Self::reject_closed_request(&TeamMemberStatus::from_string(&request.status), &status)?;
+        Self::reject_closed_request(&InviteStatus::from_string(&request.status), &status)?;
 
         let mut request = TeamMemberMapper::from_model(request);
         request.status = status;
@@ -177,12 +238,12 @@ impl TeamMemberUseCase {
     /// Only a request still waiting on its answer can be answered — an accepted membership is
     /// revoked by cancelling it, never by re-answering a closed request.
     fn reject_closed_request(
-        current: &TeamMemberStatus,
-        next: &TeamMemberStatus,
+        current: &InviteStatus,
+        next: &InviteStatus,
     ) -> Result<(), BusinessError> {
         match (current, next) {
-            (TeamMemberStatus::Pending, _) => Ok(()),
-            (TeamMemberStatus::Accepted, TeamMemberStatus::Cancelled) => Ok(()),
+            (InviteStatus::Pending, _) => Ok(()),
+            (InviteStatus::Accepted, InviteStatus::Cancelled) => Ok(()),
             _ => Err(BusinessError::new(format!(
                 "Team member request is already '{}'",
                 current.as_str()
@@ -234,7 +295,7 @@ impl TeamMemberUseCase {
             })?;
 
         let is_accepted = membership
-            .map(|m| TeamMemberStatus::from_string(&m.status) == TeamMemberStatus::Accepted)
+            .map(|m| InviteStatus::from_string(&m.status) == InviteStatus::Accepted)
             .unwrap_or(false);
 
         if !is_accepted {
@@ -249,7 +310,7 @@ impl TeamMemberUseCase {
     pub async fn find_all_persons(
         db: &DbConn,
         business_profile_id: i32,
-        status: TeamMemberStatus,
+        status: InviteStatus,
     ) -> Vec<Person> {
         let memberships = TeamMemberGateway::find_all_by_business_profile_and_status(
             db,
@@ -270,7 +331,7 @@ impl TeamMemberUseCase {
     pub async fn find_all_business_profiles(
         db: &DbConn,
         person_id: i32,
-        status: TeamMemberStatus,
+        status: InviteStatus,
     ) -> Vec<BusinessProfile> {
         let memberships = TeamMemberGateway::find_all_by_person_and_status(db, person_id, status)
             .await
@@ -292,31 +353,31 @@ impl TeamMemberUseCase {
 #[cfg(test)]
 mod tests {
     use super::TeamMemberUseCase;
-    use crate::domain::team_member::TeamMemberStatus;
+    use crate::domain::enums::InviteStatus;
 
     #[test]
     fn open_and_honoured_requests_are_not_duplicated() {
-        assert!(TeamMemberUseCase::reject_duplicated_request(&TeamMemberStatus::Pending).is_err());
-        assert!(TeamMemberUseCase::reject_duplicated_request(&TeamMemberStatus::Accepted).is_err());
-        assert!(TeamMemberUseCase::reject_duplicated_request(&TeamMemberStatus::Rejected).is_ok());
-        assert!(TeamMemberUseCase::reject_duplicated_request(&TeamMemberStatus::Cancelled).is_ok());
+        assert!(TeamMemberUseCase::reject_duplicated_request(&InviteStatus::Pending).is_err());
+        assert!(TeamMemberUseCase::reject_duplicated_request(&InviteStatus::Accepted).is_err());
+        assert!(TeamMemberUseCase::reject_duplicated_request(&InviteStatus::Rejected).is_ok());
+        assert!(TeamMemberUseCase::reject_duplicated_request(&InviteStatus::Cancelled).is_ok());
     }
 
     #[test]
     fn only_pending_requests_can_be_answered() {
         assert!(TeamMemberUseCase::reject_closed_request(
-            &TeamMemberStatus::Pending,
-            &TeamMemberStatus::Accepted
+            &InviteStatus::Pending,
+            &InviteStatus::Accepted
         )
         .is_ok());
         assert!(TeamMemberUseCase::reject_closed_request(
-            &TeamMemberStatus::Rejected,
-            &TeamMemberStatus::Accepted
+            &InviteStatus::Rejected,
+            &InviteStatus::Accepted
         )
         .is_err());
         assert!(TeamMemberUseCase::reject_closed_request(
-            &TeamMemberStatus::Cancelled,
-            &TeamMemberStatus::Accepted
+            &InviteStatus::Cancelled,
+            &InviteStatus::Accepted
         )
         .is_err());
     }
@@ -324,13 +385,13 @@ mod tests {
     #[test]
     fn an_accepted_membership_can_only_be_cancelled() {
         assert!(TeamMemberUseCase::reject_closed_request(
-            &TeamMemberStatus::Accepted,
-            &TeamMemberStatus::Cancelled
+            &InviteStatus::Accepted,
+            &InviteStatus::Cancelled
         )
         .is_ok());
         assert!(TeamMemberUseCase::reject_closed_request(
-            &TeamMemberStatus::Accepted,
-            &TeamMemberStatus::Accepted
+            &InviteStatus::Accepted,
+            &InviteStatus::Accepted
         )
         .is_err());
     }

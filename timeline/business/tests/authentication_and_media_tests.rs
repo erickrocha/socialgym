@@ -56,6 +56,8 @@ fn sample_claims() -> Claims {
 		person_id: 42,
 		person_uuid: "person-uuid-1".to_string(),
 		person_object_key: "person/person-uuid-1/avatar/avatar-1".to_string(),
+		active_business_profile_id: None,
+		active_business_profile_uuid: None,
 	}
 }
 

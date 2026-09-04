@@ -138,7 +138,8 @@
       "settings": "Instellingen",
       "gallery": "Galerij",
       "sessions": "Sessies",
-      "evolution": "Evolutie"
+      "evolution": "Evolutie",
+      "messages": "Berichten"
     },
     "defaultUser": "Gebruiker",
     "toggleAriaLabel": "Zijbalk schakelen",
@@ -339,6 +340,7 @@
     "keepGoing": "Ga zo door! Je doet het geweldig!",
     "almostDone": "Bijna klaar! Laatste zetje!",
     "completedSets": "Voltooide Sets",
+    "viewAllSets": "Toon alles",
     "workoutComplete": "Training Voltooid!",
     "duration": "Duur",
     "setsCompleted": "Sets Gedaan",
@@ -423,5 +425,18 @@
     "errors": {
       "load": "Profiel kon niet geladen worden"
     }
+  },
+  "chat": {
+    "title": "Berichten",
+    "conversationsEmpty": "Nog geen gesprekken",
+    "messagePlaceholder": "Schrijf een bericht…",
+    "send": "Versturen",
+    "teamGroup": "Teamchat",
+    "businessDirect": "Zakelijke chat",
+    "notFriendsError": "Je kunt alleen je vrienden of team berichten sturen.",
+    "reconnecting": "Opnieuw verbinden…",
+    "attachImage": "Afbeelding toevoegen",
+    "you": "Jij",
+    "photo": "Foto"
   }
 }

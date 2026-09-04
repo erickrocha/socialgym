@@ -65,6 +65,27 @@ pub async fn get_workouts_by_owner_uuid(
     Ok(Json(WorkoutMapper::json_vec(workouts)))
 }
 
+/// Workouts the acting business profile has assigned to its team members
+/// (every status). Requires an active business profile.
+#[utoipa::path(get, path = "/workout/api/workouts/assigned-by-profile")]
+pub async fn get_workouts_assigned_by_profile(
+    State(state): State<AppState>,
+    active_profile: Option<Extension<BusinessProfile>>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<Vec<WorkoutJson>>> {
+    let profile_id = active_profile
+        .as_deref()
+        .and_then(|p| p.id)
+        .ok_or(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::WorkoutNotFound,
+        ))?;
+    let workouts = WorkoutUseCase::find_all_assigned_by_profile(&state.conn, profile_id)
+        .await
+        .map_err(|error| workout_error(error, locale))?;
+    Ok(Json(WorkoutMapper::json_vec(workouts)))
+}
+
 #[utoipa::path(put, path = "/workout/api/workouts")]
 pub async fn update_workout(
     State(state): State<AppState>,
@@ -111,6 +132,63 @@ pub async fn delete_workout_by_uuid(
         .await
         .map_err(|error| workout_error(error, locale))?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// The assigned person accepts a pending workout assignment.
+#[utoipa::path(put, path = "/workout/api/workouts/uuid/{uuid}/accept")]
+pub async fn accept_workout_assignment(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<WorkoutJson>> {
+    let workout = WorkoutUseCase::accept_assignment(&state.conn, uuid, current_user.person_id)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutAcceptAssignmentFailed)
+        })?;
+    Ok(Json(WorkoutMapper::json(workout)))
+}
+
+/// The assigned person rejects a pending workout assignment.
+#[utoipa::path(put, path = "/workout/api/workouts/uuid/{uuid}/reject")]
+pub async fn reject_workout_assignment(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<WorkoutJson>> {
+    let workout = WorkoutUseCase::reject_assignment(&state.conn, uuid, current_user.person_id)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutRejectAssignmentFailed)
+        })?;
+    Ok(Json(WorkoutMapper::json(workout)))
+}
+
+/// The assigning business profile cancels a pending workout assignment.
+/// Requires an active business profile.
+#[utoipa::path(put, path = "/workout/api/workouts/uuid/{uuid}/cancel")]
+pub async fn cancel_workout_assignment(
+    State(state): State<AppState>,
+    Path(uuid): Path<String>,
+    Extension(_current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<WorkoutJson>> {
+    let profile_id = active_profile
+        .as_deref()
+        .and_then(|p| p.id)
+        .ok_or(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::WorkoutCancelAssignmentFailed,
+        ))?;
+    let workout = WorkoutUseCase::cancel_assignment(&state.conn, uuid, profile_id)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutCancelAssignmentFailed)
+        })?;
+    Ok(Json(WorkoutMapper::json(workout)))
 }
 
 #[utoipa::path(post, path = "/workout/api/workouts/uuid/{uuid}/exercises")]
