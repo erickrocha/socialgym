@@ -1618,4 +1618,43 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get chatReconnecting => 'Opnieuw verbinden…';
+
+  @override
+  String get chatNewConversation => 'Nieuw gesprek';
+
+  @override
+  String get chatStartConversationTitle => 'Gesprek starten';
+
+  @override
+  String get chatOnline => 'Online';
+
+  @override
+  String get chatOffline => 'Offline';
+
+  @override
+  String get chatNoFriendsYet => 'Voeg vrienden toe om een gesprek te starten';
+
+  @override
+  String get chatTyping => 'aan het typen…';
+
+  @override
+  String get chatSent => 'Verzonden';
+
+  @override
+  String get chatRead => 'Gelezen';
+
+  @override
+  String get chatFailedTap => 'Niet verzonden — tik om opnieuw te proberen';
+
+  @override
+  String get chatSearchHint => 'Vrienden zoeken';
+
+  @override
+  String get chatMessageAction => 'Bericht';
+
+  @override
+  String get chatToday => 'Vandaag';
+
+  @override
+  String get chatYesterday => 'Gisteren';
 }

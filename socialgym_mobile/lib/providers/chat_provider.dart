@@ -10,6 +10,14 @@ import 'package:socialgym_mobile/services/chat_socket.dart';
 import 'package:uuid/uuid.dart';
 
 class ChatProvider extends ChangeNotifier {
+  /// How long a "typing" frame keeps the indicator up. The protocol has no
+  /// "stopped typing", so it expires on its own.
+  static const Duration _typingTtl = Duration(seconds: 4);
+  static const Duration _typingThrottleGap = Duration(seconds: 3);
+  /// How long a socket-sent message may stay unacknowledged before it is shown
+  /// as failed.
+  static const Duration _ackTimeout = Duration(seconds: 10);
+
   final ChatSocket _socket = ChatSocket();
   final Uuid _uuid = const Uuid();
 
@@ -22,6 +30,16 @@ class ChatProvider extends ChangeNotifier {
   List<Conversation> _conversations = [];
   final Map<String, List<ChatMessage>> _messages = {};
   final Map<String, DateTime> _lastSeenSentAt = {};
+  Set<String> _onlinePersonUuids = {};
+  /// conversationUuid -> when the counterpart's "typing" signal goes stale.
+  final Map<String, DateTime> _typingUntil = {};
+  /// conversationUuid -> last message uuid the counterpart has read.
+  final Map<String, String> _counterpartLastRead = {};
+  final Map<String, int> _pagesLoaded = {};
+  final Set<String> _fullyLoaded = {};
+  bool _loadingOlder = false;
+  Timer? _typingThrottle;
+  Timer? _typingExpiry;
 
   bool _loadingConversations = false;
   bool _loadingMessages = false;
@@ -38,6 +56,36 @@ class ChatProvider extends ChangeNotifier {
   String? get error => _error;
   ChatSocketStatus get socketStatus => _socketStatus;
   String get myPersonUuid => _myPersonUuid;
+  bool isOnline(String personUuid) => _onlinePersonUuids.contains(personUuid);
+  bool get loadingOlder => _loadingOlder;
+  bool hasMoreMessages(String conversationUuid) =>
+      !_fullyLoaded.contains(conversationUuid);
+
+  /// ponytail: a bool, not "who is typing" — enough for a direct chat, which is
+  /// all the app creates today. Carry the person uuid through when groups land.
+  bool isTypingIn(String conversationUuid) {
+    final until = _typingUntil[conversationUuid];
+    return until != null && until.isAfter(DateTime.now());
+  }
+
+  /// True once the counterpart has read [messageUuid] (or anything newer).
+  bool isReadByCounterpart(String conversationUuid, String messageUuid) {
+    final lastRead = _counterpartLastRead[conversationUuid];
+    if (lastRead == null || messageUuid.isEmpty) return false;
+    final list = _messages[conversationUuid] ?? const [];
+    final readIdx = list.indexWhere((m) => m.uuid == lastRead);
+    final thisIdx = list.indexWhere((m) => m.uuid == messageUuid);
+    return readIdx != -1 && thisIdx != -1 && thisIdx <= readIdx;
+  }
+
+  /// ponytail: polled on demand by whoever renders a people list. A presence
+  /// event on the socket would remove the poll — add it when a screen needs
+  /// status to change while the user is looking at it.
+  Future<void> refreshPresence(List<String> personUuids) async {
+    if (_token.isEmpty) return;
+    _onlinePersonUuids = await ChatService.presence(_token, personUuids);
+    notifyListeners();
+  }
 
   void connect(String token, String myPersonUuid) {
     if (token.isEmpty) return;
@@ -63,6 +111,8 @@ class ChatProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _typingThrottle?.cancel();
+    _typingExpiry?.cancel();
     _eventsSub?.cancel();
     _statusSub?.cancel();
     _socket.dispose();
@@ -97,7 +147,10 @@ class ChatProvider extends ChangeNotifier {
       );
       // API returns newest-first; store oldest-first.
       final ordered = fetched.reversed.toList();
+      if (fetched.isEmpty) _fullyLoaded.add(conversationUuid);
+      _pagesLoaded[conversationUuid] = page;
       if (page == 0) {
+        _fullyLoaded.remove(conversationUuid);
         _messages[conversationUuid] = ordered;
       } else {
         _messages[conversationUuid] = [
@@ -112,6 +165,23 @@ class ChatProvider extends ChangeNotifier {
       _error = 'Failed to load messages.';
     }
     _loadingMessages = false;
+    notifyListeners();
+  }
+
+  /// Pulls the previous page of history, for the thread's scroll-to-top.
+  Future<void> loadOlder(String conversationUuid) async {
+    if (_loadingOlder ||
+        _fullyLoaded.contains(conversationUuid) ||
+        (_messages[conversationUuid] ?? const []).isEmpty) {
+      return;
+    }
+    _loadingOlder = true;
+    notifyListeners();
+    await fetchMessages(
+      conversationUuid,
+      page: (_pagesLoaded[conversationUuid] ?? 0) + 1,
+    );
+    _loadingOlder = false;
     notifyListeners();
   }
 
@@ -160,6 +230,57 @@ class ChatProvider extends ChangeNotifier {
     final trimmed = body.trim();
     if (trimmed.isEmpty && images.isEmpty) return;
 
+    final clientMessageId = _uuid.v4();
+    // Render it before any I/O — the server's copy replaces this one through
+    // the clientMessageId dedupe in [_appendMessage].
+    _appendMessage(
+      conversationUuid,
+      ChatMessage.pending(
+        conversationUuid: conversationUuid,
+        senderPersonUuid: _myPersonUuid,
+        senderDisplayName: '',
+        body: trimmed,
+        media: const [],
+        clientMessageId: clientMessageId,
+      ),
+    );
+
+    await _deliver(
+      conversationUuid,
+      body: trimmed,
+      images: images,
+      clientMessageId: clientMessageId,
+    );
+  }
+
+  /// Retries a message that failed to leave the device. Its text and images are
+  /// gone by then, so only text messages can be retried — an image send that
+  /// failed mid-upload has to be re-picked.
+  Future<void> resend(String conversationUuid, String clientMessageId) async {
+    final list = _messages[conversationUuid] ?? const [];
+    final message = list.firstWhere(
+      (m) => m.clientMessageId == clientMessageId,
+      orElse: () => throw StateError('unknown message'),
+    );
+    _replaceByClientId(
+      conversationUuid,
+      clientMessageId,
+      message.copyWith(pending: true, failed: false),
+    );
+    await _deliver(
+      conversationUuid,
+      body: message.body,
+      images: const [],
+      clientMessageId: clientMessageId,
+    );
+  }
+
+  Future<void> _deliver(
+    String conversationUuid, {
+    required String body,
+    required List<XFile> images,
+    required String clientMessageId,
+  }) async {
     _sending = true;
     notifyListeners();
 
@@ -167,13 +288,12 @@ class ChatProvider extends ChangeNotifier {
       final media = images.isEmpty
           ? const <Map<String, dynamic>>[]
           : await ChatService.uploadImages(_token, images);
-      final clientMessageId = _uuid.v4();
 
       final sentViaSocket =
-          images.isEmpty &&
+          media.isEmpty &&
           _socket.sendMessage(
             conversationUuid: conversationUuid,
-            body: trimmed,
+            body: body,
             media: const [],
             clientMessageId: clientMessageId,
           );
@@ -182,18 +302,58 @@ class ChatProvider extends ChangeNotifier {
         final message = await ChatService.sendMessage(
           _token,
           conversationUuid,
-          body: trimmed,
+          body: body,
           media: media,
           clientMessageId: clientMessageId,
         );
         _appendMessage(conversationUuid, message);
       }
+      if (sentViaSocket) {
+        // The socket send is fire-and-forget: nothing tells us synchronously
+        // that the server accepted it. If no `message.new` echo lands, fail the
+        // message so the user gets a retry instead of a permanent clock icon.
+        Timer(_ackTimeout, () {
+          final list = _messages[conversationUuid] ?? const [];
+          final idx = list.indexWhere(
+            (m) => m.clientMessageId == clientMessageId,
+          );
+          if (idx != -1 && list[idx].pending) {
+            _markFailed(conversationUuid, clientMessageId);
+          }
+        });
+      }
     } on AppException catch (e) {
       _error = e.message;
+      _markFailed(conversationUuid, clientMessageId);
     } catch (_) {
       _error = 'Failed to send message.';
+      _markFailed(conversationUuid, clientMessageId);
     }
     _sending = false;
+    notifyListeners();
+  }
+
+  void _markFailed(String conversationUuid, String clientMessageId) {
+    final list = _messages[conversationUuid] ?? const [];
+    final idx = list.indexWhere((m) => m.clientMessageId == clientMessageId);
+    if (idx == -1) return;
+    _replaceByClientId(
+      conversationUuid,
+      clientMessageId,
+      list[idx].copyWith(pending: false, failed: true),
+    );
+  }
+
+  void _replaceByClientId(
+    String conversationUuid,
+    String clientMessageId,
+    ChatMessage message,
+  ) {
+    final list = List<ChatMessage>.from(_messages[conversationUuid] ?? const []);
+    final idx = list.indexWhere((m) => m.clientMessageId == clientMessageId);
+    if (idx == -1) return;
+    list[idx] = message;
+    _messages[conversationUuid] = list;
     notifyListeners();
   }
 
@@ -221,8 +381,13 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  void sendTyping(String conversationUuid) =>
-      _socket.sendTyping(conversationUuid);
+  /// Fired from `onChanged`, so throttled — one frame per [_typingThrottleGap]
+  /// instead of one per keystroke.
+  void sendTyping(String conversationUuid) {
+    if (_typingThrottle?.isActive ?? false) return;
+    _typingThrottle = Timer(_typingThrottleGap, () {});
+    _socket.sendTyping(conversationUuid);
+  }
 
   void clearError() {
     _error = null;
@@ -231,22 +396,72 @@ class ChatProvider extends ChangeNotifier {
 
   // ── internals ────────────────────────────────────────────────────────────
 
+  /// Frames are camelCase (locked by `frames_use_camel_case_field_names` in
+  /// timeline's chat_hub.rs); the snake_case fallback keeps an older server
+  /// from silently filing messages under the empty conversation.
+  static String _frameString(Map<String, dynamic> frame, String camel, String snake) =>
+      (frame[camel] ?? frame[snake] ?? '') as String;
+
   void _onServerEvent(Map<String, dynamic> frame) {
     switch (frame['type']) {
       case 'message.new':
-        final conversationUuid = frame['conversationUuid'] as String? ?? '';
+        final conversationUuid = _frameString(
+          frame,
+          'conversationUuid',
+          'conversation_uuid',
+        );
         final raw = frame['message'];
-        if (raw is Map<String, dynamic>) {
+        if (conversationUuid.isNotEmpty && raw is Map<String, dynamic>) {
           final message = ChatMessage.fromJson(raw);
           final known = _conversations.any((c) => c.uuid == conversationUuid);
           _appendMessage(conversationUuid, message);
+          // Their message answers ours: they are clearly done typing.
+          _typingUntil.remove(conversationUuid);
           if (!known) fetchConversations();
         }
         break;
       case 'message.read':
+        final conversationUuid = _frameString(
+          frame,
+          'conversationUuid',
+          'conversation_uuid',
+        );
+        final personUuid = _frameString(frame, 'personUuid', 'person_uuid');
+        final lastRead = _frameString(
+          frame,
+          'lastReadMessageUuid',
+          'last_read_message_uuid',
+        );
+        if (conversationUuid.isNotEmpty &&
+            lastRead.isNotEmpty &&
+            personUuid != _myPersonUuid) {
+          _counterpartLastRead[conversationUuid] = lastRead;
+          notifyListeners();
+        }
+        break;
       case 'typing':
-      case 'pong':
+        final conversationUuid = _frameString(
+          frame,
+          'conversationUuid',
+          'conversation_uuid',
+        );
+        final personUuid = _frameString(frame, 'personUuid', 'person_uuid');
+        if (conversationUuid.isEmpty || personUuid == _myPersonUuid) break;
+        _typingUntil[conversationUuid] = DateTime.now().add(_typingTtl);
+        notifyListeners();
+        // Nothing pushes "stopped typing", so expire it on a timer.
+        _typingExpiry?.cancel();
+        _typingExpiry = Timer(_typingTtl, notifyListeners);
+        break;
       case 'error':
+        // Swallowing this is what hid the camelCase frame mismatch for so long.
+        final message = _frameString(frame, 'message', 'message');
+        if (message.isNotEmpty) {
+          _error = message;
+          notifyListeners();
+        }
+        break;
+      case 'pong':
       default:
         break;
     }
@@ -256,7 +471,9 @@ class ChatProvider extends ChangeNotifier {
     final list = List<ChatMessage>.from(_messages[conversationUuid] ?? const []);
     final existing = list.indexWhere(
       (m) =>
-          m.uuid == message.uuid ||
+          // An optimistic message has an empty uuid — matching on it would make
+          // every pending message collide with the previous one.
+          (m.uuid.isNotEmpty && m.uuid == message.uuid) ||
           (m.clientMessageId.isNotEmpty &&
               m.clientMessageId == message.clientMessageId),
     );

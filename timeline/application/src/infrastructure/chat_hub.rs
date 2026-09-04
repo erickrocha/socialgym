@@ -12,7 +12,7 @@ use crate::http::json::chat_json::{ConversationJson, MessageJson};
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub enum ServerEvent {
-    #[serde(rename = "message.new")]
+    #[serde(rename = "message.new", rename_all = "camelCase")]
     MessageNew {
         conversation_uuid: String,
         conversation_type: String,
@@ -20,13 +20,13 @@ pub enum ServerEvent {
     },
     #[serde(rename = "conversation.updated")]
     ConversationUpdated { conversation: ConversationJson },
-    #[serde(rename = "message.read")]
+    #[serde(rename = "message.read", rename_all = "camelCase")]
     MessageRead {
         conversation_uuid: String,
         person_uuid: String,
         last_read_message_uuid: String,
     },
-    #[serde(rename = "typing")]
+    #[serde(rename = "typing", rename_all = "camelCase")]
     Typing {
         conversation_uuid: String,
         person_uuid: String,
@@ -94,6 +94,18 @@ impl ChatHub {
         }
     }
 
+    /// Of `candidates`, returns those with at least one live connection to
+    /// this node. Presence is per-node: with more than one instance behind the
+    /// gateway a person connected elsewhere reads as offline here.
+    pub fn online_among(&self, candidates: &[String]) -> Vec<String> {
+        let guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        candidates
+            .iter()
+            .filter(|uuid| guard.get(*uuid).is_some_and(|sinks| !sinks.is_empty()))
+            .cloned()
+            .collect()
+    }
+
     /// Sends `event` to every live connection of each recipient. Closed sinks
     /// are pruned in passing.
     pub fn publish(&self, recipients: &[String], event: &ServerEvent) {
@@ -108,5 +120,61 @@ impl ChatHub {
                 guard.remove(recipient);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ChatHub;
+
+    /// The Dart client reads these frames by camelCase key. Serde's enum-level
+    /// `rename_all` renames variants, not their fields, so each variant carries
+    /// its own — drop it and every socket frame silently lands in the wrong
+    /// conversation on the client.
+    #[test]
+    fn frames_use_camel_case_field_names() {
+        let typing = super::ServerEvent::Typing {
+            conversation_uuid: "c1".to_string(),
+            person_uuid: "p1".to_string(),
+        }
+        .to_frame();
+        assert_eq!(
+            typing,
+            r#"{"type":"typing","conversationUuid":"c1","personUuid":"p1"}"#
+        );
+
+        let read = super::ServerEvent::MessageRead {
+            conversation_uuid: "c1".to_string(),
+            person_uuid: "p1".to_string(),
+            last_read_message_uuid: "m9".to_string(),
+        }
+        .to_frame();
+        assert!(read.contains(r#""conversationUuid":"c1""#), "got {read}");
+        assert!(read.contains(r#""lastReadMessageUuid":"m9""#), "got {read}");
+    }
+
+    #[test]
+    fn online_among_reports_only_connected_people() {
+        let hub = ChatHub::new();
+        let (conn, _rx_a) = hub.register("person-a");
+        let (_, _rx_b) = hub.register("person-b");
+
+        let mut online = hub.online_among(&[
+            "person-a".to_string(),
+            "person-b".to_string(),
+            "person-c".to_string(),
+        ]);
+        online.sort();
+        assert_eq!(online, vec!["person-a".to_string(), "person-b".to_string()]);
+
+        // Last connection closing takes the person offline.
+        hub.unregister("person-a", conn);
+        assert_eq!(hub.online_among(&["person-a".to_string()]), Vec::<String>::new());
+
+        // A second device keeps them online until every connection is gone.
+        let (first, _rx1) = hub.register("person-d");
+        let (_second, _rx2) = hub.register("person-d");
+        hub.unregister("person-d", first);
+        assert_eq!(hub.online_among(&["person-d".to_string()]), vec!["person-d".to_string()]);
     }
 }

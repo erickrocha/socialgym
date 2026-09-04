@@ -79,6 +79,7 @@ fn allowed_origins() -> AllowOrigin {
         http::chat_controller::list_messages,
         http::chat_controller::send_message,
         http::chat_controller::mark_read,
+        http::chat_controller::presence,
     ),
     components(
         schemas(
@@ -102,6 +103,7 @@ fn allowed_origins() -> AllowOrigin {
             http::json::chat_json::CreateBusinessDirectJson,
             http::json::chat_json::MarkReadJson,
             http::json::chat_json::MarkReadResultJson,
+            http::json::chat_json::PresenceJson,
             http::json::evolution_check_in_json::EvolutionCheckInJson,
             http::json::error_response_json::ErrorResponseJson,
             http::json::error_response_json::BadRequestErrorJson,

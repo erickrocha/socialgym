@@ -29,6 +29,29 @@ class ChatService {
     }
   }
 
+  /// Which of [personUuids] currently hold a chat WebSocket. Returns an empty
+  /// set on failure — presence is decoration, never a reason to break a screen.
+  static Future<Set<String>> presence(
+    String token,
+    List<String> personUuids,
+  ) async {
+    if (personUuids.isEmpty) return const {};
+    try {
+      DioClient().setAuthToken(token);
+      final response = await _dio.get(
+        ApiConfig.chatPresenceEndpoint,
+        queryParameters: {'uuids': personUuids.join(',')},
+      );
+      final data = response.data;
+      if (data is! Map) return const {};
+      return (data['online'] as List? ?? const [])
+          .whereType<String>()
+          .toSet();
+    } on DioException {
+      return const {};
+    }
+  }
+
   static Future<Conversation> createDirect(
     String token,
     String targetPersonUuid,

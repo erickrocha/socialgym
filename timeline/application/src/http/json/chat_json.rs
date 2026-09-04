@@ -127,3 +127,17 @@ pub struct ChatMessagesQuery {
     /// this (WebSocket reconnect replay).
     pub since: Option<i64>,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresenceQuery {
+    /// Comma-separated person uuids to check.
+    pub uuids: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PresenceJson {
+    /// Subset of the requested uuids currently holding a chat WebSocket.
+    pub online: Vec<String>,
+}

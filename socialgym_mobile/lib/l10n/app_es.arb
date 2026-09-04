@@ -533,5 +533,18 @@
   "chatNotFriends": "Solo puedes enviar mensajes a tus amigos o equipo.",
   "chatTeamGroup": "Chat del equipo",
   "chatBusinessDirect": "Chat del negocio",
-  "chatReconnecting": "Reconectando…"
+  "chatReconnecting": "Reconectando…",
+  "chatNewConversation": "Nueva conversación",
+  "chatStartConversationTitle": "Iniciar conversación",
+  "chatOnline": "En línea",
+  "chatOffline": "Desconectado",
+  "chatNoFriendsYet": "Agrega amigos para iniciar una conversación",
+  "chatTyping": "escribiendo…",
+  "chatSent": "Enviado",
+  "chatRead": "Leído",
+  "chatFailedTap": "No enviado: toca para reintentar",
+  "chatSearchHint": "Buscar amigos",
+  "chatMessageAction": "Mensaje",
+  "chatToday": "Hoy",
+  "chatYesterday": "Ayer"
 }

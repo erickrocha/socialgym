@@ -10,6 +10,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/person_provider.dart';
 import '../../services/person_service.dart';
 import '../../services/base_service.dart';
+import '../../providers/chat_provider.dart';
+import '../../utils/open_direct_chat.dart';
 
 /// Read-only profile view for viewing a friend's profile.
 class PersonProfilePage extends StatefulWidget {
@@ -201,6 +203,8 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                         ],
                       ),
                     ),
+
+                    _buildActions(l10n),
 
                     if (_error != null)
                       Container(
@@ -400,6 +404,33 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  /// Actions available on someone else's profile. Only "Message" for now —
+  /// friend requests still live on the friends page.
+  Widget _buildActions(AppLocalizations l10n) {
+    final myUuid = context.watch<ChatProvider>().myPersonUuid;
+    if (_person.uuid == myUuid) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => openDirectChat(
+            context,
+            personUuid: _person.uuid,
+            displayName: _person.fullName,
+          ),
+          icon: const Icon(Icons.chat_bubble_outline, size: 18),
+          label: Text(l10n.chatMessageAction),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+          ),
+        ),
       ),
     );
   }

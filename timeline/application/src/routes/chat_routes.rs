@@ -14,6 +14,10 @@ pub fn chat_routes(state: AppState) -> Router<AppState> {
             get(http::chat_controller::list_conversations).route_layer(auth()),
         )
         .route(
+            "/presence",
+            get(http::chat_controller::presence).route_layer(auth()),
+        )
+        .route(
             "/conversations/direct",
             post(http::chat_controller::create_direct)
                 .route_layer(auth())

@@ -3182,6 +3182,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reconnecting…'**
   String get chatReconnecting;
+
+  /// No description provided for @chatNewConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation'**
+  String get chatNewConversation;
+
+  /// No description provided for @chatStartConversationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a conversation'**
+  String get chatStartConversationTitle;
+
+  /// No description provided for @chatOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get chatOnline;
+
+  /// No description provided for @chatOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get chatOffline;
+
+  /// No description provided for @chatNoFriendsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add friends to start a conversation'**
+  String get chatNoFriendsYet;
+
+  /// No description provided for @chatTyping.
+  ///
+  /// In en, this message translates to:
+  /// **'typing…'**
+  String get chatTyping;
+
+  /// No description provided for @chatSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get chatSent;
+
+  /// No description provided for @chatRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get chatRead;
+
+  /// No description provided for @chatFailedTap.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent — tap to retry'**
+  String get chatFailedTap;
+
+  /// No description provided for @chatSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search friends'**
+  String get chatSearchHint;
+
+  /// No description provided for @chatMessageAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get chatMessageAction;
+
+  /// No description provided for @chatToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get chatToday;
+
+  /// No description provided for @chatYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get chatYesterday;
 }
 
 class _AppLocalizationsDelegate

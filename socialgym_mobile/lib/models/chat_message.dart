@@ -35,6 +35,11 @@ class ChatMessage {
   final String clientMessageId;
   final DateTime sentAt;
 
+  /// Local-only delivery state. Never parsed from JSON: anything the server
+  /// hands back is, by definition, delivered.
+  final bool pending;
+  final bool failed;
+
   const ChatMessage({
     required this.uuid,
     required this.conversationUuid,
@@ -47,7 +52,47 @@ class ChatMessage {
     required this.media,
     required this.clientMessageId,
     required this.sentAt,
+    this.pending = false,
+    this.failed = false,
   });
+
+  /// An optimistic message rendered the instant the user hits send, before any
+  /// I/O. Replaced by the server's copy via [clientMessageId] dedupe.
+  factory ChatMessage.pending({
+    required String conversationUuid,
+    required String senderPersonUuid,
+    required String senderDisplayName,
+    required String body,
+    required List<ChatMessageMedia> media,
+    required String clientMessageId,
+  }) => ChatMessage(
+    uuid: '',
+    conversationUuid: conversationUuid,
+    senderPersonUuid: senderPersonUuid,
+    senderKind: 'Person',
+    senderDisplayName: senderDisplayName,
+    body: body,
+    media: media,
+    clientMessageId: clientMessageId,
+    sentAt: DateTime.now(),
+    pending: true,
+  );
+
+  ChatMessage copyWith({bool? pending, bool? failed}) => ChatMessage(
+    uuid: uuid,
+    conversationUuid: conversationUuid,
+    senderPersonUuid: senderPersonUuid,
+    senderKind: senderKind,
+    senderDisplayName: senderDisplayName,
+    senderAvatarUrl: senderAvatarUrl,
+    senderBusinessProfileUuid: senderBusinessProfileUuid,
+    body: body,
+    media: media,
+    clientMessageId: clientMessageId,
+    sentAt: sentAt,
+    pending: pending ?? this.pending,
+    failed: failed ?? this.failed,
+  );
 
   bool get isFromBusiness => senderKind == 'BusinessProfile';
 

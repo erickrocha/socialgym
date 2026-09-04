@@ -533,5 +533,18 @@
   "chatNotFriends": "Je kunt alleen je vrienden of team berichten sturen.",
   "chatTeamGroup": "Teamchat",
   "chatBusinessDirect": "Zakelijke chat",
-  "chatReconnecting": "Opnieuw verbinden…"
+  "chatReconnecting": "Opnieuw verbinden…",
+  "chatNewConversation": "Nieuw gesprek",
+  "chatStartConversationTitle": "Gesprek starten",
+  "chatOnline": "Online",
+  "chatOffline": "Offline",
+  "chatNoFriendsYet": "Voeg vrienden toe om een gesprek te starten",
+  "chatTyping": "aan het typen…",
+  "chatSent": "Verzonden",
+  "chatRead": "Gelezen",
+  "chatFailedTap": "Niet verzonden — tik om opnieuw te proberen",
+  "chatSearchHint": "Vrienden zoeken",
+  "chatMessageAction": "Bericht",
+  "chatToday": "Vandaag",
+  "chatYesterday": "Gisteren"
 }

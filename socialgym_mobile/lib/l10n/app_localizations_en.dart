@@ -1603,4 +1603,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatReconnecting => 'Reconnecting…';
+
+  @override
+  String get chatNewConversation => 'New conversation';
+
+  @override
+  String get chatStartConversationTitle => 'Start a conversation';
+
+  @override
+  String get chatOnline => 'Online';
+
+  @override
+  String get chatOffline => 'Offline';
+
+  @override
+  String get chatNoFriendsYet => 'Add friends to start a conversation';
+
+  @override
+  String get chatTyping => 'typing…';
+
+  @override
+  String get chatSent => 'Sent';
+
+  @override
+  String get chatRead => 'Read';
+
+  @override
+  String get chatFailedTap => 'Not sent — tap to retry';
+
+  @override
+  String get chatSearchHint => 'Search friends';
+
+  @override
+  String get chatMessageAction => 'Message';
+
+  @override
+  String get chatToday => 'Today';
+
+  @override
+  String get chatYesterday => 'Yesterday';
 }

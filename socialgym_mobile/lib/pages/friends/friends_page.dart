@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+
+import '../../utils/open_direct_chat.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_colors.dart';
@@ -382,11 +384,28 @@ class _FriendsPageState extends State<FriendsPage>
             person: friend,
             businessType: businessType,
             onTap: () => _openPersonProfile(friend),
-            action: _buildFullWidthAction(
-              label: l10n.friendsRemove,
-              icon: Icons.person_remove,
-              color: AppColors.danger,
-              onPressed: () => _showRemoveFriendDialog(friend),
+            action: Row(
+              children: [
+                Expanded(
+                  child: _buildCompactAction(
+                    label: l10n.chatMessageAction,
+                    color: AppColors.primary,
+                    onPressed: () => openDirectChat(
+                      context,
+                      personUuid: friend.uuid,
+                      displayName: friend.fullName,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: _buildCompactAction(
+                    label: l10n.friendsRemove,
+                    color: AppColors.danger,
+                    onPressed: () => _showRemoveFriendDialog(friend),
+                  ),
+                ),
+              ],
             ),
           );
         },

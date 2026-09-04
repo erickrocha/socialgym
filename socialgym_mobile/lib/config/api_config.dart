@@ -65,6 +65,7 @@ class ApiConfig {
 
   static const String chatConversationsEndpoint =
       '/timeline/api/chat/conversations';
+  static const String chatPresenceEndpoint = '/timeline/api/chat/presence';
 
   /// WebSocket base (wss://…) derived from [baseUrl]; append
   /// `/timeline/api/chat/ws?access_token=<jwt>`.

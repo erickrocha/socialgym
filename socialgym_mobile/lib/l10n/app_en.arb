@@ -554,5 +554,18 @@
   "chatNotFriends": "You can only message your friends or team.",
   "chatTeamGroup": "Team chat",
   "chatBusinessDirect": "Business chat",
-  "chatReconnecting": "Reconnecting…"
+  "chatReconnecting": "Reconnecting…",
+  "chatNewConversation": "New conversation",
+  "chatStartConversationTitle": "Start a conversation",
+  "chatOnline": "Online",
+  "chatOffline": "Offline",
+  "chatNoFriendsYet": "Add friends to start a conversation",
+  "chatTyping": "typing…",
+  "chatSent": "Sent",
+  "chatRead": "Read",
+  "chatFailedTap": "Not sent — tap to retry",
+  "chatSearchHint": "Search friends",
+  "chatMessageAction": "Message",
+  "chatToday": "Today",
+  "chatYesterday": "Yesterday"
 }

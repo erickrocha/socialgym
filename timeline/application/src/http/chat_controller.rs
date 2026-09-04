@@ -3,7 +3,7 @@ use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::chat_json::{
     ChatMessagesQuery, ChatPageQuery, ConversationJson, CreateBusinessDirectJson,
     CreateBusinessTeamGroupJson, CreateDirectConversationJson, MarkReadJson, MarkReadResultJson,
-    MessageJson, SendMessageJson,
+    MessageJson, PresenceJson, PresenceQuery, SendMessageJson,
 };
 use crate::infrastructure::chat_hub::ServerEvent;
 use crate::infrastructure::mapper::{ConversationMapper, MessageMapper};
@@ -253,4 +253,32 @@ pub async fn mark_read(
         },
     );
     Ok(Json(MarkReadResultJson { read: true }))
+}
+
+/// Online/offline for a batch of people. Callers poll this when they render a
+/// list of people to message — there is no presence push on the socket.
+#[utoipa::path(
+    get,
+    path = "/timeline/api/chat/presence",
+    params(("uuids" = String, Query, description = "Comma-separated person uuids")),
+    responses((status = 200, description = "Online subset", body = PresenceJson)),
+    security(("api_key" = []))
+)]
+pub async fn presence(
+    state: State<AppState>,
+    Extension(_user): Extension<User>,
+    Query(query): Query<PresenceQuery>,
+) -> HttpResponse<Json<PresenceJson>> {
+    // ponytail: cap the batch so a caller cannot ask about the whole userbase
+    // in one request; paginate client-side if a list ever grows past this.
+    let candidates: Vec<String> = query
+        .uuids
+        .split(',')
+        .map(|uuid| uuid.trim().to_string())
+        .filter(|uuid| !uuid.is_empty())
+        .take(200)
+        .collect();
+    Ok(Json(PresenceJson {
+        online: state.chat_hub.online_among(&candidates),
+    }))
 }

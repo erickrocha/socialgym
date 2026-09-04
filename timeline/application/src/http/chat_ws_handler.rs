@@ -23,6 +23,7 @@ pub struct WsAuthQuery {
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 enum ClientFrame {
+    #[serde(rename_all = "camelCase")]
     Send {
         conversation_uuid: String,
         #[serde(default)]
@@ -31,10 +32,12 @@ enum ClientFrame {
         media: Vec<crate::http::json::chat_json::MessageMediaJson>,
         client_message_id: String,
     },
+    #[serde(rename_all = "camelCase")]
     Read {
         conversation_uuid: String,
         last_read_message_uuid: String,
     },
+    #[serde(rename_all = "camelCase")]
     Typing {
         conversation_uuid: String,
     },
@@ -221,5 +224,46 @@ async fn handle_frame(state: &AppState, user: &User, token: &str, frame: ClientF
                 },
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ClientFrame;
+
+    /// The whole API speaks camelCase — REST, gRPC and the socket. Serde's
+    /// enum-level `rename_all` renames variants, not their fields, so each
+    /// variant needs its own. Without it every frame the app sends fails to
+    /// deserialize and is dropped, and the client never learns it happened.
+    #[test]
+    fn client_frames_parse_camel_case_fields() {
+        let send: ClientFrame = serde_json::from_str(
+            r#"{"type":"send","conversationUuid":"c1","body":"oi","media":[],"clientMessageId":"m1"}"#,
+        )
+        .expect("send frame");
+        match send {
+            ClientFrame::Send {
+                conversation_uuid,
+                client_message_id,
+                body,
+                ..
+            } => {
+                assert_eq!(conversation_uuid, "c1");
+                assert_eq!(client_message_id, "m1");
+                assert_eq!(body, "oi");
+            }
+            other => panic!("wrong variant: {other:?}"),
+        }
+
+        let read: ClientFrame = serde_json::from_str(
+            r#"{"type":"read","conversationUuid":"c1","lastReadMessageUuid":"m9"}"#,
+        )
+        .expect("read frame");
+        assert!(matches!(read, ClientFrame::Read { .. }));
+
+        let typing: ClientFrame =
+            serde_json::from_str(r#"{"type":"typing","conversationUuid":"c1"}"#)
+                .expect("typing frame");
+        assert!(matches!(typing, ClientFrame::Typing { .. }));
     }
 }

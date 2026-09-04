@@ -1632,4 +1632,44 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get chatReconnecting => 'Reconnexion…';
+
+  @override
+  String get chatNewConversation => 'Nouvelle conversation';
+
+  @override
+  String get chatStartConversationTitle => 'Démarrer une conversation';
+
+  @override
+  String get chatOnline => 'En ligne';
+
+  @override
+  String get chatOffline => 'Hors ligne';
+
+  @override
+  String get chatNoFriendsYet =>
+      'Ajoutez des amis pour démarrer une conversation';
+
+  @override
+  String get chatTyping => 'en train d\'écrire…';
+
+  @override
+  String get chatSent => 'Envoyé';
+
+  @override
+  String get chatRead => 'Lu';
+
+  @override
+  String get chatFailedTap => 'Non envoyé — touchez pour réessayer';
+
+  @override
+  String get chatSearchHint => 'Rechercher des amis';
+
+  @override
+  String get chatMessageAction => 'Message';
+
+  @override
+  String get chatToday => 'Aujourd\'hui';
+
+  @override
+  String get chatYesterday => 'Hier';
 }

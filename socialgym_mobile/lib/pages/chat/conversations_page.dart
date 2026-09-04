@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../config/app_colors.dart';
 import '../../config/nav_section.dart';
 import '../../l10n/app_localizations.dart';
-import '../../models/conversation.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/friends_provider.dart';
 import '../../providers/person_provider.dart';
 import '../../services/chat_socket.dart';
+import '../../widgets/chat/conversation_tile.dart';
 import '../../widgets/main_layout.dart';
 import 'chat_thread_page.dart';
+import 'new_conversation_page.dart';
 
 class ConversationsPage extends StatefulWidget {
   const ConversationsPage({super.key});
@@ -26,43 +27,56 @@ class _ConversationsPageState extends State<ConversationsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
   }
 
-  void _bootstrap() {
-    final token = context.read<AuthProvider>().auth?.accessToken ?? '';
-    final myUuid = context.read<AuthProvider>().auth?.personUuid ??
-        context.read<PersonProvider>().ownerUuid;
+  Future<void> _bootstrap() async {
+    final auth = context.read<AuthProvider>();
+    final token = auth.auth?.accessToken ?? '';
     if (token.isEmpty) return;
+    final myUuid =
+        auth.auth?.personUuid ?? context.read<PersonProvider>().ownerUuid;
     final chat = context.read<ChatProvider>();
-    chat.connect(token, myUuid);
-    chat.fetchConversations();
-  }
+    final friends = context.read<FriendsProvider>();
 
-  String _titleFor(Conversation c, AppLocalizations l10n) {
-    if (c.conversationType == 'BusinessTeamGroup') {
-      return c.businessProfileName ?? l10n.chatTeamGroup;
-    }
-    if (c.conversationType == 'BusinessDirect') {
-      return c.businessProfileName ?? l10n.chatBusinessDirect;
-    }
-    return c.lastMessage?.senderDisplayName ?? l10n.chatConversationsTitle;
+    chat.connect(token, myUuid);
+    await chat.fetchConversations();
+    // Names and avatars for direct conversations come from the friends list —
+    // the conversation payload only carries participant uuids.
+    if (!mounted) return;
+    if (friends.friends.isEmpty) await friends.fetchFriends(token);
+    if (!mounted) return;
+    await chat.refreshPresence(
+      friends.friends.map((f) => f.uuid).toList(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final chat = context.watch<ChatProvider>();
+    final friends = context.watch<FriendsProvider>().friends;
+    final myUuid = chat.myPersonUuid;
 
     return MainLayout(
       navSection: NavSection.home,
       currentRoute: '/chat',
+      floatingActionButton: FloatingActionButton(
+        tooltip: l10n.chatNewConversation,
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const NewConversationPage()),
+        ),
+        child: const Icon(Icons.add_comment_outlined),
+      ),
       body: RefreshIndicator(
-        onRefresh: () => chat.fetchConversations(),
+        onRefresh: _bootstrap,
         child: Column(
           children: [
             if (chat.socketStatus != ChatSocketStatus.connected)
               Container(
                 width: double.infinity,
                 color: Colors.amber.shade100,
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 4,
+                  horizontal: 12,
+                ),
                 child: Text(
                   l10n.chatReconnecting,
                   style: const TextStyle(fontSize: 12),
@@ -72,60 +86,46 @@ class _ConversationsPageState extends State<ConversationsPage> {
               child: chat.loadingConversations && chat.conversations.isEmpty
                   ? const Center(child: CircularProgressIndicator())
                   : chat.conversations.isEmpty
-                      ? ListView(
-                          children: [
-                            const SizedBox(height: 120),
-                            Center(child: Text(l10n.chatEmpty)),
-                          ],
-                        )
-                      : ListView.separated(
-                          itemCount: chat.conversations.length,
-                          separatorBuilder: (_, _) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final c = chat.conversations[index];
-                            return ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: AppColors.primary.withValues(
-                                  alpha: 0.15,
+                  ? ListView(
+                      children: [
+                        const SizedBox(height: 120),
+                        Center(child: Text(l10n.chatEmpty)),
+                      ],
+                    )
+                  : ListView.separated(
+                      itemCount: chat.conversations.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final conversation = chat.conversations[index];
+                        final counterpart = counterpartOf(
+                          conversation,
+                          myUuid,
+                          friends,
+                        );
+                        return ConversationTile(
+                          conversation: conversation,
+                          counterpart: counterpart,
+                          myPersonUuid: myUuid,
+                          online:
+                              counterpart != null &&
+                              chat.isOnline(counterpart.uuid),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ChatThreadPage(
+                                conversationUuid: conversation.uuid,
+                                title: conversationTitle(
+                                  conversation,
+                                  counterpart,
+                                  myUuid,
+                                  l10n,
                                 ),
-                                backgroundImage: c.businessProfileLogoUrl != null
-                                    ? NetworkImage(c.businessProfileLogoUrl!)
-                                    : null,
-                                child: c.businessProfileLogoUrl == null
-                                    ? const Icon(Icons.chat_bubble_outline)
-                                    : null,
+                                counterpartPersonUuid: counterpart?.uuid,
                               ),
-                              title: Text(
-                                _titleFor(c, l10n),
-                                style: TextStyle(
-                                  fontWeight: c.unread
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                              subtitle: Text(
-                                c.lastMessage?.snippet ?? '',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              trailing: c.unread
-                                  ? const Icon(
-                                      Icons.brightness_1,
-                                      size: 10,
-                                      color: AppColors.primary,
-                                    )
-                                  : null,
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => ChatThreadPage(
-                                    conversationUuid: c.uuid,
-                                    title: _titleFor(c, l10n),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),

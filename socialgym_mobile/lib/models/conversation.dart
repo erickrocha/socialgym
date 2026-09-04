@@ -98,6 +98,18 @@ class Conversation {
   });
 
   bool get isGroup => conversationType == 'BusinessTeamGroup';
+  bool get isDirect => conversationType == 'DirectPerson';
+
+  /// The other person in a direct conversation, or null for group/business
+  /// conversations. Mirrors the backend's `other_direct_participant`
+  /// (timeline/business/src/use_cases/chat_use_case.rs).
+  String? counterpartUuidFor(String myPersonUuid) {
+    if (!isDirect) return null;
+    for (final uuid in participantPersonUuids) {
+      if (uuid != myPersonUuid) return uuid;
+    }
+    return null;
+  }
 
   factory Conversation.fromJson(Map<String, dynamic> json) => Conversation(
     uuid: (json['uuid'] ?? '') as String,

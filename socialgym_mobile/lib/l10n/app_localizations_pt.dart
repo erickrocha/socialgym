@@ -1619,6 +1619,45 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get chatReconnecting => 'Reconectando…';
+
+  @override
+  String get chatNewConversation => 'Nova conversa';
+
+  @override
+  String get chatStartConversationTitle => 'Iniciar conversa';
+
+  @override
+  String get chatOnline => 'Online';
+
+  @override
+  String get chatOffline => 'Offline';
+
+  @override
+  String get chatNoFriendsYet => 'Adicione amigos para iniciar uma conversa';
+
+  @override
+  String get chatTyping => 'digitando…';
+
+  @override
+  String get chatSent => 'Enviada';
+
+  @override
+  String get chatRead => 'Lida';
+
+  @override
+  String get chatFailedTap => 'Não enviada — toque para tentar de novo';
+
+  @override
+  String get chatSearchHint => 'Buscar amigos';
+
+  @override
+  String get chatMessageAction => 'Mensagem';
+
+  @override
+  String get chatToday => 'Hoje';
+
+  @override
+  String get chatYesterday => 'Ontem';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -3237,4 +3276,43 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get chatReconnecting => 'Reconectando…';
+
+  @override
+  String get chatNewConversation => 'Nova conversa';
+
+  @override
+  String get chatStartConversationTitle => 'Iniciar conversa';
+
+  @override
+  String get chatOnline => 'Online';
+
+  @override
+  String get chatOffline => 'Offline';
+
+  @override
+  String get chatNoFriendsYet => 'Adicione amigos para iniciar uma conversa';
+
+  @override
+  String get chatTyping => 'digitando…';
+
+  @override
+  String get chatSent => 'Enviada';
+
+  @override
+  String get chatRead => 'Lida';
+
+  @override
+  String get chatFailedTap => 'Não enviada — toque para tentar de novo';
+
+  @override
+  String get chatSearchHint => 'Buscar amigos';
+
+  @override
+  String get chatMessageAction => 'Mensagem';
+
+  @override
+  String get chatToday => 'Hoje';
+
+  @override
+  String get chatYesterday => 'Ontem';
 }
