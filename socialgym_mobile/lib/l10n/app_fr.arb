@@ -386,6 +386,7 @@
   "feedLoadError": "Échec du chargement du fil. Veuillez réessayer.",
   "feedComments": "commentaires",
   "feedReactions": "réactions",
+  "labelHideKeyboard": "Masquer le clavier",
   "feedAddPhoto": "Photo",
   "feedAddVideo": "Vidéo",
   "feedUploading": "Téléchargement du média...",

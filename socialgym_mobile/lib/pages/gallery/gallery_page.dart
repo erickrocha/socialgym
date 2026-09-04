@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
@@ -10,8 +11,10 @@ import '../../models/feed_post.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/feed_provider.dart';
 import '../../providers/person_provider.dart';
+import '../../utils/permissions_utils.dart';
 import '../../widgets/main_layout.dart';
 import '../../widgets/full_screen_image_viewer.dart';
+import '../home/post_composer_page.dart';
 
 class GalleryPage extends StatefulWidget {
   const GalleryPage({super.key});
@@ -23,6 +26,7 @@ class GalleryPage extends StatefulWidget {
 class _GalleryPageState extends State<GalleryPage> {
   late final PageController _pageController;
   late final ScrollController _scrollController;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -95,16 +99,68 @@ class _GalleryPageState extends State<GalleryPage> {
     }
   }
 
+  /// The gallery only shows posts that carry media, so its entry point goes
+  /// straight to the photo picker and hands the result to the composer.
+  Future<void> _createPostWithImage() async {
+    try {
+      final permitted = await PermissionsUtils.requestPhotosPermission();
+      if (!permitted) {
+        if (!mounted) return;
+        final isDenied =
+            await PermissionsUtils.isPhotosPermissionPermanentlyDenied();
+        if (!mounted) return;
+        _showPhotoPermissionDeniedSnackbar(isDenied);
+        return;
+      }
+
+      final images = await _picker.pickMultiImage(imageQuality: 85);
+      if (images.isEmpty || !mounted) return;
+
+      final created = await PostComposerPage.push(context, initialImages: images);
+      if (created == true && mounted) _loadPosts();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.profileImageUploadError),
+        ),
+      );
+    }
+  }
+
+  void _showPhotoPermissionDeniedSnackbar(bool isPermanentlyDenied) {
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.photosPermissionDenied),
+        action: isPermanentlyDenied
+            ? SnackBarAction(
+                label: l10n.openSettings,
+                onPressed: () => PermissionsUtils.openAppSettingsDialog(),
+              )
+            : null,
+        duration: Duration(seconds: isPermanentlyDenied ? 5 : 3),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final businessType =
+        context.watch<PersonProvider>().activeBusinessProfile?.businessType;
+
     return MainLayout(
       navSection: NavSection.gallery,
       currentRoute: '/gallery',
+      floatingActionButton: FloatingActionButton(
+        onPressed: _createPostWithImage,
+        backgroundColor: AppColors.primaryFor(businessType),
+        foregroundColor: Colors.white,
+        tooltip: AppLocalizations.of(context)!.feedCreatePost,
+        child: const Icon(Icons.add_a_photo),
+      ),
       body: Consumer<FeedProvider>(
         builder: (context, feedProvider, _) {
-          final businessType =
-              context.watch<PersonProvider>().activeBusinessProfile?.businessType;
-
           if (feedProvider.loading) {
             return Center(
               child: CircularProgressIndicator(color: AppColors.primaryFor(businessType)),

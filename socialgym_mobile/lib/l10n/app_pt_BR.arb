@@ -386,6 +386,7 @@
   "feedLoadError": "Falha ao carregar o feed. Tente novamente.",
   "feedComments": "comentários",
   "feedReactions": "reações",
+  "labelHideKeyboard": "Ocultar teclado",
   "feedAddPhoto": "Foto",
   "feedAddVideo": "Vídeo",
   "feedUploading": "Enviando mídia...",

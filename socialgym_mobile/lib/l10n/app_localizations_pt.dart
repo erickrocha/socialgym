@@ -1172,6 +1172,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get feedReactions => 'reações';
 
   @override
+  String get labelHideKeyboard => 'Ocultar teclado';
+
+  @override
   String get feedAddPhoto => 'Foto';
 
   @override
@@ -2827,6 +2830,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get feedReactions => 'reações';
+
+  @override
+  String get labelHideKeyboard => 'Ocultar teclado';
 
   @override
   String get feedAddPhoto => 'Foto';

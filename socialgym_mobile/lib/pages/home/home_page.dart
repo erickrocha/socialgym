@@ -12,7 +12,7 @@ import '../../providers/resource_provider.dart';
 import '../../widgets/feed_post_widget.dart';
 import '../../widgets/main_layout.dart';
 import '../../widgets/person_avatar_widget.dart';
-import '../../widgets/post_composer_sheet.dart';
+import 'post_composer_page.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -89,9 +89,9 @@ class _FeedPageState extends State<FeedPage> {
     );
   }
 
-  /// Opens the post composer sheet and refreshes the feed if a post was created.
+  /// Opens the post composer and refreshes the feed if a post was created.
   Future<void> _openComposer({String? initialContent}) async {
-    final created = await PostComposerSheet.show(
+    final created = await PostComposerPage.push(
       context,
       initialContent: initialContent,
     );

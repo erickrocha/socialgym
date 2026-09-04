@@ -400,6 +400,7 @@
   "feedLoadError": "Failed to load feed. Please try again.",
   "feedComments": "comments",
   "feedReactions": "reactions",
+  "labelHideKeyboard": "Hide keyboard",
   "feedAddPhoto": "Photo",
   "feedAddVideo": "Video",
   "feedUploading": "Uploading media...",

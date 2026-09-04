@@ -1178,6 +1178,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get feedReactions => 'reacciones';
 
   @override
+  String get labelHideKeyboard => 'Ocultar teclado';
+
+  @override
   String get feedAddPhoto => 'Foto';
 
   @override

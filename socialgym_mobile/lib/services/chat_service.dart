@@ -77,7 +77,7 @@ class ChatService {
   }) async {
     return _createConversation(token, '$_base/business-direct', {
       'businessProfileUuid': businessProfileUuid,
-      if (memberPersonUuid != null) 'memberPersonUuid': memberPersonUuid,
+      'memberPersonUuid': ?memberPersonUuid,
     });
   }
 

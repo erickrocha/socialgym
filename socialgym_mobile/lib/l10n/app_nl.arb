@@ -386,6 +386,7 @@
   "feedLoadError": "Feed laden mislukt. Probeer opnieuw.",
   "feedComments": "reacties",
   "feedReactions": "reacties",
+  "labelHideKeyboard": "Toetsenbord verbergen",
   "feedAddPhoto": "Foto",
   "feedAddVideo": "Video",
   "feedUploading": "Media uploaden...",

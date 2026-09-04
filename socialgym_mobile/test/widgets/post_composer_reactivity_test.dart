@@ -9,10 +9,10 @@ import 'package:socialgym_mobile/models/person.dart';
 import 'package:socialgym_mobile/providers/auth_provider.dart';
 import 'package:socialgym_mobile/providers/feed_provider.dart';
 import 'package:socialgym_mobile/providers/person_provider.dart';
-import 'package:socialgym_mobile/widgets/post_composer_sheet.dart';
+import 'package:socialgym_mobile/pages/home/post_composer_page.dart';
 
 void main() {
-  group('PostComposerSheet Reactivity', () {
+  group('PostComposerPage Reactivity', () {
     late PersonProvider personProvider;
     late AuthProvider authProvider;
     late FeedProvider feedProvider;
@@ -63,7 +63,7 @@ void main() {
               ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
               ChangeNotifierProvider<FeedProvider>.value(value: feedProvider),
             ],
-            child: Scaffold(body: PostComposerSheet()),
+            child: PostComposerPage(),
           ),
         ),
       );
@@ -135,7 +135,7 @@ void main() {
               ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
               ChangeNotifierProvider<FeedProvider>.value(value: feedProvider),
             ],
-            child: Scaffold(body: PostComposerSheet()),
+            child: PostComposerPage(),
           ),
         ),
       );

@@ -5,7 +5,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/person_provider.dart';
 import '../../providers/workout_session_provider.dart';
-import '../../widgets/post_composer_sheet.dart';
+import '../home/post_composer_page.dart';
 
 class WorkoutCompleteDialog extends StatefulWidget {
   final Map<String, dynamic> workoutSession;
@@ -125,7 +125,7 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
 
   Future<void> _shareWorkout() async {
     final l10n = AppLocalizations.of(context)!;
-    await PostComposerSheet.show(context, initialContent: _buildShareContent(l10n));
+    await PostComposerPage.push(context, initialContent: _buildShareContent(l10n));
   }
 
   @override

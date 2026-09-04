@@ -1168,6 +1168,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get feedReactions => 'reacties';
 
   @override
+  String get labelHideKeyboard => 'Toetsenbord verbergen';
+
+  @override
   String get feedAddPhoto => 'Foto';
 
   @override

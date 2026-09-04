@@ -2337,6 +2337,12 @@ abstract class AppLocalizations {
   /// **'reactions'**
   String get feedReactions;
 
+  /// No description provided for @labelHideKeyboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide keyboard'**
+  String get labelHideKeyboard;
+
   /// No description provided for @feedAddPhoto.
   ///
   /// In en, this message translates to:
