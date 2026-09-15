@@ -15,7 +15,7 @@ use business::domain::business_profile::BusinessProfile;
 use business::domain::business_profile_address::BusinessProfileAddress;
 use business::domain::country::Country;
 use business::domain::address_candidate::AddressCandidate;
-use business::domain::enums::{Difficulty, InviteStatus, Position, ProfileType};
+use business::domain::enums::{Difficulty, InviteStatus, Position, ProfileType, WeightUnit};
 use business::domain::exercise::{Category, Exercise};
 use business::domain::person::Person;
 use business::domain::person_address::PersonAddress;
@@ -489,6 +489,7 @@ impl Mapper<Settings,SettingsJson> for SettingsMapper {
             notifications_enabled: t.notifications_enabled,
             context_menu_position: t.context_menu_position.to_string(),
             home_page: t.home_page,
+            weight_unit: t.weight_unit.map(|u| u.to_string()),
             created_at: t.created_at,
             updated_at: t.updated_at,
         }
@@ -505,6 +506,7 @@ impl Mapper<Settings,SettingsJson> for SettingsMapper {
             notifications_enabled: u.notifications_enabled,
             context_menu_position: Position::from_string(u.context_menu_position.as_str()),
             home_page: u.home_page,
+            weight_unit: u.weight_unit.as_deref().map(WeightUnit::from_string),
             created_at: u.created_at,
             updated_at: u.updated_at,
         }

@@ -31,6 +31,7 @@ friend-send-request-failed = Send friend request failed
 friend-accept-request-failed = Accept friend request failed
 friend-deny-request-failed = Deny friend request failed
 friend-cancel-request-failed = Cancel send friend request failed
+friend-remove-failed = Remove friend failed
 team-member-not-found = Team member not found
 team-member-send-request-failed = Send team member request failed
 team-member-accept-request-failed = Accept team member request failed

@@ -14,6 +14,7 @@ pub struct SettingsJson {
 	pub notifications_enabled: bool,
 	pub context_menu_position: String,
 	pub home_page: String,
+	pub weight_unit: Option<String>,
 	pub created_at: Option<NaiveDateTime>,
 	pub updated_at: Option<NaiveDateTime>,
 }

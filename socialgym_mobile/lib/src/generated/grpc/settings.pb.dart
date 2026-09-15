@@ -211,6 +211,7 @@ class Setting extends $pb.GeneratedMessage {
     $core.String? homePage,
     $core.String? createdAt,
     $core.String? updatedAt,
+    $core.String? weightUnit,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -226,6 +227,7 @@ class Setting extends $pb.GeneratedMessage {
     if (homePage != null) result.homePage = homePage;
     if (createdAt != null) result.createdAt = createdAt;
     if (updatedAt != null) result.updatedAt = updatedAt;
+    if (weightUnit != null) result.weightUnit = weightUnit;
     return result;
   }
 
@@ -253,6 +255,7 @@ class Setting extends $pb.GeneratedMessage {
     ..aOS(9, _omitFieldNames ? '' : 'homePage')
     ..aOS(10, _omitFieldNames ? '' : 'createdAt')
     ..aOS(11, _omitFieldNames ? '' : 'updatedAt')
+    ..aOS(12, _omitFieldNames ? '' : 'weightUnit')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -371,6 +374,17 @@ class Setting extends $pb.GeneratedMessage {
   $core.bool hasUpdatedAt() => $_has(10);
   @$pb.TagNumber(11)
   void clearUpdatedAt() => $_clearField(11);
+
+  /// "Kilograms" | "Pounds" | "" (empty means no explicit override — derive
+  /// the effective unit from `language` instead).
+  @$pb.TagNumber(12)
+  $core.String get weightUnit => $_getSZ(11);
+  @$pb.TagNumber(12)
+  set weightUnit($core.String value) => $_setString(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasWeightUnit() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearWeightUnit() => $_clearField(12);
 }
 
 const $core.bool _omitFieldNames =

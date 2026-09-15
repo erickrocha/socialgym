@@ -135,3 +135,75 @@ final $typed_data.Uint8List teamMemberPageResponseDescriptor = $convert.base64De
     'cnNvblIMc2VudFJlcXVlc3RzEjwKBXRlYW1zGAMgAygLMiYuZ3JwYy5idXNpbmVzc19wcm9maW'
     'xlLkJ1c2luZXNzUHJvZmlsZVIFdGVhbXMSUwoRcmVjZWl2ZWRfcmVxdWVzdHMYBCADKAsyJi5n'
     'cnBjLmJ1c2luZXNzX3Byb2ZpbGUuQnVzaW5lc3NQcm9maWxlUhByZWNlaXZlZFJlcXVlc3Rz');
+
+@$core.Deprecated('Use teamRosterRequestDescriptor instead')
+const TeamRosterRequest$json = {
+  '1': 'TeamRosterRequest',
+  '2': [
+    {
+      '1': 'business_profile_uuid',
+      '3': 1,
+      '4': 1,
+      '5': 9,
+      '10': 'businessProfileUuid'
+    },
+  ],
+};
+
+/// Descriptor for `TeamRosterRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List teamRosterRequestDescriptor = $convert.base64Decode(
+    'ChFUZWFtUm9zdGVyUmVxdWVzdBIyChVidXNpbmVzc19wcm9maWxlX3V1aWQYASABKAlSE2J1c2'
+    'luZXNzUHJvZmlsZVV1aWQ=');
+
+@$core.Deprecated('Use teamRosterResponseDescriptor instead')
+const TeamRosterResponse$json = {
+  '1': 'TeamRosterResponse',
+  '2': [
+    {
+      '1': 'business_profile_id',
+      '3': 1,
+      '4': 1,
+      '5': 5,
+      '10': 'businessProfileId'
+    },
+    {
+      '1': 'business_profile_uuid',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '10': 'businessProfileUuid'
+    },
+    {
+      '1': 'business_profile_name',
+      '3': 3,
+      '4': 1,
+      '5': 9,
+      '10': 'businessProfileName'
+    },
+    {
+      '1': 'business_profile_logo_object_key',
+      '3': 4,
+      '4': 1,
+      '5': 9,
+      '10': 'businessProfileLogoObjectKey'
+    },
+    {'1': 'owner_person_uuid', '3': 5, '4': 1, '5': 9, '10': 'ownerPersonUuid'},
+    {
+      '1': 'accepted_member_person_uuids',
+      '3': 6,
+      '4': 3,
+      '5': 9,
+      '10': 'acceptedMemberPersonUuids'
+    },
+  ],
+};
+
+/// Descriptor for `TeamRosterResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List teamRosterResponseDescriptor = $convert.base64Decode(
+    'ChJUZWFtUm9zdGVyUmVzcG9uc2USLgoTYnVzaW5lc3NfcHJvZmlsZV9pZBgBIAEoBVIRYnVzaW'
+    '5lc3NQcm9maWxlSWQSMgoVYnVzaW5lc3NfcHJvZmlsZV91dWlkGAIgASgJUhNidXNpbmVzc1By'
+    'b2ZpbGVVdWlkEjIKFWJ1c2luZXNzX3Byb2ZpbGVfbmFtZRgDIAEoCVITYnVzaW5lc3NQcm9maW'
+    'xlTmFtZRJGCiBidXNpbmVzc19wcm9maWxlX2xvZ29fb2JqZWN0X2tleRgEIAEoCVIcYnVzaW5l'
+    'c3NQcm9maWxlTG9nb09iamVjdEtleRIqChFvd25lcl9wZXJzb25fdXVpZBgFIAEoCVIPb3duZX'
+    'JQZXJzb25VdWlkEj8KHGFjY2VwdGVkX21lbWJlcl9wZXJzb25fdXVpZHMYBiADKAlSGWFjY2Vw'
+    'dGVkTWVtYmVyUGVyc29uVXVpZHM=');

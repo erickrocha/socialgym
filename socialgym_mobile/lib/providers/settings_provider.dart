@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socialgym_mobile/models/enums.dart';
 import 'package:socialgym_mobile/models/settings.dart';
+import 'package:socialgym_mobile/utils/weight_unit.dart';
 
 import '../services/base_service.dart';
 import '../services/grpc/grpc_settings_service.dart';
@@ -22,6 +23,17 @@ class SettingsProvider extends ChangeNotifier {
   ContextMenuPosition get contextMenuPosition =>
       _settings?.contextMenuPosition ?? ContextMenuPosition.left;
   String? get userLanguage => _settings?.language;
+
+  /// The unit weight should be displayed/entered in. Falls back to the
+  /// language-conventional unit ([WeightUnit.defaultForLanguageCode]) until
+  /// the person picks one explicitly in Settings; [currentLanguageCode]
+  /// should be the app's current *effective* locale (e.g.
+  /// `Localizations.localeOf(context).languageCode`), not just the stored
+  /// setting, so the default still tracks a device-derived language.
+  WeightUnit effectiveWeightUnit(String? currentLanguageCode) {
+    return _settings?.weightUnit ??
+        WeightUnit.defaultForLanguageCode(currentLanguageCode);
+  }
   bool get isLoaded => _isLoaded;
   bool get loading => _loading;
   bool get saving => _saving;
@@ -79,6 +91,14 @@ class SettingsProvider extends ChangeNotifier {
   /// Update the context menu position preference.
   Future<void> setContextMenuPosition(ContextMenuPosition contextMenuPosition) async {
     final updated = (_settings ?? Settings()).copyWith(contextMenuPosition: contextMenuPosition);
+    await applySettings(updated);
+  }
+
+  /// Explicitly override the weight unit. This always wins over the
+  /// language-derived default from then on, including across later language
+  /// changes.
+  Future<void> setWeightUnit(WeightUnit weightUnit) async {
+    final updated = (_settings ?? Settings()).copyWith(weightUnit: weightUnit);
     await applySettings(updated);
   }
 

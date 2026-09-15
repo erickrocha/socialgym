@@ -7,8 +7,10 @@ import '../../l10n/app_localizations.dart';
 import '../../models/workout_session.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/person_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../providers/workout_session_provider.dart';
 import '../../config/nav_section.dart';
+import '../../utils/weight_unit.dart';
 import '../../widgets/main_layout.dart';
 import 'workout_session_detail_page.dart';
 
@@ -33,6 +35,12 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
   _FilterPeriod _selectedPeriod = _FilterPeriod.lastWeek;
   DateTime? _customStart;
   DateTime? _customEnd;
+
+  /// `WorkoutSession.totalVolume` is always kilograms; this is only the
+  /// display unit.
+  WeightUnit get _unit => context.watch<SettingsProvider>().effectiveWeightUnit(
+        Localizations.localeOf(context).languageCode,
+      );
 
   @override
   void initState() {
@@ -209,7 +217,9 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
   // ── Main content ─────────────────────────────────────────────────────────────
 
   Widget _buildContent(AppLocalizations l10n, List<WorkoutSession> sessions, String? businessType) {
-    final totalVolume = sessions.fold<double>(0, (acc, s) => acc + s.totalVolume);
+    final totalVolume = _unit.fromKg(
+      sessions.fold<double>(0, (acc, s) => acc + s.totalVolume),
+    );
     final totalSets = sessions.fold<int>(0, (acc, s) => acc + s.totalSets);
     final avgDuration = sessions.isEmpty
         ? 0
@@ -286,7 +296,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
         const SizedBox(width: 8),
         _SummaryCard(
           icon: Icons.bar_chart,
-          value: '${totalVolume.toStringAsFixed(3)} kg',
+          value: '${totalVolume.toStringAsFixed(3)} ${_unit.label}',
           label: l10n.executionTotalVolume,
           color: AppColors.secondary,
         ),
@@ -307,7 +317,9 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
     // Limit chart to last 10 sessions for readability
     final displayed = sessions.length > 10 ? sessions.sublist(sessions.length - 10) : sessions;
 
-    final maxVolume = displayed.fold<double>(0, (m, s) => s.totalVolume > m ? s.totalVolume : m);
+    final maxVolume = _unit.fromKg(
+      displayed.fold<double>(0, (m, s) => s.totalVolume > m ? s.totalVolume : m),
+    );
     final maxY = maxVolume <= 0 ? 100.0 : (maxVolume * 1.2).ceilToDouble();
 
     final barGroups = displayed.asMap().entries.map((entry) {
@@ -317,7 +329,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
         x: idx,
         barRods: [
           BarChartRodData(
-            toY: session.totalVolume,
+            toY: _unit.fromKg(session.totalVolume),
             width: 16,
             color: AppColors.primaryFor(businessType),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
@@ -395,7 +407,7 @@ class _WorkoutSessionsPageState extends State<WorkoutSessionsPage> {
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final session = displayed[group.x.toInt()];
                       return BarTooltipItem(
-                        '${session.workoutName}\n${rod.toY.toStringAsFixed(0)} kg',
+                        '${session.workoutName}\n${rod.toY.toStringAsFixed(0)} ${_unit.label}',
                         const TextStyle(color: Colors.white, fontSize: 12),
                       );
                     },
@@ -579,6 +591,9 @@ class _SessionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
+    final unit = context.watch<SettingsProvider>().effectiveWeightUnit(
+      Localizations.localeOf(context).languageCode,
+    );
     final date = session.completedAtDate;
     final dateStr = date != null
         ? '${date.day.toString().padLeft(2, '0')}/'
@@ -636,7 +651,7 @@ class _SessionCard extends StatelessWidget {
                 ),
                 _StatChip(
                   icon: Icons.fitness_center,
-                  label: '${session.totalVolume.toStringAsFixed(3)} kg',
+                  label: '${unit.fromKg(session.totalVolume).toStringAsFixed(3)} ${unit.label}',
                   color: AppColors.third,
                 ),
               ],

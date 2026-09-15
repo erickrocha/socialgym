@@ -356,6 +356,175 @@ class TeamMemberPageResponse extends $pb.GeneratedMessage {
   $pb.PbList<$2.BusinessProfile> get receivedRequests => $_getList(3);
 }
 
+class TeamRosterRequest extends $pb.GeneratedMessage {
+  factory TeamRosterRequest({
+    $core.String? businessProfileUuid,
+  }) {
+    final result = create();
+    if (businessProfileUuid != null)
+      result.businessProfileUuid = businessProfileUuid;
+    return result;
+  }
+
+  TeamRosterRequest._();
+
+  factory TeamRosterRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory TeamRosterRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'TeamRosterRequest',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'grpc.team_member'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'businessProfileUuid')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TeamRosterRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TeamRosterRequest copyWith(void Function(TeamRosterRequest) updates) =>
+      super.copyWith((message) => updates(message as TeamRosterRequest))
+          as TeamRosterRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static TeamRosterRequest create() => TeamRosterRequest._();
+  @$core.override
+  TeamRosterRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static TeamRosterRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<TeamRosterRequest>(create);
+  static TeamRosterRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get businessProfileUuid => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set businessProfileUuid($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasBusinessProfileUuid() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBusinessProfileUuid() => $_clearField(1);
+}
+
+class TeamRosterResponse extends $pb.GeneratedMessage {
+  factory TeamRosterResponse({
+    $core.int? businessProfileId,
+    $core.String? businessProfileUuid,
+    $core.String? businessProfileName,
+    $core.String? businessProfileLogoObjectKey,
+    $core.String? ownerPersonUuid,
+    $core.Iterable<$core.String>? acceptedMemberPersonUuids,
+  }) {
+    final result = create();
+    if (businessProfileId != null) result.businessProfileId = businessProfileId;
+    if (businessProfileUuid != null)
+      result.businessProfileUuid = businessProfileUuid;
+    if (businessProfileName != null)
+      result.businessProfileName = businessProfileName;
+    if (businessProfileLogoObjectKey != null)
+      result.businessProfileLogoObjectKey = businessProfileLogoObjectKey;
+    if (ownerPersonUuid != null) result.ownerPersonUuid = ownerPersonUuid;
+    if (acceptedMemberPersonUuids != null)
+      result.acceptedMemberPersonUuids.addAll(acceptedMemberPersonUuids);
+    return result;
+  }
+
+  TeamRosterResponse._();
+
+  factory TeamRosterResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory TeamRosterResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'TeamRosterResponse',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'grpc.team_member'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'businessProfileId')
+    ..aOS(2, _omitFieldNames ? '' : 'businessProfileUuid')
+    ..aOS(3, _omitFieldNames ? '' : 'businessProfileName')
+    ..aOS(4, _omitFieldNames ? '' : 'businessProfileLogoObjectKey')
+    ..aOS(5, _omitFieldNames ? '' : 'ownerPersonUuid')
+    ..pPS(6, _omitFieldNames ? '' : 'acceptedMemberPersonUuids')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TeamRosterResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TeamRosterResponse copyWith(void Function(TeamRosterResponse) updates) =>
+      super.copyWith((message) => updates(message as TeamRosterResponse))
+          as TeamRosterResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static TeamRosterResponse create() => TeamRosterResponse._();
+  @$core.override
+  TeamRosterResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static TeamRosterResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<TeamRosterResponse>(create);
+  static TeamRosterResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get businessProfileId => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set businessProfileId($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasBusinessProfileId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBusinessProfileId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get businessProfileUuid => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set businessProfileUuid($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasBusinessProfileUuid() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBusinessProfileUuid() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get businessProfileName => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set businessProfileName($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasBusinessProfileName() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearBusinessProfileName() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get businessProfileLogoObjectKey => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set businessProfileLogoObjectKey($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasBusinessProfileLogoObjectKey() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearBusinessProfileLogoObjectKey() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get ownerPersonUuid => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set ownerPersonUuid($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasOwnerPersonUuid() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearOwnerPersonUuid() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $pb.PbList<$core.String> get acceptedMemberPersonUuids => $_getList(5);
+}
+
 const $core.bool _omitFieldNames =
     $core.bool.fromEnvironment('protobuf.omit_field_names');
 const $core.bool _omitMessageNames =

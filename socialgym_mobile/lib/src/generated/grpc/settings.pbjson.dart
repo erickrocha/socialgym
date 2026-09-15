@@ -89,6 +89,7 @@ const Setting$json = {
     {'1': 'home_page', '3': 9, '4': 1, '5': 9, '10': 'homePage'},
     {'1': 'created_at', '3': 10, '4': 1, '5': 9, '10': 'createdAt'},
     {'1': 'updated_at', '3': 11, '4': 1, '5': 9, '10': 'updatedAt'},
+    {'1': 'weight_unit', '3': 12, '4': 1, '5': 9, '10': 'weightUnit'},
   ],
 };
 
@@ -100,4 +101,4 @@ final $typed_data.Uint8List settingDescriptor = $convert.base64Decode(
     'lvbnNfZW5hYmxlZBgHIAEoCFIUbm90aWZpY2F0aW9uc0VuYWJsZWQSMgoVY29udGV4dF9tZW51'
     'X3Bvc2l0aW9uGAggASgJUhNjb250ZXh0TWVudVBvc2l0aW9uEhsKCWhvbWVfcGFnZRgJIAEoCV'
     'IIaG9tZVBhZ2USHQoKY3JlYXRlZF9hdBgKIAEoCVIJY3JlYXRlZEF0Eh0KCnVwZGF0ZWRfYXQY'
-    'CyABKAlSCXVwZGF0ZWRBdA==');
+    'CyABKAlSCXVwZGF0ZWRBdBIfCgt3ZWlnaHRfdW5pdBgMIAEoCVIKd2VpZ2h0VW5pdA==');

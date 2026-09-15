@@ -7,6 +7,7 @@ import '../../models/exercise.dart';
 import '../../models/workout.dart';
 import '../../models/workout_session.dart';
 import '../../providers/person_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../widgets/workout/completed_sets_grouped_view.dart';
 import 'workout_execution_page.dart';
 
@@ -67,6 +68,9 @@ class WorkoutSessionDetailPage extends StatelessWidget {
     final ownerId = personProvider.activeAuthorId;
     final ownerUuid = personProvider.activeAuthorUuid;
     final businessType = personProvider.activeBusinessProfile?.businessType;
+    final unit = context.watch<SettingsProvider>().effectiveWeightUnit(
+      Localizations.localeOf(context).languageCode,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -120,7 +124,8 @@ class WorkoutSessionDetailPage extends StatelessWidget {
                           WhiteChip(icon: Icons.repeat, label: '${session.totalSets} sets'),
                           WhiteChip(
                             icon: Icons.fitness_center,
-                            label: '${session.totalVolume.toStringAsFixed(3)} kg',
+                            label:
+                                '${unit.fromKg(session.totalVolume).toStringAsFixed(3)} ${unit.label}',
                           ),
                         ],
                       ),

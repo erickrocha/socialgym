@@ -6,6 +6,16 @@ import "person.proto";
 service FriendService {
   rpc GetFriends (FriendsRequest) returns (FriendsResponse);
   rpc GetFriendPage (FriendPageRequest) returns (FriendPageResponse);
+  rpc SearchFriends (SearchFriendsRequest) returns (SearchFriendsResponse);
+  // Mutations mirror the REST endpoints under /workout/api/friends. The caller
+  // (sender / accepter / canceller / remover) is always taken from the auth
+  // token, never the body — exactly as the REST controller uses
+  // current_user.person_id.
+  rpc SendFriendRequest (FriendRequestRequest) returns (Friend);
+  rpc AcceptFriendRequest (FriendRequestRequest) returns (Friend);
+  rpc DenyFriendRequest (FriendRequestRequest) returns (Friend);
+  rpc CancelFriendRequest (FriendRequestRequest) returns (Friend);
+  rpc RemoveFriend (FriendRequestRequest) returns (RemoveFriendResponse);
 }
 
 message FriendsRequest {
@@ -24,10 +34,24 @@ message Friend {
   string person_uuid = 4;
   int32 friend_id = 5;
   string friend_uuid = 6;
+  string status = 7;
+}
+
+// person_id is the other party in the friendship; the caller is the
+// authenticated user resolved from the bearer token.
+message FriendRequestRequest {
+  int32 person_id = 1;
+}
+
+message RemoveFriendResponse {
+  bool success = 1;
 }
 
 message FriendPageRequest {
-  int32 person_id = 1;
+  int32 person_id = 1;          // optional override; when <= 0 the caller's token is used
+  optional double latitude = 2;
+  optional double longitude = 3;
+  optional double radius_km = 4;
 }
 
 message FriendPageResponse {
@@ -35,4 +59,18 @@ message FriendPageResponse {
   repeated person.Person friends = 2;
   repeated person.Person receive_requests = 3;
   repeated person.Person sent_requests = 4;
+}
+
+// Combined name/location search over people the caller could befriend.
+// person_id is taken from the auth token.
+message SearchFriendsRequest {
+  string query = 1;
+  optional double latitude = 2;
+  optional double longitude = 3;
+  optional double radius_km = 4;
+  int32 limit = 5;             // 0 -> server default (50)
+}
+
+message SearchFriendsResponse {
+  repeated person.Person people = 1;
 }

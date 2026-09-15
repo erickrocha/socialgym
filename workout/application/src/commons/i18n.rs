@@ -108,6 +108,7 @@ pub enum ErrorKey {
     FriendAcceptRequestFailed,
     FriendDenyRequestFailed,
     FriendCancelRequestFailed,
+    FriendRemoveFailed,
 
     TeamMemberNotFound,
     TeamMemberSendRequestFailed,
@@ -177,6 +178,7 @@ impl ErrorKey {
             ErrorKey::FriendAcceptRequestFailed => "FriendAcceptRequestFailed",
             ErrorKey::FriendDenyRequestFailed => "FriendDenyRequestFailed",
             ErrorKey::FriendCancelRequestFailed => "FriendCancelRequestFailed",
+            ErrorKey::FriendRemoveFailed => "FriendRemoveFailed",
             ErrorKey::TeamMemberNotFound => "TeamMemberNotFound",
             ErrorKey::TeamMemberSendRequestFailed => "TeamMemberSendRequestFailed",
             ErrorKey::TeamMemberAcceptRequestFailed => "TeamMemberAcceptRequestFailed",
@@ -242,6 +244,7 @@ impl ErrorKey {
             ErrorKey::FriendAcceptRequestFailed => "friend-accept-request-failed",
             ErrorKey::FriendDenyRequestFailed => "friend-deny-request-failed",
             ErrorKey::FriendCancelRequestFailed => "friend-cancel-request-failed",
+            ErrorKey::FriendRemoveFailed => "friend-remove-failed",
             ErrorKey::TeamMemberNotFound => "team-member-not-found",
             ErrorKey::TeamMemberSendRequestFailed => "team-member-send-request-failed",
             ErrorKey::TeamMemberAcceptRequestFailed => "team-member-accept-request-failed",
@@ -301,7 +304,7 @@ mod tests {
         Locale::Dutch,
     ];
 
-    const ALL_KEYS: [ErrorKey; 41] = [
+    const ALL_KEYS: [ErrorKey; 42] = [
         ErrorKey::SignUpUserFailed,
         ErrorKey::AuthHeaderMissing,
         ErrorKey::UnknowAuthError,
@@ -331,6 +334,7 @@ mod tests {
         ErrorKey::FriendAcceptRequestFailed,
         ErrorKey::FriendDenyRequestFailed,
         ErrorKey::FriendCancelRequestFailed,
+        ErrorKey::FriendRemoveFailed,
         ErrorKey::TeamMemberNotFound,
         ErrorKey::TeamMemberSendRequestFailed,
         ErrorKey::TeamMemberAcceptRequestFailed,

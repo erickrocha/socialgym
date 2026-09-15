@@ -7,11 +7,13 @@ import { fetchFriendProfile } from '../../service/timeline/index.js';
 import defaultAvatarFemale from '../../assets/img/avatar_female.png';
 import defaultAvatarMale from '../../assets/img/avatar_male.png';
 import defaultCover from '../../assets/img/cover_foto.png';
+import { kgToDisplay, resolveWeightUnit, weightUnitLabel } from '../../commons/library/weightUnit.js';
 import './PersonProfile.scss';
 
 const PersonProfile = () => {
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
     const { person } = useSelector((state) => state.person);
+    const weightUnit = useSelector((state) => resolveWeightUnit(state.settings.settings.weightUnit, i18n.language));
     const navigate = useNavigate();
     const { id } = useParams();
 
@@ -77,7 +79,7 @@ const PersonProfile = () => {
                                 </section>
                                 <section>
                                     <h3>{t('personProfile.physicalStats')}</h3>
-                                    <p><strong>{t('personProfile.weight')}:</strong> {friend?.personInfo?.weight || '-'} kg</p>
+                                    <p><strong>{t('personProfile.weight')}:</strong> {friend?.personInfo?.weight != null ? kgToDisplay(friend.personInfo.weight, weightUnit) : '-'} {weightUnitLabel(weightUnit)}</p>
                                     <p><strong>{t('personProfile.height')}:</strong> {friend?.personInfo?.height || '-'} cm</p>
                                     <p><strong>{t('personProfile.dateOfBirth')}:</strong> {friend?.dateOfBirth || '-'}</p>
                                     <p><strong>{t('personProfile.gender')}:</strong> {friend?.gender || '-'}</p>

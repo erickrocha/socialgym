@@ -4,7 +4,9 @@ import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/person_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../providers/workout_session_provider.dart';
+import '../../utils/weight_unit.dart';
 import '../home/post_composer_page.dart';
 
 class WorkoutCompleteDialog extends StatefulWidget {
@@ -18,6 +20,11 @@ class WorkoutCompleteDialog extends StatefulWidget {
 
 class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
   bool _sessionSaved = false;
+
+  /// `_getTotalVolume()` is always kilograms; this is only the display unit.
+  WeightUnit get _unit => context.read<SettingsProvider>().effectiveWeightUnit(
+        Localizations.localeOf(context).languageCode,
+      );
   String _formatDuration(int seconds) {
     final mins = seconds ~/ 60;
     final secs = seconds % 60;
@@ -114,12 +121,12 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
     final name = widget.workoutSession['workoutName'] as String? ?? '';
     final duration = widget.workoutSession['duration'] as int? ?? 0;
     final sets = _getCompletedSets();
-    final volume = _getTotalVolume().toStringAsFixed(3);
+    final volume = _unit.fromKg(_getTotalVolume()).toStringAsFixed(3);
     return '💪 ${l10n.feedShareWorkoutSummary}\n'
         '🏋️ $name\n'
         '⏱️ ${l10n.executionDuration}: ${_formatDuration(duration)}\n'
         '✅ ${l10n.executionSetsCompleted}: $sets\n'
-        '📊 ${l10n.executionTotalVolume}: $volume ${l10n.workoutWeightUnit}\n'
+        '📊 ${l10n.executionTotalVolume}: $volume ${_unit.label}\n'
         '#SocialGym #Workout #Fitness';
   }
 
@@ -214,8 +221,8 @@ class _WorkoutCompleteDialogState extends State<WorkoutCompleteDialog> {
                           Container(width: 1, height: 48, color: Colors.grey.withAlpha(50)),
                           _StatItem(
                             icon: '🏋️',
-                            value: _getTotalVolume().toStringAsFixed(3),
-                            label: '${l10n.executionTotalVolume} (${l10n.workoutWeightUnit})',
+                            value: _unit.fromKg(_getTotalVolume()).toStringAsFixed(3),
+                            label: '${l10n.executionTotalVolume} (${_unit.label})',
                           ),
                         ],
                       ),

@@ -264,6 +264,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsContextMenuPositionBottom => 'Base';
 
   @override
+  String get settingsWeightUnit => 'Unidade de peso';
+
+  @override
+  String get settingsWeightUnitKilograms => 'Quilogramas (kg)';
+
+  @override
+  String get settingsWeightUnitPounds => 'Libras (lbs)';
+
+  @override
   String get settingsHomePage => 'Página inicial';
 
   @override
@@ -1921,6 +1930,15 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get settingsContextMenuPositionBottom => 'Base';
+
+  @override
+  String get settingsWeightUnit => 'Unidade de peso';
+
+  @override
+  String get settingsWeightUnitKilograms => 'Quilogramas (kg)';
+
+  @override
+  String get settingsWeightUnitPounds => 'Libras (lbs)';
 
   @override
   String get settingsHomePage => 'Página inicial';

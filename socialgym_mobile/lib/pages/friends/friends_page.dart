@@ -14,7 +14,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/friends_provider.dart';
 import '../../config/nav_section.dart';
 import '../../providers/person_provider.dart';
-import '../../services/friends_service.dart';
+import '../../services/grpc/grpc_friend_service.dart';
 import '../../utils/location_utils.dart';
 import '../../widgets/main_layout.dart';
 import '../profile/person_profile_page.dart';
@@ -903,8 +903,7 @@ class _FindFriendsTabState extends State<_FindFriendsTab> {
 
     setState(() => _searching = true);
     try {
-      final results = await FriendsService.searchFriends(
-        token: token,
+      final results = await GrpcFriendService.searchFriends(
         query: query.isEmpty ? null : query,
         latitude: hasLocation ? _position!.latitude : null,
         longitude: hasLocation ? _position!.longitude : null,

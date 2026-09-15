@@ -84,6 +84,7 @@ mod tests {
                 friend_id: 20,
                 person_uuid: "me".to_string(),
                 friend_uuid: "friend-1".to_string(),
+                status: String::new(),
             },
             Friend {
                 id: 2,
@@ -92,6 +93,7 @@ mod tests {
                 friend_id: 10,
                 person_uuid: "friend-2".to_string(),
                 friend_uuid: "me".to_string(),
+                status: String::new(),
             },
             Friend {
                 id: 3,
@@ -100,6 +102,7 @@ mod tests {
                 friend_id: 20,
                 person_uuid: "me".to_string(),
                 friend_uuid: "friend-1".to_string(),
+                status: String::new(),
             },
         ];
 

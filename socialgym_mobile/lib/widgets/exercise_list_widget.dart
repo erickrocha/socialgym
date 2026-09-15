@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../models/exercise.dart';
 import '../models/visibility_option.dart';
 import '../providers/person_provider.dart';
+import '../providers/settings_provider.dart';
 
 class ExerciseListWidget extends StatefulWidget {
   final List<Exercise> exercises;
@@ -227,6 +228,10 @@ class _ReorderableExerciseItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final visibility = VisibilityOption.fromApiValue(exercise.visibility);
     final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
+    final isCardio = exercise.category.toLowerCase() == 'cardio';
+    final unit = context.watch<SettingsProvider>().effectiveWeightUnit(
+      Localizations.localeOf(context).languageCode,
+    );
     final content = Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -329,7 +334,9 @@ class _ReorderableExerciseItem extends StatelessWidget {
                       Flexible(
                         child: _DetailChip(
                           label: l10n.workoutWeight,
-                          value: '${exercise.weight} ${l10n.workoutWeightUnit}',
+                          value: isCardio
+                              ? '${exercise.weight}'
+                              : '${unit.fromKg(exercise.weight)} ${unit.label}',
                         ),
                       ),
                     ],

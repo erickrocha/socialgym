@@ -10,7 +10,7 @@ use business::domain::{
     team_member::TeamMember as DomainTeamMember,
 };
 use chrono::NaiveDateTime;
-use business::domain::enums::{Difficulty, InviteStatus, Position, ProfileType};
+use business::domain::enums::{Difficulty, InviteStatus, Position, ProfileType, WeightUnit};
 use crate::proto;
 
 // ---------------------------------------------------------------------------
@@ -242,6 +242,7 @@ impl Mapper<DomainFriend, proto::friend::Friend> for FriendMapper {
             person_uuid: t.person_uuid,
             friend_id: t.friend_id,
             friend_uuid: t.friend_uuid,
+            status: t.status.as_str().to_string(),
         }
     }
 
@@ -255,7 +256,11 @@ impl Mapper<DomainFriend, proto::friend::Friend> for FriendMapper {
             friend_uuid: u.friend_uuid,
             created_at: None,
             updated_at: None,
-            status: InviteStatus::Pending,
+            status: if u.status.is_empty() {
+                InviteStatus::Pending
+            } else {
+                InviteStatus::from_string(&u.status)
+            },
         }
     }
 }
@@ -491,6 +496,7 @@ impl Mapper<DomainSettings, proto::settings::Setting> for SettingsMapper {
             notifications_enabled: t.notifications_enabled,
             context_menu_position: t.context_menu_position.to_string(),
             home_page: t.home_page,
+            weight_unit: t.weight_unit.map(|u| u.to_string()).unwrap_or_default(),
             created_at: t.created_at.map(|d| d.to_string()).unwrap_or_default(),
             updated_at: t.updated_at.map(|d| d.to_string()).unwrap_or_default(),
         }
@@ -508,6 +514,11 @@ impl Mapper<DomainSettings, proto::settings::Setting> for SettingsMapper {
             notifications_enabled: u.notifications_enabled,
             context_menu_position: Position::from_string(&u.context_menu_position),
             home_page: u.home_page,
+            weight_unit: if u.weight_unit.is_empty() {
+                None
+            } else {
+                Some(WeightUnit::from_string(&u.weight_unit))
+            },
             created_at: NaiveDateTime::parse_from_str(&u.created_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
             updated_at: NaiveDateTime::parse_from_str(&u.updated_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
         }

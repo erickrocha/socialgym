@@ -240,11 +240,6 @@ impl PersonService for GrpcPersonService {
             .ok_or_else(|| Status::not_found("PersonInfo not found"))?;
 
         let domain = PersonInfoMapper::domain(payload);
-        if domain.weight.is_some() || domain.height.is_some() {
-            ConsentUseCase::require_current(&self.conn, person_id, legal_documents::HEALTH_DATA)
-                .await
-                .map_err(|_| Status::permission_denied("health_data consent is required"))?;
-        }
 
         let updated = PersonInfoUseCase::update(&self.conn, existing.id, domain)
             .await

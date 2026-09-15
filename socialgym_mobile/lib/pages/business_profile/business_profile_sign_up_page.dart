@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:socialgym_mobile/services/grpc/grpc_person_service.dart';
 
 import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
@@ -84,18 +83,26 @@ class _BusinessProfileSignUpPageState extends State<BusinessProfileSignUpPage> {
         ),
       );
 
-      final refreshedPerson = await GrpcPersonService.getPerson(id: created.ownerId);
-      final index = refreshedPerson.businessProfiles.indexWhere((p) => p.uuid == created.uuid);
+      final refreshed = await personProvider.fetchMe();
+      if (!refreshed || personProvider.person == null) {
+        throw Exception('Failed to refresh person after creating business profile');
+      }
+      final index = personProvider.person!.businessProfiles.indexWhere(
+        (p) => p.uuid == created.uuid,
+      );
 
       if (index == -1) {
         throw Exception('Created business profile not found in refreshed profile list');
       }
 
-      await personProvider.switchProfile(
+      final newAuth = await personProvider.switchProfile(
         index,
         token,
         onTokenIssued: authProvider.applySwitchedToken,
       );
+      if (newAuth == null) {
+        throw Exception(personProvider.error ?? 'Failed to activate business profile');
+      }
       await businessProfileProvider.load(uuid: created.uuid);
 
       if (!mounted) return;

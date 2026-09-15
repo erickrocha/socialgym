@@ -111,6 +111,7 @@ impl RegistrationUseCase {
             true,
             Position::Left,
             "Feed".to_string(),
+            None,
         ))
         .insert(txn)
         .await

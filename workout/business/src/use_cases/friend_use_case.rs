@@ -28,7 +28,7 @@ impl FriendUseCase {
                 sender_id,
                 receiver_id
             );
-            return Err(BusinessError::new(
+            return Err(BusinessError::validation(
                 "Cannot send friend request to yourself".to_string(),
             ));
         }
@@ -68,7 +68,7 @@ impl FriendUseCase {
                             sender_id,
                             receiver_id
                         );
-                        Err(BusinessError::new(
+                        Err(BusinessError::conflict(
                             "A pending friend request already exists".to_string(),
                         ))
                     }
@@ -79,16 +79,34 @@ impl FriendUseCase {
                         sender_id,
                         receiver_id
                     );
-                    Err(BusinessError::new("You are already friends".to_string()))
+                    Err(BusinessError::conflict("You are already friends".to_string()))
                 }
                 InviteStatus::Rejected | InviteStatus::Cancelled => {
                     log::info!(
-                        "Previous request was '{}'. Allowing new friend request from {:?} to {:?}.",
+                        "Previous request was '{}'. Re-opening it as a new request from {:?} to {:?}.",
                         existing_request.status,
                         sender_id,
                         receiver_id
                     );
-                    Self::create_new_request(db, sender_id, receiver_id).await
+                    // Reuse the existing row rather than inserting a second one:
+                    // `(person_id, friend_id)` is unique. If the previous request
+                    // ran the other way, flip both id and uuid so the sender is
+                    // the person now asking.
+                    let mut req = existing_request;
+                    if req.person_id != sender_id {
+                        std::mem::swap(&mut req.person_id, &mut req.friend_id);
+                        std::mem::swap(&mut req.person_uuid, &mut req.friend_uuid);
+                    }
+                    req.status = InviteStatus::Pending.as_str().to_string();
+                    let result = FriendGateway::update(db, FriendEntityMapper::from_model(req))
+                        .await
+                        .map_err(|e| {
+                            BusinessError::new(format!(
+                                "Error re-opening friend request: {:?}",
+                                e
+                            ))
+                        })?;
+                    Ok(FriendEntityMapper::from_model(result))
                 }
             };
         }
@@ -103,11 +121,11 @@ impl FriendUseCase {
     ) -> Result<Friend, BusinessError> {
         let sender = PersonGateway::find_by_id(db, sender_id)
             .await
-            .ok_or_else(|| BusinessError::new("Sender person not found".to_string()))?;
+            .ok_or_else(|| BusinessError::not_found("Sender person not found".to_string()))?;
 
         let receiver = PersonGateway::find_by_id(db, receiver_id)
             .await
-            .ok_or_else(|| BusinessError::new("Receiver person not found".to_string()))?;
+            .ok_or_else(|| BusinessError::not_found("Receiver person not found".to_string()))?;
 
         let friend_request = Friend::new(
             sender_id,
@@ -139,13 +157,11 @@ impl FriendUseCase {
         );
         let result =
             Self::update_friend_request(db, person_id, friend_id, InviteStatus::Accepted).await;
-        if result.is_err() {
-            log::error!("Error accepting friend request: {:?}", result.err());
-            return Err(BusinessError::new(
-                "Error accepting friend request".to_string(),
-            ));
+        if let Err(e) = &result {
+            log::error!("Error accepting friend request: {:?}", e);
+        } else {
+            log::info!("Friend request accepted successfully: {:?}", result);
         }
-        log::info!("Friend request accepted successfully: {:?}", result);
         result
     }
 
@@ -169,7 +185,7 @@ impl FriendUseCase {
                 person_id,
                 friend_id
             );
-            return Err(BusinessError::new("Friend request not found".to_string()));
+            return Err(BusinessError::not_found("Friend request not found".to_string()));
         }
         let mut friend_request = friend_request.unwrap();
         friend_request.status = status.as_str().to_string();
@@ -197,13 +213,11 @@ impl FriendUseCase {
         );
         let result =
             Self::update_friend_request(db, person_id, friend_id, InviteStatus::Rejected).await;
-        if result.is_err() {
-            log::error!("Error denying friend request: {:?}", result.err());
-            return Err(BusinessError::new(
-                "Error denying friend request".to_string(),
-            ));
+        if let Err(e) = &result {
+            log::error!("Error denying friend request: {:?}", e);
+        } else {
+            log::info!("Friend request denied successfully: {:?}", result);
         }
-        log::info!("Friend request denied successfully: {:?}", result);
         result
     }
 
@@ -218,14 +232,42 @@ impl FriendUseCase {
         );
         let result =
             Self::update_friend_request(db, person_id, friend_id, InviteStatus::Cancelled).await;
-        if result.is_err() {
-            log::error!("Error cancelling friend request: {:?}", result.err());
-            return Err(BusinessError::new(
-                "Error cancelling friend request".to_string(),
-            ));
+        if let Err(e) = &result {
+            log::error!("Error cancelling friend request: {:?}", e);
+        } else {
+            log::info!("Friend request cancelled successfully: {:?}", result);
         }
-        log::info!("Friend request cancelled successfully: {:?}", result);
         result
+    }
+
+    pub async fn remove_friend(
+        db: &DbConn,
+        person_id: i32,
+        friend_id: i32,
+    ) -> Result<(), BusinessError> {
+        log::info!(
+            "Attempting to remove friendship between person id: {:?} and friend id {:?}",
+            person_id,
+            friend_id
+        );
+        match FriendGateway::delete_friendship(db, person_id, friend_id).await {
+            Ok(0) => {
+                log::warn!(
+                    "No friendship to remove between {:?} and {:?}",
+                    person_id,
+                    friend_id
+                );
+                Err(BusinessError::not_found("Friendship not found".to_string()))
+            }
+            Ok(_) => {
+                log::info!("Friendship removed successfully");
+                Ok(())
+            }
+            Err(e) => {
+                log::error!("Error removing friend: {:?}", e);
+                Err(BusinessError::new("Error removing friend".to_string()))
+            }
+        }
     }
 
     pub async fn find_all_friend(

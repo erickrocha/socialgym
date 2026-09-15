@@ -130,6 +130,7 @@ impl Modify for SecurityAddon {
 		http::friend_controller::accept_friend_request,
 		http::friend_controller::deny_friend_request,
 		http::friend_controller::cancel_friend_request,
+		http::friend_controller::remove_friend,
 		http::friend_controller::get_friend,
 		http::team_member_controller::get_team_members,
 		http::team_member_controller::get_team_member,

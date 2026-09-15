@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/settings_provider.dart';
 import '../../widgets/workout/completed_sets_grouped_view.dart';
 
 /// Full-page, read-only view of every set completed so far in the current
@@ -16,8 +18,11 @@ class CompletedSetsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final unit = context.watch<SettingsProvider>().effectiveWeightUnit(
+      Localizations.localeOf(context).languageCode,
+    );
 
-    final totalVolume = sets.fold<double>(0, (acc, s) {
+    final totalVolumeKg = sets.fold<double>(0, (acc, s) {
       if ((s['category'] as String? ?? '').toLowerCase() == 'cardio') {
         return acc;
       }
@@ -25,6 +30,7 @@ class CompletedSetsPage extends StatelessWidget {
       final r = (s['repsOrDuration'] as num?)?.toInt() ?? 0;
       return acc + w * r;
     });
+    final totalVolume = unit.fromKg(totalVolumeKg);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -81,7 +87,7 @@ class CompletedSetsPage extends StatelessWidget {
                           ),
                           WhiteChip(
                             icon: Icons.fitness_center,
-                            label: '${totalVolume.toStringAsFixed(0)} ${l10n.workoutWeightUnit}',
+                            label: '${totalVolume.toStringAsFixed(0)} ${unit.label}',
                           ),
                         ],
                       ),

@@ -30,6 +30,8 @@ mod m20260827_000001_create_table_consent;
 mod m20260827_000002_create_table_data_export;
 mod m20260827_000003_create_table_user_role;
 mod m20260831_000001_add_status_to_workout;
+mod m20260909_000001_fix_friends_uniques;
+mod m20260915_000001_add_settings_weight_unit;
 
 pub struct Migrator;
 
@@ -69,6 +71,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20260827_000002_create_table_data_export::Migration),
             Box::new(m20260827_000003_create_table_user_role::Migration),
             Box::new(m20260831_000001_add_status_to_workout::Migration),
+            Box::new(m20260909_000001_fix_friends_uniques::Migration),
+            Box::new(m20260915_000001_add_settings_weight_unit::Migration),
         ]
     }
 }

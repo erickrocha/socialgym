@@ -34,4 +34,7 @@ message Setting{
   string home_page = 9;
   string created_at = 10;
   string updated_at = 11;
+  // "Kilograms" | "Pounds" | "" (empty means no explicit override — derive
+  // the effective unit from `language` instead).
+  string weight_unit = 12;
 }
