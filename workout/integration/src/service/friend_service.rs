@@ -55,13 +55,32 @@ impl FriendService for GrpcFriendService {
 		&self,
 		request: Request<FriendsRequest>,
 	) -> Result<Response<FriendsResponse>, Status> {
+		let caller_id = Self::caller_person_id(&request)?;
 		let payload = request.into_inner();
 
 		if payload.id <= 0 && payload.uuid.is_empty() {
 			return Err(Status::invalid_argument("either id or uuid must be informed"));
 		}
+		if payload.id > 0 {
+			business::commons::authorization::ensure_owns(payload.id, caller_id)
+				.map_err(to_status)?;
+		}
 
-		let friends = FriendUseCase::find_all_friend(&self.conn, payload.id)
+		let person_id = if payload.id > 0 {
+			payload.id
+		} else {
+			let person = PersonUseCase::find_by_uuid(&self.conn, payload.uuid)
+				.await
+				.map_err(|e| Status::not_found(e.message))?;
+			business::commons::authorization::ensure_owns(
+				person.id.ok_or_else(|| Status::internal("person id missing"))?,
+				caller_id,
+			)
+			.map_err(to_status)?;
+			person.id.unwrap()
+		};
+
+		let friends = FriendUseCase::find_all_friend(&self.conn, person_id)
 			.await
 			.map_err(|e| Status::internal(e.message))?;
 
@@ -74,12 +93,15 @@ impl FriendService for GrpcFriendService {
 		&self,
 		request: Request<FriendPageRequest>,
 	) -> Result<Response<FriendPageResponse>, Status> {
+		let caller_id = Self::caller_person_id(&request)?;
 		// `person_id` in the body is an optional override; normally the caller's
 		// token identifies them, mirroring REST's `GET /workout/api/friends`.
 		let person_id = if request.get_ref().person_id > 0 {
+			business::commons::authorization::ensure_owns(request.get_ref().person_id, caller_id)
+				.map_err(to_status)?;
 			request.get_ref().person_id
 		} else {
-			Self::caller_person_id(&request)?
+			caller_id
 		};
 		let payload = request.into_inner();
 		let radius_km = payload.radius_km.unwrap_or(200.0);

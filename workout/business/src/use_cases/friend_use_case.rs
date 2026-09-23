@@ -188,6 +188,24 @@ impl FriendUseCase {
             return Err(BusinessError::not_found("Friend request not found".to_string()));
         }
         let mut friend_request = friend_request.unwrap();
+        let current_status = InviteStatus::from_string(&friend_request.status);
+        if current_status != InviteStatus::Pending {
+            return Err(BusinessError::conflict(
+                "Friend request is not pending".to_string(),
+            ));
+        }
+        let actor_is_sender = friend_request.person_id == person_id;
+        let actor_is_receiver = friend_request.friend_id == person_id;
+        let authorized = match status {
+            InviteStatus::Cancelled => actor_is_sender,
+            InviteStatus::Accepted | InviteStatus::Rejected => actor_is_receiver,
+            InviteStatus::Pending => false,
+        };
+        if !authorized {
+            return Err(BusinessError::forbidden(
+                "You are not authorized to change this friend request",
+            ));
+        }
         friend_request.status = status.as_str().to_string();
         let result =
             FriendGateway::update(db, FriendEntityMapper::from_model(friend_request)).await;
@@ -288,6 +306,35 @@ impl FriendUseCase {
 
         log::info!("Friends found successfully: {:?}", friend_list);
         Ok(friend_list)
+    }
+
+    pub async fn ensure_accepted_friend(
+        db: &DbConn,
+        person_id: i32,
+        friend_id: i32,
+    ) -> Result<(), BusinessError> {
+        if person_id == friend_id {
+            return Err(BusinessError::validation(
+                "Cannot access yourself through the friend profile path",
+            ));
+        }
+
+        let relationship = FriendGateway::find_friend_request(db, person_id, friend_id)
+            .await
+            .map_err(|e| BusinessError::infrastructure(e.to_string()))?;
+        match relationship {
+            Some(relationship)
+                if InviteStatus::from_string(&relationship.status) == InviteStatus::Accepted =>
+            {
+                Ok(())
+            }
+            Some(_) => Err(BusinessError::forbidden(
+                "An accepted friendship is required to view this profile",
+            )),
+            None => Err(BusinessError::forbidden(
+                "An accepted friendship is required to view this profile",
+            )),
+        }
     }
 
     fn normalize_accepted_friendships(records: Vec<friends::FriendsEntity>, person_id: i32) -> Vec<Friend> {

@@ -35,6 +35,23 @@ impl GrpcPersonService {
     }
 }
 
+async fn require_health_data_consent(
+    conn: &DatabaseConnection,
+    person: &DomainPerson,
+    person_id: i32,
+) -> Result<(), Status> {
+    let exposes_health_data = person
+        .person_info
+        .as_ref()
+        .is_some_and(|info| info.weight.is_some() || info.height.is_some());
+    if exposes_health_data {
+        ConsentUseCase::require_current(conn, person_id, legal_documents::HEALTH_DATA)
+            .await
+            .map_err(|_| Status::permission_denied("health_data consent is required"))?;
+    }
+    Ok(())
+}
+
 /// Pulls the authenticated caller's `person_id` out of the request extensions
 /// inserted by `GrpcAuthLayer`. Every RPC on this service runs behind that
 /// layer, which either populates this extension on success or short-circuits
@@ -77,6 +94,7 @@ impl PersonService for GrpcPersonService {
         &self,
         request: Request<PersonIdRequest>,
     ) -> Result<Response<PersonResponse>, Status> {
+        let actor_id = require_person_id(&request)?;
         let req = request.into_inner();
 
         match req.identifier {
@@ -84,9 +102,12 @@ impl PersonService for GrpcPersonService {
                 if id <= 0 {
                     return Err(Status::invalid_argument("id must be a positive integer"));
                 }
+                business::commons::authorization::ensure_owns(id, actor_id)
+                    .map_err(crate::infrastructure::utils::business_status)?;
                 let person = PersonUseCase::get(&self.conn, id)
                     .await
                     .map_err(|e| Status::internal(e.message))?;
+                require_health_data_consent(&self.conn, &person, actor_id).await?;
 
                 let grpc_person = PersonMapper::response(person);
 
@@ -102,6 +123,12 @@ impl PersonService for GrpcPersonService {
                 let person = PersonUseCase::find_by_uuid(&self.conn, uuid)
                     .await
                     .map_err(|e| Status::internal(e.message))?;
+                business::commons::authorization::ensure_owns(
+                    person.id.ok_or_else(|| Status::internal("person id missing"))?,
+                    actor_id,
+                )
+                .map_err(crate::infrastructure::utils::business_status)?;
+                require_health_data_consent(&self.conn, &person, actor_id).await?;
                 let grpc_person = PersonMapper::response(person);
 
                 Ok(Response::new(PersonResponse {
@@ -123,6 +150,7 @@ impl PersonService for GrpcPersonService {
         let person = PersonUseCase::get(&self.conn, person_id)
             .await
             .map_err(|e| Status::internal(e.message))?;
+        require_health_data_consent(&self.conn, &person, person_id).await?;
 
         Ok(Response::new(PersonResponse {
             person: Some(PersonMapper::response(person)),
@@ -216,6 +244,7 @@ impl PersonService for GrpcPersonService {
             Vec::new(),
             Vec::new(),
         );
+        require_health_data_consent(&self.conn, &person, person_id).await?;
 
         let person_response = PersonUseCase::update(&self.conn, person).await;
 
@@ -240,6 +269,15 @@ impl PersonService for GrpcPersonService {
             .ok_or_else(|| Status::not_found("PersonInfo not found"))?;
 
         let domain = PersonInfoMapper::domain(payload);
+        if domain.weight.is_some()
+            || domain.height.is_some()
+            || existing.weight.is_some()
+            || existing.height.is_some()
+        {
+            ConsentUseCase::require_current(&self.conn, person_id, legal_documents::HEALTH_DATA)
+                .await
+                .map_err(|_| Status::permission_denied("health_data consent is required"))?;
+        }
 
         let updated = PersonInfoUseCase::update(&self.conn, existing.id, domain)
             .await

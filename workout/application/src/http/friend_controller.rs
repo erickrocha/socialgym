@@ -19,8 +19,12 @@ use business::use_cases::person_use_case::PersonUseCase;
 pub async fn get_friend_relationships_by_id(
     State(state): State<AppState>,
     Path(person_id): Path<i32>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<FriendJson>>> {
+    PersonUseCase::require_owner_access(person_id, current_user.person_id).map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::FriendNotFound)
+    })?;
     let friends = FriendUseCase::find_all_friend(&state.conn, person_id)
         .await
         .map_err(|error| {
@@ -43,14 +47,24 @@ pub async fn get_friend_relationships_by_id(
 pub async fn get_friend_relationships_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<FriendJson>>> {
+    if uuid != current_user.person_uuid {
+        return Err(ExceptionResponse::Forbidden(locale, ErrorKey::FriendNotFound));
+    }
     let person = PersonUseCase::find_by_uuid(&state.conn, uuid)
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::PersonNotFound)
         })?;
-    get_friend_relationships_by_id(State(state), Path(person.id.unwrap()), Extension(locale)).await
+    get_friend_relationships_by_id(
+        State(state),
+        Path(person.id.unwrap()),
+        Extension(current_user),
+        Extension(locale),
+    )
+    .await
 }
 
 #[utoipa::path(
@@ -193,8 +207,11 @@ pub async fn get_friend(
     state: State<AppState>,
     Path(friend_id): Path<i32>,
     Extension(locale): Extension<Locale>,
-    Extension(_current_user): Extension<User>,
+    Extension(current_user): Extension<User>,
 ) -> HttpResponse<Json<PersonJson>> {
+    FriendUseCase::ensure_accepted_friend(&state.conn, current_user.person_id, friend_id)
+        .await
+        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::FriendNotFound))?;
     let friend_entity = PersonUseCase::get(&state.conn, friend_id).await;
 
     if friend_entity.is_err() {

@@ -9,9 +9,11 @@ use crate::AppState;
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
 use business::commons::functions::parse_uuid;
+use business::commons::legal_documents;
 use business::domain::person::Person;
 use business::domain::user::User;
 use business::use_cases::person_use_case::PersonUseCase;
+use business::use_cases::consent_use_case::ConsentUseCase;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -32,6 +34,7 @@ pub async fn get_person_by_id(
     let person = PersonUseCase::get(&state.conn, id).await.map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::PersonNotFound)
     })?;
+    require_health_data_consent(&state, &person, locale).await?;
     Ok(Json(PersonMapper::json(person)))
 }
 
@@ -49,6 +52,7 @@ pub async fn get_person_by_uuid(
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::PersonNotFound)
         })?;
+    require_health_data_consent(&state, &person, locale).await?;
     Ok(Json(PersonMapper::json(person)))
 }
 
@@ -191,7 +195,9 @@ pub async fn get_me(
         ));
     }
 
-    Ok(Json(PersonMapper::json(person_entity.unwrap())))
+    let person = person_entity.unwrap();
+    require_health_data_consent(&state, &person, locale).await?;
+    Ok(Json(PersonMapper::json(person)))
 }
 
 #[utoipa::path(
@@ -312,5 +318,24 @@ pub async fn get_me_by_uuid(
         ));
     }
 
-    Ok(Json(PersonMapper::json(person_entity.unwrap())))
+    let person = person_entity.unwrap();
+    require_health_data_consent(&state, &person, locale).await?;
+    Ok(Json(PersonMapper::json(person)))
+}
+
+async fn require_health_data_consent(
+    state: &AppState,
+    person: &Person,
+    locale: Locale,
+) -> Result<(), ExceptionResponse> {
+    let exposes_health_data = person
+        .person_info
+        .as_ref()
+        .is_some_and(|info| info.weight.is_some() || info.height.is_some());
+    if exposes_health_data {
+        ConsentUseCase::require_current(&state.conn, person.id.unwrap_or_default(), legal_documents::HEALTH_DATA)
+            .await
+            .map_err(|_| ExceptionResponse::Forbidden(locale, ErrorKey::ConsentRequired))?;
+    }
+    Ok(())
 }

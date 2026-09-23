@@ -566,6 +566,24 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
     // Friend Use Case Tests
     // ========================
 
+    fn mock_friendship_model(
+        person_id: i32,
+        friend_id: i32,
+        status: &str,
+    ) -> entity::friends_entity::FriendsEntity {
+        entity::friends_entity::FriendsEntity {
+            id: 1,
+            person_id,
+            friend_id,
+            status: status.to_string(),
+            uuid: Uuid::new_v4(),
+            person_uuid: Uuid::new_v4(),
+            friend_uuid: Uuid::new_v4(),
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+        }
+    }
+
     #[tokio::test]
     async fn test_friend_use_case_send_friend_request_same_person() {
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres).into_connection();
@@ -664,11 +682,180 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
             }]])
             .into_connection();
 
-        let result = FriendUseCase::accept_friend_request(&db, 1, 2).await;
+        let result = FriendUseCase::accept_friend_request(&db, 2, 1).await;
 
         assert!(result.is_ok());
         let accepted = result.unwrap();
         assert_eq!(accepted.status.as_str(), "Accepted");
+    }
+
+    #[tokio::test]
+    async fn test_friend_use_case_sender_cannot_accept_own_request() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![entity::friends_entity::FriendsEntity {
+                id: 1,
+                person_id: 1,
+                friend_id: 2,
+                status: "Pending".to_string(),
+                uuid: Uuid::new_v4(),
+                person_uuid: Uuid::new_v4(),
+                friend_uuid: Uuid::new_v4(),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            }]])
+            .into_connection();
+
+        let result = FriendUseCase::accept_friend_request(&db, 1, 2).await;
+
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Forbidden);
+    }
+
+    #[tokio::test]
+    async fn test_friend_use_case_receiver_cannot_cancel_request() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![entity::friends_entity::FriendsEntity {
+                id: 1,
+                person_id: 1,
+                friend_id: 2,
+                status: "Pending".to_string(),
+                uuid: Uuid::new_v4(),
+                person_uuid: Uuid::new_v4(),
+                friend_uuid: Uuid::new_v4(),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            }]])
+            .into_connection();
+
+        let result = FriendUseCase::cancel_friend_request(&db, 2, 1).await;
+
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Forbidden);
+    }
+
+    #[tokio::test]
+    async fn test_friend_use_case_sender_can_cancel_pending_request() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![mock_friendship_model(1, 2, "Pending")]])
+            .append_exec_results(vec![sea_orm::MockExecResult {
+                last_insert_id: 1,
+                rows_affected: 1,
+            }])
+            .append_query_results(vec![vec![mock_friendship_model(1, 2, "Cancelled")]])
+            .into_connection();
+
+        let result = FriendUseCase::cancel_friend_request(&db, 1, 2).await;
+
+        assert_eq!(result.unwrap().status.as_str(), "Cancelled");
+    }
+
+    #[tokio::test]
+    async fn test_friend_use_case_duplicate_pending_request_conflicts() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![mock_friendship_model(1, 2, "Pending")]])
+            .into_connection();
+
+        let result = FriendUseCase::send_friend_request(&db, 1, 2).await;
+
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Conflict);
+    }
+
+    #[tokio::test]
+    async fn test_friend_use_case_duplicate_accepted_request_conflicts() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![mock_friendship_model(1, 2, "Accepted")]])
+            .into_connection();
+
+        let result = FriendUseCase::send_friend_request(&db, 1, 2).await;
+
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Conflict);
+    }
+
+    #[tokio::test]
+    async fn test_friend_use_case_inverse_pending_request_auto_accepts() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![mock_friendship_model(2, 1, "Pending")]])
+            .append_exec_results(vec![sea_orm::MockExecResult {
+                last_insert_id: 1,
+                rows_affected: 1,
+            }])
+            .append_query_results(vec![vec![mock_friendship_model(2, 1, "Accepted")]])
+            .into_connection();
+
+        let result = FriendUseCase::send_friend_request(&db, 1, 2).await;
+
+        assert_eq!(result.unwrap().status.as_str(), "Accepted");
+    }
+
+    #[tokio::test]
+    async fn test_friend_use_case_rejected_request_reopens_from_new_sender() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![mock_friendship_model(1, 2, "Rejected")]])
+            .append_exec_results(vec![sea_orm::MockExecResult {
+                last_insert_id: 1,
+                rows_affected: 1,
+            }])
+            .append_query_results(vec![vec![mock_friendship_model(1, 2, "Pending")]])
+            .into_connection();
+
+        let result = FriendUseCase::send_friend_request(&db, 1, 2).await;
+
+        let reopened = result.unwrap();
+        assert_eq!(reopened.status.as_str(), "Pending");
+        assert_eq!(reopened.person_id, 1);
+        assert_eq!(reopened.friend_id, 2);
+    }
+
+    #[tokio::test]
+    async fn test_friend_use_case_removes_accepted_friendship() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_exec_results(vec![sea_orm::MockExecResult {
+                last_insert_id: 0,
+                rows_affected: 1,
+            }])
+            .into_connection();
+
+        assert!(FriendUseCase::remove_friend(&db, 1, 2).await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_friend_profile_requires_accepted_relationship() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![entity::friends_entity::FriendsEntity {
+                id: 1,
+                person_id: 1,
+                friend_id: 2,
+                status: "Pending".to_string(),
+                uuid: Uuid::new_v4(),
+                person_uuid: Uuid::new_v4(),
+                friend_uuid: Uuid::new_v4(),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            }]])
+            .into_connection();
+
+        let result = FriendUseCase::ensure_accepted_friend(&db, 1, 2).await;
+
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Forbidden);
+    }
+
+    #[tokio::test]
+    async fn test_friend_profile_allows_accepted_relationship() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![entity::friends_entity::FriendsEntity {
+                id: 1,
+                person_id: 1,
+                friend_id: 2,
+                status: "Accepted".to_string(),
+                uuid: Uuid::new_v4(),
+                person_uuid: Uuid::new_v4(),
+                friend_uuid: Uuid::new_v4(),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            }]])
+            .into_connection();
+
+        assert!(FriendUseCase::ensure_accepted_friend(&db, 1, 2)
+            .await
+            .is_ok());
     }
 
     #[tokio::test]
@@ -705,7 +892,7 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
             }]])
             .into_connection();
 
-        let result = FriendUseCase::deny_friend_request(&db, 1, 2).await;
+        let result = FriendUseCase::deny_friend_request(&db, 2, 1).await;
 
         assert!(result.is_ok());
         let denied = result.unwrap();

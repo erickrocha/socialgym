@@ -1,5 +1,9 @@
 use business::gateway::person_address_gateway::PersonAddressGateway;
 use business::gateway::exercise_gateway::ExerciseGateway;
+use business::commons::legal_documents;
+use business::use_cases::consent_use_case::ConsentUseCase;
+use business::use_cases::friend_use_case::FriendUseCase;
+use business::use_cases::person_use_case::PersonUseCase;
 use migration::{Migrator, MigratorTrait};
 use sea_orm::{ConnectionTrait, Database};
 
@@ -61,3 +65,89 @@ async fn radius_search_uses_current_indexable_geography_points() {
     .unwrap();
     assert_eq!(exercise.map(|model| model.id), Some(1));
 }
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database"]
+async fn c002_profile_owner_and_health_consent_acceptance() {
+    let database_url = std::env::var("TEST_DATABASE_URL")
+        .expect("TEST_DATABASE_URL must point to a disposable PostgreSQL/PostGIS database");
+    let db = Database::connect(database_url).await.unwrap();
+    Migrator::refresh(&db).await.unwrap();
+
+    db.execute_unprepared(
+        r#"INSERT INTO person
+             (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at)
+           VALUES
+             (1, '00000000-0000-0000-0000-000000000011', 'Profile', 'Owner', '1990-01-01', 'X', now(), now());
+           INSERT INTO person_info
+             (id, uuid, person_id, weight, height, created_at, updated_at)
+           VALUES
+             (1, '10000000-0000-0000-0000-000000000011', 1, 80.0, 180.0, now(), now())"#,
+    )
+    .await
+    .unwrap();
+
+    let person = PersonUseCase::get(&db, 1).await.unwrap();
+    assert_eq!(person.id, Some(1));
+    assert!(PersonUseCase::require_owner_access(1, 1).is_ok());
+    assert!(PersonUseCase::require_owner_access(1, 2).is_err());
+
+    assert!(ConsentUseCase::require_current(&db, 1, legal_documents::HEALTH_DATA)
+        .await
+        .is_err());
+
+    db.execute_unprepared(
+        r#"INSERT INTO consent
+             (uuid, person_id, document, version, accepted_at, ip)
+           VALUES
+             ('20000000-0000-0000-0000-000000000011', 1, 'health_data', '1.0.0', now(), '127.0.0.1')"#,
+    )
+    .await
+    .unwrap();
+
+    assert!(ConsentUseCase::require_current(&db, 1, legal_documents::HEALTH_DATA)
+        .await
+        .is_ok());
+}
+
+  #[tokio::test]
+  #[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database"]
+  async fn c003_friendship_lifecycle_and_owner_scope_acceptance() {
+    let database_url = std::env::var("TEST_DATABASE_URL")
+      .expect("TEST_DATABASE_URL must point to a disposable PostgreSQL/PostGIS database");
+    let db = Database::connect(database_url).await.unwrap();
+    Migrator::refresh(&db).await.unwrap();
+
+    db.execute_unprepared(
+      r#"INSERT INTO person
+         (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at)
+         VALUES
+         (1, '00000000-0000-0000-0000-000000000021', 'Sender', 'Person', '1990-01-01', 'X', now(), now()),
+         (2, '00000000-0000-0000-0000-000000000022', 'Receiver', 'Person', '1990-01-01', 'X', now(), now()),
+         (3, '00000000-0000-0000-0000-000000000023', 'Unrelated', 'Person', '1990-01-01', 'X', now(), now())"#,
+    )
+    .await
+    .unwrap();
+
+    let pending = FriendUseCase::send_friend_request(&db, 1, 2).await.unwrap();
+    assert_eq!(pending.status.as_str(), "Pending");
+    assert!(FriendUseCase::accept_friend_request(&db, 2, 1)
+      .await
+      .is_ok());
+    assert!(FriendUseCase::ensure_accepted_friend(&db, 1, 2)
+      .await
+      .is_ok());
+    assert!(FriendUseCase::ensure_accepted_friend(&db, 1, 3)
+      .await
+      .is_err());
+
+    let friends = FriendUseCase::find_all_friend(&db, 1).await.unwrap();
+    assert_eq!(friends.len(), 1);
+    assert_eq!(friends[0].friend_id, 2);
+
+    FriendUseCase::remove_friend(&db, 1, 2).await.unwrap();
+    assert!(FriendUseCase::find_all_friend(&db, 1)
+      .await
+      .unwrap()
+      .is_empty());
+  }
