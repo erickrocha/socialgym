@@ -914,6 +914,50 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
         assert!(result.is_err());
     }
 
+    #[test]
+    fn test_workout_owner_uuid_requires_authenticated_owner() {
+        assert!(WorkoutUseCase::ensure_owner_uuid("owner-uuid", "owner-uuid").is_ok());
+        assert_eq!(
+            WorkoutUseCase::ensure_owner_uuid("owner-uuid", "other-uuid")
+                .unwrap_err()
+                .kind,
+            BusinessErrorKind::Forbidden
+        );
+    }
+
+    #[test]
+    fn test_private_workout_is_not_readable_by_other_person() {
+        let private = Workout {
+            id: Some(1),
+            uuid: Some(Uuid::new_v4().to_string()),
+            owner_id: 1,
+            owner_uuid: Uuid::new_v4().to_string(),
+            name: "Private workout".to_string(),
+            description: None,
+            difficulty: Difficulty::Easy,
+            muscle_group: "Chest".to_string(),
+            exercises: Vec::new(),
+            visibility: Visibility::Private,
+            status: InviteStatus::Accepted,
+            assigned_by_profile_id: None,
+            assigned_by_profile_uuid: None,
+            created_at: None,
+            updated_at: None,
+        };
+
+        assert!(WorkoutUseCase::ensure_readable(&private, 1).is_ok());
+        assert_eq!(
+            WorkoutUseCase::ensure_readable(&private, 2)
+                .unwrap_err()
+                .kind,
+            BusinessErrorKind::Forbidden
+        );
+
+        let mut public = private;
+        public.visibility = Visibility::Public;
+        assert!(WorkoutUseCase::ensure_readable(&public, 2).is_ok());
+    }
+
     // Note: Complex workout queries with exercises are better tested with integration tests
 
     #[tokio::test]
@@ -1308,6 +1352,20 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
         // public exercises stay readable by anyone
         private.visibility = Visibility::Public;
         assert!(ExerciseUseCase::ensure_readable(&private, 2).is_ok());
+    }
+
+    #[test]
+    fn test_exercise_collection_visibility_does_not_leak_private_items() {
+        let mut private = ExerciseEntityMapper::from_model(exercise_entity_owned_by(1));
+        private.visibility = Visibility::Private;
+        let public = ExerciseEntityMapper::from_model(exercise_entity_owned_by(1));
+
+        assert_eq!(
+            ExerciseUseCase::ensure_all_readable(&[public, private], 2)
+                .unwrap_err()
+                .kind,
+            BusinessErrorKind::Forbidden
+        );
     }
 
     // ========================

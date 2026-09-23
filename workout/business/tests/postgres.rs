@@ -4,6 +4,8 @@ use business::commons::legal_documents;
 use business::use_cases::consent_use_case::ConsentUseCase;
 use business::use_cases::friend_use_case::FriendUseCase;
 use business::use_cases::person_use_case::PersonUseCase;
+use business::use_cases::exercise_use_case::ExerciseUseCase;
+use business::use_cases::workout_use_case::WorkoutUseCase;
 use migration::{Migrator, MigratorTrait};
 use sea_orm::{ConnectionTrait, Database};
 
@@ -151,3 +153,41 @@ async fn c002_profile_owner_and_health_consent_acceptance() {
       .unwrap()
       .is_empty());
   }
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database"]
+async fn c004_workout_exercise_visibility_acceptance() {
+    let database_url = std::env::var("TEST_DATABASE_URL")
+        .expect("TEST_DATABASE_URL must point to a disposable PostgreSQL/PostGIS database");
+    let db = Database::connect(database_url).await.unwrap();
+    Migrator::refresh(&db).await.unwrap();
+
+    db.execute_unprepared(
+        r#"INSERT INTO person
+             (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at)
+           VALUES
+             (1, '00000000-0000-0000-0000-000000000031', 'Workout', 'Owner', '1990-01-01', 'X', now(), now()),
+             (2, '00000000-0000-0000-0000-000000000032', 'Other', 'Person', '1990-01-01', 'X', now(), now());
+           INSERT INTO workout
+             (id, uuid, owner_id, owner_uuid, name, description, difficulty, muscle_group, visibility, status, created_at, updated_at)
+           VALUES
+             (1, '10000000-0000-0000-0000-000000000031', 1, '00000000-0000-0000-0000-000000000031', 'Public Workout', 'Tracked workout', 'Easy', 'Chest', 'public', 'Accepted', now(), now());
+           INSERT INTO exercise
+             (id, uuid, name, category, owner_id, owner_uuid, owner_name, sets, reps_or_duration, description, visibility, created_at, updated_at)
+           VALUES
+             (1, '20000000-0000-0000-0000-000000000031', 'Private Exercise', 'Force', 1, '00000000-0000-0000-0000-000000000031', 'Workout Owner', 3, 10, 'Private', 'private', now(), now());
+           INSERT INTO workout_exercise
+             (id, uuid, workout_id, exercise_id, order_index, created_at, updated_at)
+           VALUES
+             (1, '30000000-0000-0000-0000-000000000031', 1, 1, 0, now(), now())"#,
+    )
+    .await
+    .unwrap();
+
+    let workout = WorkoutUseCase::get(&db, 1).await.unwrap();
+    assert_eq!(workout.name, "Public Workout");
+    let exercises = ExerciseUseCase::find_all_by_workout_id(&db, 1).await.unwrap();
+    assert_eq!(exercises.len(), 1);
+    assert!(ExerciseUseCase::ensure_all_readable(&exercises, 1).is_ok());
+    assert!(ExerciseUseCase::ensure_all_readable(&exercises, 2).is_err());
+}

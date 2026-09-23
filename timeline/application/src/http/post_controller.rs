@@ -57,6 +57,31 @@ pub async fn create_post(
         })
 }
 
+#[utoipa::path(
+    delete,
+    tag = "timeline",
+    path = "/timeline/api/posts/{post_id}",
+    params(("post_id" = String, Path, description = "Id of the post to delete")),
+    responses(
+        (status = 204, description = "Post deleted"),
+        (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
+        (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
+        (status = 404, description = "Post not found", body = BadRequestErrorJson),
+    ),
+    security(("api_key" = []))
+)]
+pub async fn delete_post(
+    state: State<AppState>,
+    Path(post_id): Path<String>,
+    Extension(locale): Extension<Locale>,
+    Extension(current_user): Extension<User>,
+) -> HttpResponse<StatusCode> {
+    PostUseCase::delete_owned(&state.database, post_id, &current_user.person_uuid)
+        .await
+        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::PostCreateFailed))?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
 // ── Add comment / reply ───────────────────────────────────────────────────────
 #[utoipa::path(
     post,

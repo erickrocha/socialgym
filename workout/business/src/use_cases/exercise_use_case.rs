@@ -185,6 +185,16 @@ impl ExerciseUseCase {
         ensure_owns(exercise.owner_id, acting_person_id)
     }
 
+    pub fn ensure_all_readable(
+        exercises: &[Exercise],
+        acting_person_id: i32,
+    ) -> Result<(), BusinessError> {
+        for exercise in exercises {
+            Self::ensure_readable(exercise, acting_person_id)?;
+        }
+        Ok(())
+    }
+
     pub async fn get(db: &DbConn, exercise_id: i32) -> Result<Exercise, BusinessError> {
         log::info!(
             "[ExerciseUseCase::get] Executing for exercise_id={}",
