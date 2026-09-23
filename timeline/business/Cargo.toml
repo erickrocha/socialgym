@@ -28,3 +28,6 @@ protoc-bin-vendored = "3"
 
 [[test]]
 name = "mock"
+
+[[test]]
+name = "mongodb"

@@ -26,16 +26,9 @@ impl PostUseCase {
     const MAX_CONTENT_LEN: usize = 5000;
 
     pub async fn create(db: &Database, author: &User, mut post: Post) -> Result<Post, BusinessError> {
-        if post.content.len() > Self::MAX_CONTENT_LEN {
-            return Err(BusinessError::validation(format!(
-                "content must be at most {} characters",
-                Self::MAX_CONTENT_LEN
-            )));
-        }
+        Self::validate_content(&post.content)?;
         let author_person_id = author.person_id;
-        post.author_id = author_person_id;
-        post.author_uuid = author.person_uuid.clone();
-        post.author_name = author.name.clone();
+        Self::apply_post_author(&mut post, author);
         log::info!("Creating post by author: {}", post.author_id);
         let persisted = PostGateway::new(db).persist(post).await?;
 
@@ -95,15 +88,9 @@ impl PostUseCase {
 
 
     pub async fn add_comment(db: &Database, author: &User, post_id: String, mut comment: Comment) -> Result<Post, BusinessError> {
-        if comment.content.len() > Self::MAX_CONTENT_LEN {
-            return Err(BusinessError::validation(format!(
-                "content must be at most {} characters",
-                Self::MAX_CONTENT_LEN
-            )));
-        }
+        Self::validate_content(&comment.content)?;
         let author_person_id = author.person_id;
-        comment.author_uuid = author.person_uuid.clone();
-        comment.author_name = author.name.clone();
+        Self::apply_comment_author(&mut comment, author);
         log::info!("Adding comment to post: {}", post_id);
         let uuid = comment.uuid.clone();
         let persisted_post = PostGateway::new(db).add_comment(&post_id, comment).await?;
@@ -178,11 +165,47 @@ impl PostUseCase {
     fn feed_skip(page: u32, page_size: u64) -> u64 {
         u64::from(page).saturating_mul(page_size)
     }
+
+    fn validate_content(content: &str) -> Result<(), BusinessError> {
+        if content.len() > Self::MAX_CONTENT_LEN {
+            return Err(BusinessError::validation(format!(
+                "content must be at most {} characters",
+                Self::MAX_CONTENT_LEN
+            )));
+        }
+        Ok(())
+    }
+
+    fn apply_post_author(post: &mut Post, author: &User) {
+        post.author_id = author.person_id;
+        post.author_uuid = author.person_uuid.clone();
+        post.author_name = author.name.clone();
+    }
+
+    fn apply_comment_author(comment: &mut Comment, author: &User) {
+        comment.author_uuid = author.person_uuid.clone();
+        comment.author_name = author.name.clone();
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::use_cases::post_use_case::PostUseCase;
+    use domain::comment::Comment;
+    use domain::post::Post;
+    use domain::user::User;
+
+    fn test_user() -> User {
+        User::new(
+            "Actor Name".to_string(),
+            "actor@example.com".to_string(),
+            "user-uuid".to_string(),
+            42,
+            "actor-uuid".to_string(),
+            "".to_string(),
+            None,
+        )
+    }
 
     #[test]
     fn page_zero_has_no_skip() {
@@ -192,6 +215,50 @@ mod tests {
     #[test]
     fn page_one_skips_one_full_page() {
         assert_eq!(PostUseCase::feed_skip(1, 20), 20);
+    }
+
+    #[test]
+    fn content_limit_rejects_oversized_post_and_comment_content() {
+        let oversized = "x".repeat(5001);
+        assert!(PostUseCase::validate_content(&oversized).is_err());
+        assert!(PostUseCase::validate_content("valid").is_ok());
+    }
+
+    #[test]
+    fn post_and_comment_attribution_comes_from_authenticated_user() {
+        let author = test_user();
+        let mut post = Post::updated(
+            "post".to_string(),
+            1,
+            "spoofed-uuid".to_string(),
+            "Spoofed".to_string(),
+            None,
+            None,
+            "content".to_string(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+        );
+        let mut comment = Comment::new(
+            "comment".to_string(),
+            "post".to_string(),
+            "spoofed-uuid".to_string(),
+            "Spoofed".to_string(),
+            None,
+            None,
+            "content".to_string(),
+            None,
+            Vec::new(),
+        );
+
+        PostUseCase::apply_post_author(&mut post, &author);
+        PostUseCase::apply_comment_author(&mut comment, &author);
+
+        assert_eq!(post.author_id, 42);
+        assert_eq!(post.author_uuid, "actor-uuid");
+        assert_eq!(comment.author_uuid, "actor-uuid");
+        assert_eq!(comment.author_name, "Actor Name");
     }
 
 }
