@@ -1,4 +1,5 @@
 use crate::commons::entity_mapper::EntityMapper;
+use crate::commons::authorization::ensure_owns;
 use crate::commons::functions::is_valid_coordinate;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapper};
@@ -24,6 +25,10 @@ use sea_orm::DbConn;
 pub struct PersonUseCase {}
 
 impl PersonUseCase {
+    pub fn require_owner_access(resource_owner_id: i32, acting_person_id: i32) -> Result<(), BusinessError> {
+        ensure_owns(resource_owner_id, acting_person_id)
+    }
+
     pub async fn get(db: &DbConn, person_id: i32) -> Result<Person, BusinessError> {
         log::info!("Getting person with id: {:?}", person_id);
         let person_entity = PersonGateway::find_by_id(db, person_id).await;

@@ -1,6 +1,7 @@
 #[cfg(feature = "mock")]
 mod tests {
     use business::commons::functions::uuid_to_string;
+    use business::commons::legal_documents;
     use business::domain::enums::{Category, Difficulty, InviteStatus, Visibility};
     use business::commons::entity_mapper::EntityMapper;
 use business::domain::business_error::BusinessErrorKind;
@@ -17,6 +18,7 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
     use business::gateway::workout_gateway::WorkoutGateway;
     use business::use_cases::authentication::{Authentication, AuthenticationError, ValidateError};
     use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
+    use business::use_cases::consent_use_case::ConsentUseCase;
     use business::use_cases::exercise_use_case::ExerciseUseCase;
     use business::use_cases::friend_use_case::FriendUseCase;
     use business::use_cases::logout_use_case::LogoutUseCase;
@@ -1189,6 +1191,50 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
     }
 
     #[tokio::test]
+    async fn test_authentication_acceptance_login_then_validate_token() {
+        let _guard = AUTH_ENV_LOCK.lock().unwrap();
+        clear_auth_toggle_env();
+        std::env::set_var("ACCESS_TOKEN_SECRET", "test_secret_acceptance");
+        std::env::set_var("REFRESH_TOKEN_SECRET", "test_refresh_secret_acceptance");
+
+        let hash = bcrypt::hash("CorrectPass1!", bcrypt::DEFAULT_COST).unwrap();
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![mock_user_model(
+                "test@example.com",
+                &hash,
+                0,
+                None,
+                None,
+            )]])
+            .append_query_results(vec![vec![mock_person_model()]])
+            .append_query_results(vec![vec![mock_user_model(
+                "test@example.com",
+                &hash,
+                0,
+                None,
+                None,
+            )]])
+            .into_connection();
+
+        let login = Authentication::execute(
+            &db,
+            "test@example.com".to_string(),
+            "CorrectPass1!".to_string(),
+        )
+        .await;
+
+        assert!(login.is_ok());
+        let token = login.unwrap();
+        assert_eq!(token.token_type, "Bearer");
+        assert!(!token.access_token.is_empty());
+        assert!(token.refresh_token.is_some());
+
+        let validated = Authentication::validate(&db, token.access_token).await;
+        assert!(validated.is_ok());
+        clear_auth_toggle_env();
+    }
+
+    #[tokio::test]
     async fn test_authentication_execute_invalid_email() {
         std::env::set_var("ACCESS_TOKEN_SECRET", "test_secret_key");
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres).into_connection();
@@ -1442,8 +1488,162 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
     // Refresh Token Use Case Tests
     // ========================
 
-    // Note: Token generation tests are better with integration tests
-    // JWT validation requires proper token setup
+    #[tokio::test]
+    async fn test_consent_use_case_acceptance_accepts_and_requires_current_consent() {
+        std::env::set_var("TERMS_VERSION", "1.0.0");
+        std::env::set_var("PRIVACY_VERSION", "1.0.0");
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![entity::consent_entity::Model {
+                id: 1,
+                uuid: Uuid::new_v4(),
+                person_id: 7,
+                document: legal_documents::TERMS.to_string(),
+                version: "1.0.0".to_string(),
+                accepted_at: Utc::now(),
+                ip: "127.0.0.1".to_string(),
+                revoked_at: None,
+            }]])
+            .into_connection();
+
+        let current = ConsentUseCase::require_current(&db, 7, legal_documents::TERMS).await;
+        assert!(current.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_consent_use_case_acceptance_rejects_missing_current_consent() {
+        std::env::set_var("PRIVACY_VERSION", "1.0.0");
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![Vec::<entity::consent_entity::Model>::new()])
+            .into_connection();
+
+        let result = ConsentUseCase::require_current(&db, 7, legal_documents::PRIVACY).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_person_profile_requires_owner_scope() {
+        assert!(PersonUseCase::require_owner_access(7, 7).is_ok());
+        assert!(PersonUseCase::require_owner_access(7, 8).is_err());
+    }
+
+    #[tokio::test]
+    async fn test_health_data_consent_is_required_for_sensitive_profile_fields() {
+        std::env::set_var("HEALTH_DATA_CONSENT_VERSION", "1.0.0");
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![Vec::<entity::consent_entity::Model>::new()])
+            .into_connection();
+
+        let result = ConsentUseCase::require_current(&db, 7, legal_documents::HEALTH_DATA).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_owner_authorization_acceptance_owner_allows_and_other_person_denies() {
+        let owner_ok = business::commons::authorization::ensure_owns(7, 7);
+        assert!(owner_ok.is_ok());
+
+        let not_owner = business::commons::authorization::ensure_owns(7, 8);
+        assert!(not_owner.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_refresh_token_acceptance_rotates_valid_token() {
+        let _guard = AUTH_ENV_LOCK.lock().unwrap();
+        clear_auth_toggle_env();
+        std::env::set_var("ACCESS_TOKEN_SECRET", "test_secret_acceptance_refresh");
+        std::env::set_var("REFRESH_TOKEN_SECRET", "test_refresh_secret_acceptance");
+
+        let user = User::new(
+            Some("John doe".to_string()),
+            "test@example.com".to_string(),
+            "password".to_string(),
+            1,
+            Uuid::new_v4().to_string(),
+        );
+        let person = Person::new(
+            "John".to_string(),
+            "Doe".to_string(),
+            NaiveDate::from_ymd_opt(1990, 1, 1).unwrap(),
+            "M".to_string(),
+        );
+        let refresh = Authentication::generate_access_token(&user, &person, None, true)
+            .refresh_token
+            .unwrap();
+
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![mock_user_model(
+                "test@example.com",
+                "hashed",
+                0,
+                None,
+                None,
+            )]])
+            .append_query_results(vec![Vec::<entity::revoked_token_entity::RevokedTokenEntity>::new()])
+            .append_query_results(vec![vec![mock_person_model()]])
+            .append_exec_results(vec![sea_orm::MockExecResult {
+                last_insert_id: 1,
+                rows_affected: 1,
+            }])
+            .into_connection();
+
+        let result = RefreshToken::execute(&db, refresh).await;
+
+        assert!(result.is_ok());
+        let refreshed = result.unwrap();
+        assert_eq!(refreshed.token_type, "Bearer");
+        assert!(!refreshed.access_token.is_empty());
+        assert!(refreshed.refresh_token.is_some());
+        clear_auth_toggle_env();
+    }
+
+    #[tokio::test]
+    async fn test_refresh_token_acceptance_rejected_when_reused() {
+        let _guard = AUTH_ENV_LOCK.lock().unwrap();
+        clear_auth_toggle_env();
+        std::env::set_var("ACCESS_TOKEN_SECRET", "test_secret_acceptance_reuse");
+        std::env::set_var("REFRESH_TOKEN_SECRET", "test_refresh_secret_acceptance");
+
+        let user = User::new(
+            Some("John doe".to_string()),
+            "test@example.com".to_string(),
+            "password".to_string(),
+            1,
+            Uuid::new_v4().to_string(),
+        );
+        let person = Person::new(
+            "John".to_string(),
+            "Doe".to_string(),
+            NaiveDate::from_ymd_opt(1990, 1, 1).unwrap(),
+            "M".to_string(),
+        );
+        let refresh = Authentication::generate_access_token(&user, &person, None, true)
+            .refresh_token
+            .unwrap();
+
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![mock_user_model(
+                "test@example.com",
+                "hashed",
+                0,
+                None,
+                None,
+            )]])
+            .append_query_results(vec![vec![entity::revoked_token_entity::RevokedTokenEntity {
+                id: 1,
+                uuid: Uuid::new_v4(),
+                jti: "reused-refresh-jti".to_string(),
+                user_id: 1,
+                token_type: "refresh".to_string(),
+                expires_at: chrono::Utc::now(),
+                created_at: chrono::Utc::now(),
+            }]])
+            .into_connection();
+
+        let result = RefreshToken::execute(&db, refresh).await;
+
+        assert!(result.is_err());
+        clear_auth_toggle_env();
+    }
 
     #[tokio::test]
     async fn test_refresh_token_invalid_token() {

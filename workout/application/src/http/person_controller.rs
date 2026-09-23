@@ -23,8 +23,12 @@ pub struct SearchPersonsQuery {
 pub async fn get_person_by_id(
     State(state): State<AppState>,
     Path(id): Path<i32>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<PersonJson>> {
+    PersonUseCase::require_owner_access(id, current_user.person_id).map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::PersonNotFound)
+    })?;
     let person = PersonUseCase::get(&state.conn, id).await.map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::PersonNotFound)
     })?;
@@ -34,8 +38,12 @@ pub async fn get_person_by_id(
 pub async fn get_person_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<PersonJson>> {
+    if uuid != current_user.person_uuid {
+        return Err(ExceptionResponse::Forbidden(locale, ErrorKey::PersonNotFound));
+    }
     let person = PersonUseCase::find_by_uuid(&state.conn, uuid)
         .await
         .map_err(|error| {
@@ -283,6 +291,7 @@ pub async fn search_persons(
 pub async fn get_me_by_uuid(
     state: State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<PersonJson>> {
     if parse_uuid(&uuid).is_err() {
@@ -290,6 +299,9 @@ pub async fn get_me_by_uuid(
             locale,
             ErrorKey::InvalidParameterValue,
         ));
+    }
+    if uuid != current_user.person_uuid {
+        return Err(ExceptionResponse::Forbidden(locale, ErrorKey::PersonNotFound));
     }
     let person_entity = PersonUseCase::find_by_uuid(&state.conn, uuid).await;
 
