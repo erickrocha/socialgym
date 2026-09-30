@@ -1,8 +1,7 @@
 use crate::domain::business_error::BusinessError;
 use crate::domain::image_storage::ImageStorage;
+use crate::gateway::aws_clients::{s3_client, s3_presign_client};
 use crate::gateway::s3_gateway::S3Gateway;
-use aws_config::BehaviorVersion;
-use aws_sdk_s3::Client;
 use cloudfront_sign::{get_signed_url, SignedOptions};
 use std::borrow::Cow;
 use std::env;
@@ -20,9 +19,8 @@ pub struct ImageStorageUseCase {}
 impl ImageStorageUseCase {
     pub async fn upload_export(object_key: &str, bytes: Vec<u8>) -> Result<(), BusinessError> {
         let bucket = env::var(AWS_WORKOUT_BUCKET).expect("AWS_WORKOUT_BUCKET must be set");
-        let shared_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
         S3Gateway::upload_bytes(
-            &Client::new(&shared_config),
+            &s3_client().await,
             &bucket,
             object_key,
             bytes,
@@ -33,15 +31,13 @@ impl ImageStorageUseCase {
 
     pub async fn download_object(object_key: &str) -> Result<Vec<u8>, BusinessError> {
         let bucket = env::var(AWS_WORKOUT_BUCKET).expect("AWS_WORKOUT_BUCKET must be set");
-        let shared_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
-        S3Gateway::download_bytes(&Client::new(&shared_config), &bucket, object_key).await
+        S3Gateway::download_bytes(&s3_client().await, &bucket, object_key).await
     }
 
     pub async fn export_download_url(object_key: &str) -> Result<String, BusinessError> {
         let bucket = env::var(AWS_WORKOUT_BUCKET).expect("AWS_WORKOUT_BUCKET must be set");
-        let shared_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
         S3Gateway::get_object(
-            &Client::new(&shared_config),
+            &s3_presign_client().await,
             &bucket,
             object_key,
             Duration::from_secs(900),
@@ -60,8 +56,7 @@ impl ImageStorageUseCase {
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(900); // Default to 15 minutes if not set or invalid
 
-        let shared_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
-        let client = Client::new(&shared_config);
+        let client = s3_presign_client().await;
         let expires_in = Duration::from_secs(expiration_seconds);
         let content_type = format!("image/{}", extension);
 
@@ -109,8 +104,7 @@ impl ImageStorageUseCase {
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(900);
 
-        let shared_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
-        let client = Client::new(&shared_config);
+        let client = s3_presign_client().await;
         let expires_in = Duration::from_secs(expiration_seconds);
 
         let s3_response =
@@ -168,8 +162,7 @@ impl ImageStorageUseCase {
 
     pub async fn delete_presigned_url(object_key: String) -> Result<(), BusinessError> {
         let bucket = env::var(AWS_WORKOUT_BUCKET).expect("AWS WORKOUT_BUCKET must be set");
-        let shared_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
-        let client = Client::new(&shared_config);
+        let client = s3_client().await;
         let result = S3Gateway::delete_object(&client, &bucket, &object_key).await;
         match result {
             Ok(_) => Ok(()),

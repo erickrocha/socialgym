@@ -1,9 +1,7 @@
 use crate::AppState;
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
 use crate::commons::i18n::{ErrorKey, Locale};
-use crate::http::json::error_response_json::{
-    BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,
-};
+use crate::http::json::error_response_json::ErrorResponseJson;
 use crate::http::json::post_json::{CommentJson, PostJson, ReactionJson};
 use crate::infrastructure::mapper::{CommentMapper, Mapper, PostMapper, ReactionMapper};
 use axum::Json;
@@ -28,10 +26,10 @@ pub struct FeedParams {
     request_body = PostJson,
     responses(
         (status = 201, description = "Post created", body = PostJson),
-        (status = 400, description = "Bad request", body = BadRequestErrorJson),
-        (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
-        (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
-        (status = 500, description = "Internal server error", body = InternalServerErrorJson),
+        (status = 400, description = "Bad request", body = ErrorResponseJson),
+        (status = 401, description = "Unauthorized", body = ErrorResponseJson),
+        (status = 403, description = "Forbidden", body = ErrorResponseJson),
+        (status = 500, description = "Internal server error", body = ErrorResponseJson),
     ),
     security(("api_key" = []))
 )]
@@ -64,9 +62,10 @@ pub async fn create_post(
     params(("post_id" = String, Path, description = "Id of the post to delete")),
     responses(
         (status = 204, description = "Post deleted"),
-        (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
-        (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
-        (status = 404, description = "Post not found", body = BadRequestErrorJson),
+        (status = 401, description = "Unauthorized", body = ErrorResponseJson),
+        (status = 403, description = "Forbidden", body = ErrorResponseJson),
+        (status = 404, description = "Post not found", body = ErrorResponseJson),
+        (status = 500, description = "Internal server error", body = ErrorResponseJson),
     ),
     security(("api_key" = []))
 )]
@@ -78,7 +77,9 @@ pub async fn delete_post(
 ) -> HttpResponse<StatusCode> {
     PostUseCase::delete_owned(&state.database, post_id, &current_user.person_uuid)
         .await
-        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::PostCreateFailed))?;
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::PostDeleteFailed)
+        })?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -92,11 +93,12 @@ pub async fn delete_post(
     ),
     request_body = CommentJson,
     responses(
-        (status = 200, description = "Updated post with the new comment", body = PostJson),
-        (status = 400, description = "Bad request", body = BadRequestErrorJson),
-        (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
-        (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
-        (status = 500, description = "Internal server error", body = InternalServerErrorJson),
+        (status = 201, description = "Updated post with the new comment", body = PostJson),
+        (status = 400, description = "Bad request", body = ErrorResponseJson),
+        (status = 401, description = "Unauthorized", body = ErrorResponseJson),
+        (status = 403, description = "Forbidden", body = ErrorResponseJson),
+        (status = 404, description = "Post not found", body = ErrorResponseJson),
+        (status = 500, description = "Internal server error", body = ErrorResponseJson),
     ),
     security(("api_key" = []))
 )]
@@ -107,7 +109,8 @@ pub async fn add_comment(
     Extension(current_user): Extension<User>,
     Json(payload): Json<CommentJson>,
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
-    let comment = CommentMapper::domain(payload);
+    let mut comment = CommentMapper::domain(payload);
+    comment.post_uuid = post_id.clone();
     let post_response =
         PostUseCase::add_comment(&state.database, &current_user, post_id, comment).await;
 
@@ -126,11 +129,12 @@ pub async fn add_comment(
         ("post_id" = String, Path, description = "Id of the post to react to"),
     ),
     responses(
-        (status = 200, description = "Updated post with the new reaction", body = PostJson),
-        (status = 400, description = "Bad request", body = BadRequestErrorJson),
-        (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
-        (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
-        (status = 500, description = "Internal server error", body = InternalServerErrorJson),
+        (status = 201, description = "Updated post with the new reaction", body = PostJson),
+        (status = 400, description = "Bad request", body = ErrorResponseJson),
+        (status = 401, description = "Unauthorized", body = ErrorResponseJson),
+        (status = 403, description = "Forbidden", body = ErrorResponseJson),
+        (status = 404, description = "Post not found", body = ErrorResponseJson),
+        (status = 500, description = "Internal server error", body = ErrorResponseJson),
     ),
     security(("api_key" = []))
 )]
@@ -141,6 +145,15 @@ pub async fn add_reaction(
     Extension(current_user): Extension<User>,
     Json(payload): Json<ReactionJson>,
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
+    if !matches!(
+        payload.reaction_type.to_ascii_lowercase().as_str(),
+        "like" | "love" | "haha" | "wow" | "sad" | "angry"
+    ) {
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::ReactionAddFailed,
+        ));
+    }
     let reaction = ReactionMapper::domain(payload);
     PostUseCase::add_reaction(&state.database, &current_user, post_id, reaction)
         .await
@@ -159,10 +172,11 @@ pub async fn add_reaction(
     ),
     responses(
         (status = 200, description = "Deleted reaction from post", body = PostJson),
-        (status = 400, description = "Bad request", body = BadRequestErrorJson),
-        (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
-        (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
-        (status = 500, description = "Internal server error", body = InternalServerErrorJson),
+        (status = 400, description = "Bad request", body = ErrorResponseJson),
+        (status = 401, description = "Unauthorized", body = ErrorResponseJson),
+        (status = 403, description = "Forbidden", body = ErrorResponseJson),
+        (status = 404, description = "Post not found", body = ErrorResponseJson),
+        (status = 500, description = "Internal server error", body = ErrorResponseJson),
     ),
     security(("api_key" = []))
 )]

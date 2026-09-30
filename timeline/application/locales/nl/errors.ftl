@@ -7,6 +7,7 @@ workout-find-failed = Workout zoeken mislukt
 workout-find-all-failed = Workouts ophalen mislukt
 workout-not-found = Workout-sessie niet gevonden
 post-create-failed = Post aanmaken mislukt
+post-delete-failed = Post verwijderen mislukt
 feed-fetch-failed = Feed ophalen mislukt
 comment-add-failed = Reactie toevoegen mislukt
 reaction-add-failed = Reactie toevoegen mislukt

@@ -7,10 +7,11 @@ use crate::http::json::error_response_json::{
 };
 use crate::infrastructure::mapper::{BusinessProfileAddressMapper, BusinessProfileMapper, Mapper};
 use crate::AppState;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
 use business::domain::business_profile::BusinessProfile;
+use business::domain::enums::ProfileType;
 use business::domain::user::User;
 use business::use_cases::business_profile_address_use_case::BusinessProfileAddressUseCase;
 use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
@@ -105,6 +106,20 @@ pub async fn update_profile(
                 ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
             })?;
     Ok(Json(BusinessProfileMapper::json(profile)))
+}
+
+pub async fn delete_profile(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    Extension(current_user): Extension<User>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<StatusCode> {
+    BusinessProfileUseCase::delete(&state.conn, id, &current_user)
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
+        })?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn save_address(
@@ -232,4 +247,64 @@ pub async fn get_active(
     let response = BusinessProfileMapper::json(business_profile);
 
     Ok(Json(response))
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct DiscoverBusinessProfilesQuery {
+    pub query: Option<String>,
+    pub business_type: Option<String>,
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
+    pub radius_km: Option<f64>,
+    pub limit: Option<i32>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/workout/api/business-profiles/discover",
+    params(
+        ("query" = Option<String>, Query, description = "Business/social name text to search for"),
+        ("business_type" = Option<String>, Query, description = "Filter by profile type: \"Professional\" or \"Company\""),
+        ("latitude" = Option<f64>, Query, description = "Center latitude for a location filter"),
+        ("longitude" = Option<f64>, Query, description = "Center longitude for a location filter"),
+        ("radius_km" = Option<f64>, Query, description = "Search radius in kilometers (default: 200)"),
+        ("limit" = Option<i32>, Query, description = "Max results (default 50, capped at 100)"),
+    ),
+    responses(
+        (status = 200, description = "Business profiles matching the combined name/type/location search", body = [BusinessProfileJson]),
+        (status = 400, description = "Bad request", body = BadRequestErrorJson),
+        (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
+        (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
+        (status = 500, description = "Internal server error", body = InternalServerErrorJson),
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn discover(
+    State(state): State<AppState>,
+    Query(params): Query<DiscoverBusinessProfilesQuery>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<Vec<BusinessProfileJson>>> {
+    let business_type = match params.business_type.as_deref() {
+        Some("Professional") => Some(ProfileType::Professional),
+        Some("Company") => Some(ProfileType::Company),
+        _ => None,
+    };
+
+    let profiles = BusinessProfileUseCase::discover(
+        &state.conn,
+        params.query,
+        business_type,
+        params.latitude,
+        params.longitude,
+        params.radius_km,
+        params.limit.unwrap_or(50),
+    )
+    .await
+    .map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
+    })?;
+
+    Ok(Json(BusinessProfileMapper::json_vec(profiles)))
 }

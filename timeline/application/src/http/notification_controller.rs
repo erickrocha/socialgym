@@ -71,7 +71,7 @@ pub async fn list_notifications(
     responses(
         (status = 200, description = "Notification marked as read", body = MarkNotificationReadJson),
         (status = 401, description = "Unauthorized"),
-        (status = 404, description = "Notification not found"),
+        (status = 400, description = "Notification key is not owned by recipient"),
         (status = 500, description = "Internal server error"),
     ),
     security(("api_key" = []))

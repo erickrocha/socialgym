@@ -27,6 +27,10 @@ base64 = "0.23.1"
 fluent-templates = "0.15.1"
 unic-langid = { version = "0.9", features = ["macros"] }
 
+[dev-dependencies]
+jsonwebtoken = { version = "11.0.0", features = ["rust_crypto"] }
+tower = { version = "0.5.3", features = ["util"] }
+
 [features]
 mock = ["business/mock"]
 

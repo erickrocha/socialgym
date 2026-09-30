@@ -1,4 +1,33 @@
+x-test-aws-environment: &test-aws-environment
+  AWS_REGION: us-east-1
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+  AWS_WORKOUT_BUCKET: socialgym-test-media
+  AWS_ENDPOINT_URL: http://localstack:4566
+  AWS_S3_PUBLIC_ENDPOINT_URL: http://localhost:4566
+  CLOUDFRONT_KEY_PAIR_ID: KTESTSOCIALGYM
+  CLOUDFRONT_DOMAIN: http://localhost:4566/socialgym-test-media
+  PRIVATE_KEY_RAW: ${PRIVATE_KEY_RAW:-}
+
 services:
+  localstack:
+    image: localstack/localstack:4.0.3
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,sqs
+      AWS_DEFAULT_REGION: us-east-1
+      PERSISTENCE: "0"
+    volumes:
+      - ./localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - awslocal s3api head-bucket --bucket socialgym-test-media && awslocal sqs get-queue-url --queue-name person-media-events >/dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
   postgres:
     image: postgis/postgis:18-3.6
     environment:
@@ -47,20 +76,16 @@ services:
       TERMS_VERSION: 1.0.0
       PRIVACY_VERSION: 1.0.0
       HEALTH_DATA_CONSENT_VERSION: 1.0.0
-      AWS_REGION: us-east-1
-      AWS_WORKOUT_BUCKET: test-bucket
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
-      AWS_SQS_QUEUE_URL: http://localhost/test
-      CLOUDFRONT_KEY_PAIR_ID: test
-      CLOUDFRONT_DOMAIN: https://example.test
-      PRIVATE_KEY_RAW: test
+      <<: *test-aws-environment
+      AWS_SQS_QUEUE_URL: http://localstack:4566/000000000000/person-media-events
       INTERNAL_SERVICE_SECRET: c005-internal-secret
       TIMELINE_BASE_URL: http://timeline:8091
       AUTH_RULES_ENABLED: "false"
       RUST_LOG: info
     depends_on:
       postgres:
+        condition: service_healthy
+      localstack:
         condition: service_healthy
 
   integration:
@@ -75,13 +100,7 @@ services:
       GRPC_PORT: 50051
       TLS_CERT_PATH: /etc/grpc/certs/server.crt
       TLS_KEY_PATH: /etc/grpc/certs/server.key
-      AWS_REGION: us-east-1
-      AWS_WORKOUT_BUCKET: test-bucket
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
-      CLOUDFRONT_KEY_PAIR_ID: test
-      CLOUDFRONT_DOMAIN: https://example.test
-      PRIVATE_KEY_RAW: test
+      <<: *test-aws-environment
       ACCESS_TOKEN_SECRET: c005-test-secret
       REFRESH_TOKEN_SECRET: c005-refresh-secret
       RUST_LOG: info
@@ -105,13 +124,7 @@ services:
       DATABASE_URL: mongodb://timeline_test:timeline_test@mongo:27017/timeline_test?authSource=timeline_test
       ACCESS_TOKEN_SECRET: c005-test-secret
       REFRESH_TOKEN_SECRET: c005-refresh-secret
-      AWS_REGION: us-east-1
-      AWS_WORKOUT_BUCKET: test-bucket
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
-      CLOUDFRONT_KEY_PAIR_ID: test
-      CLOUDFRONT_DOMAIN: https://example.test
-      PRIVATE_KEY_RAW: test
+      <<: *test-aws-environment
       GRPC_PROTOCOL: https
       GRPC_HOST: integration
       GRPC_DOMAIN_NAME: integration
@@ -124,6 +137,8 @@ services:
       - ./certs/server.crt:/etc/grpc/certs/server.crt:ro
     depends_on:
       mongo:
+        condition: service_healthy
+      localstack:
         condition: service_healthy
       integration:
         condition: service_started

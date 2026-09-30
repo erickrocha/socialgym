@@ -23,6 +23,31 @@ impl BusinessProfileAddressGateway {
             .await
     }
 
+    /// Finds every business profile address within `radius_km` of a point,
+    /// for professional/marketplace discovery by location.
+    pub async fn find_all_within_radius_of_point(
+        db: &DbConn,
+        latitude: f64,
+        longitude: f64,
+        radius_km: f64,
+    ) -> Result<Vec<business_profile_address::BusinessProfileAddressEntity>, DbErr> {
+        BusinessProfileAddressQuery::find()
+            .from_raw_sql(Statement::from_sql_and_values(
+                DbBackend::Postgres,
+                r#"SELECT bpa.*
+                   FROM business_profile_address AS bpa
+                   WHERE bpa.location IS NOT NULL
+                     AND ST_DWithin(
+                         bpa.location,
+                         ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+                         $3
+                     )"#,
+                [longitude.into(), latitude.into(), (radius_km * 1_000.0).into()],
+            ))
+            .all(db)
+            .await
+    }
+
     pub async fn persist(
         db: &DbConn,
         domain: BusinessProfileAddress,

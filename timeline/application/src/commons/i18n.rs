@@ -66,6 +66,7 @@ pub enum ErrorKey {
     WorkoutNotFound,
 
     PostCreateFailed,
+    PostDeleteFailed,
     FeedFetchFailed,
     CommentAddFailed,
     ReactionAddFailed,
@@ -92,6 +93,7 @@ impl ErrorKey {
             ErrorKey::WorkoutAddFailed => "WORKOUT_ADD_FAILED",
             ErrorKey::WorkoutNotFound => "WORKOUT_NOT_FOUND",
             ErrorKey::PostCreateFailed => "POST_CREATE_FAILED",
+            ErrorKey::PostDeleteFailed => "POST_DELETE_FAILED",
             ErrorKey::FeedFetchFailed => "FEED_FETCH_FAILED",
             ErrorKey::CommentAddFailed => "COMMENT_ADD_FAILED",
             ErrorKey::ReactionAddFailed => "REACTION_ADD_FAILED",
@@ -114,6 +116,7 @@ impl ErrorKey {
             ErrorKey::WorkoutAddFailed => "workout-add-failed",
             ErrorKey::WorkoutNotFound => "workout-not-found",
             ErrorKey::PostCreateFailed => "post-create-failed",
+            ErrorKey::PostDeleteFailed => "post-delete-failed",
             ErrorKey::FeedFetchFailed => "feed-fetch-failed",
             ErrorKey::CommentAddFailed => "comment-add-failed",
             ErrorKey::ReactionAddFailed => "reaction-add-failed",
@@ -156,7 +159,7 @@ mod tests {
         Locale::Dutch,
     ];
 
-    const ALL_KEYS: [ErrorKey; 15] = [
+    const ALL_KEYS: [ErrorKey; 16] = [
         ErrorKey::AuthTokenInvalid,
         ErrorKey::AuthHeaderEmpty,
         ErrorKey::AuthTokenMissing,
@@ -164,6 +167,7 @@ mod tests {
         ErrorKey::WorkoutAddFailed,
         ErrorKey::WorkoutNotFound,
         ErrorKey::PostCreateFailed,
+        ErrorKey::PostDeleteFailed,
         ErrorKey::FeedFetchFailed,
         ErrorKey::CommentAddFailed,
         ErrorKey::ReactionAddFailed,
@@ -210,6 +214,10 @@ mod tests {
         assert_eq!(
             translate(Locale::Dutch, ErrorKey::PostCreateFailed),
             "Post aanmaken mislukt"
+        );
+        assert_eq!(
+            translate(Locale::En, ErrorKey::PostDeleteFailed),
+            "Failed to delete post"
         );
     }
 }
