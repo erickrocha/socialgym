@@ -2,14 +2,12 @@ use crate::commons::grpc_config::GrpcConfig;
 use crate::gateway::friend_gateway::FriendGateway;
 use crate::gateway::post_gateway::PostGateway;
 use crate::repositories::repository::Repository;
-use crate::use_cases::media_use_case::MediaUseCase;
 use crate::commons::authorization::ensure_owns;
 use domain::business_error::BusinessError;
 use domain::user::User;
 use domain::comment::Comment;
 use domain::post::Post;
 use domain::reaction::Reaction;
-use futures::stream::StreamExt;
 use mongodb::Database;
 use crate::use_cases::mention_use_case::MentionUseCase;
 
@@ -71,8 +69,7 @@ impl PostUseCase {
 
         let gateway = PostGateway::new(db);
         let posts = gateway.find_feed(friend_uuids, Self::feed_skip(page, DEFAULT_FEED_PAGE_SIZE), DEFAULT_FEED_PAGE_SIZE).await?;
-        let response = Self::fill_posts(posts).await;
-        Ok(response)
+        Ok(posts)
     }
 
     pub async fn get_business_feed(db: &Database, business_profile_uuid: String, page: u32) -> Result<Vec<Post>, BusinessError> {
@@ -82,8 +79,7 @@ impl PostUseCase {
 
         let gateway = PostGateway::new(db);
         let posts = gateway.find_feed(uuids, Self::feed_skip(page, DEFAULT_FEED_PAGE_SIZE), DEFAULT_FEED_PAGE_SIZE).await?;
-        let response = Self::fill_posts(posts).await;
-        Ok(response)
+        Ok(posts)
     }
 
 
@@ -118,48 +114,18 @@ impl PostUseCase {
 
     /// Only the author may delete their own post.
     pub async fn delete_owned(db: &Database, uuid: String, acting_person_uuid: &str) -> Result<(), BusinessError> {
-        let post = Self::find_by_id(db, uuid.clone())
-            .await
+        let gateway = PostGateway::new(db);
+        let post = gateway
+            .find_by_id_result(&uuid)
+            .await?
             .ok_or_else(|| BusinessError::not_found("Post not found"))?;
         ensure_owns(&post.author_uuid, acting_person_uuid)?;
-        PostGateway::new(db).delete(uuid).await.map(|_| ())
-    }
-
-    async fn fill_posts(posts: Vec<Post>) -> Vec<Post> {
-        const PER_POST_CONCURRENCY: usize = 6;
-
-        let mut posts = posts;
-
-        for post in &mut posts {
-            if post.media.is_empty() {
-                continue;
-            }
-
-            let keys: Vec<String> = post.media.iter().map(|m| m.object_key.clone()).collect();
-
-            let results = futures::stream::iter(keys.into_iter().enumerate())
-                .map(|(idx, key)| async move {
-                    let res = MediaUseCase::generate_cloud_front_signed_url(&key).await;
-                    (idx, res)
-                })
-                .buffer_unordered(PER_POST_CONCURRENCY)
-                .collect::<Vec<(usize, Result<String, BusinessError>)>>()
-                .await;
-
-            for (idx, res) in results {
-                match res {
-                    Ok(signed_url) => {
-                        if let Some(media) = post.media.get_mut(idx) {
-                            media.url = signed_url;
-                        }
-                    }
-                    Err(e) => {
-                        log::error!("Failed to generate signed url for media idx {} in post {:?}: {:?}",idx,post.uuid,e);
-                    }
-                }
-            }
+        let deleted = gateway.delete(uuid).await?;
+        if deleted {
+            Ok(())
+        } else {
+            Err(BusinessError::not_found("Post not found"))
         }
-        posts
     }
 
     fn feed_skip(page: u32, page_size: u64) -> u64 {
@@ -167,7 +133,7 @@ impl PostUseCase {
     }
 
     fn validate_content(content: &str) -> Result<(), BusinessError> {
-        if content.len() > Self::MAX_CONTENT_LEN {
+        if content.chars().count() > Self::MAX_CONTENT_LEN {
             return Err(BusinessError::validation(format!(
                 "content must be at most {} characters",
                 Self::MAX_CONTENT_LEN
@@ -222,6 +188,8 @@ mod tests {
         let oversized = "x".repeat(5001);
         assert!(PostUseCase::validate_content(&oversized).is_err());
         assert!(PostUseCase::validate_content("valid").is_ok());
+        assert!(PostUseCase::validate_content(&"é".repeat(5000)).is_ok());
+        assert!(PostUseCase::validate_content(&"é".repeat(5001)).is_err());
     }
 
     #[test]
@@ -262,4 +230,3 @@ mod tests {
     }
 
 }
-

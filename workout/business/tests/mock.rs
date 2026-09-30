@@ -16,7 +16,11 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
     use business::gateway::friend_gateway::FriendGateway;
     use business::gateway::person_gateway::PersonGateway;
     use business::gateway::workout_gateway::WorkoutGateway;
+    use business::domain::business_profile::BusinessProfile;
+    use business::domain::business_profile_address::BusinessProfileAddress;
+    use business::domain::enums::ProfileType;
     use business::use_cases::authentication::{Authentication, AuthenticationError, ValidateError};
+    use business::use_cases::business_profile_address_use_case::BusinessProfileAddressUseCase;
     use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
     use business::use_cases::consent_use_case::ConsentUseCase;
     use business::use_cases::exercise_use_case::ExerciseUseCase;
@@ -26,6 +30,10 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
     use business::use_cases::person_info_use_case::PersonInfoUseCase;
     use business::use_cases::person_use_case::PersonUseCase;
     use business::use_cases::refresh_token::RefreshToken;
+    use business::use_cases::switch_business_profile::{
+        SwitchBusinessProfile, SwitchBusinessProfileError,
+    };
+    use business::use_cases::team_member_use_case::TeamMemberUseCase;
     use business::use_cases::user_use_case::{UserUseCase, UserUseCaseError};
     use business::use_cases::workout_use_case::WorkoutUseCase;
     use chrono::{DateTime, NaiveDate, Utc};
@@ -45,6 +53,43 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
             visibility: "Public".to_string(),
             created_at: chrono::Utc::now(),
             updated_at: chrono::Utc::now(),
+        }
+    }
+
+    fn business_profile_entity_owned_by(
+        owner_id: i32,
+    ) -> entity::business_profile_entity::BusinessProfileEntity {
+        entity::business_profile_entity::BusinessProfileEntity {
+            id: 1,
+            uuid: Uuid::new_v4(),
+            owner_id,
+            owner_uuid: Uuid::new_v4(),
+            tax_id: "12345".to_string(),
+            business_name: "Gym XYZ".to_string(),
+            business_type: "Professional".to_string(),
+            social_name: None,
+            logo: None,
+            cover_image: None,
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+        }
+    }
+
+    fn team_member_entity(
+        business_profile_id: i32,
+        person_id: i32,
+        status: &str,
+    ) -> entity::team_member_entity::TeamMemberEntity {
+        entity::team_member_entity::TeamMemberEntity {
+            id: 1,
+            uuid: Uuid::new_v4(),
+            business_profile_id,
+            business_profile_uuid: Uuid::new_v4(),
+            person_id,
+            person_uuid: Uuid::new_v4(),
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+            status: status.to_string(),
         }
     }
 
@@ -1402,6 +1447,261 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
         let profiles = result.unwrap();
         assert_eq!(profiles.len(), 1);
         assert_eq!(profiles[0].business_name, "Gym XYZ");
+    }
+
+    #[tokio::test]
+    async fn test_business_profile_use_case_delete_rejects_non_owner() {
+        let uuid = Uuid::new_v4();
+        let owner_uuid = Uuid::new_v4();
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![entity::business_profile_entity::BusinessProfileEntity {
+                id: 1,
+                uuid,
+                owner_id: 1,
+                owner_uuid,
+                tax_id: "12345".to_string(),
+                business_name: "Gym XYZ".to_string(),
+                business_type: "Gym".to_string(),
+                social_name: None,
+                logo: None,
+                cover_image: None,
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            }]])
+            .into_connection();
+
+        let actor = User::new(
+            None,
+            "attacker@example.com".to_string(),
+            "hash".to_string(),
+            2,
+            uuid_to_string(Uuid::new_v4()),
+        );
+
+        let result = BusinessProfileUseCase::delete(&db, 1, &actor).await;
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Forbidden);
+    }
+
+    // Note: the owner-success delete path cascades through a DB transaction
+    // (addresses, team members, profile mapping, then the profile row) and is
+    // covered by integration tests, matching this suite's convention for
+    // transactional delete flows (see the person-address delete note above).
+
+    // TC-001 (SYS-C007-001): a non-owner is rejected on update, mirroring the
+    // existing delete-rejects-non-owner coverage above. The owner-success
+    // create/update/delete round trip is exercised end-to-end by TC-007's
+    // HTTP acceptance test.
+    #[tokio::test]
+    async fn test_business_profile_use_case_update_rejects_non_owner() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![business_profile_entity_owned_by(1)]])
+            .append_query_results::<entity::business_profile_address_entity::BusinessProfileAddressEntity, Vec<_>, Vec<Vec<_>>>(
+                vec![vec![]],
+            )
+            .into_connection();
+
+        let attacker = User::new(
+            None,
+            "attacker@example.com".to_string(),
+            "hash".to_string(),
+            2,
+            uuid_to_string(Uuid::new_v4()),
+        );
+        let mut domain = BusinessProfile::new(
+            2,
+            uuid_to_string(Uuid::new_v4()),
+            "12345".to_string(),
+            "Renamed Gym".to_string(),
+            ProfileType::Professional,
+            None,
+        );
+        domain.id = Some(1);
+
+        let result = BusinessProfileUseCase::update(&db, domain, &attacker).await;
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Forbidden);
+    }
+
+    // ========================
+    // Business Profile Address Use Case Tests (TC-003)
+    // ========================
+
+    #[tokio::test]
+    async fn test_business_profile_address_use_case_save_rejects_non_owner() {
+        // Addresses inherit their authority from the profile they hang off:
+        // saving a new address is denied when the caller isn't the profile owner.
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![business_profile_entity_owned_by(1)]])
+            .append_query_results::<entity::business_profile_address_entity::BusinessProfileAddressEntity, Vec<_>, Vec<Vec<_>>>(
+                vec![vec![]],
+            )
+            .into_connection();
+
+        let address = BusinessProfileAddress::new(
+            1,
+            "1 Main St".to_string(),
+            None,
+            "Boston".to_string(),
+            "MA".to_string(),
+            Some("02101".to_string()),
+            "USA".to_string(),
+        );
+
+        let result =
+            BusinessProfileAddressUseCase::save(&db, address, /* acting_person_id */ 2, Some(42.3601), Some(-71.0589))
+                .await;
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Forbidden);
+    }
+
+    // ========================
+    // Team Member Use Case Tests (TC-006)
+    // ========================
+
+    #[tokio::test]
+    async fn test_team_member_use_case_find_roster_excludes_pending_members() {
+        // Pre-condition: one Accepted member and one Pending invitee exist for
+        // the profile; only the Accepted member's uuid should appear.
+        let profile = business_profile_entity_owned_by(1);
+        let profile_uuid = uuid_to_string(profile.uuid);
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![profile.clone()]])
+            .append_query_results(vec![vec![mock_person_model()]])
+            .append_query_results(vec![vec![team_member_entity(1, 2, "Accepted")]])
+            .into_connection();
+
+        let result = TeamMemberUseCase::find_roster(&db, profile_uuid.as_str()).await;
+
+        assert!(result.is_ok());
+        let roster = result.unwrap();
+        assert_eq!(roster.accepted_member_person_uuids.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_team_member_use_case_ensure_accepted_member_allows_accepted_status() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![team_member_entity(1, 2, "Accepted")]])
+            .into_connection();
+
+        let result = TeamMemberUseCase::ensure_accepted_member(&db, 1, 2).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_team_member_use_case_ensure_accepted_member_forbids_pending_status() {
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![team_member_entity(1, 3, "Pending")]])
+            .into_connection();
+
+        let result = TeamMemberUseCase::ensure_accepted_member(&db, 1, 3).await;
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().kind, BusinessErrorKind::Forbidden);
+    }
+
+    // ========================
+    // Switch Business Profile Use Case Tests (TC-008)
+    // ========================
+
+    #[tokio::test]
+    async fn test_switch_business_profile_activate_rejects_non_owner() {
+        // The profile is owned by person id=1, but the acting person (whoever
+        // the token belongs to) resolves via the DB to person id=2 - a stranger
+        // to the profile.
+        let profile = business_profile_entity_owned_by(1);
+        let profile_uuid = uuid_to_string(profile.uuid);
+        let mut stranger_person = mock_person_model();
+        stranger_person.id = 2;
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![profile]])
+            .append_query_results(vec![vec![stranger_person]])
+            .into_connection();
+
+        let attacker = User::new(
+            None,
+            "attacker@example.com".to_string(),
+            "hash".to_string(),
+            2,
+            uuid_to_string(Uuid::new_v4()),
+        );
+
+        let result = SwitchBusinessProfile::activate(
+            &db,
+            &attacker,
+            profile_uuid,
+            "some-jti".to_string(),
+            Utc::now().timestamp() + 3600,
+        )
+        .await;
+
+        assert!(matches!(result, Err(SwitchBusinessProfileError::Forbidden)));
+    }
+
+    #[tokio::test]
+    async fn test_switch_business_profile_activate_succeeds_for_owner() {
+        let _guard = AUTH_ENV_LOCK.lock().unwrap();
+        clear_auth_toggle_env();
+        env::set_var("TOKEN_REVOCATION_ENABLED", "false");
+        std::env::set_var("ACCESS_TOKEN_SECRET", "test_secret_switch_activate");
+
+        // mock_person_model() resolves to person id=1, matching this profile's owner_id.
+        let profile = business_profile_entity_owned_by(1);
+        let profile_uuid = uuid_to_string(profile.uuid);
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres)
+            .append_query_results(vec![vec![profile]])
+            .append_query_results(vec![vec![mock_person_model()]])
+            .into_connection();
+
+        let owner = User::new(
+            None,
+            "owner@example.com".to_string(),
+            "hash".to_string(),
+            1,
+            uuid_to_string(Uuid::new_v4()),
+        );
+
+        let result = SwitchBusinessProfile::activate(
+            &db,
+            &owner,
+            profile_uuid,
+            "some-jti".to_string(),
+            Utc::now().timestamp() + 3600,
+        )
+        .await;
+
+        clear_auth_toggle_env();
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_business_profile_use_case_discover_requires_a_filter() {
+        // No query text and no location filter: this is a marketplace search,
+        // not a listing, so nothing should be returned (and no query issued).
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres).into_connection();
+
+        let result = BusinessProfileUseCase::discover(&db, None, None, None, None, None, 50).await;
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_business_profile_use_case_discover_ignores_out_of_range_coordinates() {
+        // Out-of-range coordinates are treated as "no location filter", same
+        // as the equivalent guard on person/friend discovery.
+        let db = sea_orm::MockDatabase::new(DbBackend::Postgres).into_connection();
+
+        let result =
+            BusinessProfileUseCase::discover(&db, None, None, Some(999.0), Some(999.0), None, 50)
+                .await;
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
     }
 
     // ========================

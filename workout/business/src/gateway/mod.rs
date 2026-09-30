@@ -1,3 +1,4 @@
+pub mod aws_clients;
 pub mod business_profile_address_gateway;
 pub mod business_profile_gateway;
 pub mod consent_gateway;

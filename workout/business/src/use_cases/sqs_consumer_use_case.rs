@@ -2,13 +2,12 @@ use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::business_error::BusinessError;
 use crate::domain::enums::MimeType;
 use crate::domain::person_media::{PersonMedia, PersonMediaEntityMapper};
+use crate::gateway::aws_clients::{s3_client, sqs_client};
 use crate::gateway::person_gateway::PersonGateway;
 use crate::gateway::person_media_gateway::PersonMediaGateway;
 use crate::gateway::s3_gateway::S3Gateway;
 use crate::gateway::sqs_gateway::SqsGateway;
-use aws_config::BehaviorVersion;
 use aws_sdk_s3::Client as S3Client;
-use aws_sdk_sqs::Client as SqsClient;
 use sea_orm::DbConn;
 use serde::Deserialize;
 use std::env;
@@ -75,9 +74,8 @@ impl SqsConsumerUseCase {
 
         let bucket = env::var(AWS_WORKOUT_BUCKET).unwrap_or_default();
 
-        let shared_config = aws_config::load_defaults(BehaviorVersion::latest()).await;
-        let sqs_client = SqsClient::new(&shared_config);
-        let s3_client = S3Client::new(&shared_config);
+        let sqs_client = sqs_client().await;
+        let s3_client = s3_client().await;
 
         // Long-poll: wait up to 20 s, fetch up to 10 messages per call
         let messages = SqsGateway::receive_messages(&sqs_client, &queue_url, 10, 20).await?;

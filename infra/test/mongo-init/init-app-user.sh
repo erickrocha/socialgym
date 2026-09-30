@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+
 mongosh <<EOF
 use $MONGODB_DATABASE
 if (!db.getUser("$MONGODB_USERNAME")) {

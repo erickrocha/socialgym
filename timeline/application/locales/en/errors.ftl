@@ -7,6 +7,7 @@ workout-find-failed = Failed to find workout
 workout-find-all-failed = Failed to find workouts
 workout-not-found = Workout session not found
 post-create-failed = Failed to create post
+post-delete-failed = Failed to delete post
 feed-fetch-failed = Failed to fetch feed
 comment-add-failed = Failed to add comment
 reaction-add-failed = Failed to add reaction

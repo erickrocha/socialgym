@@ -1,4 +1,5 @@
 use crate::commons::authorization::ensure_owns;
+use crate::commons::functions::is_valid_coordinate;
 use crate::domain::user::User;
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::business_error::BusinessError;
@@ -6,13 +7,14 @@ use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapp
 use crate::domain::business_profile_address::{
     BusinessProfileAddress, BusinessProfileAddressEntityMapper,
 };
-use crate::domain::enums::ImageType;
+use crate::domain::enums::{ImageType, ProfileType};
 use crate::domain::image_storage::ImageStorage;
 use crate::gateway::business_profile_address_gateway::BusinessProfileAddressGateway;
 use crate::gateway::business_profile_gateway::BusinessProfileGateway;
+use crate::gateway::team_member_gateway::TeamMemberGateway;
 use crate::use_cases::common_use_case::{handle_option};
 use crate::use_cases::image_storage_use_case::ImageStorageUseCase;
-use sea_orm::{DbConn};
+use sea_orm::{DbConn, TransactionTrait};
 use entity::business_profile_entity::BusinessProfileEntity;
 use crate::domain::profile::Profile;
 use crate::gateway::profile_gateway::ProfileGateway;
@@ -81,6 +83,104 @@ impl BusinessProfileUseCase {
 
 
         log::info!("Successfully retrieved {} business profiles for owner uuid: {:?}",result.len(),uuid);
+        Ok(result)
+    }
+
+    /// Combined "professional discovery" search: a name/social-name text
+    /// query, a location filter (an explicit lat/long point + radius), a
+    /// `business_type` filter (e.g. "Professional"), or any combination.
+    /// Filters combine with AND; at least one of text/location must be
+    /// supplied, or nothing is returned — this is a public marketplace
+    /// search, not a listing, so an empty query never yields "everything".
+    #[allow(clippy::too_many_arguments)]
+    pub async fn discover(
+        db: &DbConn,
+        query: Option<String>,
+        business_type: Option<ProfileType>,
+        latitude: Option<f64>,
+        longitude: Option<f64>,
+        radius_km: Option<f64>,
+        limit: i32,
+    ) -> Result<Vec<BusinessProfile>, BusinessError> {
+        let trimmed_query = query.as_deref().map(str::trim).filter(|q| !q.is_empty());
+        let search_point = match (latitude, longitude) {
+            (Some(lat), Some(lon)) if is_valid_coordinate(lat, lon) => Some((lat, lon)),
+            _ => None,
+        };
+
+        if trimmed_query.is_none() && search_point.is_none() {
+            return Ok(Vec::new());
+        }
+
+        let business_type_str = business_type.map(|t| t.to_string());
+        let limit_u64 = if limit > 0 { limit as u64 } else { 50 };
+
+        let query_ids: Option<Vec<i32>> = if let Some(text) = trimmed_query {
+            Some(
+                BusinessProfileGateway::search_by_query(
+                    db,
+                    text,
+                    business_type_str.as_deref(),
+                    limit_u64,
+                )
+                .await,
+            )
+        } else {
+            None
+        };
+
+        let location_ids: Option<Vec<i32>> = if let Some((lat, lon)) = search_point {
+            let radius = radius_km
+                .filter(|r| r.is_finite() && *r >= 0.0)
+                .unwrap_or(200.0);
+            let nearby = BusinessProfileAddressGateway::find_all_within_radius_of_point(
+                db, lat, lon, radius,
+            )
+            .await
+            .map_err(|e| BusinessError::infrastructure(format!("Discovery search failed: {}", e)))?;
+            let mut ids: Vec<i32> = nearby
+                .into_iter()
+                .map(|address| address.business_profile_id)
+                .collect();
+            if let Some(business_type_str) = business_type_str.as_deref() {
+                let allowed =
+                    BusinessProfileGateway::find_all_ids_by_business_type(db, business_type_str)
+                        .await;
+                ids.retain(|id| allowed.contains(id));
+            }
+            ids.sort();
+            ids.dedup();
+            Some(ids)
+        } else {
+            None
+        };
+
+        // Combine: both filters supplied -> intersect (AND); only one supplied -> use it as-is.
+        let mut candidate_ids = match (query_ids, location_ids) {
+            (Some(query_ids), Some(location_ids)) => query_ids
+                .into_iter()
+                .filter(|id| location_ids.contains(id))
+                .collect::<Vec<i32>>(),
+            (Some(query_ids), None) => query_ids,
+            (None, Some(location_ids)) => location_ids,
+            (None, None) => Vec::new(),
+        };
+
+        let limit = if limit > 100 {
+            100
+        } else if limit < 1 {
+            50
+        } else {
+            limit
+        };
+        candidate_ids.truncate(limit as usize);
+
+        if candidate_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let business_profiles = BusinessProfileGateway::find_all_by_ids(db, candidate_ids).await;
+        let result = Self::fill_business_profiles(db, business_profiles).await;
         Ok(result)
     }
 
@@ -200,6 +300,59 @@ impl BusinessProfileUseCase {
         let entity = BusinessProfileEntityMapper::from_active_model(updated_profile);
         Ok(entity)
     }
+
+    /// Permanently deletes a business profile owned by `actor`, cascading its
+    /// addresses, team memberships, and profile mapping in a single
+    /// transaction. Object storage is best-effort: a failed image cleanup is
+    /// logged, not fatal, since orphaned S3 objects are recoverable and
+    /// blocking deletion on them would strand the user's request.
+    pub async fn delete(db: &DbConn, id: i32, actor: &User) -> Result<(), BusinessError> {
+        log::info!("Deleting business profile id: {:?}", id);
+        let existing = BusinessProfileGateway::find_by_id(db, id)
+            .await
+            .ok_or_else(|| BusinessError::not_found("Business profile not found"))?;
+        let existing = BusinessProfileEntityMapper::from_model(existing);
+        ensure_owns(existing.owner_id, actor.person_id)?;
+
+        for object_key in [existing.object_key.clone(), existing.cover_image.clone()]
+            .into_iter()
+            .flatten()
+        {
+            if let Err(e) = ImageStorageUseCase::delete_presigned_url(object_key.clone()).await {
+                log::error!(
+                    "Error deleting object {} for business profile {}: {:?}",
+                    object_key,
+                    id,
+                    e
+                );
+            }
+        }
+
+        let txn = db.begin().await.map_err(|e| {
+            BusinessError::infrastructure(format!("Failed to start delete transaction: {}", e))
+        })?;
+        let map_err = |e: sea_orm::DbErr| {
+            BusinessError::infrastructure(format!("Delete cascade failed: {}", e))
+        };
+
+        BusinessProfileAddressGateway::delete_all_by_business_profile_id(&txn, id)
+            .await
+            .map_err(map_err)?;
+        TeamMemberGateway::delete_all_by_business_profile_id(&txn, id)
+            .await
+            .map_err(map_err)?;
+        ProfileGateway::delete_all_by_business_profile_id(&txn, id)
+            .await
+            .map_err(map_err)?;
+        BusinessProfileGateway::delete_by_id(&txn, id)
+            .await
+            .map_err(map_err)?;
+
+        txn.commit().await.map_err(|e| {
+            BusinessError::infrastructure(format!("Failed to commit delete transaction: {}", e))
+        })
+    }
+
     async fn fill_images(business_profile: &mut BusinessProfile) {
         if business_profile.cover_image.is_some() {
             log::info!("Business profile has cover image, generating pre-signed URL");
