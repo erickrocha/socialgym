@@ -1,10 +1,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
 import Button from '../../gui/Button/Button.jsx';
+import { kgToDisplay, resolveWeightUnit, weightUnitLabel } from '../../library/weightUnit.js';
 import './ExerciseList.scss';
 
 const ExerciseList = ({ exercises, workoutName, onAddExercise }) => {
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
+    const weightUnit = useSelector((state) => resolveWeightUnit(state.settings.settings.weightUnit, i18n.language));
 
     if (!exercises || exercises.length === 0) {
         return (
@@ -87,7 +90,9 @@ const ExerciseList = ({ exercises, workoutName, onAddExercise }) => {
                                             {t('workout.weight')}
                                         </span>
                                         <span className="exercise-item__detail-value">
-                                            {exercise.weight} {t('workout.weightUnit')}
+                                            {String(exercise.category || '').toLowerCase() === 'cardio'
+                                                ? exercise.weight
+                                                : `${kgToDisplay(exercise.weight, weightUnit)} ${weightUnitLabel(weightUnit)}`}
                                         </span>
                                     </div>
                                 )}

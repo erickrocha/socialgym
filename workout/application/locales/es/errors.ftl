@@ -31,6 +31,7 @@ friend-send-request-failed = Error al enviar solicitud de amistad
 friend-accept-request-failed = Error al aceptar solicitud de amistad
 friend-deny-request-failed = Error al rechazar solicitud de amistad
 friend-cancel-request-failed = Error al cancelar solicitud de amistad
+friend-remove-failed = Error al eliminar amigo
 team-member-not-found = Miembro del equipo no encontrado
 team-member-send-request-failed = Error al enviar la invitación de miembro del equipo
 team-member-accept-request-failed = Error al aceptar la invitación de miembro del equipo

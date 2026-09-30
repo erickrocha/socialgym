@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/person_provider.dart';
+import '../../providers/settings_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Grouped "completed sets" view — shared by WorkoutSessionDetailPage (saved
@@ -65,15 +66,19 @@ class ExerciseSetsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCardio = category.toLowerCase() == 'cardio';
     final businessType = context.read<PersonProvider>().activeBusinessProfile?.businessType;
+    final unit = context.watch<SettingsProvider>().effectiveWeightUnit(
+      Localizations.localeOf(context).languageCode,
+    );
 
-    final volume = sets.fold<double>(0, (acc, s) {
+    final volumeKg = sets.fold<double>(0, (acc, s) {
       final w = (s['weight'] as num?)?.toDouble() ?? 0.0;
       final r = (s['repsOrDuration'] as num?)?.toInt() ?? 0;
       return acc + w * r;
     });
+    final volume = unit.fromKg(volumeKg);
     final totalLabel = isCardio
         ? '${sets.length}×'
-        : '${sets.length}× · ${volume.toStringAsFixed(0)} ${l10n.workoutWeightUnit}';
+        : '${sets.length}× · ${volume.toStringAsFixed(0)} ${unit.label}';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -166,7 +171,8 @@ class ExerciseSetsCard extends StatelessWidget {
           // Set rows
           ...sets.map((set) {
             final setNum = set['setNumber'] ?? 0;
-            final weight = (set['weight'] as num?)?.toDouble() ?? 0.0;
+            final weightKg = (set['weight'] as num?)?.toDouble() ?? 0.0;
+            final weight = isCardio ? weightKg : unit.fromKg(weightKg);
             final reps = (set['repsOrDuration'] as num?)?.toInt() ?? 0;
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -197,7 +203,7 @@ class ExerciseSetsCard extends StatelessWidget {
                     child: Text(
                       isCardio
                           ? weight.toStringAsFixed(1)
-                          : '${weight.toStringAsFixed(weight == weight.roundToDouble() ? 0 : 1)} kg',
+                          : '${weight.toStringAsFixed(weight == weight.roundToDouble() ? 0 : 1)} ${unit.label}',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,

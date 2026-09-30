@@ -7,6 +7,7 @@ workout-find-failed = Falha ao buscar treino
 workout-find-all-failed = Falha ao buscar treinos
 workout-not-found = Sessao de treino nao encontrada
 post-create-failed = Falha ao criar post
+post-delete-failed = Falha ao eliminar post
 feed-fetch-failed = Falha ao buscar feed
 comment-add-failed = Falha ao adicionar comentario
 reaction-add-failed = Falha ao adicionar reacao

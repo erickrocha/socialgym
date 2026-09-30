@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:socialgym_mobile/models/enums.dart';
+import 'package:socialgym_mobile/utils/weight_unit.dart';
 
 import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
@@ -26,6 +27,7 @@ class _SettingsPageState extends State<SettingsPage> {
   late bool _notificationsEnabled;
   late ContextMenuPosition _contextMenuPosition;
   late Pages _homePage;
+  WeightUnit? _weightUnitOverride;
   bool _dirty = false;
   List<DataExportJob> _exports = const [];
   bool _exportBusy = false;
@@ -39,6 +41,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _contextMenuPosition =
         current.contextMenuPosition ?? ContextMenuPosition.left;
     _homePage = current.homePage ?? Pages.feed;
+    _weightUnitOverride = current.weightUnit;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshFromServer();
@@ -123,6 +126,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _contextMenuPosition =
           refreshed.contextMenuPosition ?? _contextMenuPosition;
       _homePage = refreshed.homePage ?? _homePage;
+      _weightUnitOverride = refreshed.weightUnit;
     });
   }
 
@@ -142,6 +146,7 @@ class _SettingsPageState extends State<SettingsPage> {
       notificationsEnabled: _notificationsEnabled,
       contextMenuPosition: _contextMenuPosition,
       homePage: _homePage,
+      weightUnit: _weightUnitOverride,
     );
 
     final success = await settingsProvider.persistToServer(updated);
@@ -294,6 +299,15 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  String _weightUnitLabel(AppLocalizations l10n, WeightUnit unit) {
+    switch (unit) {
+      case WeightUnit.kilograms:
+        return l10n.settingsWeightUnitKilograms;
+      case WeightUnit.pounds:
+        return l10n.settingsWeightUnitPounds;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -396,6 +410,30 @@ class _SettingsPageState extends State<SettingsPage> {
                   _dirty = true;
                 });
               },
+            ),
+            const SizedBox(height: 24),
+            Text(
+              l10n.settingsWeightUnit,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            SegmentedButton<WeightUnit>(
+              segments: WeightUnit.values
+                  .map(
+                    (unit) => ButtonSegment(
+                      value: unit,
+                      label: Text(_weightUnitLabel(l10n, unit)),
+                    ),
+                  )
+                  .toList(),
+              selected: {
+                _weightUnitOverride ??
+                    WeightUnit.defaultForLanguageCode(_language),
+              },
+              onSelectionChanged: (selection) => setState(() {
+                _weightUnitOverride = selection.first;
+                _dirty = true;
+              }),
             ),
             const SizedBox(height: 32),
             SizedBox(

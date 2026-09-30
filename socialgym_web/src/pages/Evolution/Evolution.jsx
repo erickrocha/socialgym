@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { AppHeader, Sidebar } from '../../commons/gui/index.js';
 import { addEvolutionCheckin, getEvolutionCheckins } from '../../redux/reducers/timeline/index.js';
+import { displayToKg, kgToDisplay, resolveWeightUnit, weightUnitLabel } from '../../commons/library/weightUnit.js';
 import './Evolution.scss';
 import axios from '../../axios.config.js';
 
@@ -40,10 +41,11 @@ const emptyForm = {
 };
 
 const Evolution = () => {
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
     const dispatch = useDispatch();
     const { person } = useSelector((state) => state.person);
     const { checkins, checkinsLoading, checkinsSubmitting, checkinsError } = useSelector((state) => state.timeline);
+    const weightUnit = useSelector((state) => resolveWeightUnit(state.settings.settings.weightUnit, i18n.language));
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [error, setError] = useState(checkinsError);
     const [period, setPeriod] = useState('week');
@@ -101,7 +103,7 @@ const Evolution = () => {
                 note: form.note,
                 visibility: 'Private',
                 composition: {
-                    weight: form.weight ? Number(form.weight) : null,
+                    weight: form.weight ? displayToKg(Number(form.weight), weightUnit) : null,
                     bodyFatPct: form.bodyFatPct ? Number(form.bodyFatPct) : null,
                     muscleMassPct: form.muscleMassPct ? Number(form.muscleMassPct) : null,
                 },
@@ -145,7 +147,7 @@ const Evolution = () => {
                     {latest && (
                         <section className="evolution-latest">
                             <article>
-                                <h2>{latest?.composition?.weight ?? '-'} kg</h2>
+                                <h2>{latest?.composition?.weight != null ? kgToDisplay(latest.composition.weight, weightUnit) : '-'} {weightUnitLabel(weightUnit)}</h2>
                                 <p>{t('evolution.metrics.weight')}</p>
                             </article>
                             <article>
@@ -171,7 +173,7 @@ const Evolution = () => {
                     {healthConsent && <form className="evolution-form" onSubmit={submitCheckin}>
                         <h3>{t('evolution.newCheckin')}</h3>
                         <div className="evolution-form__grid">
-                            <input placeholder={t('evolution.form.weight')} value={form.weight} onChange={(e) => setForm((prev) => ({ ...prev, weight: e.target.value }))} />
+                            <input placeholder={`${t('evolution.form.weight')} (${weightUnitLabel(weightUnit)})`} value={form.weight} onChange={(e) => setForm((prev) => ({ ...prev, weight: e.target.value }))} />
                             <input placeholder={t('evolution.form.bodyFat')} value={form.bodyFatPct} onChange={(e) => setForm((prev) => ({ ...prev, bodyFatPct: e.target.value }))} />
                             <input placeholder={t('evolution.form.muscleMass')} value={form.muscleMassPct} onChange={(e) => setForm((prev) => ({ ...prev, muscleMassPct: e.target.value }))} />
                             <input placeholder={t('evolution.form.chest')} value={form.chest} onChange={(e) => setForm((prev) => ({ ...prev, chest: e.target.value }))} />
@@ -195,7 +197,7 @@ const Evolution = () => {
                                         <p>{checkin.note || t('evolution.noNotes')}</p>
                                     </div>
                                     <div>
-                                        <span>{t('evolution.metrics.weight')}: {checkin?.composition?.weight ?? '-'} kg</span>
+                                        <span>{t('evolution.metrics.weight')}: {checkin?.composition?.weight != null ? kgToDisplay(checkin.composition.weight, weightUnit) : '-'} {weightUnitLabel(weightUnit)}</span>
                                         <span>{t('evolution.metrics.bodyFat')}: {checkin?.composition?.bodyFatPct ?? '-'} %</span>
                                         <span>{t('evolution.metrics.waist')}: {checkin?.circumferences?.waist ?? '-'} cm</span>
                                     </div>

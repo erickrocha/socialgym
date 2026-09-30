@@ -13,7 +13,7 @@ import '../../widgets/person_avatar_widget.dart';
 /// Friend picker that opens (or reuses) a direct conversation.
 ///
 /// Only friends are listed, and the search filters that same list rather than
-/// hitting `FriendsService.searchFriends`: that endpoint also returns people
+/// hitting `GrpcFriendService.searchFriends`: that search also returns people
 /// you are not friends with, and the backend refuses a direct chat with them
 /// (`chatNotFriends`) — offering them here would only produce dead taps.
 class NewConversationPage extends StatefulWidget {

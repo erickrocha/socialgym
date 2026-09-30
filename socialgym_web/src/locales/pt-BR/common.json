@@ -468,6 +468,9 @@
     "notificationsSection": "Notificações",
     "enableNotifications": "Receber alertas e lembretes de treino",
     "homeSection": "Página Inicial Preferida",
+    "weightUnitSection": "Unidade de Peso",
+    "weightUnitKilograms": "Quilogramas (kg)",
+    "weightUnitPounds": "Libras (lbs)",
     "saveBtn": "Salvar Configurações",
     "savedSuccess": "Configurações salvas com sucesso!"
   },

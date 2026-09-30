@@ -9,7 +9,9 @@ import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/person.dart';
 import '../../providers/person_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../config/nav_section.dart';
+import '../../utils/weight_unit.dart';
 import '../../widgets/address/address_form_fields.dart';
 import '../../widgets/main_layout.dart';
 
@@ -66,14 +68,33 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isAddressFormExpanded = false;
   PersonAddress? _editingAddress;
 
+  bool _controllersInitialized = false;
+
   @override
-  void initState() {
-    super.initState();
-    _initControllers();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Deferred from initState: _weightUnit() depends on Localizations,
+    // which isn't available to inherit from until after initState completes.
+    if (!_controllersInitialized) {
+      _controllersInitialized = true;
+      _initControllers();
+    }
+  }
+
+  /// The person's bodyweight is stored in kilograms; this is only the
+  /// display/input unit.
+  WeightUnit _weightUnit() => context.read<SettingsProvider>().effectiveWeightUnit(
+        Localizations.localeOf(context).languageCode,
+      );
+
+  double? _weightFieldToKg(String text) {
+    final entered = double.tryParse(text.trim());
+    return entered == null ? null : _weightUnit().toKg(entered);
   }
 
   void _initControllers() {
     final person = context.read<PersonProvider>().person;
+    final weightUnit = _weightUnit();
     _firstNameController = TextEditingController(text: person?.firstname ?? '');
     _surnameController = TextEditingController(text: person?.surname ?? '');
     _biographyController = TextEditingController(
@@ -87,7 +108,9 @@ class _ProfilePageState extends State<ProfilePage> {
       text: person?.personInfo?.currentCity ?? '',
     );
     _weightController = TextEditingController(
-      text: person?.personInfo?.weight?.toString() ?? '',
+      text: person?.personInfo?.weight != null
+          ? weightUnit.fromKg(person!.personInfo!.weight!).toString()
+          : '',
     );
     _heightController = TextEditingController(
       text: person?.personInfo?.height?.toString() ?? '',
@@ -103,13 +126,16 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _refreshControllers() {
     final person = context.read<PersonProvider>().person;
+    final weightUnit = _weightUnit();
     _firstNameController.text = person?.firstname ?? '';
     _surnameController.text = person?.surname ?? '';
     _biographyController.text = person?.personInfo?.biography ?? '';
     _jobController.text = person?.personInfo?.job ?? '';
     _homeTownController.text = person?.personInfo?.homeTown ?? '';
     _currentCityController.text = person?.personInfo?.currentCity ?? '';
-    _weightController.text = person?.personInfo?.weight?.toString() ?? '';
+    _weightController.text = person?.personInfo?.weight != null
+        ? weightUnit.fromKg(person!.personInfo!.weight!).toString()
+        : '';
     _heightController.text = person?.personInfo?.height?.toString() ?? '';
     _selectedGender = _validDropdownValue(person?.gender, _genderValues);
     _selectedRelationship = _validDropdownValue(
@@ -430,9 +456,7 @@ class _ProfilePageState extends State<ProfilePage> {
         'currentCity': _currentCityController.text.trim().isEmpty
             ? null
             : _currentCityController.text.trim(),
-        'weight': _weightController.text.trim().isEmpty
-            ? null
-            : double.tryParse(_weightController.text.trim()),
+        'weight': _weightFieldToKg(_weightController.text),
         'height': _heightController.text.trim().isEmpty
             ? null
             : double.tryParse(_heightController.text.trim()),
@@ -655,6 +679,9 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildProfileContent(Person person, AppLocalizations l10n, String? businessType) {
+    final weightUnit = context.watch<SettingsProvider>().effectiveWeightUnit(
+      Localizations.localeOf(context).languageCode,
+    );
     return Padding(
       padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 80),
       child: Form(
@@ -827,7 +854,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Expanded(
                   child: _buildTextField(
                     controller: _weightController,
-                    label: l10n.profileWeight,
+                    label: '${l10n.profileWeight} (${weightUnit.label})',
                     icon: Icons.monitor_weight_outlined,
                     keyboardType: TextInputType.number,
                     enabled: _isEditing,

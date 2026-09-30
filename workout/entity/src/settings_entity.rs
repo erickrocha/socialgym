@@ -24,6 +24,7 @@ pub struct Model {
     pub notifications_enabled: bool,
     pub context_menu_position: String,
     pub home_page: String,
+    pub weight_unit: Option<String>,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }

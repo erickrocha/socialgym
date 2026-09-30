@@ -359,6 +359,18 @@ impl WorkoutUseCase {
         Self::fill_exercises(db, workouts).await
     }
 
+    pub fn ensure_owner_uuid(
+        owner_uuid: &str,
+        acting_person_uuid: &str,
+    ) -> Result<(), BusinessError> {
+        if owner_uuid == acting_person_uuid {
+            return Ok(());
+        }
+        Err(BusinessError::forbidden(
+            "You are not authorized to view this owner's workouts",
+        ))
+    }
+
     pub async fn delete_by_id(
         db: &DbConn,
         id: i32,

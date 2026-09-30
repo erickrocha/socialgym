@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppHeader, Button, Toast } from '../../commons/gui';
 import { fetchMySettings, updateMySettings } from '../../redux/reducers/settings/settings.actions';
 import { setLocalSettings } from '../../redux/reducers/settings/settings.slice';
+import { KILOGRAMS, POUNDS, resolveWeightUnit } from '../../commons/library/weightUnit';
 import './Settings.scss';
 import axios from '../../axios.config.js';
 
@@ -17,6 +18,9 @@ export const Settings = () => {
     const [theme, setTheme] = useState('dark');
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [homePage, setHomePage] = useState('/home');
+    // null = no explicit choice — resolveWeightUnit derives the effective
+    // unit from `language` until the person picks one below.
+    const [weightUnitOverride, setWeightUnitOverride] = useState(null);
     const [toastMessage, setToastMessage] = useState('');
     const [exports, setExports] = useState([]);
     const [requestingExport, setRequestingExport] = useState(false);
@@ -32,6 +36,7 @@ export const Settings = () => {
             setTheme(settings.theme || 'dark');
             setNotificationsEnabled(settings.notificationsEnabled ?? true);
             setHomePage(settings.homePage || '/home');
+            setWeightUnitOverride(settings.weightUnit ?? null);
         }
     }, [settings]);
 
@@ -41,7 +46,8 @@ export const Settings = () => {
             language,
             theme,
             notificationsEnabled,
-            homePage
+            homePage,
+            weightUnit: weightUnitOverride
         };
 
         dispatch(setLocalSettings(payload));
@@ -156,6 +162,32 @@ export const Settings = () => {
                                 <option value="/workouts">{t('header.workoutTitle', 'Biblioteca de Treinos (/workouts)')}</option>
                                 <option value="/evolution">{t('header.evolutionTitle', 'Progresso de Evolução (/evolution)')}</option>
                             </select>
+                        </div>
+
+                        <div className="form-section">
+                            <h3>⚖️ {t('settings.weightUnitSection', 'Unidade de Peso')}</h3>
+                            <div className="radio-group">
+                                <label className={`radio-tile ${resolveWeightUnit(weightUnitOverride, language) === KILOGRAMS ? 'selected' : ''}`}>
+                                    <input
+                                        type="radio"
+                                        name="weightUnit"
+                                        value={KILOGRAMS}
+                                        checked={resolveWeightUnit(weightUnitOverride, language) === KILOGRAMS}
+                                        onChange={() => setWeightUnitOverride(KILOGRAMS)}
+                                    />
+                                    <span>{t('settings.weightUnitKilograms', 'Quilogramas (kg)')}</span>
+                                </label>
+                                <label className={`radio-tile ${resolveWeightUnit(weightUnitOverride, language) === POUNDS ? 'selected' : ''}`}>
+                                    <input
+                                        type="radio"
+                                        name="weightUnit"
+                                        value={POUNDS}
+                                        checked={resolveWeightUnit(weightUnitOverride, language) === POUNDS}
+                                        onChange={() => setWeightUnitOverride(POUNDS)}
+                                    />
+                                    <span>{t('settings.weightUnitPounds', 'Libras (lbs)')}</span>
+                                </label>
+                            </div>
                         </div>
 
                         <div className="form-actions">

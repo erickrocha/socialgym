@@ -15,10 +15,21 @@ impl MediaUseCase {
 	) -> Result<String, BusinessError> {
 		log::info!("Generating CloudFront signed URL for object_key: {}", object_key);
 		// 1. Load configs from environment variables
-		let key_id = env::var(CLOUDFRONT_KEY_PAIR_ID).expect("CLOUDFRONT_KEY_PAIR_ID not defined");
-		let domain = env::var(CLOUDFRONT_DOMAIN).expect("CLOUDFRONT_DOMAIN not defined");
-
-		let raw_value = env::var(PRIVATE_KEY_RAW).expect("Private key not found");
+		let key_id = env::var(CLOUDFRONT_KEY_PAIR_ID).map_err(|_| {
+			BusinessError::infrastructure(format!(
+				"Missing required configuration: {CLOUDFRONT_KEY_PAIR_ID}"
+			))
+		})?;
+		let domain = env::var(CLOUDFRONT_DOMAIN).map_err(|_| {
+			BusinessError::infrastructure(format!(
+				"Missing required configuration: {CLOUDFRONT_DOMAIN}"
+			))
+		})?;
+		let raw_value = env::var(PRIVATE_KEY_RAW).map_err(|_| {
+			BusinessError::infrastructure(format!(
+				"Missing required configuration: {PRIVATE_KEY_RAW}"
+			))
+		})?;
 
 		// 2. read the private key from the file system
 		// Note: the private key should be in PEM format, and should be the one associated with the key pair ID used in CloudFront
@@ -34,16 +45,9 @@ impl MediaUseCase {
 			..Default::default()
 		};
 
-		let signed_url = get_signed_url(&resource_url, &options);
-		if signed_url.is_err() {
-			log::error!(
-                "Error generating CloudFront signed URL: {:?}",
-                signed_url.err()
-            );
-			return Err(BusinessError::new(
-				"Failed to generate CloudFront signed URL".to_string(),
-			));
-		}
-		Ok(signed_url.unwrap())
+		get_signed_url(&resource_url, &options).map_err(|error| {
+			log::error!("Error generating CloudFront signed URL: {error:?}");
+			BusinessError::infrastructure("Failed to generate CloudFront signed URL")
+		})
 	}
 }

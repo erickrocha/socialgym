@@ -2,14 +2,12 @@ use crate::commons::grpc_config::GrpcConfig;
 use crate::gateway::friend_gateway::FriendGateway;
 use crate::gateway::post_gateway::PostGateway;
 use crate::repositories::repository::Repository;
-use crate::use_cases::media_use_case::MediaUseCase;
 use crate::commons::authorization::ensure_owns;
 use domain::business_error::BusinessError;
 use domain::user::User;
 use domain::comment::Comment;
 use domain::post::Post;
 use domain::reaction::Reaction;
-use futures::stream::StreamExt;
 use mongodb::Database;
 use crate::use_cases::mention_use_case::MentionUseCase;
 
@@ -26,16 +24,9 @@ impl PostUseCase {
     const MAX_CONTENT_LEN: usize = 5000;
 
     pub async fn create(db: &Database, author: &User, mut post: Post) -> Result<Post, BusinessError> {
-        if post.content.len() > Self::MAX_CONTENT_LEN {
-            return Err(BusinessError::validation(format!(
-                "content must be at most {} characters",
-                Self::MAX_CONTENT_LEN
-            )));
-        }
+        Self::validate_content(&post.content)?;
         let author_person_id = author.person_id;
-        post.author_id = author_person_id;
-        post.author_uuid = author.person_uuid.clone();
-        post.author_name = author.name.clone();
+        Self::apply_post_author(&mut post, author);
         log::info!("Creating post by author: {}", post.author_id);
         let persisted = PostGateway::new(db).persist(post).await?;
 
@@ -78,8 +69,7 @@ impl PostUseCase {
 
         let gateway = PostGateway::new(db);
         let posts = gateway.find_feed(friend_uuids, Self::feed_skip(page, DEFAULT_FEED_PAGE_SIZE), DEFAULT_FEED_PAGE_SIZE).await?;
-        let response = Self::fill_posts(posts).await;
-        Ok(response)
+        Ok(posts)
     }
 
     pub async fn get_business_feed(db: &Database, business_profile_uuid: String, page: u32) -> Result<Vec<Post>, BusinessError> {
@@ -89,21 +79,14 @@ impl PostUseCase {
 
         let gateway = PostGateway::new(db);
         let posts = gateway.find_feed(uuids, Self::feed_skip(page, DEFAULT_FEED_PAGE_SIZE), DEFAULT_FEED_PAGE_SIZE).await?;
-        let response = Self::fill_posts(posts).await;
-        Ok(response)
+        Ok(posts)
     }
 
 
     pub async fn add_comment(db: &Database, author: &User, post_id: String, mut comment: Comment) -> Result<Post, BusinessError> {
-        if comment.content.len() > Self::MAX_CONTENT_LEN {
-            return Err(BusinessError::validation(format!(
-                "content must be at most {} characters",
-                Self::MAX_CONTENT_LEN
-            )));
-        }
+        Self::validate_content(&comment.content)?;
         let author_person_id = author.person_id;
-        comment.author_uuid = author.person_uuid.clone();
-        comment.author_name = author.name.clone();
+        Self::apply_comment_author(&mut comment, author);
         log::info!("Adding comment to post: {}", post_id);
         let uuid = comment.uuid.clone();
         let persisted_post = PostGateway::new(db).add_comment(&post_id, comment).await?;
@@ -131,58 +114,64 @@ impl PostUseCase {
 
     /// Only the author may delete their own post.
     pub async fn delete_owned(db: &Database, uuid: String, acting_person_uuid: &str) -> Result<(), BusinessError> {
-        let post = Self::find_by_id(db, uuid.clone())
-            .await
+        let gateway = PostGateway::new(db);
+        let post = gateway
+            .find_by_id_result(&uuid)
+            .await?
             .ok_or_else(|| BusinessError::not_found("Post not found"))?;
         ensure_owns(&post.author_uuid, acting_person_uuid)?;
-        PostGateway::new(db).delete(uuid).await.map(|_| ())
-    }
-
-    async fn fill_posts(posts: Vec<Post>) -> Vec<Post> {
-        const PER_POST_CONCURRENCY: usize = 6;
-
-        let mut posts = posts;
-
-        for post in &mut posts {
-            if post.media.is_empty() {
-                continue;
-            }
-
-            let keys: Vec<String> = post.media.iter().map(|m| m.object_key.clone()).collect();
-
-            let results = futures::stream::iter(keys.into_iter().enumerate())
-                .map(|(idx, key)| async move {
-                    let res = MediaUseCase::generate_cloud_front_signed_url(&key).await;
-                    (idx, res)
-                })
-                .buffer_unordered(PER_POST_CONCURRENCY)
-                .collect::<Vec<(usize, Result<String, BusinessError>)>>()
-                .await;
-
-            for (idx, res) in results {
-                match res {
-                    Ok(signed_url) => {
-                        if let Some(media) = post.media.get_mut(idx) {
-                            media.url = signed_url;
-                        }
-                    }
-                    Err(e) => {
-                        log::error!("Failed to generate signed url for media idx {} in post {:?}: {:?}",idx,post.uuid,e);
-                    }
-                }
-            }
+        let deleted = gateway.delete(uuid).await?;
+        if deleted {
+            Ok(())
+        } else {
+            Err(BusinessError::not_found("Post not found"))
         }
-        posts
     }
 
     fn feed_skip(page: u32, page_size: u64) -> u64 {
         u64::from(page).saturating_mul(page_size)
+    }
+
+    fn validate_content(content: &str) -> Result<(), BusinessError> {
+        if content.chars().count() > Self::MAX_CONTENT_LEN {
+            return Err(BusinessError::validation(format!(
+                "content must be at most {} characters",
+                Self::MAX_CONTENT_LEN
+            )));
+        }
+        Ok(())
+    }
+
+    fn apply_post_author(post: &mut Post, author: &User) {
+        post.author_id = author.person_id;
+        post.author_uuid = author.person_uuid.clone();
+        post.author_name = author.name.clone();
+    }
+
+    fn apply_comment_author(comment: &mut Comment, author: &User) {
+        comment.author_uuid = author.person_uuid.clone();
+        comment.author_name = author.name.clone();
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::use_cases::post_use_case::PostUseCase;
+    use domain::comment::Comment;
+    use domain::post::Post;
+    use domain::user::User;
+
+    fn test_user() -> User {
+        User::new(
+            "Actor Name".to_string(),
+            "actor@example.com".to_string(),
+            "user-uuid".to_string(),
+            42,
+            "actor-uuid".to_string(),
+            "".to_string(),
+            None,
+        )
+    }
 
     #[test]
     fn page_zero_has_no_skip() {
@@ -194,5 +183,50 @@ mod tests {
         assert_eq!(PostUseCase::feed_skip(1, 20), 20);
     }
 
-}
+    #[test]
+    fn content_limit_rejects_oversized_post_and_comment_content() {
+        let oversized = "x".repeat(5001);
+        assert!(PostUseCase::validate_content(&oversized).is_err());
+        assert!(PostUseCase::validate_content("valid").is_ok());
+        assert!(PostUseCase::validate_content(&"é".repeat(5000)).is_ok());
+        assert!(PostUseCase::validate_content(&"é".repeat(5001)).is_err());
+    }
 
+    #[test]
+    fn post_and_comment_attribution_comes_from_authenticated_user() {
+        let author = test_user();
+        let mut post = Post::updated(
+            "post".to_string(),
+            1,
+            "spoofed-uuid".to_string(),
+            "Spoofed".to_string(),
+            None,
+            None,
+            "content".to_string(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+        );
+        let mut comment = Comment::new(
+            "comment".to_string(),
+            "post".to_string(),
+            "spoofed-uuid".to_string(),
+            "Spoofed".to_string(),
+            None,
+            None,
+            "content".to_string(),
+            None,
+            Vec::new(),
+        );
+
+        PostUseCase::apply_post_author(&mut post, &author);
+        PostUseCase::apply_comment_author(&mut comment, &author);
+
+        assert_eq!(post.author_id, 42);
+        assert_eq!(post.author_uuid, "actor-uuid");
+        assert_eq!(comment.author_uuid, "actor-uuid");
+        assert_eq!(comment.author_name, "Actor Name");
+    }
+
+}

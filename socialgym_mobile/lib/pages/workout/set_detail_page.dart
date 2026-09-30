@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/person_provider.dart';
+import '../../providers/settings_provider.dart';
+import '../../utils/weight_unit.dart';
 
 /// Page to view and edit a single executed set from a workout session
 class SetDetailPage extends StatefulWidget {
@@ -25,16 +27,38 @@ class _SetDetailPageState extends State<SetDetailPage> {
   late FocusNode _repsFocus;
   bool _isEditingWeight = false;
   bool _isEditingReps = false;
+  late bool _isCardio;
+  bool _controllersInitialized = false;
+
+  /// [_weight] is always kilograms; the text field and read-only display show
+  /// it converted to the person's [WeightUnit] preference. Not applicable to
+  /// cardio sets, where this field holds a speed, not a weight.
+  WeightUnit _unit(BuildContext context) =>
+      context.read<SettingsProvider>().effectiveWeightUnit(
+        Localizations.localeOf(context).languageCode,
+      );
 
   @override
   void initState() {
     super.initState();
+    _isCardio = (widget.set['category'] as String?)?.toLowerCase() == 'cardio';
     _weight = (widget.set['weight'] as num?)?.toDouble() ?? 0.0;
     _reps = (widget.set['repsOrDuration'] as num?)?.toInt() ?? 0;
-    _weightController = TextEditingController(text: _weight.toString());
     _repsController = TextEditingController(text: _reps.toString());
     _weightFocus = FocusNode();
     _repsFocus = FocusNode();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Deferred from initState: _unit() depends on Localizations, which isn't
+    // available to inherit from until after initState completes.
+    if (!_controllersInitialized) {
+      _controllersInitialized = true;
+      final displayWeight = _isCardio ? _weight : _unit(context).fromKg(_weight);
+      _weightController = TextEditingController(text: displayWeight.toString());
+    }
   }
 
   @override
@@ -62,7 +86,8 @@ class _SetDetailPageState extends State<SetDetailPage> {
   }
 
   void _finishEditWeight() {
-    final value = double.tryParse(_weightController.text) ?? 0;
+    final entered = double.tryParse(_weightController.text) ?? 0;
+    final value = _isCardio ? entered : _unit(context).toKg(entered);
     setState(() {
       _weight = value;
       _isEditingWeight = false;
@@ -108,6 +133,9 @@ class _SetDetailPageState extends State<SetDetailPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
+    final unit = context.watch<SettingsProvider>().effectiveWeightUnit(
+      Localizations.localeOf(context).languageCode,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -218,8 +246,8 @@ class _SetDetailPageState extends State<SetDetailPage> {
                           icon: '🏋️',
                           label: l10n.workoutWeight,
                           isEditing: _isEditingWeight,
-                          value: _weight,
-                          unit: l10n.workoutWeightUnit,
+                          value: _isCardio ? _weight : unit.fromKg(_weight),
+                          unit: _isCardio ? '' : unit.label,
                           controller: _weightController,
                           focusNode: _weightFocus,
                           onTap: _startEditWeight,

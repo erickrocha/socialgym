@@ -7,6 +7,7 @@ workout-find-failed = Echec de la recherche de l'entrainement
 workout-find-all-failed = Echec de la recherche des entrainements
 workout-not-found = Session d'entrainement introuvable
 post-create-failed = Echec de la creation de la publication
+post-delete-failed = Echec de la suppression de la publication
 feed-fetch-failed = Echec du chargement du fil
 comment-add-failed = Echec de l'ajout du commentaire
 reaction-add-failed = Echec de l'ajout de la reaction

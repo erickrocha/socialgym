@@ -7,12 +7,14 @@ import * as handler from '../../redux/reducers/person/index.js';
 import Modal from "../../commons/gui/Modal/Modal.jsx";
 import {useTranslation} from 'react-i18next';
 import PersonInfoForm from "./PersonInfoForm/index.js";
+import {kgToDisplay, resolveWeightUnit, weightUnitLabel} from "../../commons/library/weightUnit.js";
 
 const Profile = () => {
-    const {t} = useTranslation('common');
+    const {t, i18n} = useTranslation('common');
     const [activeSection, setActiveSection] = useState('about');
 
     const {person, error, loading} = useSelector((state) => state.person);
+    const weightUnit = useSelector((state) => resolveWeightUnit(state.settings.settings.weightUnit, i18n.language));
     const name = person ? `${person?.firstname} ${person?.surname}` : 'User';
 
     const [avatarImage, setAvatarImage] = useState(person?.avatar);
@@ -110,7 +112,7 @@ const Profile = () => {
                                         </div>
                                         <div className="detail-item">
                                             <span className="detail-label">{t('profile.weight')}</span>
-                                            <span className="detail-value">{person.personInfo.weight} kg</span>
+                                            <span className="detail-value">{kgToDisplay(person.personInfo.weight, weightUnit)} {weightUnitLabel(weightUnit)}</span>
                                         </div>
                                         <div className="detail-item">
                                             <span className="detail-label">{t('profile.height')}</span>

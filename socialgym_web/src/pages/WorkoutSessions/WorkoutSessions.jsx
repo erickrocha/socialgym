@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { AppHeader, Sidebar } from '../../commons/gui/index.js';
 import { getWorkoutSessions } from '../../redux/reducers/timeline/index.js';
+import { kgToDisplay, resolveWeightUnit, weightUnitLabel } from '../../commons/library/weightUnit.js';
 import './WorkoutSessions.scss';
 
 const toRange = (period, customStart, customEnd) => {
@@ -29,10 +30,11 @@ const toRange = (period, customStart, customEnd) => {
 };
 
 const WorkoutSessions = () => {
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
     const dispatch = useDispatch();
     const { person } = useSelector((state) => state.person);
     const { sessions, sessionsLoading, sessionsError } = useSelector((state) => state.timeline);
+    const weightUnit = useSelector((state) => resolveWeightUnit(state.settings.settings.weightUnit, i18n.language));
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [period, setPeriod] = useState('week');
 
@@ -62,10 +64,10 @@ const WorkoutSessions = () => {
         const max = Math.max(...list.map((x) => Number(x.totalVolume || 0)), 1);
         return list.map((session) => ({
             label: new Date(session.completedAt || session.startedAt || Date.now()).toLocaleDateString(),
-            value: Number(session.totalVolume || 0),
+            value: kgToDisplay(Number(session.totalVolume || 0), weightUnit),
             pct: Math.max(8, Math.round((Number(session.totalVolume || 0) / max) * 100)),
         }));
-    }, [sessions]);
+    }, [sessions, weightUnit]);
 
     return (
         <div className="sessions-page">
@@ -96,7 +98,7 @@ const WorkoutSessions = () => {
                             <p>{t('workoutSessions.summary.sessions')}</p>
                         </article>
                         <article>
-                            <h2>{summary.totalVolume.toFixed(0)} kg</h2>
+                            <h2>{kgToDisplay(summary.totalVolume, weightUnit).toFixed(0)} {weightUnitLabel(weightUnit)}</h2>
                             <p>{t('workoutSessions.summary.totalVolume')}</p>
                         </article>
                         <article>
@@ -114,7 +116,7 @@ const WorkoutSessions = () => {
                                 {chartData.length === 0 && <p>{t('workoutSessions.empty')}</p>}
                                 {chartData.map((bar) => (
                                     <div key={`${bar.label}-${bar.value}`} className="sessions-chart__item">
-                                        <div className="sessions-chart__bar" style={{ height: `${bar.pct}%` }} title={`${bar.value} kg`} />
+                                        <div className="sessions-chart__bar" style={{ height: `${bar.pct}%` }} title={`${bar.value} ${weightUnitLabel(weightUnit)}`} />
                                         <span>{bar.label}</span>
                                     </div>
                                 ))}
@@ -128,7 +130,7 @@ const WorkoutSessions = () => {
                                             <span>{new Date(session.completedAt || session.startedAt || Date.now()).toLocaleString()}</span>
                                         </div>
                                         <div>
-                                            <strong>{Number(session.totalVolume || 0).toFixed(0)} kg</strong>
+                                            <strong>{kgToDisplay(Number(session.totalVolume || 0), weightUnit).toFixed(0)} {weightUnitLabel(weightUnit)}</strong>
                                             <span>{session.totalSets || 0} {t('workoutSessions.sets')}</span>
                                         </div>
                                     </article>

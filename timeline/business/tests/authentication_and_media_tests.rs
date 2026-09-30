@@ -4,6 +4,7 @@ use domain::access_token::Claims;
 use futures::executor::block_on;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use std::env;
+use std::ffi::OsString;
 use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -13,29 +14,47 @@ fn env_lock() -> &'static Mutex<()> {
 }
 
 struct EnvReset {
-	keys: Vec<String>,
+	values: Vec<(String, Option<OsString>)>,
 }
 
 impl Drop for EnvReset {
 	fn drop(&mut self) {
-		for key in &self.keys {
+		for (key, value) in &self.values {
 			unsafe {
-				env::remove_var(key);
+				match value {
+					Some(value) => env::set_var(key, value),
+					None => env::remove_var(key),
+				}
 			}
 		}
 	}
 }
 
 fn set_env(vars: &[(&str, &str)]) -> EnvReset {
+	let values = vars
+		.iter()
+		.map(|(key, _)| ((*key).to_string(), env::var_os(key)))
+		.collect();
 	for (key, value) in vars {
 		unsafe {
 			env::set_var(key, value);
 		}
 	}
 
-	EnvReset {
-		keys: vars.iter().map(|(k, _)| (*k).to_string()).collect(),
+	EnvReset { values }
+}
+
+fn unset_env(keys: &[&str]) -> EnvReset {
+	let values = keys
+		.iter()
+		.map(|key| ((*key).to_string(), env::var_os(key)))
+		.collect();
+	for key in keys {
+		unsafe {
+			env::remove_var(key);
+		}
 	}
+	EnvReset { values }
 }
 
 fn future_exp() -> i64 {
@@ -137,5 +156,26 @@ fn generate_cloud_front_signed_url_returns_error_for_invalid_private_key() {
 	assert_eq!(
 		result.unwrap_err().to_string(),
 		"Failed to generate CloudFront signed URL"
+	);
+}
+
+#[test]
+fn generate_cloud_front_signed_url_returns_error_when_configuration_is_missing() {
+	let _guard = env_lock().lock().unwrap();
+	let _env = set_env(&[
+		("CLOUDFRONT_DOMAIN", "https://d111111abcdef8.cloudfront.net"),
+		("PRIVATE_KEY_RAW", "invalid-private-key"),
+	]);
+	let _missing_key_pair_id = unset_env(&["CLOUDFRONT_KEY_PAIR_ID"]);
+
+	let error = block_on(MediaUseCase::generate_cloud_front_signed_url(
+		"person/person-uuid-1/post/media-1",
+	))
+	.unwrap_err();
+
+	assert_eq!(error.kind, domain::business_error::BusinessErrorKind::Infrastructure);
+	assert_eq!(
+		error.to_string(),
+		"Missing required configuration: CLOUDFRONT_KEY_PAIR_ID"
 	);
 }

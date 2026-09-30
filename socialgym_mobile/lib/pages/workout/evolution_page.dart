@@ -9,6 +9,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/consent_provider.dart';
 import '../../providers/evolution_provider.dart';
 import '../../providers/person_provider.dart';
+import '../../providers/settings_provider.dart';
+import '../../utils/weight_unit.dart';
 import '../../config/nav_section.dart';
 import '../../widgets/main_layout.dart';
 import '../../widgets/evolution/vitruvian_body_card.dart';
@@ -39,6 +41,10 @@ class _EvolutionPageState extends State<EvolutionPage> {
   DateTime? _customEnd;
   bool _healthConsent = false;
   bool _checkingConsent = true;
+
+  WeightUnit get _weightUnit => context.watch<SettingsProvider>().effectiveWeightUnit(
+        Localizations.localeOf(context).languageCode,
+      );
 
   @override
   void initState() {
@@ -452,8 +458,10 @@ class _EvolutionPageState extends State<EvolutionPage> {
           if (latestCheckin.composition != null) ...[
             _buildMetricRow(
               l10n.evolutionCompositionWeight,
-              latestCheckin.composition!.weight,
-              'kg',
+              latestCheckin.composition!.weight != null
+                  ? _weightUnit.fromKg(latestCheckin.composition!.weight!)
+                  : null,
+              _weightUnit.label,
               businessType,
               decimalPlaces: 3,
             ),
@@ -683,6 +691,9 @@ class _CheckinCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final dateStr = checkin.createdAt.toString().split('T')[0];
+    final unit = context.watch<SettingsProvider>().effectiveWeightUnit(
+      Localizations.localeOf(context).languageCode,
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -728,7 +739,7 @@ class _CheckinCard extends StatelessWidget {
                 _ValueBadge(
                   label: l10n.evolutionCompositionWeight,
                   value:
-                      '${checkin.composition!.weight?.toStringAsFixed(3) ?? '--'} kg',
+                      '${unit.fromKg(checkin.composition!.weight!).toStringAsFixed(3)} ${unit.label}',
                   businessType: businessType,
                 ),
               const SizedBox(width: 8),

@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/evolution_provider.dart';
 import '../../providers/person_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../widgets/visibility_dropdown_field.dart';
 
 class EvolutionCheckInFormDialog extends StatefulWidget {
@@ -150,8 +151,12 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
       return;
     }
 
+    final unit = context.read<SettingsProvider>().effectiveWeightUnit(
+      Localizations.localeOf(context).languageCode,
+    );
+    final enteredWeight = _parseOptionalDouble(_weightController.text);
     final composition = <String, dynamic>{
-      'weight': _parseOptionalDouble(_weightController.text),
+      'weight': enteredWeight != null ? unit.toKg(enteredWeight) : null,
       'bodyFatPct': _parseOptionalDouble(_bodyFatController.text),
       'muscleMassPct': _parseOptionalDouble(_muscleMassController.text),
       'visceralFat': _parseOptionalDouble(_visceralFatController.text),
@@ -190,6 +195,9 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<EvolutionProvider>();
     final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
+    final unit = context.watch<SettingsProvider>().effectiveWeightUnit(
+      Localizations.localeOf(context).languageCode,
+    );
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -276,7 +284,7 @@ class _EvolutionCheckInFormDialogState extends State<EvolutionCheckInFormDialog>
                       const SizedBox(height: 8),
                       _buildNumberField(
                         controller: _weightController,
-                        label: '${l10n.evolutionCompositionWeight} (kg)',
+                        label: '${l10n.evolutionCompositionWeight} (${unit.label})',
                         focusNode: _weightFocus,
                         nextFocus: _bodyFatFocus,
                         businessType: businessType,

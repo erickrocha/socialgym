@@ -19,8 +19,12 @@ use business::use_cases::person_use_case::PersonUseCase;
 pub async fn get_friend_relationships_by_id(
     State(state): State<AppState>,
     Path(person_id): Path<i32>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<FriendJson>>> {
+    PersonUseCase::require_owner_access(person_id, current_user.person_id).map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::FriendNotFound)
+    })?;
     let friends = FriendUseCase::find_all_friend(&state.conn, person_id)
         .await
         .map_err(|error| {
@@ -43,14 +47,24 @@ pub async fn get_friend_relationships_by_id(
 pub async fn get_friend_relationships_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<FriendJson>>> {
+    if uuid != current_user.person_uuid {
+        return Err(ExceptionResponse::Forbidden(locale, ErrorKey::FriendNotFound));
+    }
     let person = PersonUseCase::find_by_uuid(&state.conn, uuid)
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::PersonNotFound)
         })?;
-    get_friend_relationships_by_id(State(state), Path(person.id.unwrap()), Extension(locale)).await
+    get_friend_relationships_by_id(
+        State(state),
+        Path(person.id.unwrap()),
+        Extension(current_user),
+        Extension(locale),
+    )
+    .await
 }
 
 #[utoipa::path(
@@ -193,8 +207,11 @@ pub async fn get_friend(
     state: State<AppState>,
     Path(friend_id): Path<i32>,
     Extension(locale): Extension<Locale>,
-    Extension(_current_user): Extension<User>,
+    Extension(current_user): Extension<User>,
 ) -> HttpResponse<Json<PersonJson>> {
+    FriendUseCase::ensure_accepted_friend(&state.conn, current_user.person_id, friend_id)
+        .await
+        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::FriendNotFound))?;
     let friend_entity = PersonUseCase::get(&state.conn, friend_id).await;
 
     if friend_entity.is_err() {
@@ -232,8 +249,9 @@ pub async fn send_friend_request(
     let person_id = current_user.person_id;
     let request_result =
         FriendUseCase::send_friend_request(&state.conn, person_id, receiver_id).await;
-    if request_result.is_err() {
-        return Err(ExceptionResponse::BadRequest(
+    if let Err(err) = request_result {
+        return Err(ExceptionResponse::from_business(
+            err,
             locale,
             ErrorKey::FriendSendRequestFailed,
         ));
@@ -267,8 +285,9 @@ pub async fn accept_friend_request(
     let person_id = current_user.person_id;
     let request_result =
         FriendUseCase::accept_friend_request(&state.conn, person_id, receiver_id).await;
-    if request_result.is_err() {
-        return Err(ExceptionResponse::BadRequest(
+    if let Err(err) = request_result {
+        return Err(ExceptionResponse::from_business(
+            err,
             locale,
             ErrorKey::FriendAcceptRequestFailed,
         ));
@@ -302,8 +321,9 @@ pub async fn deny_friend_request(
     let person_id = current_user.person_id;
     let request_result =
         FriendUseCase::deny_friend_request(&state.conn, person_id, receiver_id).await;
-    if request_result.is_err() {
-        return Err(ExceptionResponse::BadRequest(
+    if let Err(err) = request_result {
+        return Err(ExceptionResponse::from_business(
+            err,
             locale,
             ErrorKey::FriendDenyRequestFailed,
         ));
@@ -336,11 +356,46 @@ pub async fn cancel_friend_request(
 ) -> HttpResponse<Json<()>> {
     let person_id = current_user.person_id;
     let request_result =
-        FriendUseCase::deny_friend_request(&state.conn, person_id, sender_id).await;
-    if request_result.is_err() {
-        return Err(ExceptionResponse::BadRequest(
+        FriendUseCase::cancel_friend_request(&state.conn, person_id, sender_id).await;
+    if let Err(err) = request_result {
+        return Err(ExceptionResponse::from_business(
+            err,
             locale,
             ErrorKey::FriendCancelRequestFailed,
+        ));
+    }
+    Ok(Json(()))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/workout/api/friends/{friend_id}",
+    responses(
+        (status = 200, description = "Friend removed"),
+        (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
+        (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
+        (status = 404, description = "Not found", body = BadRequestErrorJson),
+        (status = 500, description = "Internal server error", body = InternalServerErrorJson),
+    ),
+    params(
+        ("friend_id" = i32, Path, description = "Person id of the friend to remove")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn remove_friend(
+    state: State<AppState>,
+    Path(friend_id): Path<i32>,
+    Extension(locale): Extension<Locale>,
+    Extension(current_user): Extension<User>,
+) -> HttpResponse<Json<()>> {
+    let person_id = current_user.person_id;
+    if let Err(err) = FriendUseCase::remove_friend(&state.conn, person_id, friend_id).await {
+        return Err(ExceptionResponse::from_business(
+            err,
+            locale,
+            ErrorKey::FriendRemoveFailed,
         ));
     }
     Ok(Json(()))

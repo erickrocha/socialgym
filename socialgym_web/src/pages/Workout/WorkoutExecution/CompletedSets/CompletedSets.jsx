@@ -2,6 +2,7 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { Navigate, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { kgToDisplay, resolveWeightUnit, weightUnitLabel } from '../../../../commons/library/weightUnit.js';
 import './CompletedSets.scss';
 
 /**
@@ -10,17 +11,18 @@ import './CompletedSets.scss';
  * "Completed Sets" box on the workout runner.
  */
 const CompletedSets = () => {
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
     const navigate = useNavigate();
     const { active, workout, executedSets } = useSelector((state) => state.workoutExecution);
+    const weightUnit = useSelector((state) => resolveWeightUnit(state.settings.settings.weightUnit, i18n.language));
 
     if (!active) {
         return <Navigate to="/workouts" replace />;
     }
 
-    const unit = t('workout.weightUnit');
+    const unit = weightUnitLabel(weightUnit);
     const isCardio = (category) => String(category || '').toLowerCase() === 'cardio';
-    const volumeOf = (sets) => sets.reduce((acc, s) => acc + (s.weight * s.reps), 0);
+    const volumeOf = (sets) => kgToDisplay(sets.reduce((acc, s) => acc + (s.weight * s.reps), 0), weightUnit);
 
     // Group by exercise, preserving completion order.
     const groups = [];
@@ -40,9 +42,12 @@ const CompletedSets = () => {
         group.sets.push(set);
     }
 
-    const totalVolume = executedSets.reduce(
-        (acc, s) => (isCardio(s.category) ? acc : acc + s.weight * s.reps),
-        0
+    const totalVolume = kgToDisplay(
+        executedSets.reduce(
+            (acc, s) => (isCardio(s.category) ? acc : acc + s.weight * s.reps),
+            0
+        ),
+        weightUnit
     );
 
     const formatClock = (iso) => {
@@ -96,7 +101,8 @@ const CompletedSets = () => {
                                         {t('workoutExecution.set')} {set.setNumber}
                                     </span>
                                     <span className="completed-sets__row-details">
-                                        {set.weight}{unit} × {set.reps}
+                                        {isCardio(set.category) ? set.weight : kgToDisplay(set.weight, weightUnit)}
+                                        {isCardio(set.category) ? '' : unit} × {set.reps}
                                         {set.completedAt && ` · ${formatClock(set.completedAt)}`}
                                     </span>
                                 </li>

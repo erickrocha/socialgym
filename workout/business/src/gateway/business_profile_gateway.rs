@@ -4,8 +4,8 @@ use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapp
 use entity::business_profile_entity::{ActiveModel, BusinessProfileEntity};
 use entity::prelude::BusinessProfileEntity as BusinessProfileQuery;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, DeleteResult, EntityTrait,
-    PaginatorTrait, QueryFilter,
+    ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DbConn, DbErr, DeleteResult,
+    EntityTrait, PaginatorTrait, QueryFilter, QuerySelect,
 };
 
 pub struct BusinessProfileGateway {}
@@ -62,6 +62,51 @@ impl BusinessProfileGateway {
             .all(db)
             .await
             .unwrap_or_else(|_| Vec::new())
+    }
+
+    /// Text search over `business_name`/`social_name`, optionally narrowed to a
+    /// single `business_type` (e.g. "Professional"). Powers marketplace/
+    /// professional discovery alongside the location filter in
+    /// `BusinessProfileAddressGateway::find_all_within_radius_of_point`.
+    pub async fn search_by_query(
+        db: &DbConn,
+        query: &str,
+        business_type: Option<&str>,
+        limit: u64,
+    ) -> Vec<i32> {
+        let search_pattern = format!("%{}%", query);
+        let mut condition = Condition::any()
+            .add(entity::business_profile_entity::Column::BusinessName.like(&search_pattern))
+            .add(entity::business_profile_entity::Column::SocialName.like(&search_pattern));
+
+        let mut find = BusinessProfileQuery::find().filter(condition.clone());
+        if let Some(business_type) = business_type {
+            condition = Condition::all()
+                .add(condition)
+                .add(entity::business_profile_entity::Column::BusinessType.eq(business_type));
+            find = BusinessProfileQuery::find().filter(condition);
+        }
+
+        find.limit(limit)
+            .all(db)
+            .await
+            .unwrap_or_else(|_| Vec::new())
+            .into_iter()
+            .map(|p| p.id)
+            .collect()
+    }
+
+    /// Every business profile of a given `business_type`, for discovery
+    /// requests supplying only a location filter (no text query).
+    pub async fn find_all_ids_by_business_type(db: &DbConn, business_type: &str) -> Vec<i32> {
+        BusinessProfileQuery::find()
+            .filter(entity::business_profile_entity::Column::BusinessType.eq(business_type))
+            .all(db)
+            .await
+            .unwrap_or_else(|_| Vec::new())
+            .into_iter()
+            .map(|p| p.id)
+            .collect()
     }
 
     /// Deletes a single business profile, as part of an account-purge cascade —

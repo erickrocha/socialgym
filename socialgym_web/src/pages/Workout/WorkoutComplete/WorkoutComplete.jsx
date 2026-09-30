@@ -1,10 +1,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
 import Button from '../../../commons/gui/Button/Button.jsx';
+import { kgToDisplay, resolveWeightUnit, weightUnitLabel } from '../../../commons/library/weightUnit.js';
 import './WorkoutComplete.scss';
 
 const WorkoutComplete = ({ workoutSession, onClose, onSave }) => {
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
+    const weightUnit = useSelector((state) => resolveWeightUnit(state.settings.settings.weightUnit, i18n.language));
 
     const formatDuration = (seconds) => {
         const mins = Math.floor(seconds / 60);
@@ -13,9 +16,11 @@ const WorkoutComplete = ({ workoutSession, onClose, onSave }) => {
     };
 
     const getTotalWeight = () => {
-        return workoutSession?.executedSets?.reduce((acc, set) => {
+        const totalKg = workoutSession?.executedSets?.reduce((acc, set) => {
+            if (String(set.category || '').toLowerCase() === 'cardio') return acc;
             return acc + (set.weight * set.reps);
         }, 0) || 0;
+        return kgToDisplay(totalKg, weightUnit);
     };
 
     const getCompletedSets = () => {
@@ -79,7 +84,7 @@ const WorkoutComplete = ({ workoutSession, onClose, onSave }) => {
                             {getTotalWeight().toLocaleString()}
                         </span>
                         <span className="workout-complete__stat-label">
-                            {t('workoutExecution.totalVolume')} ({t('workout.weightUnit')})
+                            {t('workoutExecution.totalVolume')} ({weightUnitLabel(weightUnit)})
                         </span>
                     </div>
                 </div>

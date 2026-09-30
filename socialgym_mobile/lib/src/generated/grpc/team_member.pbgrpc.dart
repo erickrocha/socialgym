@@ -78,6 +78,16 @@ class TeamMemberServiceClient extends $grpc.Client {
         options: options);
   }
 
+  /// Consumed by timeline's chat feature: one uuid-keyed call returning
+  /// everyone allowed in a business profile's team chat (owner + Accepted
+  /// members) plus the business identity used to attribute owner messages.
+  $grpc.ResponseFuture<$0.TeamRosterResponse> getTeamRoster(
+    $0.TeamRosterRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$getTeamRoster, request, options: options);
+  }
+
   // method descriptors
 
   static final _$getTeamMemberPage =
@@ -110,6 +120,11 @@ class TeamMemberServiceClient extends $grpc.Client {
           '/grpc.team_member.TeamMemberService/CancelTeamMemberRequest',
           ($0.TeamMemberRequest value) => value.writeToBuffer(),
           $0.TeamMember.fromBuffer);
+  static final _$getTeamRoster =
+      $grpc.ClientMethod<$0.TeamRosterRequest, $0.TeamRosterResponse>(
+          '/grpc.team_member.TeamMemberService/GetTeamRoster',
+          ($0.TeamRosterRequest value) => value.writeToBuffer(),
+          $0.TeamRosterResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('grpc.team_member.TeamMemberService')
@@ -161,6 +176,13 @@ abstract class TeamMemberServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $0.TeamMemberRequest.fromBuffer(value),
         ($0.TeamMember value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.TeamRosterRequest, $0.TeamRosterResponse>(
+        'GetTeamRoster',
+        getTeamRoster_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $0.TeamRosterRequest.fromBuffer(value),
+        ($0.TeamRosterResponse value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.TeamMemberPageResponse> getTeamMemberPage_Pre(
@@ -215,4 +237,13 @@ abstract class TeamMemberServiceBase extends $grpc.Service {
 
   $async.Future<$0.TeamMember> cancelTeamMemberRequest(
       $grpc.ServiceCall call, $0.TeamMemberRequest request);
+
+  $async.Future<$0.TeamRosterResponse> getTeamRoster_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.TeamRosterRequest> $request) async {
+    return getTeamRoster($call, await $request);
+  }
+
+  $async.Future<$0.TeamRosterResponse> getTeamRoster(
+      $grpc.ServiceCall call, $0.TeamRosterRequest request);
 }

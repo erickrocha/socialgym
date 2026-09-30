@@ -141,6 +141,7 @@ class Friend extends $pb.GeneratedMessage {
     $core.String? personUuid,
     $core.int? friendId,
     $core.String? friendUuid,
+    $core.String? status,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -149,6 +150,7 @@ class Friend extends $pb.GeneratedMessage {
     if (personUuid != null) result.personUuid = personUuid;
     if (friendId != null) result.friendId = friendId;
     if (friendUuid != null) result.friendUuid = friendUuid;
+    if (status != null) result.status = status;
     return result;
   }
 
@@ -171,6 +173,7 @@ class Friend extends $pb.GeneratedMessage {
     ..aOS(4, _omitFieldNames ? '' : 'personUuid')
     ..aI(5, _omitFieldNames ? '' : 'friendId')
     ..aOS(6, _omitFieldNames ? '' : 'friendUuid')
+    ..aOS(7, _omitFieldNames ? '' : 'status')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -244,14 +247,139 @@ class Friend extends $pb.GeneratedMessage {
   $core.bool hasFriendUuid() => $_has(5);
   @$pb.TagNumber(6)
   void clearFriendUuid() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get status => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set status($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasStatus() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearStatus() => $_clearField(7);
+}
+
+/// person_id is the other party in the friendship; the caller is the
+/// authenticated user resolved from the bearer token.
+class FriendRequestRequest extends $pb.GeneratedMessage {
+  factory FriendRequestRequest({
+    $core.int? personId,
+  }) {
+    final result = create();
+    if (personId != null) result.personId = personId;
+    return result;
+  }
+
+  FriendRequestRequest._();
+
+  factory FriendRequestRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory FriendRequestRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FriendRequestRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.friend'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'personId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FriendRequestRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FriendRequestRequest copyWith(void Function(FriendRequestRequest) updates) =>
+      super.copyWith((message) => updates(message as FriendRequestRequest))
+          as FriendRequestRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static FriendRequestRequest create() => FriendRequestRequest._();
+  @$core.override
+  FriendRequestRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static FriendRequestRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<FriendRequestRequest>(create);
+  static FriendRequestRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get personId => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set personId($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasPersonId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPersonId() => $_clearField(1);
+}
+
+class RemoveFriendResponse extends $pb.GeneratedMessage {
+  factory RemoveFriendResponse({
+    $core.bool? success,
+  }) {
+    final result = create();
+    if (success != null) result.success = success;
+    return result;
+  }
+
+  RemoveFriendResponse._();
+
+  factory RemoveFriendResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory RemoveFriendResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemoveFriendResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.friend'),
+      createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'success')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveFriendResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveFriendResponse copyWith(void Function(RemoveFriendResponse) updates) =>
+      super.copyWith((message) => updates(message as RemoveFriendResponse))
+          as RemoveFriendResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RemoveFriendResponse create() => RemoveFriendResponse._();
+  @$core.override
+  RemoveFriendResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static RemoveFriendResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemoveFriendResponse>(create);
+  static RemoveFriendResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get success => $_getBF(0);
+  @$pb.TagNumber(1)
+  set success($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSuccess() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSuccess() => $_clearField(1);
 }
 
 class FriendPageRequest extends $pb.GeneratedMessage {
   factory FriendPageRequest({
     $core.int? personId,
+    $core.double? latitude,
+    $core.double? longitude,
+    $core.double? radiusKm,
   }) {
     final result = create();
     if (personId != null) result.personId = personId;
+    if (latitude != null) result.latitude = latitude;
+    if (longitude != null) result.longitude = longitude;
+    if (radiusKm != null) result.radiusKm = radiusKm;
     return result;
   }
 
@@ -269,6 +397,9 @@ class FriendPageRequest extends $pb.GeneratedMessage {
       package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.friend'),
       createEmptyInstance: create)
     ..aI(1, _omitFieldNames ? '' : 'personId')
+    ..aD(2, _omitFieldNames ? '' : 'latitude')
+    ..aD(3, _omitFieldNames ? '' : 'longitude')
+    ..aD(4, _omitFieldNames ? '' : 'radiusKm')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -298,6 +429,33 @@ class FriendPageRequest extends $pb.GeneratedMessage {
   $core.bool hasPersonId() => $_has(0);
   @$pb.TagNumber(1)
   void clearPersonId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.double get latitude => $_getN(1);
+  @$pb.TagNumber(2)
+  set latitude($core.double value) => $_setDouble(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasLatitude() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearLatitude() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.double get longitude => $_getN(2);
+  @$pb.TagNumber(3)
+  set longitude($core.double value) => $_setDouble(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasLongitude() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearLongitude() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.double get radiusKm => $_getN(3);
+  @$pb.TagNumber(4)
+  set radiusKm($core.double value) => $_setDouble(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasRadiusKm() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearRadiusKm() => $_clearField(4);
 }
 
 class FriendPageResponse extends $pb.GeneratedMessage {
@@ -368,6 +526,160 @@ class FriendPageResponse extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(4)
   $pb.PbList<$1.Person> get sentRequests => $_getList(3);
+}
+
+/// Combined name/location search over people the caller could befriend.
+/// person_id is taken from the auth token.
+class SearchFriendsRequest extends $pb.GeneratedMessage {
+  factory SearchFriendsRequest({
+    $core.String? query,
+    $core.double? latitude,
+    $core.double? longitude,
+    $core.double? radiusKm,
+    $core.int? limit,
+  }) {
+    final result = create();
+    if (query != null) result.query = query;
+    if (latitude != null) result.latitude = latitude;
+    if (longitude != null) result.longitude = longitude;
+    if (radiusKm != null) result.radiusKm = radiusKm;
+    if (limit != null) result.limit = limit;
+    return result;
+  }
+
+  SearchFriendsRequest._();
+
+  factory SearchFriendsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory SearchFriendsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SearchFriendsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.friend'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'query')
+    ..aD(2, _omitFieldNames ? '' : 'latitude')
+    ..aD(3, _omitFieldNames ? '' : 'longitude')
+    ..aD(4, _omitFieldNames ? '' : 'radiusKm')
+    ..aI(5, _omitFieldNames ? '' : 'limit')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SearchFriendsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SearchFriendsRequest copyWith(void Function(SearchFriendsRequest) updates) =>
+      super.copyWith((message) => updates(message as SearchFriendsRequest))
+          as SearchFriendsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static SearchFriendsRequest create() => SearchFriendsRequest._();
+  @$core.override
+  SearchFriendsRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static SearchFriendsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SearchFriendsRequest>(create);
+  static SearchFriendsRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get query => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set query($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasQuery() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearQuery() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.double get latitude => $_getN(1);
+  @$pb.TagNumber(2)
+  set latitude($core.double value) => $_setDouble(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasLatitude() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearLatitude() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.double get longitude => $_getN(2);
+  @$pb.TagNumber(3)
+  set longitude($core.double value) => $_setDouble(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasLongitude() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearLongitude() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.double get radiusKm => $_getN(3);
+  @$pb.TagNumber(4)
+  set radiusKm($core.double value) => $_setDouble(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasRadiusKm() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearRadiusKm() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.int get limit => $_getIZ(4);
+  @$pb.TagNumber(5)
+  set limit($core.int value) => $_setSignedInt32(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasLimit() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearLimit() => $_clearField(5);
+}
+
+class SearchFriendsResponse extends $pb.GeneratedMessage {
+  factory SearchFriendsResponse({
+    $core.Iterable<$1.Person>? people,
+  }) {
+    final result = create();
+    if (people != null) result.people.addAll(people);
+    return result;
+  }
+
+  SearchFriendsResponse._();
+
+  factory SearchFriendsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory SearchFriendsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SearchFriendsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.friend'),
+      createEmptyInstance: create)
+    ..pPM<$1.Person>(1, _omitFieldNames ? '' : 'people',
+        subBuilder: $1.Person.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SearchFriendsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SearchFriendsResponse copyWith(
+          void Function(SearchFriendsResponse) updates) =>
+      super.copyWith((message) => updates(message as SearchFriendsResponse))
+          as SearchFriendsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static SearchFriendsResponse create() => SearchFriendsResponse._();
+  @$core.override
+  SearchFriendsResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static SearchFriendsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SearchFriendsResponse>(create);
+  static SearchFriendsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$1.Person> get people => $_getList(0);
 }
 
 const $core.bool _omitFieldNames =

@@ -31,6 +31,7 @@ friend-send-request-failed = Fout bij het verzenden van vriendschapsverzoek
 friend-accept-request-failed = Fout bij het accepteren van vriendschapsverzoek
 friend-deny-request-failed = Fout bij het weigeren van vriendschapsverzoek
 friend-cancel-request-failed = Fout bij het annuleren van vriendschapsverzoek
+friend-remove-failed = Fout bij het verwijderen van vriend
 team-member-not-found = Teamlid niet gevonden
 team-member-send-request-failed = Fout bij het verzenden van teamlidverzoek
 team-member-accept-request-failed = Fout bij het accepteren van teamlidverzoek

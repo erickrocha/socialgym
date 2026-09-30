@@ -31,6 +31,7 @@ friend-send-request-failed = Échec de l'envoi de la demande d'ami
 friend-accept-request-failed = Échec de l'acceptation de la demande d'ami
 friend-deny-request-failed = Échec du refus de la demande d'ami
 friend-cancel-request-failed = Échec de l'annulation de la demande d'ami
+friend-remove-failed = Échec de la suppression de l'ami
 team-member-not-found = Membre de l'équipe non trouvé
 team-member-send-request-failed = Échec de l'envoi de l'invitation de membre de l'équipe
 team-member-accept-request-failed = Échec de l'acceptation de l'invitation de membre de l'équipe

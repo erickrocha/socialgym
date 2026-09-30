@@ -7,7 +7,10 @@ const initialState = {
         theme: 'dark',
         notificationsEnabled: true,
         contextMenuPosition: 'Left',
-        homePage: '/home'
+        homePage: '/home',
+        // null = no explicit choice yet — the effective unit is derived
+        // from `language` instead (see resolveWeightUnit).
+        weightUnit: null
     },
     loading: false,
     error: null,

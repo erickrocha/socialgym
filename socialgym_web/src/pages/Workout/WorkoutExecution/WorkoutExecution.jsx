@@ -9,10 +9,11 @@ import {
     finishExecution,
     endExecution,
 } from '../../../redux/reducers/workoutExecution/index.js';
+import { displayToKg, kgToDisplay, resolveWeightUnit, weightUnitLabel } from '../../../commons/library/weightUnit.js';
 import './WorkoutExecution.scss';
 
 const WorkoutExecution = () => {
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
@@ -23,6 +24,7 @@ const WorkoutExecution = () => {
         executedSets,
         startedAt,
     } = useSelector((state) => state.workoutExecution);
+    const weightUnit = useSelector((state) => resolveWeightUnit(state.settings.settings.weightUnit, i18n.language));
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [editValues, setEditValues] = useState({
@@ -219,14 +221,17 @@ const WorkoutExecution = () => {
                                 <input
                                     type="number"
                                     className="workout-execution__value-input"
-                                    value={editValues.weight}
-                                    onChange={(e) => handleInputChange('weight', e.target.value)}
+                                    value={kgToDisplay(editValues.weight, weightUnit)}
+                                    onChange={(e) => setEditValues((prev) => ({
+                                        ...prev,
+                                        weight: displayToKg(parseFloat(e.target.value) || 0, weightUnit)
+                                    }))}
                                     min="0"
                                     step="0.5"
                                 />
                             ) : (
                                 <span className="workout-execution__value-number">
-                                    {editValues.weight} {t('workout.weightUnit')}
+                                    {kgToDisplay(editValues.weight, weightUnit)} {weightUnitLabel(weightUnit)}
                                 </span>
                             )}
                         </div>
@@ -304,7 +309,7 @@ const WorkoutExecution = () => {
                                 <span className="workout-execution__completed-check">✓</span>
                                 <span className="workout-execution__completed-name">{set.exerciseName}</span>
                                 <span className="workout-execution__completed-details">
-                                    {t('workoutExecution.set')} {set.setNumber} • {set.weight}{t('workout.weightUnit')} × {set.reps}
+                                    {t('workoutExecution.set')} {set.setNumber} • {kgToDisplay(set.weight, weightUnit)}{weightUnitLabel(weightUnit)} × {set.reps}
                                 </span>
                             </div>
                         ))}

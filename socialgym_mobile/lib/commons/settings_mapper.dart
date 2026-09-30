@@ -4,6 +4,7 @@ import 'package:socialgym_mobile/models/settings.dart';
 import 'package:socialgym_mobile/services/grpc/grpc_settings_service.dart';
 import 'package:socialgym_mobile/src/generated/grpc/settings.pb.dart'
     as $settings;
+import 'package:socialgym_mobile/utils/weight_unit.dart';
 
 class SettingsMapper implements Mapper<Settings, $settings.Setting> {
   @override
@@ -20,6 +21,7 @@ class SettingsMapper implements Mapper<Settings, $settings.Setting> {
           ? GrpcSettingsService.positionToWire(domain.contextMenuPosition!)
           : null,
       homePage: domain.homePage?.toStringValue(),
+      weightUnit: domain.weightUnit?.wireValue ?? '',
       createdAt: domain.createdAt.toIso8601String(),
       updatedAt: domain.updatedAt.toIso8601String(),
     );
@@ -39,6 +41,8 @@ class SettingsMapper implements Mapper<Settings, $settings.Setting> {
         proto.contextMenuPosition,
       ),
       homePage: Pages.fromString(proto.homePage),
+      weightUnit:
+          proto.weightUnit.isNotEmpty ? WeightUnit.fromString(proto.weightUnit) : null,
       createdAt: proto.createdAt.isNotEmpty
           ? DateTime.parse(proto.createdAt)
           : null,

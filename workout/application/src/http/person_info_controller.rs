@@ -8,9 +8,7 @@ use crate::infrastructure::mapper::{Mapper, PersonInfoMapper};
 use crate::AppState;
 use axum::extract::{Path, State};
 use axum::{Extension, Json};
-use business::commons::legal_documents;
 use business::domain::user::User;
-use business::use_cases::consent_use_case::ConsentUseCase;
 use business::use_cases::person_info_use_case::PersonInfoUseCase;
 
 #[utoipa::path(
@@ -46,15 +44,6 @@ pub async fn update_person_info(
             locale,
             ErrorKey::PersonInfoNotUpdated,
         ));
-    }
-    if payload.weight.is_some() || payload.height.is_some() {
-        ConsentUseCase::require_current(
-            &state.conn,
-            current_user.person_id,
-            legal_documents::HEALTH_DATA,
-        )
-        .await
-        .map_err(|_| ExceptionResponse::Forbidden(locale, ErrorKey::ConsentRequired))?;
     }
     let domain = PersonInfoMapper::domain(payload);
 

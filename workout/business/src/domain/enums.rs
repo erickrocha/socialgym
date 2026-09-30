@@ -336,3 +336,41 @@ impl Difficulty {
         }
     }
 }
+
+/// A person's explicit weight-unit override, stored on `Settings`. Absence of
+/// an override (`Settings.weight_unit == None`) means the effective unit is
+/// derived live from the person's current language instead.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum WeightUnit {
+    Kilograms,
+    Pounds,
+}
+
+impl Display for WeightUnit {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            WeightUnit::Kilograms => write!(f, "Kilograms"),
+            WeightUnit::Pounds => write!(f, "Pounds"),
+        }
+    }
+}
+
+impl WeightUnit {
+    pub fn from_string(s: &str) -> WeightUnit {
+        match s {
+            "Kilograms" => WeightUnit::Kilograms,
+            "Pounds" => WeightUnit::Pounds,
+            _ => WeightUnit::Kilograms,
+        }
+    }
+
+    /// The unit conventionally associated with a language, used only until a
+    /// person makes an explicit choice in `Settings`.
+    pub fn default_for_language(language: &str) -> WeightUnit {
+        if language.to_lowercase().starts_with("en") {
+            WeightUnit::Pounds
+        } else {
+            WeightUnit::Kilograms
+        }
+    }
+}

@@ -603,6 +603,24 @@ abstract class AppLocalizations {
   /// **'Bottom'**
   String get settingsContextMenuPositionBottom;
 
+  /// No description provided for @settingsWeightUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight unit'**
+  String get settingsWeightUnit;
+
+  /// No description provided for @settingsWeightUnitKilograms.
+  ///
+  /// In en, this message translates to:
+  /// **'Kilograms (kg)'**
+  String get settingsWeightUnitKilograms;
+
+  /// No description provided for @settingsWeightUnitPounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Pounds (lbs)'**
+  String get settingsWeightUnitPounds;
+
   /// No description provided for @settingsHomePage.
   ///
   /// In en, this message translates to:

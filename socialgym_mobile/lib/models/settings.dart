@@ -1,5 +1,6 @@
 
 import 'package:socialgym_mobile/models/enums.dart';
+import 'package:socialgym_mobile/utils/weight_unit.dart';
 
 class Settings {
   final int? id;
@@ -11,6 +12,10 @@ class Settings {
   final bool? notificationsEnabled;
   final ContextMenuPosition? contextMenuPosition;
   final Pages? homePage;
+  /// Explicit unit override. `null` means "no explicit choice yet" — the
+  /// effective unit is derived from the current language instead (see
+  /// [SettingsProvider.effectiveWeightUnit]).
+  final WeightUnit? weightUnit;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -24,6 +29,7 @@ class Settings {
     this.notificationsEnabled = true,
     this.contextMenuPosition = ContextMenuPosition.left,
     this.homePage = Pages.feed,
+    this.weightUnit,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : createdAt = createdAt ?? DateTime.now(),
@@ -40,6 +46,9 @@ class Settings {
       notificationsEnabled: json['notificationsEnabled'] as bool?,
       homePage: Pages.fromString(json['homePage'] as String?),
       contextMenuPosition: ContextMenuPosition.fromString(json['contextMenuPosition'] as String?),
+      weightUnit: json['weightUnit'] != null
+          ? WeightUnit.fromString(json['weightUnit'] as String?)
+          : null,
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : null,
     );
@@ -56,6 +65,7 @@ class Settings {
       'notificationsEnabled': notificationsEnabled,
       'contextMenuPosition': contextMenuPosition?.toStringValue(),
       'homePage': homePage?.toStringValue(),
+      'weightUnit': weightUnit?.wireValue,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -71,6 +81,7 @@ class Settings {
     bool? notificationsEnabled,
     Pages? homePage,
     ContextMenuPosition? contextMenuPosition,
+    WeightUnit? weightUnit,
   }) {
     return Settings(
       id: id ?? this.id,
@@ -82,6 +93,7 @@ class Settings {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       homePage: homePage ?? this.homePage,
       contextMenuPosition: contextMenuPosition ?? this.contextMenuPosition,
+      weightUnit: weightUnit ?? this.weightUnit,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );

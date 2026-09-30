@@ -121,6 +121,32 @@ impl FriendGateway {
         Ok(related_ids)
     }
 
+    /// Deletes the friendship between two people, matched in either direction.
+    /// Returns the number of rows removed (0 when they were not connected).
+    pub async fn delete_friendship(
+        db: &DbConn,
+        person_id: i32,
+        friend_id: i32,
+    ) -> Result<u64, DbErr> {
+        FriendsQuery::delete_many()
+            .filter(
+                Condition::any()
+                    .add(
+                        Condition::all()
+                            .add(Column::PersonId.eq(person_id))
+                            .add(Column::FriendId.eq(friend_id)),
+                    )
+                    .add(
+                        Condition::all()
+                            .add(Column::PersonId.eq(friend_id))
+                            .add(Column::FriendId.eq(person_id)),
+                    ),
+            )
+            .exec(db)
+            .await
+            .map(|r| r.rows_affected)
+    }
+
     /// Bulk-deletes every friendship row involving a person, on either side of
     /// the relationship (account-purge cascade).
     pub async fn delete_all_involving_person<C: ConnectionTrait>(db: &C, person_id: i32) -> Result<DeleteResult, DbErr> {

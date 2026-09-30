@@ -1,14 +1,16 @@
 import {useForm} from "react-hook-form";
 import {Button, TextField, Divider} from "../../../commons/gui/index.js";
 import {useTranslation} from "react-i18next";
-import {useDispatch} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import * as handler from "../../../redux/reducers/person/index.js";
 import React from "react";
 import './PersonInfoForm.scss';
 import {updateObject} from "../../../commons/library/utility.js";
+import {displayToKg, kgToDisplay, resolveWeightUnit, weightUnitLabel} from "../../../commons/library/weightUnit.js";
 
 const PersonInfoForm = ({personInfo, onCancel, onConfirm}) => {
-    const {t} = useTranslation('common');
+    const {t, i18n} = useTranslation('common');
+    const weightUnit = useSelector((state) => resolveWeightUnit(state.settings.settings.weightUnit, i18n.language));
     const {register, handleSubmit, watch, formState: {errors}} = useForm({
         defaultValues: {
             biography: personInfo?.biography || '',
@@ -16,7 +18,7 @@ const PersonInfoForm = ({personInfo, onCancel, onConfirm}) => {
             job: personInfo?.job || '',
             homeTown: personInfo?.homeTown || '',
             currentCity: personInfo?.currentCity || '',
-            weight: personInfo?.weight || '',
+            weight: personInfo?.weight != null ? kgToDisplay(personInfo.weight, weightUnit) : '',
             height: personInfo?.height || '',
         }
     });
@@ -25,7 +27,8 @@ const PersonInfoForm = ({personInfo, onCancel, onConfirm}) => {
 
     const onSubmit = (data) => {
         const payload = updateObject(personInfo,{
-            ...data
+            ...data,
+            weight: data.weight ? displayToKg(Number(data.weight), weightUnit) : data.weight,
         })
         dispatch(handler.updatePersonInfo(payload));
         onConfirm();
@@ -75,7 +78,7 @@ const PersonInfoForm = ({personInfo, onCancel, onConfirm}) => {
             <TextField
                 id="weight"
                 name="weight"
-                label={t('profile.weight')}
+                label={`${t('profile.weight')} (${weightUnitLabel(weightUnit)})`}
                 placeholder={t('profile.enterWeight')}
                 register={register}
                 type="number"

@@ -1,5 +1,5 @@
 use crate::authentication::authentication_middleware::authentication;
-use crate::http::business_profile_controller::{get_active, get_by_owner_id};
+use crate::http::business_profile_controller::{discover, get_active, get_by_owner_id};
 use crate::http::image_controller::business_profile_image_upload;
 use crate::AppState;
 use axum::routing::{get, post};
@@ -42,6 +42,14 @@ pub fn business_profile_routes(state: AppState) -> Router<AppState> {
                 )),
         )
         .route(
+            "/id/{id}",
+            axum::routing::delete(crate::http::business_profile_controller::delete_profile)
+                .route_layer(middleware::from_fn_with_state(
+                    state.clone(),
+                    authentication,
+                )),
+        )
+        .route(
             "/addresses",
             post(crate::http::business_profile_controller::save_address)
                 .put(crate::http::business_profile_controller::save_address)
@@ -76,6 +84,13 @@ pub fn business_profile_routes(state: AppState) -> Router<AppState> {
         .route(
             "/active",
             get(get_active).route_layer(middleware::from_fn_with_state(
+                state.clone(),
+                authentication,
+            )),
+        )
+        .route(
+            "/discover",
+            get(discover).route_layer(middleware::from_fn_with_state(
                 state.clone(),
                 authentication,
             )),

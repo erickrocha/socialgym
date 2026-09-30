@@ -1,6 +1,6 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
-use crate::domain::enums::Position;
+use crate::domain::enums::{Position, WeightUnit};
 use chrono::NaiveDateTime;
 use entity::settings_entity::{ActiveModel, SettingsEntity};
 use sea_orm::Set;
@@ -16,6 +16,7 @@ pub struct Settings {
     pub notifications_enabled: bool,
     pub context_menu_position: Position,
     pub home_page: String,
+    pub weight_unit: Option<WeightUnit>,
     pub created_at: Option<NaiveDateTime>,
     pub updated_at: Option<NaiveDateTime>,
 }
@@ -40,6 +41,7 @@ impl EntityMapper<Settings, SettingsEntity, ActiveModel> for SettingsEntityMappe
             notifications_enabled: Set(d.notifications_enabled),
             context_menu_position: Set(d.context_menu_position.to_string()),
             home_page: Set(d.home_page),
+            weight_unit: Set(d.weight_unit.map(|u| u.to_string())),
             created_at: sea_orm::NotSet,
             updated_at: sea_orm::NotSet,
         }
@@ -56,6 +58,7 @@ impl EntityMapper<Settings, SettingsEntity, ActiveModel> for SettingsEntityMappe
             notifications_enabled: e.notifications_enabled,
             context_menu_position: Position::from_string(&e.context_menu_position),
             home_page: e.home_page,
+            weight_unit: e.weight_unit.as_deref().map(WeightUnit::from_string),
             created_at: Some(e.created_at.naive_utc()),
             updated_at: Some(e.updated_at.naive_utc()),
         }
@@ -72,6 +75,7 @@ impl EntityMapper<Settings, SettingsEntity, ActiveModel> for SettingsEntityMappe
             notifications_enabled: e.notifications_enabled.unwrap(),
             context_menu_position: Position::from_string(&e.context_menu_position.unwrap()),
             home_page: e.home_page.unwrap(),
+            weight_unit: e.weight_unit.unwrap().as_deref().map(WeightUnit::from_string),
             created_at: Some(e.created_at.unwrap().naive_utc()),
             updated_at: Some(e.updated_at.unwrap().naive_utc()),
         }
@@ -79,6 +83,7 @@ impl EntityMapper<Settings, SettingsEntity, ActiveModel> for SettingsEntityMappe
 }
 
 impl Settings {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         person_id: i32,
         person_uuid: String,
@@ -87,6 +92,7 @@ impl Settings {
         notifications_enable: bool,
         context_menu_position: Position,
         home_page: String,
+        weight_unit: Option<WeightUnit>,
     ) -> Settings {
         Self::update(
             None,
@@ -98,6 +104,7 @@ impl Settings {
             notifications_enable,
             context_menu_position,
             home_page,
+            weight_unit,
         )
     }
 
@@ -112,6 +119,7 @@ impl Settings {
         notifications_enable: bool,
         context_menu_position: Position,
         home_page: String,
+        weight_unit: Option<WeightUnit>,
     ) -> Self {
         Settings {
             id,
@@ -123,6 +131,7 @@ impl Settings {
             notifications_enabled: notifications_enable,
             context_menu_position,
             home_page,
+            weight_unit,
             created_at: None,
             updated_at: None,
         }

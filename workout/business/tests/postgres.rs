@@ -1,7 +1,16 @@
 use business::gateway::person_address_gateway::PersonAddressGateway;
 use business::gateway::exercise_gateway::ExerciseGateway;
+use business::commons::legal_documents;
+use business::domain::enums::ProfileType;
+use business::domain::user::User;
+use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
+use business::use_cases::consent_use_case::ConsentUseCase;
+use business::use_cases::friend_use_case::FriendUseCase;
+use business::use_cases::person_use_case::PersonUseCase;
+use business::use_cases::exercise_use_case::ExerciseUseCase;
+use business::use_cases::workout_use_case::WorkoutUseCase;
 use migration::{Migrator, MigratorTrait};
-use sea_orm::{ConnectionTrait, Database};
+use sea_orm::{ConnectionTrait, Database, Statement};
 
 #[tokio::test]
 #[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database"]
@@ -60,4 +69,296 @@ async fn radius_search_uses_current_indexable_geography_points() {
     .await
     .unwrap();
     assert_eq!(exercise.map(|model| model.id), Some(1));
+}
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database"]
+async fn c002_profile_owner_and_health_consent_acceptance() {
+    let database_url = std::env::var("TEST_DATABASE_URL")
+        .expect("TEST_DATABASE_URL must point to a disposable PostgreSQL/PostGIS database");
+    let db = Database::connect(database_url).await.unwrap();
+    Migrator::refresh(&db).await.unwrap();
+
+    db.execute_unprepared(
+        r#"INSERT INTO person
+             (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at)
+           VALUES
+             (1, '00000000-0000-0000-0000-000000000011', 'Profile', 'Owner', '1990-01-01', 'X', now(), now());
+           INSERT INTO person_info
+             (id, uuid, person_id, weight, height, created_at, updated_at)
+           VALUES
+             (1, '10000000-0000-0000-0000-000000000011', 1, 80.0, 180.0, now(), now())"#,
+    )
+    .await
+    .unwrap();
+
+    let person = PersonUseCase::get(&db, 1).await.unwrap();
+    assert_eq!(person.id, Some(1));
+    assert!(PersonUseCase::require_owner_access(1, 1).is_ok());
+    assert!(PersonUseCase::require_owner_access(1, 2).is_err());
+
+    assert!(ConsentUseCase::require_current(&db, 1, legal_documents::HEALTH_DATA)
+        .await
+        .is_err());
+
+    db.execute_unprepared(
+        r#"INSERT INTO consent
+             (uuid, person_id, document, version, accepted_at, ip)
+           VALUES
+             ('20000000-0000-0000-0000-000000000011', 1, 'health_data', '1.0.0', now(), '127.0.0.1')"#,
+    )
+    .await
+    .unwrap();
+
+    assert!(ConsentUseCase::require_current(&db, 1, legal_documents::HEALTH_DATA)
+        .await
+        .is_ok());
+}
+
+  #[tokio::test]
+  #[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database"]
+  async fn c003_friendship_lifecycle_and_owner_scope_acceptance() {
+    let database_url = std::env::var("TEST_DATABASE_URL")
+      .expect("TEST_DATABASE_URL must point to a disposable PostgreSQL/PostGIS database");
+    let db = Database::connect(database_url).await.unwrap();
+    Migrator::refresh(&db).await.unwrap();
+
+    db.execute_unprepared(
+      r#"INSERT INTO person
+         (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at)
+         VALUES
+         (1, '00000000-0000-0000-0000-000000000021', 'Sender', 'Person', '1990-01-01', 'X', now(), now()),
+         (2, '00000000-0000-0000-0000-000000000022', 'Receiver', 'Person', '1990-01-01', 'X', now(), now()),
+         (3, '00000000-0000-0000-0000-000000000023', 'Unrelated', 'Person', '1990-01-01', 'X', now(), now())"#,
+    )
+    .await
+    .unwrap();
+
+    let pending = FriendUseCase::send_friend_request(&db, 1, 2).await.unwrap();
+    assert_eq!(pending.status.as_str(), "Pending");
+    assert!(FriendUseCase::accept_friend_request(&db, 2, 1)
+      .await
+      .is_ok());
+    assert!(FriendUseCase::ensure_accepted_friend(&db, 1, 2)
+      .await
+      .is_ok());
+    assert!(FriendUseCase::ensure_accepted_friend(&db, 1, 3)
+      .await
+      .is_err());
+
+    let friends = FriendUseCase::find_all_friend(&db, 1).await.unwrap();
+    assert_eq!(friends.len(), 1);
+    assert_eq!(friends[0].friend_id, 2);
+
+    FriendUseCase::remove_friend(&db, 1, 2).await.unwrap();
+    assert!(FriendUseCase::find_all_friend(&db, 1)
+      .await
+      .unwrap()
+      .is_empty());
+  }
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database"]
+async fn c004_workout_exercise_visibility_acceptance() {
+    let database_url = std::env::var("TEST_DATABASE_URL")
+        .expect("TEST_DATABASE_URL must point to a disposable PostgreSQL/PostGIS database");
+    let db = Database::connect(database_url).await.unwrap();
+    Migrator::refresh(&db).await.unwrap();
+
+    db.execute_unprepared(
+        r#"INSERT INTO person
+             (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at)
+           VALUES
+             (1, '00000000-0000-0000-0000-000000000031', 'Workout', 'Owner', '1990-01-01', 'X', now(), now()),
+             (2, '00000000-0000-0000-0000-000000000032', 'Other', 'Person', '1990-01-01', 'X', now(), now());
+           INSERT INTO workout
+             (id, uuid, owner_id, owner_uuid, name, description, difficulty, muscle_group, visibility, status, created_at, updated_at)
+           VALUES
+             (1, '10000000-0000-0000-0000-000000000031', 1, '00000000-0000-0000-0000-000000000031', 'Public Workout', 'Tracked workout', 'Easy', 'Chest', 'public', 'Accepted', now(), now());
+           INSERT INTO exercise
+             (id, uuid, name, category, owner_id, owner_uuid, owner_name, sets, reps_or_duration, description, visibility, created_at, updated_at)
+           VALUES
+             (1, '20000000-0000-0000-0000-000000000031', 'Private Exercise', 'Force', 1, '00000000-0000-0000-0000-000000000031', 'Workout Owner', 3, 10, 'Private', 'private', now(), now());
+           INSERT INTO workout_exercise
+             (id, uuid, workout_id, exercise_id, order_index, created_at, updated_at)
+           VALUES
+             (1, '30000000-0000-0000-0000-000000000031', 1, 1, 0, now(), now())"#,
+    )
+    .await
+    .unwrap();
+
+    let workout = WorkoutUseCase::get(&db, 1).await.unwrap();
+    assert_eq!(workout.name, "Public Workout");
+    let exercises = ExerciseUseCase::find_all_by_workout_id(&db, 1).await.unwrap();
+    assert_eq!(exercises.len(), 1);
+    assert!(ExerciseUseCase::ensure_all_readable(&exercises, 1).is_ok());
+    assert!(ExerciseUseCase::ensure_all_readable(&exercises, 2).is_err());
+}
+
+fn business_profile_owner_actor(person_id: i32, person_uuid: &str) -> User {
+    User::update(
+        None,
+        None,
+        None,
+        format!("owner{person_id}@example.com"),
+        "irrelevant".to_string(),
+        true,
+        false,
+        person_id,
+        person_uuid.to_string(),
+    )
+}
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database"]
+async fn c007_business_profile_delete_cascades_addresses_and_team_members() {
+    let database_url = std::env::var("TEST_DATABASE_URL")
+        .expect("TEST_DATABASE_URL must point to a disposable PostgreSQL/PostGIS database");
+    let db = Database::connect(database_url).await.unwrap();
+    Migrator::refresh(&db).await.unwrap();
+
+    db.execute_unprepared(
+        r#"INSERT INTO person
+             (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at)
+           VALUES
+             (1, '00000000-0000-0000-0000-000000000041', 'Owner', 'Person', '1990-01-01', 'X', now(), now()),
+             (2, '00000000-0000-0000-0000-000000000042', 'Other', 'Person', '1990-01-01', 'X', now(), now()),
+             (3, '00000000-0000-0000-0000-000000000043', 'Team', 'Member', '1990-01-01', 'X', now(), now());
+           INSERT INTO business_profile
+             (id, uuid, owner_id, owner_uuid, tax_id, business_name, business_type, created_at, updated_at)
+           VALUES
+             (1, '10000000-0000-0000-0000-000000000041', 1, '00000000-0000-0000-0000-000000000041', '123', 'Owner Gym', 'Professional', now(), now());
+           INSERT INTO business_profile_address
+             (id, uuid, business_profile_id, address_line1, locality, administrative_area, country_code, created_at, updated_at)
+           VALUES
+             (1, '20000000-0000-0000-0000-000000000041', 1, 'Main St', 'Sao Paulo', 'SP', 'BR', now(), now());
+           INSERT INTO team_members
+             (id, uuid, business_profile_id, business_profile_uuid, person_id, person_uuid, status, created_at, updated_at)
+           VALUES
+             (1, '30000000-0000-0000-0000-000000000041', 1, '10000000-0000-0000-0000-000000000041', 3, '00000000-0000-0000-0000-000000000043', 'Accepted', now(), now());
+           INSERT INTO profile
+             (id, uuid, person_id, person_uuid, business_profile_id, business_profile_uuid, created_at, updated_at)
+           VALUES
+             (1, '40000000-0000-0000-0000-000000000041', 1, '00000000-0000-0000-0000-000000000041', 1, '10000000-0000-0000-0000-000000000041', now(), now())"#,
+    )
+    .await
+    .unwrap();
+
+    // Non-owner cannot delete.
+    let non_owner = business_profile_owner_actor(2, "00000000-0000-0000-0000-000000000042");
+    assert!(BusinessProfileUseCase::delete(&db, 1, &non_owner).await.is_err());
+
+    // Owner deletion cascades every related row in a single transaction.
+    let owner = business_profile_owner_actor(1, "00000000-0000-0000-0000-000000000041");
+    BusinessProfileUseCase::delete(&db, 1, &owner).await.unwrap();
+
+    assert!(BusinessProfileUseCase::get_by_id(&db, 1).await.is_none());
+
+    for (table, sql) in [
+        ("business_profile_address", "SELECT COUNT(*) FROM business_profile_address WHERE business_profile_id = 1"),
+        ("team_members", "SELECT COUNT(*) FROM team_members WHERE business_profile_id = 1"),
+        ("profile", "SELECT COUNT(*) FROM profile WHERE business_profile_id = 1"),
+    ] {
+        let row = db
+            .query_one_raw(Statement::from_string(
+                sea_orm::DatabaseBackend::Postgres,
+                sql,
+            ))
+            .await
+            .unwrap()
+            .unwrap();
+        let count: i64 = row.try_get("", "count").unwrap();
+        assert_eq!(count, 0, "{table} rows should be cascade-deleted");
+    }
+}
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database"]
+async fn c007_business_profile_discover_combines_text_and_location_filters() {
+    let database_url = std::env::var("TEST_DATABASE_URL")
+        .expect("TEST_DATABASE_URL must point to a disposable PostgreSQL/PostGIS database");
+    let db = Database::connect(database_url).await.unwrap();
+    Migrator::refresh(&db).await.unwrap();
+
+    db.execute_unprepared(
+        r#"INSERT INTO person
+             (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at)
+           VALUES
+             (1, '00000000-0000-0000-0000-000000000051', 'Owner', 'One', '1990-01-01', 'X', now(), now()),
+             (2, '00000000-0000-0000-0000-000000000052', 'Owner', 'Two', '1990-01-01', 'X', now(), now()),
+             (3, '00000000-0000-0000-0000-000000000053', 'Owner', 'Three', '1990-01-01', 'X', now(), now());
+           -- Matches text query and is near the search point.
+           INSERT INTO business_profile
+             (id, uuid, owner_id, owner_uuid, tax_id, business_name, business_type, created_at, updated_at)
+           VALUES
+             (1, '10000000-0000-0000-0000-000000000051', 1, '00000000-0000-0000-0000-000000000051', '111', 'Downtown Fitness Studio', 'Professional', now(), now()),
+             (2, '10000000-0000-0000-0000-000000000052', 2, '00000000-0000-0000-0000-000000000052', '222', 'Downtown Fitness Studio', 'Company', now(), now()),
+             (3, '10000000-0000-0000-0000-000000000053', 3, '00000000-0000-0000-0000-000000000053', '333', 'Far Away Studio', 'Professional', now(), now());
+           INSERT INTO business_profile_address
+             (id, uuid, business_profile_id, address_line1, locality, administrative_area, country_code, created_at, updated_at, location)
+           VALUES
+             (1, '20000000-0000-0000-0000-000000000051', 1, 'Near St', 'Sao Paulo', 'SP', 'BR', now(), now(), ST_SetSRID(ST_MakePoint(-46.6333, -23.5505), 4326)::geography),
+             (2, '20000000-0000-0000-0000-000000000052', 2, 'Near St', 'Sao Paulo', 'SP', 'BR', now(), now(), ST_SetSRID(ST_MakePoint(-46.6333, -23.5505), 4326)::geography),
+             (3, '20000000-0000-0000-0000-000000000053', 3, 'Far St', 'Elsewhere', 'SP', 'BR', now(), now(), ST_SetSRID(ST_MakePoint(-46.6333, -22.5505), 4326)::geography)"#,
+    )
+    .await
+    .unwrap();
+
+    // Text query alone: matches both "Downtown Fitness Studio" profiles regardless of location.
+    let by_text = BusinessProfileUseCase::discover(
+        &db,
+        Some("Downtown".to_string()),
+        None,
+        None,
+        None,
+        None,
+        50,
+    )
+    .await
+    .unwrap();
+    let mut text_ids: Vec<i32> = by_text.iter().filter_map(|p| p.id).collect();
+    text_ids.sort();
+    assert_eq!(text_ids, vec![1, 2]);
+
+    // Text + business_type filter narrows to the Professional one.
+    let by_text_and_type = BusinessProfileUseCase::discover(
+        &db,
+        Some("Downtown".to_string()),
+        Some(ProfileType::Professional),
+        None,
+        None,
+        None,
+        50,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        by_text_and_type
+            .iter()
+            .filter_map(|p| p.id)
+            .collect::<Vec<i32>>(),
+        vec![1]
+    );
+
+    // Text + location: intersects to only the nearby "Downtown" profiles, excluding the far one.
+    let by_text_and_location = BusinessProfileUseCase::discover(
+        &db,
+        Some("Studio".to_string()),
+        None,
+        Some(-23.5505),
+        Some(-46.6333),
+        Some(5.0),
+        50,
+    )
+    .await
+    .unwrap();
+    let mut combined_ids: Vec<i32> = by_text_and_location.iter().filter_map(|p| p.id).collect();
+    combined_ids.sort();
+    assert_eq!(combined_ids, vec![1, 2]);
+
+    // No text and no location: never returns everything.
+    let empty = BusinessProfileUseCase::discover(&db, None, None, None, None, None, 50)
+        .await
+        .unwrap();
+    assert!(empty.is_empty());
 }

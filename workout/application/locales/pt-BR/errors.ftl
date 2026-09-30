@@ -31,6 +31,7 @@ friend-send-request-failed = Falha ao enviar solicitação de amizade
 friend-accept-request-failed = Falha ao aceitar solicitação de amizade
 friend-deny-request-failed = Falha ao negar solicitação de amizade
 friend-cancel-request-failed = Falha ao cancelar solicitação de amizade
+friend-remove-failed = Falha ao remover amigo
 team-member-not-found = Membro da equipe não encontrado
 team-member-send-request-failed = Falha ao enviar convite de membro da equipe
 team-member-accept-request-failed = Falha ao aceitar convite de membro da equipe

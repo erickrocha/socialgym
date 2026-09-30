@@ -57,8 +57,11 @@ pub async fn get_workout_by_uuid(
 pub async fn get_workouts_by_owner_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<WorkoutJson>>> {
+    WorkoutUseCase::ensure_owner_uuid(&uuid, &current_user.person_uuid)
+        .map_err(|error| workout_error(error, locale))?;
     let workouts = WorkoutUseCase::find_all_by_owner_uuid(&state.conn, uuid)
         .await
         .map_err(|error| workout_error(error, locale))?;
@@ -383,5 +386,7 @@ pub async fn get_exercises(
     let exercises = result.map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesFetchFailed)
     })?;
+    ExerciseUseCase::ensure_all_readable(&exercises, current_user.person_id)
+        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesFetchFailed))?;
     Ok(Json(ExerciseMapper::json_vec(exercises)))
 }

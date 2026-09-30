@@ -7,6 +7,8 @@ import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/workout.dart';
 import '../../providers/person_provider.dart';
+import '../../providers/settings_provider.dart';
+import '../../utils/weight_unit.dart';
 import 'completed_sets_page.dart';
 import 'set_detail_page.dart';
 import 'workout_complete_dialog.dart';
@@ -47,6 +49,12 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
     _pageController.dispose();
     super.dispose();
   }
+
+  /// Weight is always stored in kilograms (`_editWeight`, `exercise.weight`,
+  /// `_executedSets[...]['weight']`); this is only the display/input unit.
+  WeightUnit get _unit => context.watch<SettingsProvider>().effectiveWeightUnit(
+        Localizations.localeOf(context).languageCode,
+      );
 
   List<dynamic> get _exercises => widget.workout.exercises;
   dynamic get _currentExercise => _exercises.isNotEmpty ? _exercises[_currentExerciseIndex] : null;
@@ -549,6 +557,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
   }
 
   Widget _buildValuesCard(AppLocalizations l10n, bool isCardio, String? businessType) {
+    final unit = _unit;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -577,10 +586,12 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                   icon: isCardio ? '🏃' : '🏋️',
                   label: isCardio ? l10n.sessionDetailSpeed : l10n.workoutWeight,
                   isEditMode: _isEditingWeight,
-                  value: _editWeight,
-                  unit: isCardio ? '' : l10n.workoutWeightUnit,
+                  value: isCardio ? _editWeight : unit.fromKg(_editWeight),
+                  unit: isCardio ? '' : unit.label,
                   businessType: businessType,
-                  onChanged: (v) => setState(() => _editWeight = v),
+                  onChanged: (v) => setState(
+                    () => _editWeight = isCardio ? v : unit.toKg(v),
+                  ),
                   onTap: () => setState(() {
                     _isEditingWeight = true;
                     _isEditingReps = false;
@@ -631,7 +642,7 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
               label: isCardio ? l10n.sessionDetailSpeed : l10n.workoutWeight,
               value: isCardio
                   ? '${exercise.weight}'
-                  : '${exercise.weight} ${l10n.workoutWeightUnit}',
+                  : '${_unit.fromKg(exercise.weight as double)} ${_unit.label}',
             ),
           ),
           const SizedBox(width: 12),
@@ -755,8 +766,13 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
               ],
             ),
             const SizedBox(height: 8),
-            ...recentSets.map(
-              (set) => Padding(
+            ...recentSets.map((set) {
+              final setIsCardio =
+                  (set['category'] as String?)?.toLowerCase() == 'cardio';
+              final weight = (set['weight'] as num).toDouble();
+              final displayWeight = setIsCardio ? weight : _unit.fromKg(weight);
+              final unitLabel = setIsCardio ? '' : _unit.label;
+              return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: [
@@ -770,13 +786,13 @@ class _WorkoutExecutionPageState extends State<WorkoutExecutionPage> {
                     ),
                     Text(
                       '${l10n.executionSet} ${set['setNumber']} • '
-                      '${set['weight']}${l10n.workoutWeightUnit} × ${set['repsOrDuration']}',
+                      '$displayWeight$unitLabel × ${set['repsOrDuration']}',
                       style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
                     ),
                   ],
                 ),
-              ),
-            ),
+              );
+            }),
           ],
         ),
       ),

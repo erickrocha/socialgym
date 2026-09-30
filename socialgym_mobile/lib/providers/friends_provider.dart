@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/friends_data.dart';
 import '../models/person.dart';
-import '../services/friends_service.dart';
+import '../services/grpc/grpc_friend_service.dart';
 
 class FriendsProvider extends ChangeNotifier {
   FriendsData? _friendsData;
@@ -23,19 +23,19 @@ class FriendsProvider extends ChangeNotifier {
   int get friendsCount => friends.length;
   int get pendingRequestsCount => _friendsData?.pendingRequestsCount ?? 0;
 
-  /// Fetch all friends data from the API.
+  /// Fetch all friends data over gRPC (`FriendService.GetFriendPage`).
   ///
   /// When [latitude]/[longitude] are given, suggestions are centered on that
   /// point (e.g. the device's current GPS position) instead of the person's
-  /// saved home address.
+  /// saved home address. [token] is unused — the gRPC auth interceptor supplies
+  /// credentials — but kept so existing callers don't have to change.
   Future<void> fetchFriends(String token, {double? latitude, double? longitude}) async {
     _loading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _friendsData = await FriendsService.fetchFriends(
-        token,
+      _friendsData = await GrpcFriendService.getFriendPage(
         latitude: latitude,
         longitude: longitude,
       );
@@ -54,7 +54,7 @@ class FriendsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await FriendsService.sendFriendRequest(personId, token);
+      await GrpcFriendService.sendFriendRequest(personId: personId);
       // Refresh the data after action
       await fetchFriends(token);
       _actionLoading = false;
@@ -74,7 +74,7 @@ class FriendsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await FriendsService.acceptFriendRequest(personId, token);
+      await GrpcFriendService.acceptFriendRequest(personId: personId);
       // Refresh the data after action
       await fetchFriends(token);
       _actionLoading = false;
@@ -94,7 +94,7 @@ class FriendsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await FriendsService.rejectFriendRequest(personId, token);
+      await GrpcFriendService.denyFriendRequest(personId: personId);
       // Refresh the data after action
       await fetchFriends(token);
       _actionLoading = false;
@@ -114,7 +114,7 @@ class FriendsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await FriendsService.cancelFriendRequest(personId, token);
+      await GrpcFriendService.cancelFriendRequest(personId: personId);
       // Refresh the data after action
       await fetchFriends(token);
       _actionLoading = false;
@@ -134,7 +134,7 @@ class FriendsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await FriendsService.removeFriend(personId, token);
+      await GrpcFriendService.removeFriend(personId: personId);
       // Refresh the data after action
       await fetchFriends(token);
       _actionLoading = false;

@@ -11,6 +11,7 @@ import '../../providers/person_provider.dart';
 import '../../services/person_service.dart';
 import '../../services/base_service.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../utils/open_direct_chat.dart';
 
 /// Read-only profile view for viewing a friend's profile.
@@ -75,6 +76,9 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
     final coverHeight = screenWidth > 600 ? 250.0 : 180.0;
     final avatarSize = screenWidth > 600 ? 140.0 : 100.0;
     final businessType = context.watch<PersonProvider>().activeBusinessProfile?.businessType;
+    final weightUnit = context.watch<SettingsProvider>().effectiveWeightUnit(
+      Localizations.localeOf(context).languageCode,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -338,7 +342,8 @@ class _PersonProfilePageState extends State<PersonProfilePage> {
                                     child: _buildStatCard(
                                       icon: Icons.monitor_weight_outlined,
                                       label: l10n.profileWeight,
-                                      value: '${_person.personInfo!.weight!.toStringAsFixed(1)} kg',
+                                      value:
+                                          '${weightUnit.fromKg(_person.personInfo!.weight!).toStringAsFixed(1)} ${weightUnit.label}',
                                       businessType: businessType,
                                     ),
                                   ),

@@ -634,43 +634,54 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
 
                 const SizedBox(height: 16),
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  value: _termsAccepted,
-                  onChanged: (value) =>
-                      setState(() => _termsAccepted = value ?? false),
-                  title: Wrap(
+                // Wrapped in a transparent Material so the tiles paint their
+                // background/ink on it rather than searching past the decorated
+                // form card (which would otherwise trigger a ListTile assertion).
+                Material(
+                  type: MaterialType.transparency,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text('Li e aceito os '),
-                      InkWell(
-                        onTap: () => _showLegalDocument('terms'),
-                        child: const Text(
-                          'Termos de Uso',
-                          style: TextStyle(
-                            decoration: TextDecoration.underline,
-                          ),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: _termsAccepted,
+                        onChanged: (value) =>
+                            setState(() => _termsAccepted = value ?? false),
+                        title: Wrap(
+                          children: [
+                            const Text('Li e aceito os '),
+                            InkWell(
+                              onTap: () => _showLegalDocument('terms'),
+                              child: const Text(
+                                'Termos de Uso',
+                                style: TextStyle(
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  value: _privacyAccepted,
-                  onChanged: (value) =>
-                      setState(() => _privacyAccepted = value ?? false),
-                  title: Wrap(
-                    children: [
-                      const Text('Li e aceito a '),
-                      InkWell(
-                        onTap: () => _showLegalDocument('privacy'),
-                        child: const Text(
-                          'Política de Privacidade',
-                          style: TextStyle(
-                            decoration: TextDecoration.underline,
-                          ),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: _privacyAccepted,
+                        onChanged: (value) =>
+                            setState(() => _privacyAccepted = value ?? false),
+                        title: Wrap(
+                          children: [
+                            const Text('Li e aceito a '),
+                            InkWell(
+                              onTap: () => _showLegalDocument('privacy'),
+                              child: const Text(
+                                'Política de Privacidade',
+                                style: TextStyle(
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

@@ -263,6 +263,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsContextMenuPositionBottom => 'Bas';
 
   @override
+  String get settingsWeightUnit => 'Unité de poids';
+
+  @override
+  String get settingsWeightUnitKilograms => 'Kilogrammes (kg)';
+
+  @override
+  String get settingsWeightUnitPounds => 'Livres (lbs)';
+
+  @override
   String get settingsHomePage => 'Page d\'accueil';
 
   @override

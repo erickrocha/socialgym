@@ -13,6 +13,11 @@ pub fn post_routes(state: AppState) -> Router<AppState> {
                 .route_layer(middleware::from_fn_with_state(content_limiter(), rate_limit)),
         )
         .route(
+            "/{post_id}",
+            axum::routing::delete(http::post_controller::delete_post)
+                .route_layer(middleware::from_fn_with_state(state.clone(), authentication)),
+        )
+        .route(
             "/{post_id}/comments",
             post(http::post_controller::add_comment)
                 .route_layer(middleware::from_fn_with_state(state.clone(), authentication))

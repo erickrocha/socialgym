@@ -1,6 +1,6 @@
 use crate::proto::settings::settings_service_server::SettingsService;
 use crate::proto::settings::{Setting, SettingIdRequest, SettingOwnerIdRequest};
-use business::domain::enums::Position;
+use business::domain::enums::{Position, WeightUnit};
 use business::domain::settings::Settings;
 use business::gateway::settings_gateway::SettingsGateway;
 use business::use_cases::setings_use_case::SettingsUseCase;
@@ -30,6 +30,10 @@ impl GrpcSettingService {
             notifications_enabled: settings.notifications_enabled,
             context_menu_position: settings.context_menu_position.to_string(),
             home_page: settings.home_page,
+            weight_unit: settings
+                .weight_unit
+                .map(|u| u.to_string())
+                .unwrap_or_default(),
             created_at: settings
                 .created_at
                 .map(|dt| dt.to_string())
@@ -60,6 +64,11 @@ impl GrpcSettingService {
             notifications_enabled: setting.notifications_enabled,
             context_menu_position: Position::from_string(&setting.context_menu_position),
             home_page: setting.home_page,
+            weight_unit: if setting.weight_unit.is_empty() {
+                None
+            } else {
+                Some(WeightUnit::from_string(&setting.weight_unit))
+            },
             created_at: None, // Will be set by database
             updated_at: None, // Will be set by database
         }

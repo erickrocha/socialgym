@@ -15,6 +15,16 @@ pub struct PostGateway {
 }
 
 impl PostGateway {
+    pub async fn find_by_id_result(&self, id: &str) -> Result<Option<Post>, BusinessError> {
+        self.collection
+            .find_one(doc! { "_id": id })
+            .await
+            .map_err(|e| {
+                log::error!("Error finding post: {:?}", e);
+                BusinessError::infrastructure("Failed to find post")
+            })
+    }
+
     pub async fn remove_comment_for_moderation(
         &self,
         post_id: &str,
@@ -70,10 +80,7 @@ impl Repository<Post, String> for PostGateway {
     }
 
     async fn find_by_id(&self, id: String) -> Option<Post> {
-        self.collection
-            .find_one(doc! { "_id": &id })
-            .await
-            .unwrap_or(None)
+        self.find_by_id_result(&id).await.unwrap_or(None)
     }
 
     async fn update(&self, id: String, entity: Post) -> Result<Post, BusinessError> {
@@ -125,7 +132,7 @@ impl PostGateway {
         let mut cursor = self
             .collection
             .find(filter)
-            .sort(doc! { "createdAt": -1 })
+            .sort(doc! { "createdAt": -1, "_id": 1 })
             .skip(skip)
             .limit(i64::try_from(limit).unwrap_or(i64::MAX))
             .await
@@ -155,7 +162,8 @@ impl PostGateway {
             BusinessError::new("Failed to serialize comment".to_string())
         })?;
 
-        self.collection
+        let result = self
+            .collection
             .update_one(
                 doc! { "_id": post_id },
                 doc! { "$push": { "comments": comment_bson } },
@@ -165,14 +173,18 @@ impl PostGateway {
                 log::error!("Error adding comment: {:?}", e);
                 BusinessError::new("Failed to add comment".to_string())
             })?;
+        if result.matched_count == 0 {
+            return Err(BusinessError::not_found("Post not found"));
+        }
 
-        self.find_by_id(post_id.to_string())
-            .await
-            .ok_or_else(|| BusinessError::new("Post not found after adding comment".to_string()))
+        self.find_by_id_result(post_id).await.and_then(|post| {
+            post.ok_or_else(|| {
+                BusinessError::infrastructure("Failed to retrieve post after adding comment")
+            })
+        })
     }
 
-    /// Upserts a reaction: removes any existing reaction from the same person,
-    /// then pushes the new one (one reaction type per person, like Facebook).
+    /// Replaces any existing reaction from this person with the new reaction.
     pub async fn add_reaction(
         &self,
         post_id: &str,
@@ -183,20 +195,39 @@ impl PostGateway {
             BusinessError::new("Failed to serialize reaction".to_string())
         })?;
 
-        self.collection
-            .update_one(
-                doc! { "_id": post_id },
-                doc! { "$push": { "reactions": reaction_bson } },
-            )
+        let update = vec![doc! {
+            "$set": {
+                "reactions": {
+                    "$concatArrays": [
+                        {
+                            "$filter": {
+                                "input": { "$ifNull": ["$reactions", []] },
+                                "as": "existing",
+                                "cond": { "$ne": ["$$existing.authorId", &reaction.author_id] }
+                            }
+                        },
+                        [reaction_bson]
+                    ]
+                }
+            }
+        }];
+        let result = self
+            .collection
+            .update_one(doc! { "_id": post_id }, update)
             .await
             .map_err(|e| {
-                log::error!("Error adding reaction: {:?}", e);
-                BusinessError::new("Failed to add reaction".to_string())
+                log::error!("Error replacing reaction: {:?}", e);
+                BusinessError::infrastructure("Failed to replace reaction")
             })?;
+        if result.matched_count == 0 {
+            return Err(BusinessError::not_found("Post not found"));
+        }
 
-        self.find_by_id(post_id.to_string())
-            .await
-            .ok_or_else(|| BusinessError::new("Post not found after adding reaction".to_string()))
+        self.find_by_id_result(post_id).await.and_then(|post| {
+            post.ok_or_else(|| {
+                BusinessError::infrastructure("Failed to retrieve post after adding reaction")
+            })
+        })
     }
 
     /// Removes the caller's reaction from the post.
@@ -205,7 +236,8 @@ impl PostGateway {
         post_id: &str,
         person_uuid: &str,
     ) -> Result<Post, BusinessError> {
-        self.collection
+        let result = self
+            .collection
             .update_one(
                 doc! { "_id": post_id },
                 // `Reaction` serialises the reactor as `authorId`; matching on
@@ -217,10 +249,15 @@ impl PostGateway {
                 log::error!("Error removing reaction: {:?}", e);
                 BusinessError::new("Failed to remove reaction".to_string())
             })?;
+        if result.matched_count == 0 {
+            return Err(BusinessError::not_found("Post not found"));
+        }
 
-        self.find_by_id(post_id.to_string())
-            .await
-            .ok_or_else(|| BusinessError::new("Post not found after removing reaction".to_string()))
+        self.find_by_id_result(post_id).await.and_then(|post| {
+            post.ok_or_else(|| {
+                BusinessError::infrastructure("Failed to retrieve post after removing reaction")
+            })
+        })
     }
 
     /// Account-deletion cascade: deletes every post authored by this person
