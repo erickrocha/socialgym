@@ -6,6 +6,7 @@ pub use super::person_info_entity::Entity as PersonInfoEntity;
 pub use super::user_entity::Entity as UserEntity;
 
 pub use super::friends_entity::Entity as FriendsEntity;
+pub use super::friendship_notification_outbox_entity::Entity as FriendshipNotificationOutboxEntity;
 
 pub use super::exercise_entity::Entity as ExerciseEntity;
 pub use super::workout_entity::Entity as WorkoutEntity;

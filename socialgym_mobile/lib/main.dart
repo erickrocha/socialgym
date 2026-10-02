@@ -5,6 +5,7 @@ import 'package:socialgym_mobile/pages/notifications/notifications_page.dart';
 import 'package:socialgym_mobile/pages/chat/conversations_page.dart';
 import 'package:socialgym_mobile/providers/notifications_provider.dart';
 import 'package:socialgym_mobile/providers/chat_provider.dart';
+import 'package:socialgym_mobile/services/push_registration_service.dart';
 
 import 'config/app_colors.dart';
 import 'l10n/app_localizations.dart';
@@ -56,6 +57,7 @@ const List<String> _fontFamilyFallbacks = <String>[
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GrpcChannelFactory.initialize(certAssetPath: 'assets/certs/server.crt');
+  await PushRegistrationService.initialize(SocialGymApp.navigatorKey);
   runApp(const SocialGymApp());
 }
 
@@ -116,7 +118,9 @@ class SocialGymApp extends StatelessWidget {
             initialRoute: '/login',
             routes: {
               '/login': (context) => const SignInPage(),
-              '/feed': (context) => const FeedPage(),
+              '/feed': (context) => FeedPage(
+                initialPostUuid: _routeArgument(context, 'postUuid'),
+              ),
               '/gallery': (context) => const GalleryPage(),
               '/profile': (context) => const ProfilePage(),
               '/add-profile': (context) => const AddProfilePage(),
@@ -131,7 +135,9 @@ class SocialGymApp extends StatelessWidget {
                   context.read<PersonProvider>().isProfessional
                       ? const WorkoutPage()
                       : const EvolutionPage(),
-              '/friends': (context) => const FriendsPage(),
+              '/friends': (context) => FriendsPage(
+                initialRequestUuid: _routeArgument(context, 'friendshipUuid'),
+              ),
               '/team': (context) => const TeamPage(),
               '/followers': (context) => const FollowersPage(),
               '/notifications': (context) => const NotificationsPage(),
@@ -143,6 +149,13 @@ class SocialGymApp extends StatelessWidget {
       ),
     );
   }
+}
+
+String? _routeArgument(BuildContext context, String key) {
+  final arguments = ModalRoute.of(context)?.settings.arguments;
+  if (arguments is Map<String, dynamic>) return arguments[key] as String?;
+  if (arguments is Map) return arguments[key] as String?;
+  return null;
 }
 
 /// Sits between the device-preview frame and the app navigator. Wires the Dio

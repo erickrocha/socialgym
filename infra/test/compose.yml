@@ -1,4 +1,3 @@
-  - awslocal s3api head-bucket --bucket socialgym-test-media && awslocal sqs get-queue-url --queue-name person-media-events >/dev/null && awslocal sqs get-queue-url --queue-name social-notification-events.fifo >/dev/null
 x-test-aws-environment: &test-aws-environment
   AWS_REGION: us-east-1
   AWS_ACCESS_KEY_ID: test
@@ -24,7 +23,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - awslocal s3api head-bucket --bucket socialgym-test-media && awslocal sqs get-queue-url --queue-name person-media-events >/dev/null
+        - awslocal s3api head-bucket --bucket socialgym-test-media && awslocal sqs get-queue-url --queue-name person-media-events >/dev/null && awslocal sqs get-queue-url --queue-name social-notification-events.fifo >/dev/null
       interval: 5s
       timeout: 5s
       retries: 30
@@ -79,6 +78,7 @@ services:
       HEALTH_DATA_CONSENT_VERSION: 1.0.0
       <<: *test-aws-environment
       AWS_SQS_QUEUE_URL: http://localstack:4566/000000000000/person-media-events
+      AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL: http://localstack:4566/000000000000/social-notification-events.fifo
       INTERNAL_SERVICE_SECRET: c005-internal-secret
       TIMELINE_BASE_URL: http://timeline:8091
       AUTH_RULES_ENABLED: "false"
@@ -133,6 +133,8 @@ services:
       GRPC_USE_TLS: "true"
       GRPC_CERT_PATH: /etc/grpc/certs/server.crt
       INTERNAL_SERVICE_SECRET: c005-internal-secret
+      AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL: http://localstack:4566/000000000000/social-notification-events.fifo
+      PUSH_PROVIDER_MODE: fake
       RUST_LOG: info
     volumes:
       - ./certs/server.crt:/etc/grpc/certs/server.crt:ro

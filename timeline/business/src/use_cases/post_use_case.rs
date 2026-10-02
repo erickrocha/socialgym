@@ -8,8 +8,10 @@ use domain::user::User;
 use domain::comment::Comment;
 use domain::post::Post;
 use domain::reaction::Reaction;
+use domain::in_app_notification::InAppNotification;
 use mongodb::Database;
 use crate::use_cases::mention_use_case::MentionUseCase;
+use crate::gateway::mention_notification_gateway::MentionNotificationGateway;
 
 pub struct PostUseCase {}
 
@@ -95,9 +97,39 @@ impl PostUseCase {
             .comments
             .iter()
             .find(|c| c.uuid == uuid.as_str())
-            && let Err(e) = MentionUseCase::enqueue_mentions_from_comment(db, author_person_id, &persisted_post, persisted_comment).await
         {
-            log::error!("Failed to enqueue comment mention notifications: {}",e.message);
+            let owner_was_mentioned = persisted_comment
+                .mentions
+                .iter()
+                .any(|mention| mention.mentioned_uuid == persisted_post.author_uuid);
+            if persisted_post.author_uuid != author.person_uuid && !owner_was_mentioned {
+                let notification = InAppNotification::from_social_interaction(
+                    format!("{}:comment:{}", persisted_comment.uuid, persisted_post.author_uuid),
+                    "Comment".to_string(),
+                    persisted_post.author_uuid.clone(),
+                    author.person_uuid.clone(),
+                    author.name.clone(),
+                    persisted_post.uuid.clone(),
+                    Some(persisted_comment.uuid.clone()),
+                    "Someone commented on your post.".to_string(),
+                );
+                if let Err(error) = MentionNotificationGateway::new(db)
+                    .persist_in_app_notification(notification)
+                    .await
+                {
+                    log::error!("Failed to persist comment notification: {}", error.message);
+                }
+            }
+            if let Err(error) = MentionUseCase::enqueue_mentions_from_comment(
+                db,
+                author_person_id,
+                &persisted_post,
+                persisted_comment,
+            )
+            .await
+            {
+                log::error!("Failed to enqueue comment mention notifications: {}", error.message);
+            }
         }
         Ok(persisted_post)
     }
@@ -105,7 +137,37 @@ impl PostUseCase {
         reaction.author_id = author.person_uuid.clone();
         reaction.author_name = author.name.clone();
         log::info!("Adding reaction to post: {}", post_id);
-        PostGateway::new(db).add_reaction(&post_id, reaction).await
+        let gateway = PostGateway::new(db);
+        let before = gateway.find_by_id_result(&post_id).await?;
+        let had_reaction = before.as_ref().is_some_and(|post| {
+            post.reactions
+                .iter()
+                .any(|existing| existing.author_id == author.person_uuid)
+        });
+        let updated = gateway.add_reaction(&post_id, reaction.clone()).await?;
+
+        if !had_reaction
+            && updated.author_uuid != author.person_uuid
+            && before.is_some()
+        {
+            let notification = InAppNotification::from_social_interaction(
+                format!("{}:reaction:{}", reaction.uuid, updated.author_uuid),
+                "Reaction".to_string(),
+                updated.author_uuid.clone(),
+                author.person_uuid.clone(),
+                author.name.clone(),
+                updated.uuid.clone(),
+                None,
+                "Someone reacted to your post.".to_string(),
+            );
+            if let Err(error) = MentionNotificationGateway::new(db)
+                .persist_in_app_notification(notification)
+                .await
+            {
+                log::error!("Failed to persist reaction notification: {}", error.message);
+            }
+        }
+        Ok(updated)
     }
     pub async fn remove_reaction(db: &Database, post_id: String, person_uuid: String) -> Result<Post, BusinessError> {
         log::info!("Removing reaction from post: {}", post_id);

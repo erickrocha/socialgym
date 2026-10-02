@@ -15,7 +15,9 @@ import '../../widgets/person_avatar_widget.dart';
 import 'post_composer_page.dart';
 
 class FeedPage extends StatefulWidget {
-  const FeedPage({super.key});
+  final String? initialPostUuid;
+
+  const FeedPage({super.key, this.initialPostUuid});
 
   @override
   State<FeedPage> createState() => _FeedPageState();
@@ -23,6 +25,7 @@ class FeedPage extends StatefulWidget {
 
 class _FeedPageState extends State<FeedPage> {
   late final ScrollController _scrollController;
+  final Map<String, GlobalKey> _postKeys = {};
 
   @override
   void initState() {
@@ -67,7 +70,7 @@ class _FeedPageState extends State<FeedPage> {
     }
   }
 
-  void _fetchInitialData() {
+  Future<void> _fetchInitialData() async {
     final authProvider = context.read<AuthProvider>();
     final personProvider = context.read<PersonProvider>();
     final resourceProvider = context.read<ResourceProvider>();
@@ -83,10 +86,34 @@ class _FeedPageState extends State<FeedPage> {
       resourceProvider.fetchResources(personProvider.ownerId);
     }
     final businessProfileUuid = personProvider.activeBusinessProfile?.uuid;
-    feedProvider.fetchPostsForProfile(
+    await feedProvider.fetchPostsForProfile(
       token,
-      businessProfileUuid: businessProfileUuid,
+      businessProfileUuid: widget.initialPostUuid == null
+          ? businessProfileUuid
+          : null,
     );
+    final targetPostUuid = widget.initialPostUuid;
+    if (targetPostUuid == null || !mounted) return;
+    final found = await feedProvider.loadUntilPost(
+      token,
+      targetPostUuid,
+      maxPages: 50,
+    );
+    if (!mounted) return;
+    if (!found) {
+      Navigator.of(context).pushReplacementNamed('/notifications');
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final targetContext = _postKeys[targetPostUuid]?.currentContext;
+      if (targetContext != null) {
+        Scrollable.ensureVisible(
+          targetContext,
+          alignment: 0.08,
+          duration: const Duration(milliseconds: 350),
+        );
+      }
+    });
   }
 
   /// Opens the post composer and refreshes the feed if a post was created.
@@ -199,7 +226,17 @@ class _FeedPageState extends State<FeedPage> {
                 else
                   SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (ctx, i) => FeedPostWidget(post: feedProvider.posts[i]),
+                      (ctx, i) {
+                        final post = feedProvider.posts[i];
+                        final key = _postKeys.putIfAbsent(
+                          post.uuid,
+                          GlobalKey.new,
+                        );
+                        return KeyedSubtree(
+                          key: key,
+                          child: FeedPostWidget(post: post),
+                        );
+                      },
                       childCount: feedProvider.posts.length,
                     ),
                   ),

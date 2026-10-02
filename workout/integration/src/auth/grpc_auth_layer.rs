@@ -72,6 +72,19 @@ where
         let conn = Arc::clone(&self.conn);
 
         Box::pin(async move {
+            if is_internal_push_preference_request(&req) {
+                let expected_secret = std::env::var("INTERNAL_SERVICE_SECRET").ok();
+                if is_authorized_internal_push_preference_request(
+                    &req,
+                    expected_secret.as_deref(),
+                ) {
+                    return inner.call(req).await;
+                }
+                return Ok(grpc_unauthenticated_response(
+                    "missing or invalid internal service secret",
+                ));
+            }
+
             match authenticate_request(&mut req, conn).await {
                 // Insert each value under its own type: services look these up as
                 // `User` / `BusinessProfile`, which a tuple extension never matches.
@@ -86,6 +99,24 @@ where
             }
         })
     }
+}
+
+fn is_internal_push_preference_request(req: &Request<TonicBody>) -> bool {
+    req.uri().path() == "/grpc.settings.SettingsService/GetPushPreferenceByOwnerUuid"
+}
+
+fn is_authorized_internal_push_preference_request(
+    req: &Request<TonicBody>,
+    expected_secret: Option<&str>,
+) -> bool {
+    let Some(expected_secret) = expected_secret.filter(|value| !value.is_empty()) else {
+        return false;
+    };
+    req.headers()
+        .get("x-internal-secret")
+        .and_then(|value| value.to_str().ok())
+        .map(|value| value == expected_secret)
+        .unwrap_or(false)
 }
 
 async fn authenticate_request(req: &mut Request<TonicBody>,conn: Arc<DatabaseConnection>) -> Result<(User,Option<BusinessProfile>), Response<TonicBody>> {
@@ -128,7 +159,8 @@ fn grpc_unauthenticated_response(message: &str) -> Response<TonicBody> {
     headers.insert("grpc-status", HeaderValue::from_static("16")); // UNAUTHENTICATED
     headers.insert(
         "grpc-message",
-        HeaderValue::from_str(message).unwrap_or(HeaderValue::from_static("unauthenticated")),
+        HeaderValue::from_str(message)
+            .unwrap_or(HeaderValue::from_static("unauthenticated")),
     );
 
     response
@@ -136,4 +168,62 @@ fn grpc_unauthenticated_response(message: &str) -> Response<TonicBody> {
 
 fn empty_grpc_body() -> TonicBody {
     TonicBody::empty()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        is_authorized_internal_push_preference_request,
+        is_internal_push_preference_request,
+    };
+    use hyper::Request;
+    use tonic::body::Body;
+
+    #[test]
+    fn internal_preference_route_is_exact() {
+        let request = Request::builder()
+            .uri("/grpc.settings.SettingsService/GetPushPreferenceByOwnerUuid")
+            .body(Body::empty())
+            .unwrap();
+        assert!(is_internal_push_preference_request(&request));
+
+        let public_method = Request::builder()
+            .uri("/grpc.settings.SettingsService/GetByOwnerIds")
+            .body(Body::empty())
+            .unwrap();
+        assert!(!is_internal_push_preference_request(&public_method));
+    }
+
+    #[test]
+    fn internal_preference_requires_matching_secret_header() {
+        let request = Request::builder()
+            .uri("/grpc.settings.SettingsService/GetPushPreferenceByOwnerUuid")
+            .header("x-internal-secret", "wrong-secret")
+            .body(Body::empty())
+            .unwrap();
+        assert!(!is_authorized_internal_push_preference_request(
+            &request,
+            Some("test-secret")
+        ));
+
+        let missing_secret = Request::builder()
+            .uri("/grpc.settings.SettingsService/GetPushPreferenceByOwnerUuid")
+            .header("x-internal-secret", "test-secret")
+            .body(Body::empty())
+            .unwrap();
+        assert!(!is_authorized_internal_push_preference_request(
+            &missing_secret,
+            None
+        ));
+
+        let request = Request::builder()
+            .uri("/grpc.settings.SettingsService/GetPushPreferenceByOwnerUuid")
+            .header("x-internal-secret", "test-secret")
+            .body(Body::empty())
+            .unwrap();
+        assert!(is_authorized_internal_push_preference_request(
+            &request,
+            Some("test-secret")
+        ));
+    }
 }

@@ -23,7 +23,9 @@ import '../profile/person_profile_page.dart';
 enum LocationMode { anywhere, savedAddress, currentGps }
 
 class FriendsPage extends StatefulWidget {
-  const FriendsPage({super.key});
+  final String? initialRequestUuid;
+
+  const FriendsPage({super.key, this.initialRequestUuid});
 
   @override
   State<FriendsPage> createState() => _FriendsPageState();
@@ -34,11 +36,14 @@ class _FriendsPageState extends State<FriendsPage>
   late TabController _tabController;
   LocationMode _suggestionsLocationMode = LocationMode.savedAddress;
   Position? _suggestionsPosition;
+  final Map<String, GlobalKey> _friendshipCardKeys = {};
+  String? _selectedPersonUuid;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    if (widget.initialRequestUuid != null) _tabController.index = 1;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchFriends();
     });
@@ -50,13 +55,13 @@ class _FriendsPageState extends State<FriendsPage>
     super.dispose();
   }
 
-  void _fetchFriends() {
+  Future<void> _fetchFriends() async {
     final authProvider = context.read<AuthProvider>();
     final friendsProvider = context.read<FriendsProvider>();
     final token = authProvider.auth?.accessToken ?? '';
 
     if (token.isNotEmpty) {
-      friendsProvider.fetchFriends(
+      await friendsProvider.fetchFriends(
         token,
         latitude: _suggestionsLocationMode == LocationMode.currentGps
             ? _suggestionsPosition?.latitude
@@ -65,6 +70,39 @@ class _FriendsPageState extends State<FriendsPage>
             ? _suggestionsPosition?.longitude
             : null,
       );
+      if (!mounted || widget.initialRequestUuid == null) return;
+      final pendingPerson = [
+        ...friendsProvider.receiveRequests,
+        ...friendsProvider.sentRequests,
+      ].where((person) => person.friendshipUuid == widget.initialRequestUuid);
+      final acceptedPerson = friendsProvider.friends
+          .where((person) => person.friendshipUuid == widget.initialRequestUuid);
+      final person = pendingPerson.isNotEmpty
+          ? pendingPerson.first
+          : acceptedPerson.isNotEmpty
+          ? acceptedPerson.first
+          : null;
+      if (person == null) {
+        Navigator.of(context).pushReplacementNamed('/notifications');
+        return;
+      }
+      setState(() {
+        _selectedPersonUuid = person.uuid;
+        _tabController.animateTo(
+          friendsProvider.friends.contains(person) ? 0 : 1,
+        );
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final targetContext =
+            _friendshipCardKeys[widget.initialRequestUuid]?.currentContext;
+        if (targetContext != null) {
+          Scrollable.ensureVisible(
+            targetContext,
+            alignment: 0.2,
+            duration: const Duration(milliseconds: 350),
+          );
+        }
+      });
     }
   }
 
@@ -88,6 +126,11 @@ class _FriendsPageState extends State<FriendsPage>
   String _getToken() {
     return context.read<AuthProvider>().auth?.accessToken ?? '';
   }
+
+  GlobalKey _cardKey(Person person) => _friendshipCardKeys.putIfAbsent(
+    person.friendshipUuid ?? person.uuid,
+    GlobalKey.new,
+  );
 
   Future<void> _sendFriendRequest(Person person) async {
     final l10n = AppLocalizations.of(context)!;
@@ -380,9 +423,12 @@ class _FriendsPageState extends State<FriendsPage>
         itemCount: provider.friends.length,
         itemBuilder: (context, index) {
           final friend = provider.friends[index];
-          return _buildPersonGridCard(
+          return KeyedSubtree(
+            key: _cardKey(friend),
+            child: _buildPersonGridCard(
             person: friend,
             businessType: businessType,
+            highlighted: friend.uuid == _selectedPersonUuid,
             onTap: () => _openPersonProfile(friend),
             action: Row(
               children: [
@@ -406,6 +452,7 @@ class _FriendsPageState extends State<FriendsPage>
                   ),
                 ),
               ],
+            ),
             ),
           );
         },
@@ -452,9 +499,12 @@ class _FriendsPageState extends State<FriendsPage>
                 gridDelegate: _peopleGridDelegate,
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final person = provider.receiveRequests[index];
-                  return _buildPersonGridCard(
+                  return KeyedSubtree(
+                    key: _cardKey(person),
+                    child: _buildPersonGridCard(
                     person: person,
                     businessType: businessType,
+                    highlighted: person.uuid == _selectedPersonUuid,
                     onTap: () => _openPersonProfile(person),
                     action: Row(
                       children: [
@@ -474,6 +524,7 @@ class _FriendsPageState extends State<FriendsPage>
                           ),
                         ),
                       ],
+                    ),
                     ),
                   );
                 }, childCount: provider.receiveRequests.length),
@@ -500,15 +551,19 @@ class _FriendsPageState extends State<FriendsPage>
                 gridDelegate: _peopleGridDelegate,
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final person = provider.sentRequests[index];
-                  return _buildPersonGridCard(
+                  return KeyedSubtree(
+                    key: _cardKey(person),
+                    child: _buildPersonGridCard(
                     person: person,
                     businessType: businessType,
+                    highlighted: person.uuid == _selectedPersonUuid,
                     onTap: () => _openPersonProfile(person),
                     action: _buildFullWidthAction(
                       label: l10n.friendsCancel,
                       icon: Icons.cancel_outlined,
                       color: AppColors.danger,
                       onPressed: () => _cancelRequest(person),
+                    ),
                     ),
                   );
                 }, childCount: provider.sentRequests.length),
@@ -710,10 +765,16 @@ Widget _buildPersonGridCard({
   required String? businessType,
   required VoidCallback onTap,
   required Widget action,
+  bool highlighted = false,
 }) {
   return Card(
     elevation: 1,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: highlighted
+          ? BorderSide(color: AppColors.primaryFor(businessType), width: 2)
+          : BorderSide.none,
+    ),
     clipBehavior: Clip.antiAlias,
     child: InkWell(
       onTap: onTap,

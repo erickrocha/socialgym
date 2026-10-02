@@ -302,18 +302,24 @@ const Person$json = {
       '6': '.grpc.business_profile.BusinessProfile',
       '10': 'businessProfiles'
     },
+    {'1': 'friendship_uuid', '3': 16, '4': 1, '5': 9, '10': 'friendshipUuid'},
   ],
 };
 
 /// Descriptor for `Person`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List personDescriptor = $convert.base64Decode(
-    'CgZQZXJzb24SDgoCaWQYASABKAVSAmlkEhIKBHV1aWQYAiABKAlSBHV1aWQSHAoJZmlyc3RuYW'
-    '1lGAMgASgJUglmaXJzdG5hbWUSGAoHc3VybmFtZRgEIAEoCVIHc3VybmFtZRIiCg1kYXRlX29m'
-    'X2JpcnRoGAUgASgJUgtkYXRlT2ZCaXJ0aBIWCgZnZW5kZXIYBiABKAlSBmdlbmRlchIdCgpvYm'
-    'plY3Rfa2V5GAcgASgJUglvYmplY3RLZXkSFgoGYXZhdGFyGAggASgJUgZhdmF0YXISFAoFY292'
-    'ZXIYCSABKAlSBWNvdmVyEiMKBHVzZXIYCiABKAsyDy5ncnBjLnVzZXIuVXNlclIEdXNlchI9Cg'
-    'twZXJzb25faW5mbxgLIAEoCzIcLmdycGMucGVyc29uX2luZm8uUGVyc29uSW5mb1IKcGVyc29u'
-    'SW5mbxJACglhZGRyZXNzZXMYDCADKAsyIi5ncnBjLnBlcnNvbl9hZGRyZXNzLlBlcnNvbkFkZH'
-    'Jlc3NSCWFkZHJlc3NlcxIdCgpjcmVhdGVkX2F0GA0gASgJUgljcmVhdGVkQXQSHQoKdXBkYXRl'
-    'ZF9hdBgOIAEoCVIJdXBkYXRlZEF0ElMKEWJ1c2luZXNzX3Byb2ZpbGVzGA8gAygLMiYuZ3JwYy'
-    '5idXNpbmVzc19wcm9maWxlLkJ1c2luZXNzUHJvZmlsZVIQYnVzaW5lc3NQcm9maWxlcw==');
+  'CgZQZXJzb24SDgoCaWQYASABKAVSAmlkEhIKBHV1aWQYAiABKAlSBHV1'
+  'aWQSHAoJZmlyc3RuYW1lGAMgASgJUglmaXJzdG5hbWUSGAoHc3VybmFt'
+  'ZRgEIAEoCVIHc3VybmFtZRIiCg1kYXRlX29mX2JpcnRoGAUgASgJUgtk'
+  'YXRlT2ZCaXJ0aBIWCgZnZW5kZXIYBiABKAlSBmdlbmRlchIdCgpvYmpl'
+  'Y3Rfa2V5GAcgASgJUglvYmplY3RLZXkSFgoGYXZhdGFyGAggASgJUgZh'
+  'dmF0YXISFAoFY292ZXIYCSABKAlSBWNvdmVyEiMKBHVzZXIYCiABKAsy'
+  'Dy5ncnBjLnVzZXIuVXNlclIEdXNlchI9CgtwZXJzb25faW5mbxgLIAEo'
+  'CzIcLmdycGMucGVyc29uX2luZm8uUGVyc29uSW5mb1IKcGVyc29uSW5m'
+  'bxJACglhZGRyZXNzZXMYDCADKAsyIi5ncnBjLnBlcnNvbl9hZGRyZXNz'
+  'LlBlcnNvbkFkZHJlc3NSCWFkZHJlc3NlcxIdCgpjcmVhdGVkX2F0GA0g'
+  'ASgJUgljcmVhdGVkQXQSHQoKdXBkYXRlZF9hdBgOIAEoCVIJdXBkYXRl'
+  'ZEF0ElMKEWJ1c2luZXNzX3Byb2ZpbGVzGA8gAygLMiYuZ3JwYy5idXNp'
+  'bmVzc19wcm9maWxlLkJ1c2luZXNzUHJvZmlsZVIQYnVzaW5lc3NQcm9m'
+  'aWxlcxInCg9mcmllbmRzaGlwX3V1aWQYECABKAlSDmZyaWVuZHNoaXBV'
+  'dWlk');

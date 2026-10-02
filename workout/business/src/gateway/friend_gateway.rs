@@ -13,12 +13,18 @@ use crate::commons::functions::parse_uuid;
 pub struct FriendGateway {}
 
 impl FriendGateway {
-    pub async fn persist(db: &DbConn, friend: Friend) -> Result<friends::ActiveModel, DbErr> {
+    pub async fn persist<C: ConnectionTrait>(
+        db: &C,
+        friend: Friend,
+    ) -> Result<friends::ActiveModel, DbErr> {
         let active_model = FriendEntityMapper::build_active_model(friend);
         active_model.save(db).await
     }
 
-    pub async fn update(db: &DbConn, friend: Friend) -> Result<friends::FriendsEntity, DbErr> {
+    pub async fn update<C: ConnectionTrait>(
+        db: &C,
+        friend: Friend,
+    ) -> Result<friends::FriendsEntity, DbErr> {
         let active_model = FriendEntityMapper::build_active_model(friend);
         active_model.update(db).await
     }

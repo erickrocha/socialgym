@@ -98,4 +98,5 @@ message Person {
   string created_at = 13;
   string updated_at = 14;
   repeated business_profile.BusinessProfile business_profiles = 15;
+  string friendship_uuid = 16;
 }

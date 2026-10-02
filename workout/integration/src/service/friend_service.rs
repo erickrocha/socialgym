@@ -11,6 +11,7 @@ use crate::proto::friend::{
 	Friend, FriendPageRequest, FriendPageResponse, FriendRequestRequest, FriendsRequest,
 	FriendsResponse, RemoveFriendResponse, SearchFriendsRequest, SearchFriendsResponse,
 };
+use crate::proto::person::Person as ProtoPerson;
 use crate::infrastructure::mapper::{Mapper, FriendMapper, PersonMapper};
 
 pub struct GrpcFriendService {
@@ -32,6 +33,14 @@ impl GrpcFriendService {
 			.map(|user| user.person_id)
 			.filter(|id| *id > 0)
 			.ok_or_else(|| Status::unauthenticated("authenticated user missing"))
+	}
+
+	fn attach_friendship_uuids(people: &mut [ProtoPerson], links: Vec<(i32, String)>) {
+		for (person_id, friendship_uuid) in links {
+			if let Some(person) = people.iter_mut().find(|person| person.id == person_id) {
+				person.friendship_uuid = friendship_uuid;
+			}
+		}
 	}
 }
 
@@ -119,11 +128,30 @@ impl FriendService for GrpcFriendService {
 			PersonUseCase::get_all_received_requests(&self.conn, person_id).await;
 		let sent_requests = PersonUseCase::get_all_sent_requests(&self.conn, person_id).await;
 
+		let mut friend_people = PersonMapper::response_vec(friends);
+		let mut receive_request_people = PersonMapper::response_vec(receive_requests);
+		let mut sent_request_people = PersonMapper::response_vec(sent_requests);
+		let accepted_links = FriendUseCase::find_all_friend(&self.conn, person_id)
+			.await
+			.map_err(to_status)?
+			.into_iter()
+			.filter_map(|friend| Some((friend.friend_id, friend.uuid?)))
+			.collect();
+		let received_links = FriendUseCase::find_pending_friendship_links(&self.conn, person_id, true)
+			.await
+			.map_err(to_status)?;
+		let sent_links = FriendUseCase::find_pending_friendship_links(&self.conn, person_id, false)
+			.await
+			.map_err(to_status)?;
+		Self::attach_friendship_uuids(&mut friend_people, accepted_links);
+		Self::attach_friendship_uuids(&mut receive_request_people, received_links);
+		Self::attach_friendship_uuids(&mut sent_request_people, sent_links);
+
 		Ok(Response::new(FriendPageResponse {
 			suggestions: PersonMapper::response_vec(suggestions),
-			friends: PersonMapper::response_vec(friends),
-			receive_requests: PersonMapper::response_vec(receive_requests),
-			sent_requests: PersonMapper::response_vec(sent_requests),
+			friends: friend_people,
+			receive_requests: receive_request_people,
+			sent_requests: sent_request_people,
 		}))
 	}
 

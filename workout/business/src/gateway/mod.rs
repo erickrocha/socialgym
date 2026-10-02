@@ -6,6 +6,7 @@ pub mod country_gateway;
 pub mod data_export_gateway;
 pub mod exercise_gateway;
 pub mod friend_gateway;
+pub mod friendship_outbox_gateway;
 pub mod google_places_gateway;
 pub mod person_address_gateway;
 pub mod person_gateway;

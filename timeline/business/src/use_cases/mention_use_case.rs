@@ -44,7 +44,7 @@ impl MentionUseCase {
 
 		let allowed_mentions =
 			Self::load_allowed_friend_uuids(author_person_id, &comment.author_uuid).await?;
-		let mentioned_uuids: Vec<String> = post.mentions.iter().map(|m| m.mentioned_uuid.clone()).collect();
+		let mentioned_uuids: Vec<String> = comment.mentions.iter().map(|m| m.mentioned_uuid.clone()).collect();
 		let snippet = Self::content_snippet(&comment.content);
 
 		let events: Vec<MentionNotificationEvent> = mentioned_uuids

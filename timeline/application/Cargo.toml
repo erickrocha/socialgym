@@ -17,6 +17,10 @@ futures = "0.3.31"
 utoipa = { workspace = true }
 utoipa-swagger-ui = { workspace = true }
 uuid = { workspace = true }
+aws-config = { version = "1.10.1", default-features = false, features = ["behavior-version-latest", "rt-tokio", "rustls"] }
+aws-sdk-sqs = { version = "1.105.0", default-features = false, features = ["rt-tokio", "rustls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 
 axum = { version = "0.8.9", features = ["ws"] }
 tracing-subscriber = "0.3.23"

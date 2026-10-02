@@ -1,6 +1,7 @@
 use business::gateway::post_gateway::PostGateway;
 use business::gateway::evolution_check_in_gateway::EvolutionCheckInGateway;
 use business::gateway::mention_notification_gateway::MentionNotificationGateway;
+use business::gateway::push_device_gateway::PushDeviceGateway;
 use business::repositories::repository::Repository;
 use business::use_cases::post_use_case::PostUseCase;
 use business::use_cases::mention_notification_use_case::MentionNotificationUseCase;
@@ -181,6 +182,218 @@ async fn c006_notification_pipeline_acceptance() {
         .unwrap();
     assert_eq!(failed.status, "Failed");
     assert_eq!(failed.retry_count, 5);
+}
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_MONGO_URL MongoDB database"]
+async fn c006_push_device_transfer_rotation_acceptance() {
+    let database = test_database().await;
+    let collection = database.collection::<domain::push_device::PushDevice>("push_devices");
+    collection
+        .delete_many(doc! {
+            "$or": [
+                { "_id": { "$in": ["c006-device-a", "c006-device-b"] } },
+                { "registrationToken": { "$in": ["c006-token-1", "c006-token-2"] } },
+            ]
+        })
+        .await
+        .unwrap();
+    collection
+        .create_index(
+            mongodb::IndexModel::builder()
+                .keys(doc! { "registrationToken": 1 })
+                .options(mongodb::options::IndexOptions::builder().unique(true).build())
+                .build(),
+        )
+        .await
+        .unwrap();
+    collection
+        .create_index(
+            mongodb::IndexModel::builder()
+                .keys(doc! { "deviceUuid": 1 })
+                .options(mongodb::options::IndexOptions::builder().unique(true).build())
+                .build(),
+        )
+        .await
+        .unwrap();
+
+    PushDeviceGateway::register(
+        &database,
+        "c006-device-a",
+        "c006-owner-a",
+        "android",
+        "c006-token-1",
+    )
+    .await
+    .unwrap();
+    PushDeviceGateway::register(
+        &database,
+        "c006-device-a",
+        "c006-owner-a",
+        "android",
+        "c006-token-2",
+    )
+    .await
+    .unwrap();
+
+    let rotated = PushDeviceGateway::find_all_for_person(&database, "c006-owner-a")
+        .await
+        .unwrap();
+    assert_eq!(rotated.len(), 1);
+    assert_eq!(rotated[0].registration_token, "c006-token-2");
+
+    PushDeviceGateway::register(
+        &database,
+        "c006-device-b",
+        "c006-owner-b",
+        "ios",
+        "c006-token-2",
+    )
+    .await
+    .unwrap();
+    assert!(
+        PushDeviceGateway::find_all_for_person(&database, "c006-owner-a")
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    let transferred = PushDeviceGateway::find_all_for_person(&database, "c006-owner-b")
+        .await
+        .unwrap();
+    assert_eq!(transferred.len(), 1);
+    assert_eq!(transferred[0].platform, "ios");
+
+    assert!(
+        !PushDeviceGateway::remove_owned(&database, "c006-device-b", "c006-owner-a")
+            .await
+            .unwrap()
+    );
+    assert!(
+        PushDeviceGateway::remove_owned(&database, "c006-device-b", "c006-owner-b")
+            .await
+            .unwrap()
+    );
+}
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_MONGO_URL MongoDB database"]
+async fn c006_friendship_notification_persistence_is_idempotent() {
+    let database = test_database().await;
+    let collection = database.collection::<InAppNotification>("in_app_notifications");
+    collection
+        .delete_one(doc! { "_id": "c006-friendship-event" })
+        .await
+        .unwrap();
+    let gateway = MentionNotificationGateway::new(&database);
+    let notification = InAppNotification::from_friendship_event(
+        "c006-friendship-event".to_string(),
+        "FriendRequestCreated".to_string(),
+        "c006-recipient".to_string(),
+        "c006-actor".to_string(),
+        "c006-friendship".to_string(),
+        "Someone sent you a friend request.".to_string(),
+    );
+
+    gateway
+        .persist_friendship_notification(notification.clone())
+        .await
+        .unwrap();
+    gateway
+        .persist_friendship_notification(notification)
+        .await
+        .unwrap();
+
+    let unread = MentionNotificationUseCase::list_notifications(
+        &database,
+        "c006-recipient",
+        true,
+        50,
+    )
+    .await
+    .unwrap();
+    let matching: Vec<_> = unread
+        .into_iter()
+        .filter(|notification| notification.uuid == "c006-friendship-event")
+        .collect();
+    assert_eq!(matching.len(), 1);
+    assert_eq!(matching[0].target_type.as_deref(), Some("friendship_request"));
+    assert_eq!(matching[0].target_uuid.as_deref(), Some("c006-friendship"));
+    assert_eq!(matching[0].push_status.as_deref(), Some("Pending"));
+}
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_MONGO_URL MongoDB database"]
+async fn c006_invalid_push_token_removal_is_scoped_to_that_token() {
+    let database = test_database().await;
+    let collection = database.collection::<domain::push_device::PushDevice>("push_devices");
+    collection
+        .delete_many(doc! { "_id": { "$in": ["c006-invalid-device", "c006-valid-device"] } })
+        .await
+        .unwrap();
+    PushDeviceGateway::register(
+        &database,
+        "c006-invalid-device",
+        "c006-token-owner",
+        "android",
+        "c006-invalid-token",
+    )
+    .await
+    .unwrap();
+    PushDeviceGateway::register(
+        &database,
+        "c006-valid-device",
+        "c006-token-owner",
+        "ios",
+        "c006-valid-token",
+    )
+    .await
+    .unwrap();
+
+    PushDeviceGateway::remove_invalid_token(&database, "c006-invalid-token")
+        .await
+        .unwrap();
+    let remaining = PushDeviceGateway::find_all_for_person(&database, "c006-token-owner")
+        .await
+        .unwrap();
+    assert_eq!(remaining.len(), 1);
+    assert_eq!(remaining[0].registration_token, "c006-valid-token");
+}
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_MONGO_URL MongoDB database"]
+async fn c006_push_claim_is_exclusive_and_recovers_expired_lease() {
+    let database = test_database().await;
+    let collection = database.collection::<InAppNotification>("in_app_notifications");
+    collection
+        .delete_one(doc! { "_id": "c006-push-lease" })
+        .await
+        .unwrap();
+    let gateway = MentionNotificationGateway::new(&database);
+    let notification = InAppNotification::from_friendship_event(
+        "c006-push-lease".to_string(),
+        "FriendRequestCreated".to_string(),
+        "c006-lease-recipient".to_string(),
+        "c006-lease-actor".to_string(),
+        "c006-lease-friendship".to_string(),
+        "Someone sent you a friend request.".to_string(),
+    );
+    gateway
+        .persist_friendship_notification(notification)
+        .await
+        .unwrap();
+
+    assert!(gateway.claim_push_notification("c006-push-lease").await.unwrap());
+    assert!(!gateway.claim_push_notification("c006-push-lease").await.unwrap());
+    collection
+        .update_one(
+            doc! { "_id": "c006-push-lease" },
+            doc! { "$set": {
+                "pushClaimedAt": mongodb::bson::DateTime::from_millis(0),
+            } },
+        )
+        .await
+        .unwrap();
+    assert!(gateway.claim_push_notification("c006-push-lease").await.unwrap());
 }
 
 #[tokio::test]

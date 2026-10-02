@@ -1061,6 +1061,7 @@ class Person extends $pb.GeneratedMessage {
     $core.String? createdAt,
     $core.String? updatedAt,
     $core.Iterable<$4.BusinessProfile>? businessProfiles,
+    $core.String? friendshipUuid,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -1079,6 +1080,7 @@ class Person extends $pb.GeneratedMessage {
     if (updatedAt != null) result.updatedAt = updatedAt;
     if (businessProfiles != null)
       result.businessProfiles.addAll(businessProfiles);
+    if (friendshipUuid != null) result.friendshipUuid = friendshipUuid;
     return result;
   }
 
@@ -1114,6 +1116,7 @@ class Person extends $pb.GeneratedMessage {
     ..aOS(14, _omitFieldNames ? '' : 'updatedAt')
     ..pPM<$4.BusinessProfile>(15, _omitFieldNames ? '' : 'businessProfiles',
         subBuilder: $4.BusinessProfile.create)
+    ..aOS(16, _omitFieldNames ? '' : 'friendshipUuid')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1260,6 +1263,15 @@ class Person extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(15)
   $pb.PbList<$4.BusinessProfile> get businessProfiles => $_getList(14);
+
+  @$pb.TagNumber(16)
+  $core.String get friendshipUuid => $_getSZ(15);
+  @$pb.TagNumber(16)
+  set friendshipUuid($core.String value) => $_setString(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasFriendshipUuid() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearFriendshipUuid() => $_clearField(16);
 }
 
 const $core.bool _omitFieldNames =

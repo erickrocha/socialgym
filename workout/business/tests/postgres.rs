@@ -6,11 +6,13 @@ use business::domain::user::User;
 use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
 use business::use_cases::consent_use_case::ConsentUseCase;
 use business::use_cases::friend_use_case::FriendUseCase;
+use business::gateway::aws_clients::sqs_client;
+use business::use_cases::friendship_outbox_publisher_use_case::FriendshipOutboxPublisherUseCase;
 use business::use_cases::person_use_case::PersonUseCase;
 use business::use_cases::exercise_use_case::ExerciseUseCase;
 use business::use_cases::workout_use_case::WorkoutUseCase;
 use migration::{Migrator, MigratorTrait};
-use sea_orm::{ConnectionTrait, Database, Statement};
+use sea_orm::{ColumnTrait, ConnectionTrait, Database, EntityTrait, QueryFilter, QueryOrder, Statement};
 
 #[tokio::test]
 #[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database"]
@@ -193,6 +195,108 @@ async fn c004_workout_exercise_visibility_acceptance() {
     assert_eq!(exercises.len(), 1);
     assert!(ExerciseUseCase::ensure_all_readable(&exercises, 1).is_ok());
     assert!(ExerciseUseCase::ensure_all_readable(&exercises, 2).is_err());
+}
+
+#[tokio::test]
+#[ignore = "requires disposable TEST_DATABASE_URL PostgreSQL/PostGIS and LocalStack SQS"]
+async fn c006_friendship_outbox_publishes_fifo_in_order() {
+  let database_url = std::env::var("TEST_DATABASE_URL")
+    .expect("TEST_DATABASE_URL must point to a disposable PostgreSQL/PostGIS database");
+  let queue_url = std::env::var("AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL")
+    .expect("AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL must point to the test FIFO queue");
+  let db = Database::connect(database_url).await.unwrap();
+  Migrator::refresh(&db).await.unwrap();
+  let client = sqs_client().await;
+  let mut queue_ready = false;
+  for _ in 0..30 {
+    if client
+      .get_queue_url()
+      .queue_name("social-notification-events.fifo")
+      .send()
+      .await
+      .is_ok()
+    {
+      queue_ready = true;
+      break;
+    }
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+  }
+  assert!(queue_ready, "LocalStack friendship FIFO queue did not become ready");
+
+  db.execute_unprepared(
+    r#"INSERT INTO person
+       (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at)
+       VALUES
+       (1, '00000000-0000-0000-0000-000000000061', 'Sender', 'Person', '1990-01-01', 'X', now(), now()),
+       (2, '00000000-0000-0000-0000-000000000062', 'Receiver', 'Person', '1990-01-01', 'X', now(), now())"#,
+  )
+  .await
+  .unwrap();
+
+  let pending = FriendUseCase::send_friend_request(&db, 1, 2).await.unwrap();
+  FriendUseCase::accept_friend_request(&db, 2, 1)
+    .await
+    .unwrap();
+  let friendship_uuid = pending.uuid.unwrap();
+  let events = entity::friendship_notification_outbox_entity::Entity::find()
+    .filter(
+      entity::friendship_notification_outbox_entity::Column::FriendshipUuid
+        .eq(uuid::Uuid::parse_str(&friendship_uuid).unwrap()),
+    )
+    .order_by_asc(entity::friendship_notification_outbox_entity::Column::Id)
+    .all(&db)
+    .await
+    .unwrap();
+  assert_eq!(events.len(), 2);
+  assert_eq!(events[0].event_type, "friend_request_created");
+  assert_eq!(events[1].event_type, "friend_request_accepted");
+
+  let published = FriendshipOutboxPublisherUseCase::publish_pending(
+    &db,
+    &client,
+    &queue_url,
+  )
+  .await
+  .unwrap();
+  assert_eq!(published, 2);
+
+  let messages = client
+    .receive_message()
+    .queue_url(&queue_url)
+    .max_number_of_messages(10)
+    .wait_time_seconds(1)
+    .send()
+    .await
+    .unwrap()
+    .messages
+    .unwrap_or_default();
+  let event_types: Vec<String> = messages
+    .iter()
+    .filter_map(|message| message.body())
+    .map(|body| {
+      serde_json::from_str::<serde_json::Value>(body)
+        .unwrap()["eventType"]
+        .as_str()
+        .unwrap()
+        .to_string()
+    })
+    .collect();
+  assert_eq!(
+    event_types,
+    vec!["friend_request_created", "friend_request_accepted"]
+  );
+
+  for message in messages {
+    if let Some(receipt_handle) = message.receipt_handle() {
+      client
+        .delete_message()
+        .queue_url(&queue_url)
+        .receipt_handle(receipt_handle)
+        .send()
+        .await
+        .unwrap();
+    }
+  }
 }
 
 fn business_profile_owner_actor(person_id: i32, person_uuid: &str) -> User {

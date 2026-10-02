@@ -46,7 +46,10 @@ Test database credentials:
 - MongoDB app user: `timeline_test` / `timeline_test`, database `timeline_test`
 - MongoDB root user: `root_test` / `root_test`
 
-The push test provider is a fake and requires no FCM/APNs credentials. Device-token acceptance
+Timeline runs with `PUSH_PROVIDER_MODE=fake`; it requires no FCM/APNs credentials. To simulate
+provider outcomes, set `FAKE_PUSH_PROVIDER_STATUS` to `429`, `500`, `timeout`, `invalid-token`,
+`401`, or `configuration`; leave it unset for success. Fake delivery records contain only the
+notification UUID and navigation target, never a registration token. Device-token acceptance
 tests must verify that registering a token under a different authenticated person transfers its
 owner association and prevents delivery to the previous owner. They must also verify that the same
 stable `deviceUuid` updates its FCM token after provider rotation, and that successful registration

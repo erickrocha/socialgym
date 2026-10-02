@@ -25,6 +25,8 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
     use business::use_cases::consent_use_case::ConsentUseCase;
     use business::use_cases::exercise_use_case::ExerciseUseCase;
     use business::use_cases::friend_use_case::FriendUseCase;
+        use business::domain::friend::Friend;
+        use business::domain::friendship_outbox_event::FriendshipOutboxEvent;
     use business::use_cases::logout_use_case::LogoutUseCase;
     use business::use_cases::person_address_use_case::PersonAddressUseCase;
     use business::use_cases::person_info_use_case::PersonInfoUseCase;
@@ -629,10 +631,27 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
         }
     }
 
+    fn mock_friendship_outbox_model() -> entity::friendship_notification_outbox_entity::Model {
+        entity::friendship_notification_outbox_entity::Model {
+            id: 1,
+            event_uuid: Uuid::new_v4(),
+            friendship_uuid: Uuid::new_v4(),
+            event_type: "friend_request_created".to_string(),
+            actor_person_uuid: Uuid::new_v4(),
+            recipient_person_uuid: Uuid::new_v4(),
+            occurred_at: Utc::now(),
+            attempt_count: 0,
+            next_attempt_at: Utc::now(),
+            last_error: None,
+            published_at: None,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        }
+    }
+
     #[tokio::test]
     async fn test_friend_use_case_send_friend_request_same_person() {
         let db = sea_orm::MockDatabase::new(DbBackend::Postgres).into_connection();
-
         let result = FriendUseCase::send_friend_request(&db, 1, 1).await;
 
         assert!(result.is_err());
@@ -640,6 +659,44 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
             result.unwrap_err().message,
             "Cannot send friend request to yourself"
         );
+    }
+
+    #[test]
+    fn friendship_request_created_event_targets_receiver() {
+        let mut request = Friend::new(
+            1,
+            2,
+            "10000000-0000-0000-0000-000000000001".to_string(),
+            "10000000-0000-0000-0000-000000000002".to_string(),
+            InviteStatus::Pending,
+        );
+        request.uuid = Some("20000000-0000-0000-0000-000000000001".to_string());
+
+        let event = FriendshipOutboxEvent::request_created(&request).unwrap();
+
+        assert_eq!(event.event_type, "friend_request_created");
+        assert_eq!(event.friendship_uuid, request.uuid.unwrap());
+        assert_eq!(event.actor_person_uuid, request.person_uuid);
+        assert_eq!(event.recipient_person_uuid, request.friend_uuid);
+    }
+
+    #[test]
+    fn friendship_request_accepted_event_targets_original_requester() {
+        let mut request = Friend::new(
+            1,
+            2,
+            "10000000-0000-0000-0000-000000000001".to_string(),
+            "10000000-0000-0000-0000-000000000002".to_string(),
+            InviteStatus::Accepted,
+        );
+        request.uuid = Some("20000000-0000-0000-0000-000000000001".to_string());
+
+        let event = FriendshipOutboxEvent::request_accepted(&request).unwrap();
+
+        assert_eq!(event.event_type, "friend_request_accepted");
+        assert_eq!(event.friendship_uuid, request.uuid.unwrap());
+        assert_eq!(event.actor_person_uuid, request.friend_uuid);
+        assert_eq!(event.recipient_person_uuid, request.person_uuid);
     }
 
     #[tokio::test]
@@ -685,6 +742,7 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
                 created_at: chrono::Utc::now(),
                 updated_at: chrono::Utc::now(),
             }]])
+            .append_query_results(vec![vec![mock_friendship_outbox_model()]])
             .into_connection();
 
         let result = FriendUseCase::send_friend_request(&db, 1, 2).await;
@@ -725,6 +783,7 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
                 created_at: chrono::Utc::now(),
                 updated_at: chrono::Utc::now(),
             }]])
+            .append_query_results(vec![vec![mock_friendship_outbox_model()]])
             .into_connection();
 
         let result = FriendUseCase::accept_friend_request(&db, 2, 1).await;
@@ -823,6 +882,7 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
                 rows_affected: 1,
             }])
             .append_query_results(vec![vec![mock_friendship_model(2, 1, "Accepted")]])
+            .append_query_results(vec![vec![mock_friendship_outbox_model()]])
             .into_connection();
 
         let result = FriendUseCase::send_friend_request(&db, 1, 2).await;
@@ -839,6 +899,7 @@ use business::domain::exercise::{Exercise, ExerciseEntityMapper};
                 rows_affected: 1,
             }])
             .append_query_results(vec![vec![mock_friendship_model(1, 2, "Pending")]])
+            .append_query_results(vec![vec![mock_friendship_outbox_model()]])
             .into_connection();
 
         let result = FriendUseCase::send_friend_request(&db, 1, 2).await;

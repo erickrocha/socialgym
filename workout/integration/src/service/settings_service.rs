@@ -1,5 +1,8 @@
 use crate::proto::settings::settings_service_server::SettingsService;
-use crate::proto::settings::{Setting, SettingIdRequest, SettingOwnerIdRequest};
+use crate::proto::settings::{
+    OwnerUuidRequest, PushPreferenceResponse, Setting, SettingIdRequest, SettingOwnerIdRequest,
+};
+use business::domain::business_error::BusinessErrorKind;
 use business::domain::enums::{Position, WeightUnit};
 use business::domain::settings::Settings;
 use business::gateway::settings_gateway::SettingsGateway;
@@ -77,6 +80,25 @@ impl GrpcSettingService {
 
 #[tonic::async_trait]
 impl SettingsService for GrpcSettingService {
+    async fn get_push_preference_by_owner_uuid(
+        &self,
+        request: Request<OwnerUuidRequest>,
+    ) -> Result<Response<PushPreferenceResponse>, Status> {
+        let owner_uuid = request.into_inner().owner_uuid;
+        validate_uuid(&owner_uuid, "owner_uuid")?;
+        let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
+
+        match use_case.get_by_owner_uuid(owner_uuid).await {
+            Ok(settings) => Ok(Response::new(PushPreferenceResponse {
+                notifications_enabled: settings.notifications_enabled,
+            })),
+            Err(error) if error.kind == BusinessErrorKind::NotFound => {
+                Err(Status::not_found("Settings not found"))
+            }
+            Err(_) => Err(Status::unavailable("Settings service temporarily unavailable")),
+        }
+    }
+
     async fn get_by_id(
         &self,
         request: Request<SettingIdRequest>,

@@ -71,6 +71,7 @@ use crate::http::resource_controller::get_resource;
 use crate::http::welcome_controller::welcome;
 use crate::infrastructure::account_purge_worker;
 use crate::infrastructure::data_export_worker;
+use crate::infrastructure::friendship_outbox_worker;
 use crate::infrastructure::sqs_worker;
 use crate::routes::authentication_routes::auth_routes;
 use crate::routes::business_profile_routes::business_profile_routes;
@@ -268,6 +269,7 @@ async fn start() -> anyhow::Result<()> {
     // Start the SQS consumer background worker.
     // It will no-op gracefully when AWS_SQS_QUEUE_URL is not set.
     sqs_worker::start(Arc::clone(&state.conn));
+    friendship_outbox_worker::start(Arc::clone(&state.conn));
 
     // Start the account-deletion sweep worker (immediate and 30-day-grace purges).
     account_purge_worker::start(Arc::clone(&state.conn));

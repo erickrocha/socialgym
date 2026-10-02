@@ -234,6 +234,7 @@ class Person {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final List<BusinessProfile> businessProfiles;
+  final String? friendshipUuid;
 
   Person({
     required this.id,
@@ -251,6 +252,7 @@ class Person {
     this.createdAt,
     this.updatedAt,
     this.businessProfiles = const [],
+    this.friendshipUuid,
   });
 
   String get fullName => '$firstname $surname';
@@ -284,6 +286,7 @@ class Person {
               ?.map((e) => BusinessProfile.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+          friendshipUuid: json['friendshipUuid'] as String?,
     );
   }
 
@@ -304,6 +307,7 @@ class Person {
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'businessProfiles': businessProfiles.map((e) => e.toJson()).toList(),
+      'friendshipUuid': friendshipUuid,
     };
   }
 }

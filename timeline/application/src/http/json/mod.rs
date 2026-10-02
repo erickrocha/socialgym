@@ -6,4 +6,5 @@ pub mod body_composition_json;
 pub mod circumferences_json;
 pub mod error_response_json;
 pub mod notification_json;
+pub mod push_device_json;
 pub mod chat_json;

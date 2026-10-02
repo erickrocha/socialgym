@@ -7,6 +7,15 @@ use mongodb::Database;
 pub struct MentionNotificationUseCase;
 
 impl MentionNotificationUseCase {
+    pub async fn persist_friendship_notification(
+        db: &Database,
+        notification: InAppNotification,
+    ) -> Result<(), BusinessError> {
+        MentionNotificationGateway::new(db)
+            .persist_friendship_notification(notification)
+            .await
+    }
+
     pub async fn enqueue(db: &Database,events: Vec<MentionNotificationEvent>,) -> Result<(), BusinessError> {
         if events.is_empty() {
             return Ok(());

@@ -6,6 +6,7 @@ pub mod feed_controller;
 pub mod internal_controller;
 pub mod json;
 pub mod notification_controller;
+pub mod push_device_controller;
 pub mod post_controller;
 pub mod welcome_controller;
 pub mod workout_session_controller;

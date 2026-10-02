@@ -47,4 +47,20 @@ void main() {
       expect(decoded.uuid, isEmpty);
     });
   });
+
+  group('Person.friendshipUuid field', () {
+    test('round-trips a selected friendship request UUID', () {
+      final person = $person.Person(
+        id: 7,
+        firstname: 'Alice',
+        surname: 'Smith',
+        friendshipUuid: 'friendship-123',
+      );
+
+      final decoded = $person.Person.fromBuffer(person.writeToBuffer());
+
+      expect(decoded.hasFriendshipUuid(), isTrue);
+      expect(decoded.friendshipUuid, 'friendship-123');
+    });
+  });
 }

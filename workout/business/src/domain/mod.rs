@@ -4,6 +4,7 @@ pub mod user;
 pub mod person;
 pub mod person_info;
 pub mod friend;
+pub mod friendship_outbox_event;
 pub mod workout;
 pub mod exercise;
 pub mod workout_exercise;
