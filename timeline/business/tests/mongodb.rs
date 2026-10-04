@@ -12,8 +12,11 @@ use domain::enums::Visibility;
 use domain::evolution_check_in::EvolutionCheckIn;
 use domain::in_app_notification::InAppNotification;
 use domain::mention_notification_event::MentionNotificationEvent;
+use domain::mention::Mention;
 use domain::post::Post;
 use domain::reaction::Reaction;
+use domain::user::User;
+use futures::TryStreamExt;
 use mongodb::{Client, Database, bson::doc};
 
 async fn test_database() -> Database {
@@ -319,6 +322,361 @@ async fn c006_friendship_notification_persistence_is_idempotent() {
     assert_eq!(matching[0].target_type.as_deref(), Some("friendship_request"));
     assert_eq!(matching[0].target_uuid.as_deref(), Some("c006-friendship"));
     assert_eq!(matching[0].push_status.as_deref(), Some("Pending"));
+}
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_MONGO_URL MongoDB database"]
+async fn c006_social_interaction_producers_acceptance() {
+    let database = test_database().await;
+    let post_ids = vec!["c006-tc007-post", "c006-tc007-self-post"];
+    let notification_ids = vec![
+        "c006-tc007-comment:comment:c006-tc007-owner",
+        "c006-tc007-reaction:reaction:c006-tc007-owner",
+    ];
+    database
+        .collection::<Post>("posts")
+        .delete_many(doc! { "_id": { "$in": &post_ids } })
+        .await
+        .unwrap();
+    database
+        .collection::<InAppNotification>("in_app_notifications")
+        .delete_many(doc! { "_id": { "$in": &notification_ids } })
+        .await
+        .unwrap();
+
+    let owner_post = Post::updated(
+        post_ids[0].to_string(),
+        1,
+        "c006-tc007-owner".to_string(),
+        "Owner".to_string(),
+        None,
+        None,
+        "Owner post".to_string(),
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+    );
+    PostGateway::new(&database).persist(owner_post).await.unwrap();
+
+    let actor = User::new(
+        "Actor".to_string(),
+        "c006-tc007-actor@example.com".to_string(),
+        "c006-tc007-user".to_string(),
+        2,
+        "c006-tc007-actor".to_string(),
+        String::new(),
+        None,
+    );
+    let comment = Comment::new(
+        "c006-tc007-comment".to_string(),
+        post_ids[0].to_string(),
+        "untrusted-author".to_string(),
+        "Untrusted".to_string(),
+        None,
+        None,
+        "A comment".to_string(),
+        None,
+        Vec::new(),
+    );
+    PostUseCase::add_comment(&database, &actor, post_ids[0].to_string(), comment)
+        .await
+        .unwrap();
+
+    let owner_notifications = MentionNotificationUseCase::list_notifications(
+        &database,
+        "c006-tc007-owner",
+        false,
+        50,
+    )
+    .await
+    .unwrap();
+    assert_eq!(owner_notifications.len(), 1);
+    assert_eq!(owner_notifications[0].notification_type, "Comment");
+    assert_eq!(owner_notifications[0].actor_person_uuid, "c006-tc007-actor");
+
+    for (reaction_uuid, reaction_type) in [
+        ("c006-tc007-reaction", ReactionType::Like),
+        ("c006-tc007-reaction-update", ReactionType::Love),
+    ] {
+        PostUseCase::add_reaction(
+            &database,
+            &actor,
+            post_ids[0].to_string(),
+            Reaction::new(
+                reaction_uuid.to_string(),
+                String::new(),
+                String::new(),
+                reaction_type,
+            ),
+        )
+        .await
+        .unwrap();
+    }
+    PostUseCase::remove_reaction(
+        &database,
+        post_ids[0].to_string(),
+        actor.person_uuid.clone(),
+    )
+    .await
+    .unwrap();
+
+    let owner_notifications = MentionNotificationUseCase::list_notifications(
+        &database,
+        "c006-tc007-owner",
+        false,
+        50,
+    )
+    .await
+    .unwrap();
+    assert_eq!(owner_notifications.len(), 2);
+    assert_eq!(
+        owner_notifications
+            .iter()
+            .filter(|notification| notification.notification_type == "Reaction")
+            .count(),
+        1
+    );
+
+    let self_post = Post::updated(
+        post_ids[1].to_string(),
+        2,
+        actor.person_uuid.clone(),
+        actor.name.clone(),
+        None,
+        None,
+        "Self post".to_string(),
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+    );
+    PostGateway::new(&database).persist(self_post).await.unwrap();
+    let self_comment = Comment::new(
+        "c006-tc007-self-comment".to_string(),
+        post_ids[1].to_string(),
+        actor.person_uuid.clone(),
+        actor.name.clone(),
+        None,
+        None,
+        "Self comment".to_string(),
+        None,
+        Vec::new(),
+    );
+    PostUseCase::add_comment(
+        &database,
+        &actor,
+        post_ids[1].to_string(),
+        self_comment,
+    )
+    .await
+    .unwrap();
+    PostUseCase::add_reaction(
+        &database,
+        &actor,
+        post_ids[1].to_string(),
+        Reaction::new(
+            "c006-tc007-self-reaction".to_string(),
+            String::new(),
+            String::new(),
+            ReactionType::Like,
+        ),
+    )
+    .await
+    .unwrap();
+    assert!(MentionNotificationUseCase::list_notifications(
+        &database,
+        &actor.person_uuid,
+        false,
+        50,
+    )
+    .await
+    .unwrap()
+    .is_empty());
+
+    database
+        .collection::<Post>("posts")
+        .delete_many(doc! { "_id": { "$in": &post_ids } })
+        .await
+        .unwrap();
+    database
+        .collection::<InAppNotification>("in_app_notifications")
+        .delete_many(doc! { "_id": { "$in": &notification_ids } })
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+#[ignore = "requires TEST_MONGO_URL, an authenticated Workout gRPC fixture, and a disposable MongoDB database"]
+async fn c006_eligible_comment_mentions_prefer_mention_for_the_post_owner() {
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    let database = test_database().await;
+    let post_uuid = "c006-tc007-mention-post";
+    let comment_uuid = "c006-tc007-mention-comment";
+    let event_ids = vec![
+        "c006-tc007-mention-comment:00000000-0000-0000-0000-000000000062".to_string(),
+        "c006-tc007-mention-comment:00000000-0000-0000-0000-000000000099".to_string(),
+    ];
+    database
+        .collection::<Post>("posts")
+        .delete_one(doc! { "_id": post_uuid })
+        .await
+        .unwrap();
+    database
+        .collection::<MentionNotificationEvent>("mention_notification_events")
+        .delete_many(doc! { "_id": { "$in": &event_ids } })
+        .await
+        .unwrap();
+    database
+        .collection::<InAppNotification>("in_app_notifications")
+        .delete_many(doc! { "_id": { "$in": &event_ids } })
+        .await
+        .unwrap();
+
+    PostGateway::new(&database)
+        .persist(Post::updated(
+            post_uuid.to_string(),
+            2,
+            "00000000-0000-0000-0000-000000000062".to_string(),
+            "Receiver Person".to_string(),
+            None,
+            None,
+            "Owner post".to_string(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+        ))
+        .await
+        .unwrap();
+
+    let actor = User::new(
+        "Sender Person".to_string(),
+        "c006-sender@example.test".to_string(),
+        "10000000-0000-0000-0000-000000000061".to_string(),
+        1,
+        "00000000-0000-0000-0000-000000000061".to_string(),
+        "default".to_string(),
+        None,
+    );
+    let now = chrono::Utc::now().timestamp();
+    let claims = serde_json::json!({
+        "sub": actor.email,
+        "exp": now + 3600,
+        "iat": now,
+        "jti": "c006-tc007-mention-token",
+        "uuid": actor.uuid,
+        "name": actor.name,
+        "person_id": actor.person_id,
+        "person_uuid": actor.person_uuid,
+        "person_object_key": actor.person_object_key,
+        "active_business_profile_id": null,
+        "active_business_profile_uuid": null
+    });
+    let secret = std::env::var("ACCESS_TOKEN_SECRET")
+        .expect("ACCESS_TOKEN_SECRET must match the disposable Workout gRPC fixture");
+    let token = jsonwebtoken::encode(
+        &jsonwebtoken::Header::new(jsonwebtoken::Algorithm::HS512),
+        &claims,
+        &jsonwebtoken::EncodingKey::from_secret(secret.as_bytes()),
+    )
+    .unwrap();
+    let accepted_friends = business::commons::token_context::with_forwarded_token(
+        Some(token.clone()),
+        async {
+            business::gateway::friend_gateway::FriendGateway::new(
+                business::commons::grpc_config::GrpcConfig::build_endpoint(),
+            )
+            .find_friend_uuids(actor.person_id, &actor.person_uuid)
+            .await
+            .unwrap()
+        },
+    )
+    .await;
+    assert_eq!(
+        accepted_friends,
+        vec!["00000000-0000-0000-0000-000000000062".to_string()]
+    );
+    let comment = Comment::new(
+        comment_uuid.to_string(),
+        post_uuid.to_string(),
+        String::new(),
+        String::new(),
+        None,
+        None,
+        "Owner and non-friend mention".to_string(),
+        None,
+        vec![
+            Mention {
+                name: "Receiver Person".to_string(),
+                mentioned_uuid: "00000000-0000-0000-0000-000000000062".to_string(),
+            },
+            Mention {
+                name: "Receiver Person".to_string(),
+                mentioned_uuid: "00000000-0000-0000-0000-000000000062".to_string(),
+            },
+            Mention {
+                name: "Unrelated Person".to_string(),
+                mentioned_uuid: "00000000-0000-0000-0000-000000000099".to_string(),
+            },
+        ],
+    );
+    business::commons::token_context::with_forwarded_token(Some(token), async {
+        PostUseCase::add_comment(&database, &actor, post_uuid.to_string(), comment)
+            .await
+            .unwrap();
+    })
+    .await;
+
+    let events = database
+        .collection::<MentionNotificationEvent>("mention_notification_events")
+        .find(doc! { "postUuid": post_uuid, "commentUuid": comment_uuid })
+        .await
+        .unwrap()
+        .try_collect::<Vec<_>>()
+        .await
+        .unwrap();
+    assert_eq!(events.len(), 1);
+    assert_eq!(
+        events[0].mentioned_person_uuid,
+        "00000000-0000-0000-0000-000000000062"
+    );
+    assert_eq!(events[0].uuid, event_ids[0]);
+    MentionNotificationUseCase::process_pending(&database, 20)
+        .await
+        .unwrap();
+
+    let owner_notifications = MentionNotificationUseCase::list_notifications(
+        &database,
+        "00000000-0000-0000-0000-000000000062",
+        false,
+        50,
+    )
+    .await
+    .unwrap();
+    let owner_mentions: Vec<_> = owner_notifications
+        .into_iter()
+        .filter(|notification| notification.uuid == event_ids[0])
+        .collect();
+    assert_eq!(owner_mentions.len(), 1);
+    assert_eq!(owner_mentions[0].notification_type, "Mention");
+    assert_eq!(owner_mentions[0].comment_uuid.as_deref(), Some(comment_uuid));
+
+    database
+        .collection::<Post>("posts")
+        .delete_one(doc! { "_id": post_uuid })
+        .await
+        .unwrap();
+    database
+        .collection::<MentionNotificationEvent>("mention_notification_events")
+        .delete_many(doc! { "_id": { "$in": &event_ids } })
+        .await
+        .unwrap();
+    database
+        .collection::<InAppNotification>("in_app_notifications")
+        .delete_many(doc! { "_id": { "$in": &event_ids } })
+        .await
+        .unwrap();
 }
 
 #[tokio::test]

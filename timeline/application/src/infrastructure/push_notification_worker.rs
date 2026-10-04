@@ -284,12 +284,293 @@ fn retry_delay_seconds(attempts: i32) -> i64 {
 
 #[cfg(test)]
 mod tests {
-    use super::retry_delay_seconds;
+    use super::{PushProvider, process_pending, retry_delay_seconds};
+    use business::gateway::mention_notification_gateway::MentionNotificationGateway;
+    use business::gateway::push_device_gateway::PushDeviceGateway;
+    use business::proto::proto::settings::settings_service_server::{
+        SettingsService, SettingsServiceServer,
+    };
+    use business::proto::proto::settings::{
+        OwnerUuidRequest, PushPreferenceResponse, Setting, SettingIdRequest,
+        SettingOwnerIdRequest,
+    };
+    use domain::in_app_notification::InAppNotification;
+    use futures::TryStreamExt;
+    use mongodb::{Client as MongoClient, bson::doc};
+    use tonic::{Request, Response, Status};
+
+    struct FakeSettingsService {
+        enabled_owner_uuid: String,
+        internal_secret: String,
+    }
+
+    #[tonic::async_trait]
+    impl SettingsService for FakeSettingsService {
+        async fn get_by_id(
+            &self,
+            _: Request<SettingIdRequest>,
+        ) -> Result<Response<Setting>, Status> {
+            Err(Status::unimplemented("not used by push worker"))
+        }
+
+        async fn persist_settings(
+            &self,
+            _: Request<Setting>,
+        ) -> Result<Response<Setting>, Status> {
+            Err(Status::unimplemented("not used by push worker"))
+        }
+
+        async fn get_by_uuid(
+            &self,
+            _: Request<SettingIdRequest>,
+        ) -> Result<Response<Setting>, Status> {
+            Err(Status::unimplemented("not used by push worker"))
+        }
+
+        async fn get_by_owner_ids(
+            &self,
+            _: Request<SettingOwnerIdRequest>,
+        ) -> Result<Response<Setting>, Status> {
+            Err(Status::unimplemented("not used by push worker"))
+        }
+
+        async fn get_push_preference_by_owner_uuid(
+            &self,
+            request: Request<OwnerUuidRequest>,
+        ) -> Result<Response<PushPreferenceResponse>, Status> {
+            let secret = request
+                .metadata()
+                .get("x-internal-secret")
+                .and_then(|value| value.to_str().ok());
+            if secret != Some(self.internal_secret.as_str()) {
+                return Err(Status::unauthenticated("invalid internal service secret"));
+            }
+            Ok(Response::new(PushPreferenceResponse {
+                notifications_enabled: request.into_inner().owner_uuid
+                    == self.enabled_owner_uuid,
+            }))
+        }
+    }
 
     #[test]
     fn push_retry_delay_is_bounded() {
         assert_eq!(retry_delay_seconds(1), 2);
         assert_eq!(retry_delay_seconds(4), 16);
         assert_eq!(retry_delay_seconds(100), 256);
+    }
+
+    #[tokio::test]
+    #[ignore = "requires a disposable TEST_MONGO_URL MongoDB database"]
+    async fn c006_push_worker_obeys_preference_and_fake_provider() {
+        let database_url = std::env::var("TEST_MONGO_URL")
+            .expect("TEST_MONGO_URL must point to a disposable timeline_test database");
+        let client = MongoClient::with_uri_str(database_url).await.unwrap();
+        let database = client.database("timeline_test");
+        let enabled_owner = "c006-tc009-enabled-owner";
+        let disabled_owner = "c006-tc009-disabled-owner";
+        let notification_ids = vec![
+            "c006-tc009-enabled-notification".to_string(),
+            "c006-tc009-disabled-notification".to_string(),
+            "c006-tc009-retry-notification".to_string(),
+        ];
+        let device_ids = vec![
+            "c006-tc009-enabled-device".to_string(),
+            "c006-tc009-disabled-device".to_string(),
+        ];
+        database
+            .collection::<InAppNotification>("in_app_notifications")
+            .delete_many(doc! { "_id": { "$in": &notification_ids } })
+            .await
+            .unwrap();
+        database
+            .collection::<domain::push_device::PushDevice>("push_devices")
+            .delete_many(doc! { "deviceUuid": { "$in": &device_ids } })
+            .await
+            .unwrap();
+        database
+            .collection::<mongodb::bson::Document>("push_provider_test_deliveries")
+            .delete_many(doc! { "notificationUuid": { "$in": &notification_ids } })
+            .await
+            .unwrap();
+
+        let internal_secret = "c006-tc009-internal-secret";
+        let service_listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let service_address = service_listener.local_addr().unwrap();
+        drop(service_listener);
+        let service = tokio::spawn(async move {
+            tonic::transport::Server::builder()
+                .add_service(SettingsServiceServer::new(FakeSettingsService {
+                    enabled_owner_uuid: enabled_owner.to_string(),
+                    internal_secret: internal_secret.to_string(),
+                }))
+                .serve(service_address)
+                .await
+                .unwrap();
+        });
+
+        for (name, value) in [
+            ("PUSH_PROVIDER_MODE", "fake"),
+            ("INTERNAL_SERVICE_SECRET", internal_secret),
+            ("GRPC_PROTOCOL", "http"),
+            ("GRPC_HOST", "127.0.0.1"),
+            ("GRPC_PORT", &service_address.port().to_string()),
+            ("GRPC_USE_TLS", "false"),
+        ] {
+            unsafe { std::env::set_var(name, value) };
+        }
+
+        for (index, owner_uuid) in [enabled_owner, disabled_owner].into_iter().enumerate() {
+            PushDeviceGateway::register(
+                &database,
+                &device_ids[index],
+                owner_uuid,
+                "android",
+                &format!("c006-tc009-token-{index}"),
+            )
+            .await
+            .unwrap();
+            MentionNotificationGateway::new(&database)
+                .persist_in_app_notification(InAppNotification::from_social_interaction(
+                    notification_ids[index].clone(),
+                    "Comment".to_string(),
+                    owner_uuid.to_string(),
+                    "c006-tc009-actor".to_string(),
+                    "Actor".to_string(),
+                    "c006-tc009-post".to_string(),
+                    Some("c006-tc009-comment".to_string()),
+                    "Private comment content".to_string(),
+                ))
+                .await
+                .unwrap();
+        }
+
+        let provider = PushProvider::from_environment().unwrap();
+        unsafe { std::env::remove_var("FAKE_PUSH_PROVIDER_STATUS") };
+        process_pending(&database, &provider).await.unwrap();
+
+        let notifications = database
+            .collection::<InAppNotification>("in_app_notifications");
+        let enabled = notifications
+            .find_one(doc! { "_id": &notification_ids[0] })
+            .await
+            .unwrap()
+            .unwrap();
+        let disabled = notifications
+            .find_one(doc! { "_id": &notification_ids[1] })
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(enabled.push_status.as_deref(), Some("Sent"));
+        assert_eq!(disabled.push_status.as_deref(), Some("Suppressed"));
+        assert!(!disabled.read);
+
+        let deliveries = database
+            .collection::<mongodb::bson::Document>("push_provider_test_deliveries")
+            .find(doc! {})
+            .await
+            .unwrap()
+            .try_collect::<Vec<_>>()
+            .await
+            .unwrap();
+        let enabled_deliveries: Vec<_> = deliveries
+            .iter()
+            .filter(|delivery| {
+                delivery.get_str("notificationUuid").ok() == Some(&notification_ids[0])
+            })
+            .collect();
+        let disabled_deliveries: Vec<_> = deliveries
+            .iter()
+            .filter(|delivery| {
+                delivery.get_str("notificationUuid").ok() == Some(&notification_ids[1])
+            })
+            .collect();
+        assert_eq!(enabled_deliveries.len(), 1);
+        assert!(!enabled_deliveries[0].contains_key("token"));
+        assert!(disabled_deliveries.is_empty());
+
+        MentionNotificationGateway::new(&database)
+            .persist_in_app_notification(InAppNotification::from_social_interaction(
+                notification_ids[2].clone(),
+                "Comment".to_string(),
+                enabled_owner.to_string(),
+                "c006-tc009-actor".to_string(),
+                "Actor".to_string(),
+                "c006-tc009-post".to_string(),
+                Some("c006-tc009-retry-comment".to_string()),
+                "Private comment content".to_string(),
+            ))
+            .await
+            .unwrap();
+        unsafe { std::env::set_var("FAKE_PUSH_PROVIDER_STATUS", "429") };
+        process_pending(&database, &provider).await.unwrap();
+        unsafe { std::env::remove_var("FAKE_PUSH_PROVIDER_STATUS") };
+
+        let retried = notifications
+            .find_one(doc! { "_id": &notification_ids[2] })
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(retried.push_status.as_deref(), Some("Pending"));
+        assert_eq!(retried.push_attempt_count, 1);
+        assert!(retried.push_next_attempt_at.is_some());
+        assert!(!retried.read);
+
+        service.abort();
+        let _ = service.await;
+        database
+            .collection::<InAppNotification>("in_app_notifications")
+            .delete_many(doc! { "_id": { "$in": &notification_ids } })
+            .await
+            .unwrap();
+        database
+            .collection::<domain::push_device::PushDevice>("push_devices")
+            .delete_many(doc! { "deviceUuid": { "$in": &device_ids } })
+            .await
+            .unwrap();
+        database
+            .collection::<mongodb::bson::Document>("push_provider_test_deliveries")
+            .delete_many(doc! { "notificationUuid": { "$in": &notification_ids } })
+            .await
+            .unwrap();
+        for name in [
+            "PUSH_PROVIDER_MODE",
+            "INTERNAL_SERVICE_SECRET",
+            "GRPC_PROTOCOL",
+            "GRPC_HOST",
+            "GRPC_PORT",
+            "GRPC_USE_TLS",
+        ] {
+            unsafe { std::env::remove_var(name) };
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "requires the disposable Workout SettingsService gRPC fixture"]
+    async fn c006_live_workout_push_preference_rpc_acceptance() {
+        use business::gateway::push_preference_gateway::{
+            PushPreferenceError, PushPreferenceGateway,
+        };
+
+        assert!(
+            PushPreferenceGateway::notifications_enabled(
+                "00000000-0000-0000-0000-000000000061",
+            )
+            .await
+            .unwrap()
+        );
+        assert!(
+            !PushPreferenceGateway::notifications_enabled(
+                "00000000-0000-0000-0000-000000000062",
+            )
+            .await
+            .unwrap()
+        );
+        assert_eq!(
+            PushPreferenceGateway::notifications_enabled(
+                "00000000-0000-0000-0000-000000000099",
+            )
+            .await,
+            Err(PushPreferenceError::NotFound)
+        );
     }
 }
