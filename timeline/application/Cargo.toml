@@ -22,10 +22,6 @@ aws-sdk-sqs = { version = "1.105.0", default-features = false, features = ["rt-t
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 
-[dev-dependencies]
-tonic = { workspace = true }
-tower = { version = "0.5.3", features = ["util"] }
-
 axum = { version = "0.8.9", features = ["ws"] }
 tracing-subscriber = "0.3.23"
 anyhow = "1.0.102"
@@ -33,6 +29,10 @@ log = "0.4.29"
 tower-http = { version = "0.6.10", features = ["full"] }
 fluent-templates = "0.14.0"
 unic-langid = { version = "0.9", features = ["macros"] }
+
+[dev-dependencies]
+tonic = { workspace = true }
+tower = { version = "0.5.3", features = ["util"] }
 
 
 

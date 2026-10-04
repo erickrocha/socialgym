@@ -15,8 +15,11 @@ Start it from this directory:
 ./start.sh
 ```
 
-`start.sh` requires OpenSSL and Docker Compose; it generates the local signing
-key in memory before starting the stack.
+`start.sh` requires OpenSSL and Docker Compose; it generates the CloudFront
+signing key in memory and a short-lived TLS CA/server certificate under
+`/tmp/socialgym-test-certs` before starting the stack. Run `./start.sh down` to
+stop the stack and remove the temporary TLS key material. `./start.sh down -v`
+also removes the disposable database volumes.
 
 Endpoints:
 
@@ -59,10 +62,16 @@ The PostgreSQL and MongoDB ports are published for host-side tests. The stack
 creates no persistent LocalStack state; Postgres and MongoDB data are removed
 by `docker compose down -v`.
 
-Stop and remove the test stack:
+Stop the test stack and remove its temporary TLS credentials:
 
 ```sh
-docker compose -f compose.yml down -v
+./start.sh down
+```
+
+Add `-v` to remove the disposable PostgreSQL and MongoDB volumes too:
+
+```sh
+./start.sh down -v
 ```
 
 The stack uses test-only credentials and ports. Do not use it as a production deployment.

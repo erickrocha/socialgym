@@ -106,8 +106,8 @@ services:
       REFRESH_TOKEN_SECRET: c005-refresh-secret
       RUST_LOG: info
     volumes:
-      - ./certs/server.crt:/etc/grpc/certs/server.crt:ro
-      - ./certs/server.key:/etc/grpc/certs/server.key:ro
+      - "${TEST_TLS_CERT_DIR:-/tmp/socialgym-test-certs}/server.crt:/etc/grpc/certs/server.crt:ro"
+      - "${TEST_TLS_CERT_DIR:-/tmp/socialgym-test-certs}/server.key:/etc/grpc/certs/server.key:ro"
     depends_on:
       postgres:
         condition: service_healthy
@@ -131,13 +131,13 @@ services:
       GRPC_DOMAIN_NAME: integration
       GRPC_PORT: 50051
       GRPC_USE_TLS: "true"
-      GRPC_CERT_PATH: /etc/grpc/certs/server.crt
+      GRPC_CERT_PATH: /etc/grpc/certs/ca.crt
       INTERNAL_SERVICE_SECRET: c005-internal-secret
       AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL: http://localstack:4566/000000000000/social-notification-events.fifo
       PUSH_PROVIDER_MODE: fake
       RUST_LOG: info
     volumes:
-      - ./certs/server.crt:/etc/grpc/certs/server.crt:ro
+      - "${TEST_TLS_CERT_DIR:-/tmp/socialgym-test-certs}/ca.crt:/etc/grpc/certs/ca.crt:ro"
     depends_on:
       mongo:
         condition: service_healthy

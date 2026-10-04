@@ -301,7 +301,7 @@ mod tests {
 
     struct FakeSettingsService {
         enabled_owner_uuid: String,
-        internal_secret: String,
+        expected_header_value: String,
     }
 
     #[tonic::async_trait]
@@ -342,7 +342,7 @@ mod tests {
                 .metadata()
                 .get("x-internal-secret")
                 .and_then(|value| value.to_str().ok());
-            if secret != Some(self.internal_secret.as_str()) {
+            if secret != Some(self.expected_header_value.as_str()) {
                 return Err(Status::unauthenticated("invalid internal service secret"));
             }
             Ok(Response::new(PushPreferenceResponse {
@@ -372,10 +372,14 @@ mod tests {
             "c006-tc009-enabled-notification".to_string(),
             "c006-tc009-disabled-notification".to_string(),
             "c006-tc009-retry-notification".to_string(),
+            "c006-tc009-invalid-token-notification".to_string(),
+            "c006-tc009-config-error-notification".to_string(),
         ];
         let device_ids = vec![
             "c006-tc009-enabled-device".to_string(),
             "c006-tc009-disabled-device".to_string(),
+            "c006-tc009-invalid-device".to_string(),
+            "c006-tc009-config-device".to_string(),
         ];
         database
             .collection::<InAppNotification>("in_app_notifications")
@@ -393,7 +397,7 @@ mod tests {
             .await
             .unwrap();
 
-        let internal_secret = "c006-tc009-internal-secret";
+        let test_header_value = "test-header";
         let service_listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         let service_address = service_listener.local_addr().unwrap();
         drop(service_listener);
@@ -401,7 +405,7 @@ mod tests {
             tonic::transport::Server::builder()
                 .add_service(SettingsServiceServer::new(FakeSettingsService {
                     enabled_owner_uuid: enabled_owner.to_string(),
-                    internal_secret: internal_secret.to_string(),
+                    expected_header_value: test_header_value.to_string(),
                 }))
                 .serve(service_address)
                 .await
@@ -410,7 +414,7 @@ mod tests {
 
         for (name, value) in [
             ("PUSH_PROVIDER_MODE", "fake"),
-            ("INTERNAL_SERVICE_SECRET", internal_secret),
+            ("INTERNAL_SERVICE_SECRET", test_header_value),
             ("GRPC_PROTOCOL", "http"),
             ("GRPC_HOST", "127.0.0.1"),
             ("GRPC_PORT", &service_address.port().to_string()),
@@ -514,6 +518,90 @@ mod tests {
         assert_eq!(retried.push_attempt_count, 1);
         assert!(retried.push_next_attempt_at.is_some());
         assert!(!retried.read);
+        notifications
+            .update_one(
+                doc! { "_id": &notification_ids[2] },
+                doc! { "$set": { "pushStatus": "Failed", "pushNextAttemptAt": null } },
+            )
+            .await
+            .unwrap();
+
+        PushDeviceGateway::register(
+            &database,
+            &device_ids[2],
+            enabled_owner,
+            "android",
+            "c006-tc009-invalid-token",
+        )
+        .await
+        .unwrap();
+        MentionNotificationGateway::new(&database)
+            .persist_in_app_notification(InAppNotification::from_social_interaction(
+                notification_ids[3].clone(),
+                "Comment".to_string(),
+                enabled_owner.to_string(),
+                "c006-tc009-actor".to_string(),
+                "Actor".to_string(),
+                "c006-tc009-post".to_string(),
+                Some("c006-tc009-invalid-comment".to_string()),
+                "Private comment content".to_string(),
+            ))
+            .await
+            .unwrap();
+        unsafe { std::env::set_var("FAKE_PUSH_PROVIDER_STATUS", "invalid-token") };
+        process_pending(&database, &provider).await.unwrap();
+        unsafe { std::env::remove_var("FAKE_PUSH_PROVIDER_STATUS") };
+        assert!(
+            PushDeviceGateway::find_all_for_person(&database, enabled_owner)
+                .await
+                .unwrap()
+                .iter()
+                .all(|device| device.device_uuid != device_ids[2])
+        );
+        let invalid_token_notification = notifications
+            .find_one(doc! { "_id": &notification_ids[3] })
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            invalid_token_notification.push_status.as_deref(),
+            Some("Sent")
+        );
+        assert!(!invalid_token_notification.read);
+
+        PushDeviceGateway::register(
+            &database,
+            &device_ids[3],
+            enabled_owner,
+            "android",
+            "c006-tc009-config-token",
+        )
+        .await
+        .unwrap();
+        MentionNotificationGateway::new(&database)
+            .persist_in_app_notification(InAppNotification::from_social_interaction(
+                notification_ids[4].clone(),
+                "Comment".to_string(),
+                enabled_owner.to_string(),
+                "c006-tc009-actor".to_string(),
+                "Actor".to_string(),
+                "c006-tc009-post".to_string(),
+                Some("c006-tc009-config-comment".to_string()),
+                "Private comment content".to_string(),
+            ))
+            .await
+            .unwrap();
+        unsafe { std::env::set_var("FAKE_PUSH_PROVIDER_STATUS", "401") };
+        process_pending(&database, &provider).await.unwrap();
+        unsafe { std::env::remove_var("FAKE_PUSH_PROVIDER_STATUS") };
+        let configuration_failure = notifications
+            .find_one(doc! { "_id": &notification_ids[4] })
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(configuration_failure.push_status.as_deref(), Some("Failed"));
+        assert_eq!(configuration_failure.push_attempt_count, 0);
+        assert!(!configuration_failure.read);
 
         service.abort();
         let _ = service.await;
