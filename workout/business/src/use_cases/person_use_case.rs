@@ -32,7 +32,8 @@ impl PersonUseCase {
     pub async fn get(db: &DbConn, person_id: i32) -> Result<Person, BusinessError> {
         log::info!("Getting person with id: {:?}", person_id);
         let person_entity = PersonGateway::find_by_id(db, person_id).await;
-        let person_model = handle_option(person_entity, "Person not found")?;
+        let person_model =
+            person_entity.ok_or_else(|| BusinessError::not_found("Person not found"))?;
 
         let person_info_entity = PersonInfoGateway::find_by_person_id(db, person_model.id).await;
 
@@ -697,7 +698,8 @@ impl PersonUseCase {
         let person_entity = PersonGateway::find_by_uuid(db, uuid.as_str())
             .await
             .map_err(|e| BusinessError::new(e.to_string()))?;
-        let person_model = handle_option(person_entity, "Person not found")?;
+        let person_model =
+            person_entity.ok_or_else(|| BusinessError::not_found("Person not found"))?;
 
         let person_info_entity = PersonInfoGateway::find_by_person_id(db, person_model.id).await;
 

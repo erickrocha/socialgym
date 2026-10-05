@@ -1,3 +1,4 @@
+use business::domain::business_error::BusinessErrorKind;
 use business::use_cases::person_use_case::PersonUseCase;
 use chrono::{NaiveDate, Utc};
 use entity::friends_entity::FriendsEntity;
@@ -61,6 +62,7 @@ async fn get_returns_not_found_when_person_is_missing() {
     let error = PersonUseCase::get(&db, 1).await.unwrap_err();
 
     assert_eq!(error.message, "Person not found");
+    assert!(matches!(error.kind, BusinessErrorKind::NotFound));
 }
 
 #[tokio::test]
@@ -113,6 +115,7 @@ async fn find_by_uuid_returns_not_found_for_unknown_uuid() {
         .unwrap_err();
 
     assert_eq!(error.message, "Person not found");
+    assert!(matches!(error.kind, BusinessErrorKind::NotFound));
 }
 
 #[tokio::test]

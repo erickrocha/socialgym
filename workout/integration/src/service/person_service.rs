@@ -1,5 +1,5 @@
 use crate::infrastructure::mapper::{Mapper, PersonAddressMapper, PersonInfoMapper, PersonMapper};
-use crate::infrastructure::utils::{require_person_id, validate_uuid};
+use crate::infrastructure::utils::{business_status, require_actor, require_person_id, validate_uuid};
 use crate::proto::person::person_id_request::Identifier;
 use crate::proto::person::person_params::ParamIdentifier;
 use crate::proto::person::person_service_server::PersonService;
@@ -94,7 +94,8 @@ impl PersonService for GrpcPersonService {
         &self,
         request: Request<PersonIdRequest>,
     ) -> Result<Response<PersonResponse>, Status> {
-        let actor_id = require_person_id(&request)?;
+        let actor = require_actor(&request)?;
+        let actor_id = actor.person_id;
         let req = request.into_inner();
 
         match req.identifier {
@@ -106,7 +107,7 @@ impl PersonService for GrpcPersonService {
                     .map_err(crate::infrastructure::utils::business_status)?;
                 let person = PersonUseCase::get(&self.conn, id)
                     .await
-                    .map_err(|e| Status::internal(e.message))?;
+                    .map_err(business_status)?;
                 require_health_data_consent(&self.conn, &person, actor_id).await?;
 
                 let grpc_person = PersonMapper::response(person);
@@ -120,9 +121,13 @@ impl PersonService for GrpcPersonService {
                     return Err(Status::invalid_argument("uuid must be informed"));
                 }
                 validate_uuid(&uuid, "uuid")?;
+                // Owner check before lookup, as in REST: a foreign UUID is 403 whether or not it exists.
+                if uuid != actor.person_uuid {
+                    return Err(Status::permission_denied("person access denied"));
+                }
                 let person = PersonUseCase::find_by_uuid(&self.conn, uuid)
                     .await
-                    .map_err(|e| Status::internal(e.message))?;
+                    .map_err(business_status)?;
                 business::commons::authorization::ensure_owns(
                     person.id.ok_or_else(|| Status::internal("person id missing"))?,
                     actor_id,
@@ -149,7 +154,7 @@ impl PersonService for GrpcPersonService {
 
         let person = PersonUseCase::get(&self.conn, person_id)
             .await
-            .map_err(|e| Status::internal(e.message))?;
+            .map_err(business_status)?;
         require_health_data_consent(&self.conn, &person, person_id).await?;
 
         Ok(Response::new(PersonResponse {
@@ -193,7 +198,7 @@ impl PersonService for GrpcPersonService {
 
         let existing = PersonUseCase::get(&self.conn, person_id)
             .await
-            .map_err(|e| Status::internal(e.message))?;
+            .map_err(business_status)?;
 
         let firstname = if payload.firstname.is_empty() {
             existing.firstname
