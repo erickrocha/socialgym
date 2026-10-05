@@ -16,6 +16,7 @@ use axum::http::StatusCode;
 use axum::{Extension, Form, Json};
 use business::commons::functions::parse_uuid;
 use business::commons::legal_documents;
+use business::domain::business_error::BusinessErrorKind;
 use business::domain::person::Person;
 use business::domain::user::User;
 use business::use_cases::logout_use_case::LogoutUseCase;
@@ -212,6 +213,9 @@ pub async fn refresh_token(
     let access_token = RefreshToken::execute(&state.conn, request.refresh_token).await;
     match access_token {
         Ok(token) => Ok(Json(AccessTokenMapper::json(token))),
+        Err(error) if error.kind == BusinessErrorKind::Infrastructure => Err(
+            ExceptionResponse::InternalServerError(locale, ErrorKey::UnknowAuthError),
+        ),
         Err(_) => Err(ExceptionResponse::Unauthorized(
             locale,
             ErrorKey::BadCredentials,

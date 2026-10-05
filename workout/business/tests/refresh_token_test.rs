@@ -1,3 +1,4 @@
+use business::domain::business_error::BusinessErrorKind;
 use business::domain::person::Person;
 use business::domain::user::User;
 use business::use_cases::authentication::Authentication;
@@ -6,7 +7,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use entity::person_entity::PersonEntity;
 use entity::revoked_token_entity::RevokedTokenEntity;
 use entity::user_entity::UserEntity;
-use sea_orm::{DatabaseBackend, MockDatabase, MockExecResult};
+use sea_orm::{DatabaseBackend, DbErr, MockDatabase};
 use std::env;
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -98,10 +99,15 @@ async fn execute_rotates_valid_refresh_token() {
         .append_query_results(vec![vec![user_entity()]])
         .append_query_results(vec![Vec::<RevokedTokenEntity>::new()])
         .append_query_results(vec![vec![person_entity()]])
-        .append_exec_results(vec![MockExecResult {
-            last_insert_id: 1,
-            rows_affected: 1,
-        }])
+        .append_query_results(vec![vec![RevokedTokenEntity {
+            id: 1,
+            uuid: Uuid::new_v4(),
+            jti: "rotated-refresh-jti".to_string(),
+            user_id: 1,
+            token_type: "refresh".to_string(),
+            expires_at: Utc::now(),
+            created_at: Utc::now(),
+        }]])
         .into_connection();
 
     let refreshed = RefreshToken::execute(&db, refresh).await.unwrap();
@@ -109,6 +115,26 @@ async fn execute_rotates_valid_refresh_token() {
     assert_eq!(refreshed.token_type, "Bearer");
     assert!(!refreshed.access_token.is_empty());
     assert!(refreshed.refresh_token.is_some());
+    clear_auth_toggle_env();
+}
+
+#[tokio::test]
+async fn execute_does_not_issue_tokens_when_refresh_revocation_fails() {
+    let _guard = TOKEN_ENV_LOCK.lock().await;
+    clear_auth_toggle_env();
+    env::set_var("TOKEN_REVOCATION_ENABLED", "true");
+    let refresh = refresh_token("revocation-failure");
+    let db = MockDatabase::new(DatabaseBackend::Postgres)
+        .append_query_results(vec![vec![user_entity()]])
+        .append_query_results(vec![Vec::<RevokedTokenEntity>::new()])
+        .append_query_results(vec![vec![person_entity()]])
+        .append_query_errors([DbErr::Custom("revocation storage unavailable".to_string())])
+        .into_connection();
+
+    let error = RefreshToken::execute(&db, refresh).await.unwrap_err();
+
+    assert_eq!(error.kind, BusinessErrorKind::Infrastructure);
+    assert_eq!(error.message, "Unable to rotate refresh token");
     clear_auth_toggle_env();
 }
 
@@ -142,8 +168,9 @@ async fn execute_rejects_invalid_token() {
     env::set_var("REFRESH_TOKEN_SECRET", "test_refresh_invalid_refresh");
     let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
 
-    assert!(RefreshToken::execute(&db, "invalid_token".to_string())
+    let error = RefreshToken::execute(&db, "invalid_token".to_string())
         .await
-        .is_err());
+        .unwrap_err();
+    assert_eq!(error.kind, BusinessErrorKind::Unauthorized);
     clear_auth_toggle_env();
 }
