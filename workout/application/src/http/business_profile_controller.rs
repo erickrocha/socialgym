@@ -19,10 +19,12 @@ use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
 pub async fn get_profile_by_id(
     State(state): State<AppState>,
     Path(id): Path<i32>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<BusinessProfileJson>> {
     BusinessProfileUseCase::get_by_id(&state.conn, id)
         .await
+        .map(|profile| profile.for_viewer(Some(&current_user)))
         .map(BusinessProfileMapper::json)
         .map(Json)
         .ok_or(ExceptionResponse::NotFound(
@@ -34,10 +36,12 @@ pub async fn get_profile_by_id(
 pub async fn get_profile_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<BusinessProfileJson>> {
     BusinessProfileUseCase::get_by_uuid(&state.conn, uuid)
         .await
+        .map(|profile| profile.for_viewer(Some(&current_user)))
         .map(BusinessProfileMapper::json)
         .map(Json)
         .ok_or(ExceptionResponse::NotFound(
@@ -49,6 +53,7 @@ pub async fn get_profile_by_uuid(
 pub async fn get_profiles_by_owner_id(
     State(state): State<AppState>,
     Path(id): Path<i32>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<BusinessProfileJson>>> {
     let profiles = BusinessProfileUseCase::get_by_owner_id(&state.conn, id)
@@ -56,12 +61,17 @@ pub async fn get_profiles_by_owner_id(
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
         })?;
+    let profiles = profiles
+        .into_iter()
+        .map(|profile| profile.for_viewer(Some(&current_user)))
+        .collect();
     Ok(Json(BusinessProfileMapper::json_vec(profiles)))
 }
 
 pub async fn get_profiles_by_owner_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<BusinessProfileJson>>> {
     let profiles = BusinessProfileUseCase::get_by_owner_uuid(&state.conn, uuid)
@@ -69,6 +79,10 @@ pub async fn get_profiles_by_owner_uuid(
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
         })?;
+    let profiles = profiles
+        .into_iter()
+        .map(|profile| profile.for_viewer(Some(&current_user)))
+        .collect();
     Ok(Json(BusinessProfileMapper::json_vec(profiles)))
 }
 
@@ -267,7 +281,7 @@ pub struct DiscoverBusinessProfilesQuery {
         ("business_type" = Option<String>, Query, description = "Filter by profile type: \"Professional\" or \"Company\""),
         ("latitude" = Option<f64>, Query, description = "Center latitude for a location filter"),
         ("longitude" = Option<f64>, Query, description = "Center longitude for a location filter"),
-        ("radius_km" = Option<f64>, Query, description = "Search radius in kilometers (default: 200)"),
+        ("radius_km" = Option<f64>, Query, description = "Search radius in kilometers (default 200, capped at 500; a negative or non-finite value uses the default)"),
         ("limit" = Option<i32>, Query, description = "Max results (default 50, capped at 100)"),
     ),
     responses(
@@ -284,6 +298,7 @@ pub struct DiscoverBusinessProfilesQuery {
 pub async fn discover(
     State(state): State<AppState>,
     Query(params): Query<DiscoverBusinessProfilesQuery>,
+    Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<BusinessProfileJson>>> {
     let business_type = match params.business_type.as_deref() {
@@ -305,6 +320,10 @@ pub async fn discover(
     .map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
     })?;
+    let profiles = profiles
+        .into_iter()
+        .map(|profile| profile.for_viewer(Some(&current_user)))
+        .collect();
 
     Ok(Json(BusinessProfileMapper::json_vec(profiles)))
 }

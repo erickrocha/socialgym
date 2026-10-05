@@ -1,5 +1,5 @@
 use crate::commons::authorization::ensure_owns;
-use crate::commons::functions::is_valid_coordinate;
+use crate::commons::functions::{is_valid_coordinate, uuid_to_string};
 use crate::domain::user::User;
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::business_error::BusinessError;
@@ -115,13 +115,19 @@ impl BusinessProfileUseCase {
         let business_type_str = business_type.map(|t| t.to_string());
         let limit_u64 = if limit > 0 { limit as u64 } else { 50 };
 
+        // With a location the text hits are intersected with the nearby profiles, so
+        // they must not be cut to `limit` first (a profile matching both could be
+        // dropped); the final `limit` is applied after the intersection.
+        // ponytail: text matches are bounded at TEXT_SEARCH_CAP when combined with a location.
+        const TEXT_SEARCH_CAP: u64 = 1000;
+        let text_limit = if search_point.is_some() { TEXT_SEARCH_CAP } else { limit_u64 };
         let query_ids: Option<Vec<i32>> = if let Some(text) = trimmed_query {
             Some(
                 BusinessProfileGateway::search_by_query(
                     db,
                     text,
                     business_type_str.as_deref(),
-                    limit_u64,
+                    text_limit,
                 )
                 .await,
             )
@@ -130,9 +136,12 @@ impl BusinessProfileUseCase {
         };
 
         let location_ids: Option<Vec<i32>> = if let Some((lat, lon)) = search_point {
+            // The search radius is bounded so discovery cannot sweep the whole table.
+            const MAX_RADIUS_KM: f64 = 500.0;
             let radius = radius_km
                 .filter(|r| r.is_finite() && *r >= 0.0)
-                .unwrap_or(200.0);
+                .unwrap_or(200.0)
+                .min(MAX_RADIUS_KM);
             let nearby = BusinessProfileAddressGateway::find_all_within_radius_of_point(
                 db, lat, lon, radius,
             )
@@ -234,6 +243,9 @@ impl BusinessProfileUseCase {
                 if image_type == ImageType::Avatar {
                     business_profile.logo = Some(image_storage.object_key.clone());
                 } else {
+                    // `from_model` keeps the stored logo key in `object_key` and leaves
+                    // `logo` empty; carry it over so a cover upload does not clear the logo.
+                    business_profile.logo = business_profile.object_key.clone();
                     business_profile.cover_image = Some(image_storage.object_key.clone());
                 }
 
@@ -291,6 +303,14 @@ impl BusinessProfileUseCase {
         ensure_owns(existing.owner_id, actor.person_id)?;
         domain.owner_id = existing.owner_id;
         domain.owner_uuid = existing.owner_uuid.clone();
+        // The uuid and the stored image keys are not editable here: reads return signed
+        // image URLs, and writing a client payload back would replace the keys with them.
+        let stored = BusinessProfileGateway::find_by_id(db, id)
+            .await
+            .ok_or_else(|| BusinessError::not_found("Business profile not found"))?;
+        domain.uuid = Some(uuid_to_string(stored.uuid));
+        domain.logo = stored.logo;
+        domain.cover_image = stored.cover_image;
         let updated_profile = BusinessProfileGateway::persist(db, domain)
             .await
             .map_err(|e| {

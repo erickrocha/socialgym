@@ -5,8 +5,14 @@ use entity::business_profile_entity::{ActiveModel, BusinessProfileEntity};
 use entity::prelude::BusinessProfileEntity as BusinessProfileQuery;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DbConn, DbErr, DeleteResult,
-    EntityTrait, PaginatorTrait, QueryFilter, QuerySelect,
+    EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect,
 };
+
+/// Escapes `\`, `%` and `_` so user text is matched literally in a `LIKE` pattern
+/// (Postgres uses backslash as the default escape character).
+pub fn escape_like(text: &str) -> String {
+    text.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+}
 
 pub struct BusinessProfileGateway {}
 
@@ -74,7 +80,7 @@ impl BusinessProfileGateway {
         business_type: Option<&str>,
         limit: u64,
     ) -> Vec<i32> {
-        let search_pattern = format!("%{}%", query);
+        let search_pattern = format!("%{}%", escape_like(query));
         let mut condition = Condition::any()
             .add(entity::business_profile_entity::Column::BusinessName.like(&search_pattern))
             .add(entity::business_profile_entity::Column::SocialName.like(&search_pattern));
@@ -87,7 +93,8 @@ impl BusinessProfileGateway {
             find = BusinessProfileQuery::find().filter(condition);
         }
 
-        find.limit(limit)
+        find.order_by_asc(entity::business_profile_entity::Column::Id)
+            .limit(limit)
             .all(db)
             .await
             .unwrap_or_else(|_| Vec::new())

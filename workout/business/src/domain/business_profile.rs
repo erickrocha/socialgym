@@ -2,6 +2,7 @@ use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
 use crate::domain::business_profile_address::BusinessProfileAddress;
 use crate::domain::enums::ProfileType;
+use crate::domain::user::User;
 use chrono::NaiveDateTime;
 use entity::business_profile_entity::{ActiveModel, BusinessProfileEntity};
 use sea_orm::{NotSet, Set};
@@ -90,6 +91,17 @@ impl EntityMapper<BusinessProfile, BusinessProfileEntity, ActiveModel> for Busin
 }
 
 impl BusinessProfile {
+    /// The profile as `viewer` may see it: only the owner gets the `tax_id`.
+    /// A call without an authenticated viewer is treated as a non-owner.
+    pub fn for_viewer(mut self, viewer: Option<&User>) -> Self {
+        let is_owner = viewer
+            .is_some_and(|user| user.person_id == self.owner_id && user.person_uuid == self.owner_uuid);
+        if !is_owner {
+            self.tax_id = String::new();
+        }
+        self
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         owner_id: i32,

@@ -1,4 +1,9 @@
-use application::{routes::business_profile_routes::business_profile_routes, AppState};
+use application::{
+    routes::{
+        business_profile_routes::business_profile_routes, team_member_routes::team_member_routes,
+    },
+    AppState,
+};
 use business::domain::access_token::Claims;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use migration::{Migrator, MigratorTrait};
@@ -237,4 +242,124 @@ async fn business_profile_delete_and_discover_routes_enforce_ownership_and_searc
         owner_delete_response.status(),
         axum::http::StatusCode::NO_CONTENT
     );
+}
+
+/// A non-owner reading a profile never gets its `taxId`, and discovery matches the
+/// text literally (a `%` or `_` is not a wildcard that lists every profile).
+#[tokio::test]
+#[ignore = "requires a disposable TEST_DATABASE_URL targeting the workout_test database"]
+async fn business_profile_reads_hide_tax_id_and_discovery_matches_text_literally() {
+    let database_url = env::var("TEST_DATABASE_URL")
+        .expect("TEST_DATABASE_URL must point to the disposable workout_test database");
+    let database_name = database_url
+        .split('?')
+        .next()
+        .unwrap_or(&database_url)
+        .rsplit('/')
+        .next()
+        .unwrap_or_default();
+    assert_eq!(
+        database_name, "workout_test",
+        "refusing to refresh a database not named workout_test"
+    );
+    let _environment = TestEnvironment::set(&[
+        ("ACCESS_TOKEN_SECRET", "c007-http-test-secret"),
+        ("AUTH_RULES_ENABLED", "false"),
+        ("TERMS_VERSION", "1.0.0"),
+        ("PRIVACY_VERSION", "1.0.0"),
+    ]);
+    let database = Database::connect(&database_url).await.unwrap();
+    Migrator::refresh(&database).await.unwrap();
+    database
+        .execute_unprepared(
+            r#"INSERT INTO person
+                 (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at)
+               VALUES
+                 (1, '00000000-0000-0000-0000-000000000071', 'Owner', 'Person', '1990-01-01', 'X', now(), now()),
+                 (2, '00000000-0000-0000-0000-000000000072', 'Other', 'Person', '1990-01-01', 'X', now(), now());
+               INSERT INTO "user"
+                 (id, uuid, name, email, password, first_login, enabled, person_id, person_uuid, created_at, updated_at)
+               VALUES
+                 (1, '10000000-0000-0000-0000-000000000071', 'Owner Person', 'owner-71@example.test', 'unused', false, true, 1, '00000000-0000-0000-0000-000000000071', now(), now()),
+                 (2, '10000000-0000-0000-0000-000000000072', 'Other Person', 'other-72@example.test', 'unused', false, true, 2, '00000000-0000-0000-0000-000000000072', now(), now());
+               INSERT INTO consent (uuid, person_id, document, version, accepted_at, ip)
+               VALUES
+                 ('20000000-0000-0000-0000-000000000071', 1, 'terms', '1.0.0', now(), '127.0.0.1'),
+                 ('20000000-0000-0000-0000-000000000072', 1, 'privacy', '1.0.0', now(), '127.0.0.1'),
+                 ('20000000-0000-0000-0000-000000000073', 2, 'terms', '1.0.0', now(), '127.0.0.1'),
+                 ('20000000-0000-0000-0000-000000000074', 2, 'privacy', '1.0.0', now(), '127.0.0.1');
+               INSERT INTO business_profile
+                 (id, uuid, owner_id, owner_uuid, tax_id, business_name, business_type, created_at, updated_at)
+               VALUES
+                 (1, '30000000-0000-0000-0000-000000000071', 1, '00000000-0000-0000-0000-000000000071', '999', 'Discoverable Gym', 'Professional', now(), now());
+               INSERT INTO team_members
+                 (id, uuid, business_profile_id, business_profile_uuid, person_id, person_uuid, status, created_at, updated_at)
+               VALUES
+                 (1, '40000000-0000-0000-0000-000000000071', 1, '30000000-0000-0000-0000-000000000071', 2, '00000000-0000-0000-0000-000000000072', 'Pending', now(), now());"#,
+        )
+        .await
+        .unwrap();
+    let state = AppState {
+        conn: Arc::new(database),
+    };
+    let app = axum::Router::new()
+        .nest("/workout/api/business-profiles", business_profile_routes(state.clone()))
+        .nest("/workout/api/team-members", team_member_routes(state.clone()))
+        .with_state(state);
+    let owner = access_token(
+        "owner-71@example.test",
+        "10000000-0000-0000-0000-000000000071",
+        1,
+        "00000000-0000-0000-0000-000000000071",
+    );
+    let other = access_token(
+        "other-72@example.test",
+        "10000000-0000-0000-0000-000000000072",
+        2,
+        "00000000-0000-0000-0000-000000000072",
+    );
+    let get = |uri: &'static str, token: &str| {
+        let request = axum::http::Request::builder()
+            .uri(uri)
+            .header(axum::http::header::AUTHORIZATION, format!("Bearer {token}"))
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let app = app.clone();
+        async move {
+            let response = app.oneshot(request).await.unwrap();
+            let status = response.status();
+            let bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+                .await
+                .unwrap();
+            (status, serde_json::from_slice::<serde_json::Value>(&bytes).unwrap_or_default())
+        }
+    };
+
+    // The owner sees the tax id; another person does not.
+    let (status, body) = get("/workout/api/business-profiles/id/1", &owner).await;
+    assert_eq!(status, axum::http::StatusCode::OK);
+    assert_eq!(body["taxId"], "999");
+    let (status, body) = get("/workout/api/business-profiles/id/1", &other).await;
+    assert_eq!(status, axum::http::StatusCode::OK);
+    assert_eq!(body["taxId"], "");
+    assert_eq!(body["businessName"], "Discoverable Gym");
+
+    // Owner listings and discovery redact it for other people too.
+    let (_, body) = get("/workout/api/business-profiles/owner/id/1", &other).await;
+    assert_eq!(body[0]["taxId"], "");
+    let (_, body) = get("/workout/api/business-profiles/discover?query=Discoverable", &other).await;
+    assert_eq!(body[0]["taxId"], "");
+
+    // An invited person sees the inviting business, but not its tax id.
+    let (status, body) = get("/workout/api/team-members", &other).await;
+    assert_eq!(status, axum::http::StatusCode::OK);
+    assert_eq!(body["receivedRequests"][0]["businessName"], "Discoverable Gym");
+    assert_eq!(body["receivedRequests"][0]["taxId"], "");
+
+    // `%` and `_` are literal characters, not wildcards.
+    let (status, body) = get("/workout/api/business-profiles/discover?query=%25", &other).await;
+    assert_eq!(status, axum::http::StatusCode::OK);
+    assert_eq!(body.as_array().unwrap().len(), 0);
+    let (_, body) = get("/workout/api/business-profiles/discover?query=_", &other).await;
+    assert_eq!(body.as_array().unwrap().len(), 0);
 }

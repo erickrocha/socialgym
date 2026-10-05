@@ -9,6 +9,7 @@ use crate::proto::business_profile::{
 };
 use crate::proto::business_profile_address::BusinessProfileAddress;
 
+use business::domain::user::User;
 use business::use_cases::business_profile_address_use_case::BusinessProfileAddressUseCase;
 use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
 use sea_orm::DatabaseConnection;
@@ -31,6 +32,7 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         &self,
         request: Request<BusinessProfileRequestId>,
     ) -> Result<Response<BusinessProfile>, Status> {
+        let viewer = request.extensions().get::<User>().cloned();
         let payload = request.into_inner();
 
         if payload.id <= 0 && payload.uuid.is_empty() {
@@ -44,14 +46,15 @@ impl BusinessProfileService for GrpcBusinessProfileService {
             let business_profile = BusinessProfileUseCase::get_by_uuid(&self.conn, payload.uuid)
                 .await
                 .ok_or_else(|| Status::internal("Business profile not found"))?;
-            let grpc_profile = BusinessProfileMapper::response(business_profile);
+            let grpc_profile =
+                BusinessProfileMapper::response(business_profile.for_viewer(viewer.as_ref()));
             Ok(Response::new(grpc_profile))
         } else {
             let profile = BusinessProfileUseCase::get_by_id(&self.conn, payload.id)
                 .await
                 .ok_or_else(|| Status::internal("Business profile not found"))?;
 
-            let grpc_profile = BusinessProfileMapper::response(profile);
+            let grpc_profile = BusinessProfileMapper::response(profile.for_viewer(viewer.as_ref()));
             Ok(Response::new(grpc_profile))
         }
     }
@@ -60,7 +63,14 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         &self,
         request: Request<BusinessProfileRequestOwnerId>,
     ) -> Result<Response<BusinessProfilesResponse>, Status> {
+        let viewer = request.extensions().get::<User>().cloned();
         let payload = request.into_inner();
+        let for_viewer = |profiles: Vec<business::domain::business_profile::BusinessProfile>| {
+            profiles
+                .into_iter()
+                .map(|profile| profile.for_viewer(viewer.as_ref()))
+                .collect::<Vec<_>>()
+        };
 
         if payload.owner_id <= 0 && payload.owner_uuid.is_empty() {
             return Err(Status::invalid_argument(
@@ -74,7 +84,7 @@ impl BusinessProfileService for GrpcBusinessProfileService {
                 BusinessProfileUseCase::get_by_owner_uuid(&self.conn, payload.owner_uuid)
                     .await
                     .map_err(|e| Status::internal(e.message))?;
-            let grpc_profiles = BusinessProfileMapper::response_vec(business_profiles);
+            let grpc_profiles = BusinessProfileMapper::response_vec(for_viewer(business_profiles));
             Ok(Response::new(BusinessProfilesResponse {
                 business_profiles: grpc_profiles,
             }))
@@ -83,7 +93,7 @@ impl BusinessProfileService for GrpcBusinessProfileService {
                 BusinessProfileUseCase::get_by_owner_id(&self.conn, payload.owner_id)
                     .await
                     .map_err(|e| Status::internal(e.message))?;
-            let grpc_profiles = BusinessProfileMapper::response_vec(business_profiles);
+            let grpc_profiles = BusinessProfileMapper::response_vec(for_viewer(business_profiles));
             Ok(Response::new(BusinessProfilesResponse {
                 business_profiles: grpc_profiles,
             }))

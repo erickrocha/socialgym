@@ -109,3 +109,83 @@ async fn discover_ignores_out_of_range_coordinates_without_querying() {
 
     assert!(profiles.is_empty());
 }
+
+#[tokio::test]
+async fn update_keeps_the_stored_uuid_and_image_keys() {
+    let stored = business_profile_entity(1);
+    let stored_uuid = stored.uuid;
+    let db = MockDatabase::new(DatabaseBackend::Postgres)
+        .append_query_results(vec![vec![stored.clone()]])
+        .append_query_results(vec![Vec::<BusinessProfileAddressEntity>::new()])
+        .append_query_results(vec![vec![stored.clone()]])
+        .append_query_results(vec![vec![stored]])
+        .into_connection();
+    // A client echoing back a read: a different uuid and a signed image URL.
+    let payload_uuid = Uuid::new_v4();
+    let mut profile = BusinessProfile::new(
+        1,
+        uuid_to_string(Uuid::new_v4()),
+        "12345".to_string(),
+        "Renamed Gym".to_string(),
+        ProfileType::Professional,
+        None,
+    );
+    profile.id = Some(1);
+    profile.uuid = Some(uuid_to_string(payload_uuid));
+    profile.logo = Some("https://cdn.example.test/signed-logo".to_string());
+    profile.cover_image = Some("https://cdn.example.test/signed-cover".to_string());
+
+    BusinessProfileUseCase::update(&db, profile, &user(1, "owner@example.com"))
+        .await
+        .unwrap();
+
+    let writes = format!("{:?}", db.into_transaction_log());
+    assert!(writes.contains(&stored_uuid.to_string()), "{writes}");
+    assert!(!writes.contains(&payload_uuid.to_string()), "{writes}");
+    assert!(!writes.contains("signed-logo") && !writes.contains("signed-cover"), "{writes}");
+}
+
+#[test]
+fn only_the_owner_sees_the_tax_id() {
+    let owner_uuid = uuid_to_string(Uuid::new_v4());
+    let profile = || {
+        BusinessProfile::new(
+            1,
+            owner_uuid.clone(),
+            "12345".to_string(),
+            "Gym XYZ".to_string(),
+            ProfileType::Professional,
+            None,
+        )
+    };
+    let owner = User::new(None, "o@example.com".to_string(), "h".to_string(), 1, owner_uuid.clone());
+    let stranger = User::new(
+        None,
+        "s@example.com".to_string(),
+        "h".to_string(),
+        2,
+        uuid_to_string(Uuid::new_v4()),
+    );
+    // Same numeric id as the owner, but a different Person.
+    let impostor = User::new(
+        None,
+        "i@example.com".to_string(),
+        "h".to_string(),
+        1,
+        uuid_to_string(Uuid::new_v4()),
+    );
+
+    assert_eq!(profile().for_viewer(Some(&owner)).tax_id, "12345");
+    assert_eq!(profile().for_viewer(Some(&stranger)).tax_id, "");
+    assert_eq!(profile().for_viewer(Some(&impostor)).tax_id, "");
+    assert_eq!(profile().for_viewer(None).tax_id, "");
+}
+
+#[test]
+fn like_wildcards_in_discovery_text_are_matched_literally() {
+    use business::gateway::business_profile_gateway::escape_like;
+    assert_eq!(escape_like("gym"), "gym");
+    assert_eq!(escape_like("%"), "\\%");
+    assert_eq!(escape_like("_a_"), "\\_a\\_");
+    assert_eq!(escape_like("a\\b"), "a\\\\b");
+}

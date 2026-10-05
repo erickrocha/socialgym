@@ -97,8 +97,16 @@ pub async fn get_team_members(
     Ok(Json(TeamMemberPageJson {
         members: PersonMapper::json_vec(members),
         sent_requests: PersonMapper::json_vec(sent_requests),
-        teams: BusinessProfileMapper::json_vec(teams),
-        received_requests: BusinessProfileMapper::json_vec(received_requests),
+        // These are other people's businesses: the tax id is for the owner only.
+        teams: BusinessProfileMapper::json_vec(
+            teams.into_iter().map(|p| p.for_viewer(Some(current_user))).collect(),
+        ),
+        received_requests: BusinessProfileMapper::json_vec(
+            received_requests
+                .into_iter()
+                .map(|p| p.for_viewer(Some(current_user)))
+                .collect(),
+        ),
     }))
 }
 
