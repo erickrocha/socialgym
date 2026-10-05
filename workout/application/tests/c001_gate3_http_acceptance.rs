@@ -269,3 +269,78 @@ async fn tc008_token_lifecycle_refreshes_without_consent_and_rejects_reuse() {
         axum::http::StatusCode::UNAUTHORIZED
     );
 }
+
+#[tokio::test]
+#[ignore = "requires a disposable TEST_DATABASE_URL targeting the workout_test database"]
+async fn tc009_refresh_fails_closed_when_revocation_cannot_be_persisted() {
+    let _guard = TEST_LOCK.lock().await;
+    let _environment = TestEnvironment::set(&[
+        ("ACCESS_TOKEN_SECRET", "c001-tc009-access-secret"),
+        ("REFRESH_TOKEN_SECRET", "c001-tc009-refresh-secret"),
+        ("TOKEN_REVOCATION_ENABLED", "true"),
+        ("AUTH_RULES_ENABLED", "false"),
+        ("TERMS_VERSION", "1.0.0"),
+        ("PRIVACY_VERSION", "1.0.0"),
+    ]);
+    let database = disposable_database().await;
+    let state = AppState {
+        conn: Arc::new(database.clone()),
+    };
+    let app = auth_routes(state.clone()).with_state(state);
+
+    let signup_response = app
+        .clone()
+        .oneshot(
+            axum::http::Request::builder()
+                .method(axum::http::Method::POST)
+                .uri("/signup")
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(axum::body::Body::from(signup_payload(
+                    "tc009@example.test",
+                    "1.0.0",
+                    "1.0.0",
+                    true,
+                )))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(signup_response.status(), axum::http::StatusCode::OK);
+    let body = axum::body::to_bytes(signup_response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let tokens: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let refresh_token = tokens["refreshToken"].as_str().unwrap();
+
+    database
+        .execute_unprepared(
+            "ALTER TABLE revoked_token ADD CONSTRAINT reject_refresh_revocation CHECK (token_type <> 'refresh')",
+        )
+        .await
+        .unwrap();
+
+    let refresh_response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .method(axum::http::Method::POST)
+                .uri("/refresh")
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .body(axum::body::Body::from(
+                    serde_json::json!({ "refresh_token": refresh_token }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        refresh_response.status(),
+        axum::http::StatusCode::INTERNAL_SERVER_ERROR
+    );
+    let body = axum::body::to_bytes(refresh_response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let error: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(error["errorKey"], "UnknowAuthError");
+    assert!(error.get("accessToken").is_none());
+    assert!(error.get("refreshToken").is_none());
+}

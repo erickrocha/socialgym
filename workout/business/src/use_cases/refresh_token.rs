@@ -26,24 +26,29 @@ impl RefreshToken {
         // Rotate: the presented refresh token is single-use. Revoke it now so a
         // second use of the same token is caught as reuse next time around.
         if auth_config::token_revocation_enabled() {
-            if let (Some(user_id), Some(expires_at)) =
-                (user.id, DateTime::from_timestamp(claims.exp, 0))
-            {
-                if let Err(e) = TokenRevocationGateway::revoke(
-                    db,
-                    claims.jti,
-                    user_id,
-                    "refresh",
-                    expires_at.naive_utc(),
-                )
-                .await
-                {
-                    log::error!("Failed to revoke rotated refresh token: {}", e);
-                }
-            }
+            let user_id = user.id.ok_or_else(|| {
+                BusinessError::infrastructure("Unable to identify refresh-token owner")
+            })?;
+            let expires_at = DateTime::from_timestamp(claims.exp, 0).ok_or_else(|| {
+                BusinessError::infrastructure("Refresh-token expiry is out of range")
+            })?;
+            TokenRevocationGateway::revoke(
+                db,
+                claims.jti,
+                user_id,
+                "refresh",
+                expires_at.naive_utc(),
+            )
+            .await
+            .map_err(|error| {
+                log::error!("Failed to revoke rotated refresh token: {}", error);
+                BusinessError::infrastructure("Unable to rotate refresh token")
+            })?;
         }
 
         log::info!("Access token refreshed for person_id={}", user.person_id);
-        Ok(Authentication::generate_access_token(&user, &person, None, true))
+        Ok(Authentication::generate_access_token(
+            &user, &person, None, true,
+        ))
     }
 }
