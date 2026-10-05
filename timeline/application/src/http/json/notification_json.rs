@@ -17,6 +17,10 @@ pub struct NotificationJson {
     pub comment_uuid: Option<String>,
     pub entity_type: String,
     pub entity_uuid: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target_uuid: Option<String>,
     pub snippet: String,
     pub read: bool,
     pub created_at: chrono::NaiveDateTime,

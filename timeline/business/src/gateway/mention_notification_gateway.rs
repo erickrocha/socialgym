@@ -151,6 +151,121 @@ impl MentionNotificationGateway {
         Ok(())
     }
 
+    pub async fn persist_friendship_notification(
+        &self,
+        notification: InAppNotification,
+    ) -> Result<(), BusinessError> {
+        self.persist_in_app_notification(notification).await
+    }
+
+    pub async fn list_pending_push_notifications(
+        &self,
+        limit: i64,
+    ) -> Result<Vec<InAppNotification>, BusinessError> {
+        let mut cursor = self
+            .in_app_collection
+            .find(doc! {
+                "$or": [
+                    {
+                        "pushStatus": "Pending",
+                        "$or": [
+                            { "pushNextAttemptAt": mongodb::bson::Bson::Null },
+                            { "pushNextAttemptAt": { "$lte": DateTime::now() } },
+                        ],
+                    },
+                    {
+                        "pushStatus": "Processing",
+                        "pushClaimedAt": {
+                            "$lte": DateTime::from_millis(
+                                DateTime::now().timestamp_millis() - 300_000,
+                            ),
+                        },
+                    },
+                ]
+            })
+            .sort(doc! { "createdAt": 1 })
+            .limit(limit)
+            .await
+            .map_err(|error| BusinessError::infrastructure(format!("failed to list pending push notifications: {error}")))?;
+
+        let mut notifications = Vec::new();
+        while let Some(notification) = cursor
+            .try_next()
+            .await
+            .map_err(|error| BusinessError::infrastructure(format!("failed to iterate pending push notifications: {error}")))?
+        {
+            notifications.push(notification);
+        }
+        Ok(notifications)
+    }
+
+    pub async fn claim_push_notification(
+        &self,
+        notification_uuid: &str,
+    ) -> Result<bool, BusinessError> {
+        let now = DateTime::now();
+        let stale_before = DateTime::from_millis(now.timestamp_millis() - 300_000);
+        let result = self
+            .in_app_collection
+            .update_one(
+                doc! {
+                    "_id": notification_uuid,
+                    "$or": [
+                        {
+                            "pushStatus": "Pending",
+                            "$or": [
+                                { "pushNextAttemptAt": mongodb::bson::Bson::Null },
+                                { "pushNextAttemptAt": { "$lte": now } },
+                            ],
+                        },
+                        {
+                            "pushStatus": "Processing",
+                            "pushClaimedAt": { "$lte": stale_before },
+                        },
+                    ],
+                },
+                doc! { "$set": {
+                    "pushStatus": "Processing",
+                    "pushClaimedAt": now,
+                    "updatedAt": now,
+                } },
+            )
+            .await
+            .map_err(|error| BusinessError::infrastructure(format!("failed to claim push notification: {error}")))?;
+        Ok(result.modified_count > 0)
+    }
+
+    pub async fn update_push_state(
+        &self,
+        notification_uuid: &str,
+        status: &str,
+        attempt_count: i32,
+        completed_device_uuids: &[String],
+        next_attempt_at: Option<DateTime>,
+        last_error: Option<&str>,
+    ) -> Result<(), BusinessError> {
+        self.in_app_collection
+            .update_one(
+                doc! { "_id": notification_uuid },
+                doc! { "$set": {
+                    "pushStatus": status,
+                    "pushAttemptCount": attempt_count,
+                    "pushCompletedDeviceUuids": completed_device_uuids,
+                    "pushClaimedAt": if status == "Processing" {
+                        mongodb::bson::Bson::DateTime(DateTime::now())
+                    } else {
+                        mongodb::bson::Bson::Null
+                    },
+                    "pushNextAttemptAt": next_attempt_at,
+                    "pushLastError": last_error,
+                    "updatedAt": DateTime::now(),
+                } },
+            )
+            .await
+            .map_err(|error| BusinessError::infrastructure(format!("failed to update push state: {error}")))?;
+        Ok(())
+    }
+
     pub async fn list_in_app_notifications(
         &self,
         recipient_person_uuid: &str,

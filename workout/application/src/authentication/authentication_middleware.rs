@@ -21,7 +21,10 @@ pub async fn authentication(
     );
     req.extensions_mut().insert(locale);
 
-    if req.uri().path().starts_with("/login") || req.uri().path().starts_with("/signup") {
+    if req.uri().path().starts_with("/login")
+        || req.uri().path().starts_with("/signup")
+        || req.uri().path().starts_with("/refresh")
+    {
         return Ok(next.run(req).await);
     }
 

@@ -60,11 +60,13 @@ pub async fn ensure_indexes(db: &Database) {
         }
     }
 
-    let unique: [(&str, mongodb::bson::Document); 2] = [
+    let unique: [(&str, mongodb::bson::Document); 4] = [
         // get-or-create race guard
         ("conversations", doc! { "dedupeKey": 1 }),
         // idempotent send
         ("messages", doc! { "dedupeKey": 1 }),
+        ("push_devices", doc! { "registrationToken": 1 }),
+        ("push_devices", doc! { "deviceUuid": 1 }),
     ];
     for (collection, keys) in unique {
         let index = IndexModel::builder()
@@ -76,7 +78,18 @@ pub async fn ensure_indexes(db: &Database) {
             .create_index(index)
             .await
         {
-            log::error!("Failed to create unique index on {collection}.dedupeKey: {e}");
+            log::error!("Failed to create unique index on {collection}: {e}");
+        }
+    }
+
+    for field in ["personUuid"] {
+        let index = IndexModel::builder().keys(doc! { field: 1 }).build();
+        if let Err(error) = db
+            .collection::<mongodb::bson::Document>("push_devices")
+            .create_index(index)
+            .await
+        {
+            log::error!("Failed to create push_devices.{field} index: {error}");
         }
     }
 }

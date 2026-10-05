@@ -1,4 +1,3 @@
-use crate::AppState;
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
 use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::error_response_json::{
@@ -7,9 +6,11 @@ use crate::http::json::error_response_json::{
 use crate::http::json::evolution_check_in_json::EvolutionCheckInJson;
 use crate::infrastructure::data_tools::opt_naive_to_bson_datetime;
 use crate::infrastructure::mapper::{EvolutionCheckInMapper, Mapper};
+use crate::AppState;
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use business::gateway::consent_gateway::ConsentGateway;
 use business::gateway::evolution_check_in_gateway::EvolutionCheckInGateway;
 use business::use_cases::evolution_check_in_use_case::EvolutionCheckInUseCase;
 use chrono::{Duration, Utc};
@@ -47,8 +48,10 @@ pub async fn add(
 ) -> HttpResponse<(StatusCode, Json<EvolutionCheckInJson>)> {
     let domain = EvolutionCheckInMapper::domain(payload);
 
-    let evolution_check_in_use_case =
-        EvolutionCheckInUseCase::new(EvolutionCheckInGateway::new(&state.database.clone()));
+    let evolution_check_in_use_case = EvolutionCheckInUseCase::new(
+        EvolutionCheckInGateway::new(&state.database.clone()),
+        ConsentGateway,
+    );
 
     let evolution_check_in = evolution_check_in_use_case
         .add(domain, &current_user.person_uuid)
@@ -92,8 +95,10 @@ pub async fn get_by_owner(
     let start_bson = opt_naive_to_bson_datetime(start).unwrap();
     let end_bson = opt_naive_to_bson_datetime(end).unwrap();
 
-    let evolution_check_in_use_case =
-        EvolutionCheckInUseCase::new(EvolutionCheckInGateway::new(&state.database.clone()));
+    let evolution_check_in_use_case = EvolutionCheckInUseCase::new(
+        EvolutionCheckInGateway::new(&state.database.clone()),
+        ConsentGateway,
+    );
 
     let response = evolution_check_in_use_case
         .find_all_by_owner(person_uuid, start_bson, end_bson)

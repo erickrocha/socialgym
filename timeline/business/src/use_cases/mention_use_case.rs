@@ -44,7 +44,7 @@ impl MentionUseCase {
 
 		let allowed_mentions =
 			Self::load_allowed_friend_uuids(author_person_id, &comment.author_uuid).await?;
-		let mentioned_uuids: Vec<String> = post.mentions.iter().map(|m| m.mentioned_uuid.clone()).collect();
+		let mentioned_uuids: Vec<String> = comment.mentions.iter().map(|m| m.mentioned_uuid.clone()).collect();
 		let snippet = Self::content_snippet(&comment.content);
 
 		let events: Vec<MentionNotificationEvent> = mentioned_uuids
@@ -87,15 +87,5 @@ impl MentionUseCase {
 }
 
 #[cfg(test)]
-mod tests {
-	use crate::use_cases::mention_use_case::MentionUseCase;
-
-	#[test]
-	fn snippet_truncates_large_content() {
-		let content = "a".repeat(130);
-		let snippet = MentionUseCase::content_snippet(&content);
-
-		assert_eq!(snippet.len(), 123);
-		assert!(snippet.ends_with("..."));
-	}
-}
+#[path = "../tests/mention_use_case_test.rs"]
+mod tests;

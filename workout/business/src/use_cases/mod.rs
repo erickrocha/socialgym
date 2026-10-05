@@ -9,6 +9,7 @@ pub mod common_use_case;
 pub mod consent_use_case;
 pub mod exercise_use_case;
 pub mod friend_use_case;
+pub mod friendship_outbox_publisher_use_case;
 pub mod image_storage_use_case;
 pub mod logout_use_case;
 pub mod person_address_use_case;

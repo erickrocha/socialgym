@@ -9,6 +9,7 @@ use crate::AppState;
 use axum::extract::State;
 use axum::{Extension, Json};
 use business::domain::user::User;
+use business::gateway::country_gateway::CountryGateway;
 use business::gateway::settings_gateway::SettingsGateway;
 use business::use_cases::resource_use_case::ResourceUseCase;
 use business::use_cases::setings_use_case::SettingsUseCase;
@@ -27,17 +28,30 @@ use business::use_cases::setings_use_case::SettingsUseCase;
 		("bearer_auth" = [])
 	)
 )]
-pub async fn get_resource(State(state): State<AppState>,Extension(current_user): Extension<User>,Extension(locale): Extension<Locale>) -> HttpResponse<Json<ResourceJson>> {
-    let countries_response = ResourceUseCase::get_countries(state.conn.as_ref()).await;
+pub async fn get_resource(
+    State(state): State<AppState>,
+    Extension(current_user): Extension<User>,
+    Extension(locale): Extension<Locale>,
+) -> HttpResponse<Json<ResourceJson>> {
+    let resource_use_case = ResourceUseCase::new(CountryGateway::new((*state.conn).clone()));
+    let countries_response = resource_use_case.get_countries().await;
 
     if countries_response.is_err() {
-        return Err(ExceptionResponse::NotFound(locale,ErrorKey::ResourcesNotFound));
+        return Err(ExceptionResponse::NotFound(
+            locale,
+            ErrorKey::ResourcesNotFound,
+        ));
     }
 
     let setting_use_case = SettingsUseCase::new(SettingsGateway::new((*state.conn).clone()));
-    let settings_response = setting_use_case.get_by_owner_id(current_user.id.unwrap()).await;
+    let settings_response = setting_use_case
+        .get_by_owner_id(current_user.id.unwrap())
+        .await;
     if settings_response.is_err() {
-        return Err(ExceptionResponse::NotFound(locale,ErrorKey::ResourcesNotFound));
+        return Err(ExceptionResponse::NotFound(
+            locale,
+            ErrorKey::ResourcesNotFound,
+        ));
     }
 
     let countries = CountryMapper::json_vec(countries_response.unwrap());

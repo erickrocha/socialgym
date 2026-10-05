@@ -70,6 +70,8 @@ fn allowed_origins() -> AllowOrigin {
         http::post_controller::remove_reaction,
         http::notification_controller::list_notifications,
         http::notification_controller::mark_notification_read,
+        http::push_device_controller::register_push_device,
+        http::push_device_controller::remove_push_device,
         http::evolution_controller::add,
         http::evolution_controller::get_by_owner,
         http::chat_controller::list_conversations,
@@ -92,6 +94,7 @@ fn allowed_origins() -> AllowOrigin {
             http::json::post_json::MentionJson,
             http::json::notification_json::NotificationJson,
             http::json::notification_json::MarkNotificationReadJson,
+            http::json::push_device_json::RegisterPushDeviceJson,
             http::json::chat_json::ConversationJson,
             http::json::chat_json::ConversationParticipantJson,
             http::json::chat_json::LastMessagePreviewJson,
@@ -165,6 +168,8 @@ async fn start() -> anyhow::Result<()> {
 
     infrastructure::mongo_indexes::ensure_indexes(&state.database).await;
     infrastructure::mention_notification_worker::start(Arc::clone(&state.database));
+    infrastructure::friendship_notification_worker::start(Arc::clone(&state.database));
+    infrastructure::push_notification_worker::start(Arc::clone(&state.database));
 
     log::info!("Starting server...");
 
@@ -204,6 +209,10 @@ async fn start() -> anyhow::Result<()> {
                 .nest("/posts", post_routes(state.clone()))
                 .nest("/feed", feed_route(state.clone()))
                 .nest("/notifications", notification_routes(state.clone()))
+                .nest(
+                    "/push-devices",
+                    crate::routes::push_device_routes::push_device_routes(state.clone()),
+                )
                 .nest("/chat", chat_routes(state.clone()))
                 .route("/chat/ws", get(http::chat_ws_handler::ws))
                 .nest("/reports", report_routes(state.clone()))

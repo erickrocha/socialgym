@@ -6,11 +6,38 @@ use business::domain::user::User;
 use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
 use business::use_cases::consent_use_case::ConsentUseCase;
 use business::use_cases::friend_use_case::FriendUseCase;
+use business::gateway::aws_clients::sqs_client;
+use business::use_cases::friendship_outbox_publisher_use_case::FriendshipOutboxPublisherUseCase;
 use business::use_cases::person_use_case::PersonUseCase;
 use business::use_cases::exercise_use_case::ExerciseUseCase;
 use business::use_cases::workout_use_case::WorkoutUseCase;
+use log::{Level, LevelFilter, Log, Metadata, Record};
 use migration::{Migrator, MigratorTrait};
-use sea_orm::{ConnectionTrait, Database, Statement};
+use sea_orm::{ColumnTrait, ConnectionTrait, Database, EntityTrait, QueryFilter, QueryOrder, Statement};
+use std::sync::Mutex;
+
+struct AcceptanceLogCapture;
+
+static ACCEPTANCE_LOGS: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+impl Log for AcceptanceLogCapture {
+  fn enabled(&self, metadata: &Metadata<'_>) -> bool {
+    metadata.level() <= Level::Error
+  }
+
+  fn log(&self, record: &Record<'_>) {
+    if self.enabled(record.metadata()) {
+      ACCEPTANCE_LOGS
+        .lock()
+        .unwrap()
+        .push(record.args().to_string());
+    }
+  }
+
+  fn flush(&self) {}
+}
+
+static ACCEPTANCE_LOGGER: AcceptanceLogCapture = AcceptanceLogCapture;
 
 #[tokio::test]
 #[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database"]
@@ -193,6 +220,235 @@ async fn c004_workout_exercise_visibility_acceptance() {
     assert_eq!(exercises.len(), 1);
     assert!(ExerciseUseCase::ensure_all_readable(&exercises, 1).is_ok());
     assert!(ExerciseUseCase::ensure_all_readable(&exercises, 2).is_err());
+}
+
+#[tokio::test]
+#[ignore = "requires disposable TEST_DATABASE_URL PostgreSQL/PostGIS and LocalStack SQS"]
+async fn c006_friendship_outbox_publishes_fifo_in_order() {
+  use sea_orm::{ActiveModelTrait, Set};
+
+  log::set_logger(&ACCEPTANCE_LOGGER).expect("acceptance logger is not already installed");
+  log::set_max_level(LevelFilter::Error);
+  ACCEPTANCE_LOGS.lock().unwrap().clear();
+
+  let database_url = std::env::var("TEST_DATABASE_URL")
+    .expect("TEST_DATABASE_URL must point to a disposable PostgreSQL/PostGIS database");
+  let queue_url = std::env::var("AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL")
+    .expect("AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL must point to the test FIFO queue");
+  let db = Database::connect(database_url).await.unwrap();
+  Migrator::refresh(&db).await.unwrap();
+  let client = sqs_client().await;
+  let mut queue_ready = false;
+  for _ in 0..30 {
+    if client
+      .get_queue_url()
+      .queue_name("social-notification-events.fifo")
+      .send()
+      .await
+      .is_ok()
+    {
+      queue_ready = true;
+      break;
+    }
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+  }
+  assert!(queue_ready, "LocalStack friendship FIFO queue did not become ready");
+
+  db.execute_unprepared(
+    r#"INSERT INTO person
+       (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at)
+       VALUES
+       (1, '00000000-0000-0000-0000-000000000061', 'Sender', 'Person', '1990-01-01', 'X', now(), now()),
+       (2, '00000000-0000-0000-0000-000000000062', 'Receiver', 'Person', '1990-01-01', 'X', now(), now());
+       INSERT INTO "user"
+         (id, uuid, name, email, password, first_login, enabled, person_id, person_uuid, created_at, updated_at)
+       VALUES
+         (1, '10000000-0000-0000-0000-000000000061', 'Sender Person', 'c006-sender@example.test', 'unused', false, true, 1, '00000000-0000-0000-0000-000000000061', now(), now());
+       INSERT INTO settings
+         (id, uuid, person_id, person_uuid, language, theme, notifications_enabled, context_menu_position, home_page, created_at, updated_at)
+       VALUES
+         (1, '20000000-0000-0000-0000-000000000061', 1, '00000000-0000-0000-0000-000000000061', 'en', 'light', true, 'left', 'feed', now(), now()),
+         (2, '20000000-0000-0000-0000-000000000062', 2, '00000000-0000-0000-0000-000000000062', 'en', 'light', false, 'left', 'feed', now(), now());
+       INSERT INTO consent (uuid, person_id, document, version, accepted_at, ip)
+       VALUES
+         ('30000000-0000-0000-0000-000000000061', 1, 'terms', '1.0.0', now(), '127.0.0.1'),
+         ('30000000-0000-0000-0000-000000000062', 1, 'privacy', '1.0.0', now(), '127.0.0.1')"#,
+  )
+  .await
+  .unwrap();
+
+  let pending = FriendUseCase::send_friend_request(&db, 1, 2).await.unwrap();
+  FriendUseCase::accept_friend_request(&db, 2, 1)
+    .await
+    .unwrap();
+  let friendship_uuid = pending.uuid.unwrap();
+  let events = entity::friendship_notification_outbox_entity::Entity::find()
+    .filter(
+      entity::friendship_notification_outbox_entity::Column::FriendshipUuid
+        .eq(uuid::Uuid::parse_str(&friendship_uuid).unwrap()),
+    )
+    .order_by_asc(entity::friendship_notification_outbox_entity::Column::Id)
+    .all(&db)
+    .await
+    .unwrap();
+  assert_eq!(events.len(), 2);
+  assert_eq!(events[0].event_type, "friend_request_created");
+  assert_eq!(events[1].event_type, "friend_request_accepted");
+
+  let unavailable_queue_url = queue_url.replace(
+    "social-notification-events.fifo",
+    "missing-social-notification-events.fifo",
+  );
+  for expected_attempt in 1..=5 {
+    assert_eq!(
+      FriendshipOutboxPublisherUseCase::publish_pending(
+        &db,
+        &client,
+        &unavailable_queue_url,
+      )
+      .await
+      .unwrap(),
+      0
+    );
+    let failed = entity::friendship_notification_outbox_entity::Entity::find()
+      .filter(
+        entity::friendship_notification_outbox_entity::Column::EventUuid
+          .eq(events[0].event_uuid),
+      )
+      .one(&db)
+      .await
+      .unwrap()
+      .unwrap();
+    assert_eq!(failed.attempt_count, expected_attempt);
+    assert!(failed.last_error.is_some());
+    assert!(failed.published_at.is_none());
+
+    let mut retry: entity::friendship_notification_outbox_entity::ActiveModel = failed.into();
+    retry.next_attempt_at = Set(chrono::Utc::now() - chrono::Duration::seconds(1));
+    retry.update(&db).await.unwrap();
+  }
+  assert!(ACCEPTANCE_LOGS.lock().unwrap().iter().any(|message| {
+    message.contains("ALERT: friendship event has failed to publish five consecutive times")
+      && message.contains(&events[0].event_uuid.to_string())
+  }));
+
+  let accepted_event = entity::friendship_notification_outbox_entity::Entity::find()
+    .filter(
+      entity::friendship_notification_outbox_entity::Column::EventUuid
+        .eq(events[1].event_uuid),
+    )
+    .one(&db)
+    .await
+    .unwrap()
+    .unwrap();
+  assert_eq!(accepted_event.attempt_count, 0);
+  assert!(accepted_event.published_at.is_none());
+
+  let published = FriendshipOutboxPublisherUseCase::publish_pending(
+    &db,
+    &client,
+    &queue_url,
+  )
+  .await
+  .unwrap();
+  assert_eq!(published, 2);
+
+  let published_events = entity::friendship_notification_outbox_entity::Entity::find()
+    .filter(
+      entity::friendship_notification_outbox_entity::Column::FriendshipUuid
+        .eq(uuid::Uuid::parse_str(&friendship_uuid).unwrap()),
+    )
+    .order_by_asc(entity::friendship_notification_outbox_entity::Column::Id)
+    .all(&db)
+    .await
+    .unwrap();
+  assert!(published_events.iter().all(|event| event.published_at.is_some()));
+  assert_eq!(published_events[0].attempt_count, 5);
+
+  let messages = client
+    .receive_message()
+    .queue_url(&queue_url)
+    .max_number_of_messages(10)
+    .wait_time_seconds(1)
+    .send()
+    .await
+    .unwrap()
+    .messages
+    .unwrap_or_default();
+  let event_types: Vec<String> = messages
+    .iter()
+    .filter_map(|message| message.body())
+    .map(|body| {
+      serde_json::from_str::<serde_json::Value>(body)
+        .unwrap()["eventType"]
+        .as_str()
+        .unwrap()
+        .to_string()
+    })
+    .collect();
+  assert_eq!(
+    event_types,
+    vec!["friend_request_created", "friend_request_accepted"]
+  );
+
+  for message in messages {
+    if let Some(receipt_handle) = message.receipt_handle() {
+      client
+        .delete_message()
+        .queue_url(&queue_url)
+        .receipt_handle(receipt_handle)
+        .send()
+        .await
+        .unwrap();
+    }
+  }
+}
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database"]
+async fn c006_rejected_and_cancelled_friendships_do_not_emit_transition_events() {
+  let database_url = std::env::var("TEST_DATABASE_URL")
+    .expect("TEST_DATABASE_URL must point to a disposable PostgreSQL/PostGIS database");
+  let db = Database::connect(database_url).await.unwrap();
+  Migrator::refresh(&db).await.unwrap();
+
+  db.execute_unprepared(
+    r#"INSERT INTO person
+       (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at)
+       VALUES
+       (1, '00000000-0000-0000-0000-000000000071', 'Reject', 'Sender', '1990-01-01', 'X', now(), now()),
+       (2, '00000000-0000-0000-0000-000000000072', 'Reject', 'Receiver', '1990-01-01', 'X', now(), now()),
+       (3, '00000000-0000-0000-0000-000000000073', 'Cancel', 'Sender', '1990-01-01', 'X', now(), now()),
+       (4, '00000000-0000-0000-0000-000000000074', 'Cancel', 'Receiver', '1990-01-01', 'X', now(), now())"#,
+  )
+  .await
+  .unwrap();
+
+  let rejected = FriendUseCase::send_friend_request(&db, 1, 2)
+    .await
+    .unwrap();
+  FriendUseCase::deny_friend_request(&db, 2, 1)
+    .await
+    .unwrap();
+  let cancelled = FriendUseCase::send_friend_request(&db, 3, 4)
+    .await
+    .unwrap();
+  FriendUseCase::cancel_friend_request(&db, 3, 4)
+    .await
+    .unwrap();
+
+  for friendship_uuid in [rejected.uuid.unwrap(), cancelled.uuid.unwrap()] {
+    let events = entity::friendship_notification_outbox_entity::Entity::find()
+      .filter(
+        entity::friendship_notification_outbox_entity::Column::FriendshipUuid
+          .eq(uuid::Uuid::parse_str(&friendship_uuid).unwrap()),
+      )
+      .all(&db)
+      .await
+      .unwrap();
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].event_type, "friend_request_created");
+  }
 }
 
 fn business_profile_owner_actor(person_id: i32, person_uuid: &str) -> User {

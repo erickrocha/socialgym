@@ -8,8 +8,10 @@ use domain::user::User;
 use domain::comment::Comment;
 use domain::post::Post;
 use domain::reaction::Reaction;
+use domain::in_app_notification::InAppNotification;
 use mongodb::Database;
 use crate::use_cases::mention_use_case::MentionUseCase;
+use crate::gateway::mention_notification_gateway::MentionNotificationGateway;
 
 pub struct PostUseCase {}
 
@@ -95,9 +97,39 @@ impl PostUseCase {
             .comments
             .iter()
             .find(|c| c.uuid == uuid.as_str())
-            && let Err(e) = MentionUseCase::enqueue_mentions_from_comment(db, author_person_id, &persisted_post, persisted_comment).await
         {
-            log::error!("Failed to enqueue comment mention notifications: {}",e.message);
+            let owner_was_mentioned = persisted_comment
+                .mentions
+                .iter()
+                .any(|mention| mention.mentioned_uuid == persisted_post.author_uuid);
+            if persisted_post.author_uuid != author.person_uuid && !owner_was_mentioned {
+                let notification = InAppNotification::from_social_interaction(
+                    format!("{}:comment:{}", persisted_comment.uuid, persisted_post.author_uuid),
+                    "Comment".to_string(),
+                    persisted_post.author_uuid.clone(),
+                    author.person_uuid.clone(),
+                    author.name.clone(),
+                    persisted_post.uuid.clone(),
+                    Some(persisted_comment.uuid.clone()),
+                    "Someone commented on your post.".to_string(),
+                );
+                if let Err(error) = MentionNotificationGateway::new(db)
+                    .persist_in_app_notification(notification)
+                    .await
+                {
+                    log::error!("Failed to persist comment notification: {}", error.message);
+                }
+            }
+            if let Err(error) = MentionUseCase::enqueue_mentions_from_comment(
+                db,
+                author_person_id,
+                &persisted_post,
+                persisted_comment,
+            )
+            .await
+            {
+                log::error!("Failed to enqueue comment mention notifications: {}", error.message);
+            }
         }
         Ok(persisted_post)
     }
@@ -105,7 +137,37 @@ impl PostUseCase {
         reaction.author_id = author.person_uuid.clone();
         reaction.author_name = author.name.clone();
         log::info!("Adding reaction to post: {}", post_id);
-        PostGateway::new(db).add_reaction(&post_id, reaction).await
+        let gateway = PostGateway::new(db);
+        let before = gateway.find_by_id_result(&post_id).await?;
+        let had_reaction = before.as_ref().is_some_and(|post| {
+            post.reactions
+                .iter()
+                .any(|existing| existing.author_id == author.person_uuid)
+        });
+        let updated = gateway.add_reaction(&post_id, reaction.clone()).await?;
+
+        if !had_reaction
+            && updated.author_uuid != author.person_uuid
+            && before.is_some()
+        {
+            let notification = InAppNotification::from_social_interaction(
+                format!("{}:reaction:{}", reaction.uuid, updated.author_uuid),
+                "Reaction".to_string(),
+                updated.author_uuid.clone(),
+                author.person_uuid.clone(),
+                author.name.clone(),
+                updated.uuid.clone(),
+                None,
+                "Someone reacted to your post.".to_string(),
+            );
+            if let Err(error) = MentionNotificationGateway::new(db)
+                .persist_in_app_notification(notification)
+                .await
+            {
+                log::error!("Failed to persist reaction notification: {}", error.message);
+            }
+        }
+        Ok(updated)
     }
     pub async fn remove_reaction(db: &Database, post_id: String, person_uuid: String) -> Result<Post, BusinessError> {
         log::info!("Removing reaction from post: {}", post_id);
@@ -155,78 +217,5 @@ impl PostUseCase {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::use_cases::post_use_case::PostUseCase;
-    use domain::comment::Comment;
-    use domain::post::Post;
-    use domain::user::User;
-
-    fn test_user() -> User {
-        User::new(
-            "Actor Name".to_string(),
-            "actor@example.com".to_string(),
-            "user-uuid".to_string(),
-            42,
-            "actor-uuid".to_string(),
-            "".to_string(),
-            None,
-        )
-    }
-
-    #[test]
-    fn page_zero_has_no_skip() {
-        assert_eq!(PostUseCase::feed_skip(0, 20), 0);
-    }
-
-    #[test]
-    fn page_one_skips_one_full_page() {
-        assert_eq!(PostUseCase::feed_skip(1, 20), 20);
-    }
-
-    #[test]
-    fn content_limit_rejects_oversized_post_and_comment_content() {
-        let oversized = "x".repeat(5001);
-        assert!(PostUseCase::validate_content(&oversized).is_err());
-        assert!(PostUseCase::validate_content("valid").is_ok());
-        assert!(PostUseCase::validate_content(&"é".repeat(5000)).is_ok());
-        assert!(PostUseCase::validate_content(&"é".repeat(5001)).is_err());
-    }
-
-    #[test]
-    fn post_and_comment_attribution_comes_from_authenticated_user() {
-        let author = test_user();
-        let mut post = Post::updated(
-            "post".to_string(),
-            1,
-            "spoofed-uuid".to_string(),
-            "Spoofed".to_string(),
-            None,
-            None,
-            "content".to_string(),
-            Vec::new(),
-            Vec::new(),
-            Vec::new(),
-            Vec::new(),
-        );
-        let mut comment = Comment::new(
-            "comment".to_string(),
-            "post".to_string(),
-            "spoofed-uuid".to_string(),
-            "Spoofed".to_string(),
-            None,
-            None,
-            "content".to_string(),
-            None,
-            Vec::new(),
-        );
-
-        PostUseCase::apply_post_author(&mut post, &author);
-        PostUseCase::apply_comment_author(&mut comment, &author);
-
-        assert_eq!(post.author_id, 42);
-        assert_eq!(post.author_uuid, "actor-uuid");
-        assert_eq!(comment.author_uuid, "actor-uuid");
-        assert_eq!(comment.author_name, "Actor Name");
-    }
-
-}
+#[path = "../tests/post_use_case_test.rs"]
+mod tests;

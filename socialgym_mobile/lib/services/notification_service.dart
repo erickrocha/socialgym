@@ -7,6 +7,58 @@ import 'package:socialgym_mobile/utils/dio_client.dart';
 class NotificationService {
   static final Dio _dio = DioClient().dio;
 
+  static Future<void> registerPushDevice({
+    required String token,
+    required String deviceUuid,
+    required String registrationToken,
+    required String platform,
+  }) async {
+    try {
+      DioClient().setAuthToken(token);
+      final response = await _dio.put(
+        '${ApiConfig.pushDevicesEndpoint}/$deviceUuid',
+        data: {
+          'platform': platform,
+          'registrationToken': registrationToken,
+        },
+      );
+      if (response.statusCode != 204) {
+        throw AppException(
+          statusCode: response.statusCode ?? 500,
+          message: BaseService.extractErrorFromDio(
+            response.data,
+            'Failed to register push device',
+          ),
+        );
+      }
+    } on DioException catch (e) {
+      throw BaseService.handleDioError(e, 'Failed to register push device');
+    }
+  }
+
+  static Future<void> removePushDevice({
+    required String token,
+    required String deviceUuid,
+  }) async {
+    try {
+      DioClient().setAuthToken(token);
+      final response = await _dio.delete(
+        '${ApiConfig.pushDevicesEndpoint}/$deviceUuid',
+      );
+      if (response.statusCode != 204) {
+        throw AppException(
+          statusCode: response.statusCode ?? 500,
+          message: BaseService.extractErrorFromDio(
+            response.data,
+            'Failed to remove push device',
+          ),
+        );
+      }
+    } on DioException catch (e) {
+      throw BaseService.handleDioError(e, 'Failed to remove push device');
+    }
+  }
+
   static Future<List<Notification>> fetchNotifications(String token,String ownerUuid,{bool unreadOnly = false,int limit = 50,}) async {
     try {
       DioClient().setAuthToken(token);

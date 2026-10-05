@@ -41,6 +41,9 @@ class PersonMapper implements Mapper<Person,$person.Person>{
       businessProfiles: proto.businessProfiles
           .map((p) => BusinessProfileMapper().fromProto(p))
           .toList(growable: false),
+        friendshipUuid: proto.friendshipUuid.isNotEmpty
+          ? proto.friendshipUuid
+          : null,
     );
   }
 
@@ -68,6 +71,7 @@ class PersonMapper implements Mapper<Person,$person.Person>{
       createdAt: domain.createdAt?.toIso8601String() ?? '',
       updatedAt: domain.updatedAt?.toIso8601String() ?? '',
       businessProfiles: BusinessProfileMapper().toProtoList(domain.businessProfiles),
+      friendshipUuid: domain.friendshipUuid ?? '',
     );
   }
 

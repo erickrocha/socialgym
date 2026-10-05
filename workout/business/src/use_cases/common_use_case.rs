@@ -56,25 +56,11 @@ pub fn generate_private_key(raw_value: String) -> String {
 
     // 4. Montamos o PEM com a estrutura exata que o parser exige
     format!(
-        "-----BEGIN RSA PRIVATE KEY-----\n{}\n-----END RSA PRIVATE KEY-----\n",
+        "-----BEGIN RSA PRIVATE KEY-----\n{}\n-----END RSA PRIVATE KEY-----\n", // gitleaks:allow -- PEM labels only; key material is supplied at runtime.
         body
     )
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_generate_private_key() {
-        let raw = "-----BEGIN RSA PRIVATE KEY-----\\nMIIEpAIBAAKCAQEA7\n\nabc123+==\\n-----END RSA PRIVATE KEY-----".to_string();
-        let pem = generate_private_key(raw);
-        assert!(pem.starts_with("-----BEGIN RSA PRIVATE KEY-----"));
-        assert!(pem.ends_with("-----END RSA PRIVATE KEY-----\n"));
-        assert!(pem.contains("abc123+=="));
-        // Should not contain escaped newlines
-        assert!(!pem.contains("\\n"));
-        // Should contain real newlines
-        assert!(pem.contains("\n"));
-    }
-}
+#[path = "../tests/common_use_case_unit_test.rs"]
+mod tests;

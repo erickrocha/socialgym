@@ -3,10 +3,14 @@ use crate::commons::functions::uuid_to_string;
 use crate::domain::business_error::BusinessError;
 use crate::domain::enums::InviteStatus;
 use crate::domain::friend::{Friend, FriendEntityMapper};
+use crate::domain::friendship_outbox_event::FriendshipOutboxEvent;
 use crate::gateway::friend_gateway::FriendGateway;
+use crate::gateway::friendship_outbox_gateway::FriendshipOutboxGateway;
 use crate::gateway::person_gateway::PersonGateway;
 use entity::friends_entity as friends;
-use sea_orm::DbConn;
+use sea_orm::{DbConn, TransactionTrait};
+
+type FriendshipEventBuilder = fn(&Friend) -> Result<FriendshipOutboxEvent, BusinessError>;
 
 pub struct FriendUseCase {}
 
@@ -53,15 +57,12 @@ impl FriendUseCase {
                         );
                         let mut req = existing_request;
                         req.status = InviteStatus::Accepted.as_str().to_string();
-                        let result = FriendGateway::update(db, FriendEntityMapper::from_model(req))
-                            .await
-                            .map_err(|e| {
-                                BusinessError::new(format!(
-                                    "Error auto-accepting friend request: {:?}",
-                                    e
-                                ))
-                            })?;
-                        Ok(FriendEntityMapper::from_model(result))
+                        Self::update_friendship(
+                            db,
+                            FriendEntityMapper::from_model(req),
+                            Some(FriendshipOutboxEvent::request_accepted),
+                        )
+                        .await
                     } else {
                         log::warn!(
                             "A pending friend request already exists from sender {:?} to receiver {:?}",
@@ -98,15 +99,12 @@ impl FriendUseCase {
                         std::mem::swap(&mut req.person_uuid, &mut req.friend_uuid);
                     }
                     req.status = InviteStatus::Pending.as_str().to_string();
-                    let result = FriendGateway::update(db, FriendEntityMapper::from_model(req))
-                        .await
-                        .map_err(|e| {
-                            BusinessError::new(format!(
-                                "Error re-opening friend request: {:?}",
-                                e
-                            ))
-                        })?;
-                    Ok(FriendEntityMapper::from_model(result))
+                    Self::update_friendship(
+                        db,
+                        FriendEntityMapper::from_model(req),
+                        Some(FriendshipOutboxEvent::request_created),
+                    )
+                    .await
                 }
             };
         }
@@ -134,15 +132,21 @@ impl FriendUseCase {
             uuid_to_string(receiver.uuid),
             InviteStatus::Pending,
         );
-        let result = FriendGateway::persist(db, friend_request).await;
-        if result.is_err() {
-            log::error!("Error sending friend request: {:?}", result.err());
-            return Err(BusinessError::new(
-                "Error sending friend request".to_string(),
-            ));
-        }
-        log::info!("Friend request sent successfully: {:?}", result);
-        Ok(FriendEntityMapper::from_active_model(result.unwrap()))
+        let txn = db.begin().await.map_err(|error| {
+            BusinessError::new(format!("Error starting friend request transaction: {error}"))
+        })?;
+        let result = FriendGateway::persist(&txn, friend_request)
+            .await
+            .map_err(|error| {
+                BusinessError::new(format!("Error sending friend request: {error}"))
+            })?;
+        let friend = FriendEntityMapper::from_active_model(result);
+        let event = FriendshipOutboxEvent::request_created(&friend)?;
+        FriendshipOutboxGateway::persist(&txn, event).await?;
+        txn.commit().await.map_err(|error| {
+            BusinessError::new(format!("Error committing friend request: {error}"))
+        })?;
+        Ok(friend)
     }
 
     pub async fn accept_friend_request(
@@ -207,16 +211,17 @@ impl FriendUseCase {
             ));
         }
         friend_request.status = status.as_str().to_string();
-        let result =
-            FriendGateway::update(db, FriendEntityMapper::from_model(friend_request)).await;
-        if result.is_err() {
-            log::error!("Error updating friend request: {:?}", result.err());
-            return Err(BusinessError::new(
-                "Error updating friend request".to_string(),
-            ));
-        }
-        log::info!("Friend request updated successfully: {:?}", result);
-        Ok(FriendEntityMapper::from_model(result.unwrap()))
+        let event_builder = if status == InviteStatus::Accepted {
+            Some(FriendshipOutboxEvent::request_accepted as FriendshipEventBuilder)
+        } else {
+            None
+        };
+        Self::update_friendship(
+            db,
+            FriendEntityMapper::from_model(friend_request),
+            event_builder,
+        )
+        .await
     }
 
     pub async fn deny_friend_request(
@@ -256,6 +261,29 @@ impl FriendUseCase {
             log::info!("Friend request cancelled successfully: {:?}", result);
         }
         result
+    }
+
+    async fn update_friendship(
+        db: &DbConn,
+        friendship: Friend,
+        event_builder: Option<FriendshipEventBuilder>,
+    ) -> Result<Friend, BusinessError> {
+        let txn = db.begin().await.map_err(|error| {
+            BusinessError::new(format!("Error starting friendship transaction: {error}"))
+        })?;
+        let updated = FriendGateway::update(&txn, friendship)
+            .await
+            .map_err(|error| BusinessError::new(format!("Error updating friendship: {error}")))?;
+        let updated = FriendEntityMapper::from_model(updated);
+
+        if let Some(build_event) = event_builder {
+            FriendshipOutboxGateway::persist(&txn, build_event(&updated)?).await?;
+        }
+
+        txn.commit().await.map_err(|error| {
+            BusinessError::new(format!("Error committing friendship transaction: {error}"))
+        })?;
+        Ok(updated)
     }
 
     pub async fn remove_friend(
@@ -306,6 +334,39 @@ impl FriendUseCase {
 
         log::info!("Friends found successfully: {:?}", friend_list);
         Ok(friend_list)
+    }
+
+    pub async fn find_pending_friendship_links(
+        db: &DbConn,
+        person_id: i32,
+        received: bool,
+    ) -> Result<Vec<(i32, String)>, BusinessError> {
+        let column = if received {
+            friends::Column::FriendId
+        } else {
+            friends::Column::PersonId
+        };
+        FriendGateway::find_all_by_column_and_status(
+            db,
+            column,
+            person_id,
+            InviteStatus::Pending,
+        )
+        .await
+        .map(|requests| {
+            requests
+                .into_iter()
+                .map(|request| {
+                    let person_id = if received {
+                        request.person_id
+                    } else {
+                        request.friend_id
+                    };
+                    (person_id, request.uuid.to_string())
+                })
+                .collect()
+        })
+        .map_err(|error| BusinessError::infrastructure(error.to_string()))
     }
 
     pub async fn ensure_accepted_friend(
@@ -368,66 +429,5 @@ impl FriendUseCase {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::FriendUseCase;
-    use crate::commons::functions::string_to_uuid;
-    use chrono::Utc;
-    use entity::friends_entity as friends;
-
-    fn make_model(id: i32, person_id: i32, friend_id: i32) -> friends::FriendsEntity {
-        friends::FriendsEntity {
-            id,
-            uuid: string_to_uuid(format!("uuid-{id}").as_str()),
-            person_id,
-            friend_id,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-            status: "Accepted".to_string(),
-            person_uuid: string_to_uuid(format!("person-{person_id}").as_str()),
-            friend_uuid: string_to_uuid(format!("person-{friend_id}").as_str()),
-        }
-    }
-
-    #[test]
-    fn normalize_keeps_direct_friendship_counterpart() {
-        let person_id = 1;
-        let result =
-            FriendUseCase::normalize_accepted_friendships(vec![make_model(10, 1, 2)], person_id);
-
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].person_id, 1);
-        assert_eq!(result[0].friend_id, 2);
-    }
-
-    #[test]
-    fn normalize_flips_inverse_friendship_counterpart() {
-        let person_id = 1;
-        let result =
-            FriendUseCase::normalize_accepted_friendships(vec![make_model(10, 2, 1)], person_id);
-
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].person_id, 1);
-        assert_eq!(result[0].friend_id, 2);
-    }
-
-    #[test]
-    fn normalize_dedups_direct_and_inverse_duplicates() {
-        let person_id = 1;
-        let result = FriendUseCase::normalize_accepted_friendships(
-            vec![make_model(10, 1, 2), make_model(11, 2, 1)],
-            person_id,
-        );
-
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].friend_id, 2);
-    }
-
-    #[test]
-    fn normalize_filters_out_self_friendship() {
-        let person_id = 1;
-        let result =
-            FriendUseCase::normalize_accepted_friendships(vec![make_model(10, 1, 1)], person_id);
-
-        assert!(result.is_empty());
-    }
-}
+#[path = "../tests/friend_use_case_unit_test.rs"]
+mod tests;

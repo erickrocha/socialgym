@@ -5,6 +5,7 @@ pub mod country_entity;
 pub mod data_export_entity;
 pub mod exercise_entity;
 pub mod friends_entity;
+pub mod friendship_notification_outbox_entity;
 pub mod person_address_entity;
 pub mod person_entity;
 pub mod person_info_entity;

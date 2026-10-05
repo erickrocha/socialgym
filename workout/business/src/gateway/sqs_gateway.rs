@@ -4,6 +4,25 @@ use aws_sdk_sqs::Client;
 pub struct SqsGateway {}
 
 impl SqsGateway {
+    pub async fn send_fifo_message(
+        client: &Client,
+        queue_url: &str,
+        body: &str,
+        group_id: &str,
+        deduplication_id: &str,
+    ) -> Result<(), BusinessError> {
+        client
+            .send_message()
+            .queue_url(queue_url)
+            .message_body(body)
+            .message_group_id(group_id)
+            .message_deduplication_id(deduplication_id)
+            .send()
+            .await
+            .map_err(|error| BusinessError::new(format!("Failed to publish SQS message: {error}")))?;
+        Ok(())
+    }
+
     /// Long-polls the queue and returns up to `max_messages` (≤ 10) messages.
     /// `wait_time_seconds` controls the long-poll duration (1–20 s).
     pub async fn receive_messages(

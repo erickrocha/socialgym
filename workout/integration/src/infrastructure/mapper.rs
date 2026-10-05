@@ -205,6 +205,7 @@ impl Mapper<DomainPerson, proto::person::Person> for PersonMapper {
             business_profiles: BusinessProfileMapper::response_vec(t.business_profiles),
             created_at: t.created_at.map(|d| d.to_string()).unwrap_or_default(),
             updated_at: t.updated_at.map(|d| d.to_string()).unwrap_or_default(),
+            friendship_uuid: String::new(),
         }
     }
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +18,7 @@ import '../services/grpc/grpc_resource_service.dart';
 import '../services/grpc/grpc_settings_service.dart';
 import '../services/grpc/grpc_team_member_service.dart';
 import '../services/grpc/grpc_workout_service.dart';
+import '../services/push_registration_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   AuthResponse? _auth;
@@ -47,6 +49,9 @@ class AuthProvider extends ChangeNotifier {
     }
     _initialized = true;
     notifyListeners();
+    if (_auth != null) {
+      unawaited(PushRegistrationService.bindAuthenticatedUser(_auth!));
+    }
   }
 
   Future<void> _saveToStorage(AuthResponse auth) async {
@@ -67,6 +72,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       _auth = await AuthService.signIn(email: email, password: password);
       await _saveToStorage(_auth!);
+      unawaited(PushRegistrationService.bindAuthenticatedUser(_auth!));
       _loading = false;
       notifyListeners();
       return true;
@@ -91,6 +97,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       _auth = await AuthService.signUp(request);
       await _saveToStorage(_auth!);
+      unawaited(PushRegistrationService.bindAuthenticatedUser(_auth!));
       _loading = false;
       notifyListeners();
       return true;
@@ -113,11 +120,16 @@ class AuthProvider extends ChangeNotifier {
   Future<void> applySwitchedToken(AuthResponse newAuth) async {
     _auth = newAuth.copyWith(refreshToken: newAuth.refreshToken ?? _auth?.refreshToken);
     await _saveToStorage(_auth!);
+    unawaited(PushRegistrationService.bindAuthenticatedUser(_auth!));
     notifyListeners();
   }
 
   Future<void> signOut() async {
+    final previousAuth = _auth;
     _auth = null;
+    if (previousAuth != null) {
+      unawaited(PushRegistrationService.unregister(previousAuth));
+    }
     await _clearStorage();
     // Drop each service's cached client *before* tearing down the shared
     // channels: otherwise a client left pointing at an already-shut-down

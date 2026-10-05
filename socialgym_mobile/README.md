@@ -25,3 +25,11 @@ samples, guidance on mobile development, and a full API reference.
 ./tool/generate_proto.sh
 ```
 
+## Firebase push setup
+
+Configure Firebase Cloud Messaging for Android and iOS outside source control. Supply these
+compile-time values to the mobile build: `FIREBASE_API_KEY`, `FIREBASE_PROJECT_ID`,
+`FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_ANDROID_APP_ID`, `FIREBASE_IOS_APP_ID`, and
+`FIREBASE_IOS_BUNDLE_ID`. The Firebase project must have APNs configured for iOS. Push stays
+disabled when required values are missing; no provider credentials or project IDs belong in Git.
+

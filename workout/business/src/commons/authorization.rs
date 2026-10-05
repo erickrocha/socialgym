@@ -19,14 +19,5 @@ pub fn ensure_owns(resource_owner_id: i32, acting_person_id: i32) -> Result<(), 
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::domain::business_error::BusinessErrorKind;
-
-    #[test]
-    fn owner_passes_and_everyone_else_is_forbidden() {
-        assert!(ensure_owns(7, 7).is_ok());
-        let error = ensure_owns(7, 8).unwrap_err();
-        assert_eq!(error.kind, BusinessErrorKind::Forbidden);
-    }
-}
+#[path = "../tests/authorization_unit_test.rs"]
+mod tests;

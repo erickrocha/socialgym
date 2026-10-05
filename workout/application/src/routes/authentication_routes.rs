@@ -5,7 +5,7 @@ use crate::authentication::authentication_middleware::authentication;
 use crate::authentication::rate_limit::{auth_limiter, rate_limit};
 use crate::http::auth_controller::{activate, deactivate, logout, refresh_token, sign_in, sign_up};
 
-/// Build authentication routes (signup and login, no auth required, others auth is required)
+/// Build authentication routes; refresh uses a refresh token, other protected routes use access authentication.
 pub fn auth_routes(state: AppState) -> Router<AppState> {
 	Router::new()
 		.route("/signup", post(sign_up)

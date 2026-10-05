@@ -173,7 +173,7 @@ async fn workout_owner_routes_enforce_authenticated_identity_and_return_stable_e
         .await
         .unwrap();
     let error: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert_eq!(error["errorKey"], "WORKOUT_NOT_FOUND");
+    assert_eq!(error["errorKey"], "WorkoutNotFound");
 
     let missing_response = app
         .oneshot(
@@ -201,5 +201,5 @@ async fn workout_owner_routes_enforce_authenticated_identity_and_return_stable_e
         .await
         .unwrap();
     let error: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert_eq!(error["errorKey"], "WORKOUT_NOT_FOUND");
+    assert_eq!(error["errorKey"], "WorkoutNotFound");
 }

@@ -107,6 +107,26 @@ class FeedProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> loadUntilPost(
+    String token,
+    String postUuid, {
+    String? businessProfileUuid,
+    int maxPages = 50,
+  }) async {
+    var pagesLoaded = 0;
+    while (!_posts.any((post) => post.uuid == postUuid) &&
+        _hasMore &&
+        pagesLoaded < maxPages) {
+      await loadMorePostsForProfile(
+        token,
+        businessProfileUuid: businessProfileUuid,
+      );
+      if (_error != null) return false;
+      pagesLoaded++;
+    }
+    return _posts.any((post) => post.uuid == postUuid);
+  }
+
   Future<void> fetchPosts(String token) => fetchPostsForProfile(token);
 
   Future<void> loadMorePosts(String token) => loadMorePostsForProfile(token);

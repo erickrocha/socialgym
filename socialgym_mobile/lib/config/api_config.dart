@@ -62,6 +62,7 @@ class ApiConfig {
   static const String businessFeedEndpoint = '/timeline/api/feed';
   static const String postEndpoint = '/timeline/api/posts';
   static const String notificationsEndpoint = '/timeline/api/notifications';
+    static const String pushDevicesEndpoint = '/timeline/api/push-devices';
 
   static const String chatConversationsEndpoint =
       '/timeline/api/chat/conversations';

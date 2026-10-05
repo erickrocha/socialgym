@@ -14,6 +14,7 @@ import '../../providers/person_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/main_layout.dart';
 import '../../services/data_export_service.dart';
+import '../../services/push_registration_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -361,10 +362,18 @@ class _SettingsPageState extends State<SettingsPage> {
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.settingsNotificationsEnabled),
               value: _notificationsEnabled,
-              onChanged: (value) => setState(() {
-                _notificationsEnabled = value;
-                _dirty = true;
-              }),
+              onChanged: (value) {
+                setState(() {
+                  _notificationsEnabled = value;
+                  _dirty = true;
+                });
+                if (value) {
+                  final auth = context.read<AuthProvider>().auth;
+                  if (auth != null) {
+                    PushRegistrationService.requestPermissionAndRegister(auth);
+                  }
+                }
+              },
             ),
             const SizedBox(height: 16),
             Text(
