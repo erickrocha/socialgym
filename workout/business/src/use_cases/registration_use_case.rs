@@ -151,3 +151,7 @@ impl RegistrationUseCase {
         Ok(UserEntityMapper::from_model(user))
     }
 }
+
+#[cfg(test)]
+#[path = "../tests/registration_use_case_test.rs"]
+mod tests;

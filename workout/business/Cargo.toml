@@ -39,5 +39,72 @@ migration = { path = "../migration" }
 mock = ["sea-orm/mock"]
 
 [[test]]
-name = "mock"
+name = "consent_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "friend_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "registration_use_case_postgres_test"
+
+[[test]]
+name = "resource_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "team_member_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "person_info_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "person_address_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "person_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "user_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "workout_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "exercise_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "business_profile_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "business_profile_address_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "switch_business_profile_test"
+required-features = ["mock"]
+
+[[test]]
+name = "authentication_test"
+required-features = ["mock"]
+
+[[test]]
+name = "logout_use_case_test"
+required-features = ["mock"]
+
+[[test]]
+name = "refresh_token_test"
+required-features = ["mock"]
+
+[[test]]
+name = "gateway_uuid_validation_test"
 required-features = ["mock"]

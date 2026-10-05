@@ -1,7 +1,13 @@
 use crate::commons::grpc_config::GrpcConfig;
-use crate::proto::proto::person::ConsentStatusRequest;
 use crate::proto::proto::person::person_service_client::PersonServiceClient;
+use crate::proto::proto::person::ConsentStatusRequest;
+use async_trait::async_trait;
 use domain::business_error::BusinessError;
+
+#[async_trait]
+pub trait HealthConsentGatewayPort: Send + Sync {
+    async fn require_health_consent(&self) -> Result<(), BusinessError>;
+}
 
 pub struct ConsentGateway;
 
@@ -38,5 +44,12 @@ impl ConsentGateway {
 
     pub async fn require_health_consent() -> Result<(), BusinessError> {
         Self::require("health_data").await
+    }
+}
+
+#[async_trait]
+impl HealthConsentGatewayPort for ConsentGateway {
+    async fn require_health_consent(&self) -> Result<(), BusinessError> {
+        ConsentGateway::require_health_consent().await
     }
 }

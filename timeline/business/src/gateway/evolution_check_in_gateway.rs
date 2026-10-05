@@ -3,10 +3,25 @@ use async_trait::async_trait;
 use domain::business_error::BusinessError;
 use domain::evolution_check_in::EvolutionCheckIn;
 use futures::TryStreamExt;
-use mongodb::bson::{DateTime, doc};
+use mongodb::bson::{doc, DateTime};
 use mongodb::{Collection, Cursor, Database};
 
 const COLLECTION_NAME: &str = "evolutions";
+
+#[async_trait]
+pub trait EvolutionCheckInGatewayPort: Send + Sync {
+    async fn persist_check_in(
+        &self,
+        check_in: EvolutionCheckIn,
+    ) -> Result<EvolutionCheckIn, BusinessError>;
+    async fn find_check_in(&self, id: String) -> Option<EvolutionCheckIn>;
+    async fn find_all_by_person_uuid(
+        &self,
+        person_uuid: String,
+        start: DateTime,
+        end: DateTime,
+    ) -> Vec<EvolutionCheckIn>;
+}
 
 pub struct EvolutionCheckInGateway {
     collection: Collection<EvolutionCheckIn>,
@@ -17,6 +32,29 @@ impl EvolutionCheckInGateway {
         Self {
             collection: db.collection::<EvolutionCheckIn>(COLLECTION_NAME),
         }
+    }
+}
+
+#[async_trait]
+impl EvolutionCheckInGatewayPort for EvolutionCheckInGateway {
+    async fn persist_check_in(
+        &self,
+        check_in: EvolutionCheckIn,
+    ) -> Result<EvolutionCheckIn, BusinessError> {
+        Repository::persist(self, check_in).await
+    }
+
+    async fn find_check_in(&self, id: String) -> Option<EvolutionCheckIn> {
+        Repository::find_by_id(self, id).await
+    }
+
+    async fn find_all_by_person_uuid(
+        &self,
+        person_uuid: String,
+        start: DateTime,
+        end: DateTime,
+    ) -> Vec<EvolutionCheckIn> {
+        EvolutionCheckInGateway::find_all_by_person_uuid(self, person_uuid, start, end).await
     }
 }
 
@@ -54,7 +92,11 @@ impl Repository<EvolutionCheckIn, String> for EvolutionCheckInGateway {
         })
     }
 
-    async fn update(&self,id: String,entity: EvolutionCheckIn) -> Result<EvolutionCheckIn, BusinessError> {
+    async fn update(
+        &self,
+        id: String,
+        entity: EvolutionCheckIn,
+    ) -> Result<EvolutionCheckIn, BusinessError> {
         let filter = doc! { "_id": id.clone() };
 
         let result = self.collection.replace_one(filter, entity).await;
@@ -102,7 +144,12 @@ impl Repository<EvolutionCheckIn, String> for EvolutionCheckInGateway {
 }
 
 impl EvolutionCheckInGateway {
-    pub async fn find_all_by_person_uuid(&self,person_uuid: String,start: DateTime, end: DateTime) -> Vec<EvolutionCheckIn> {
+    pub async fn find_all_by_person_uuid(
+        &self,
+        person_uuid: String,
+        start: DateTime,
+        end: DateTime,
+    ) -> Vec<EvolutionCheckIn> {
         let filter = doc! {
             "personUuid": person_uuid,
             "createdAt": { "$gte": start, "$lte": end }
@@ -110,12 +157,14 @@ impl EvolutionCheckInGateway {
         let cursor = self.collection.find(filter).await;
 
         if cursor.is_err() {
-            log::error!("Error finding evolution check-ins by person uuid: {:?}", cursor.err().unwrap());
+            log::error!(
+                "Error finding evolution check-ins by person uuid: {:?}",
+                cursor.err().unwrap()
+            );
             return Vec::new();
         }
 
         let cursor = cursor.unwrap();
-
 
         Self::process_response(cursor).await
     }
