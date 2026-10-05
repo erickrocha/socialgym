@@ -10,6 +10,7 @@ use crate::AppState;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use business::commons::authorization::ActingOwner;
 use business::domain::business_profile::BusinessProfile;
 use business::domain::exercise::Exercise;
 use business::domain::user::User;
@@ -28,12 +29,18 @@ pub async fn get_workout_by_id(
     State(state): State<AppState>,
     Path(id): Path<i32>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<WorkoutJson>> {
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
     let workout = WorkoutUseCase::get(&state.conn, id)
         .await
         .map_err(|error| workout_error(error, locale))?;
-    WorkoutUseCase::ensure_readable(&workout, current_user.person_id)
+    WorkoutUseCase::ensure_readable(&state.conn, &workout, &acting)
+        .await
+        .map_err(|error| workout_error(error, locale))?;
+    let workout = WorkoutUseCase::redact_unreadable_exercises(&state.conn, workout, &acting)
+        .await
         .map_err(|error| workout_error(error, locale))?;
     Ok(Json(WorkoutMapper::json(workout)))
 }
@@ -43,12 +50,18 @@ pub async fn get_workout_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<WorkoutJson>> {
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
     let workout = WorkoutUseCase::get_by_uuid(&state.conn, uuid)
         .await
         .map_err(|error| workout_error(error, locale))?;
-    WorkoutUseCase::ensure_readable(&workout, current_user.person_id)
+    WorkoutUseCase::ensure_readable(&state.conn, &workout, &acting)
+        .await
+        .map_err(|error| workout_error(error, locale))?;
+    let workout = WorkoutUseCase::redact_unreadable_exercises(&state.conn, workout, &acting)
+        .await
         .map_err(|error| workout_error(error, locale))?;
     Ok(Json(WorkoutMapper::json(workout)))
 }
@@ -116,9 +129,11 @@ pub async fn delete_workout_by_id(
     State(state): State<AppState>,
     Path(id): Path<i32>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<StatusCode> {
-    WorkoutUseCase::delete_by_id(&state.conn, id, current_user.person_id)
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
+    WorkoutUseCase::delete_by_id(&state.conn, id, &acting)
         .await
         .map_err(|error| workout_error(error, locale))?;
     Ok(StatusCode::NO_CONTENT)
@@ -129,9 +144,11 @@ pub async fn delete_workout_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<StatusCode> {
-    WorkoutUseCase::delete_by_uuid(&state.conn, uuid, current_user.person_id)
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
+    WorkoutUseCase::delete_by_uuid(&state.conn, uuid, &acting)
         .await
         .map_err(|error| workout_error(error, locale))?;
     Ok(StatusCode::NO_CONTENT)
@@ -203,16 +220,13 @@ pub async fn add_exercises_by_workout_uuid(
     Extension(locale): Extension<Locale>,
     Json(exercises): Json<Vec<ExerciseJson>>,
 ) -> HttpResponse<Json<WorkoutJson>> {
-    let mut workout = WorkoutUseCase::get_by_uuid(&state.conn, uuid)
+    let workout = WorkoutUseCase::get_by_uuid(&state.conn, uuid.clone())
         .await
         .map_err(|error| workout_error(error, locale))?;
-    let acting_owner_id = active_profile
-        .as_deref()
-        .and_then(|p| p.id)
-        .unwrap_or(current_user.person_id);
-    business::commons::authorization::ensure_owns(workout.owner_id, acting_owner_id)
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
+    business::commons::authorization::ensure_owns_as(workout.owner_id, &workout.owner_uuid, &acting)
         .map_err(|error| workout_error(error, locale))?;
-    workout.exercises = ExerciseUseCase::add_all_to_workout(
+    ExerciseUseCase::add_all_to_workout(
         &state.conn,
         workout.id.unwrap(),
         ExerciseMapper::domain_vec(exercises),
@@ -223,6 +237,10 @@ pub async fn add_exercises_by_workout_uuid(
     .map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesNotAdded)
     })?;
+    // The full composition, not just the exercises added by this call.
+    let workout = WorkoutUseCase::get_by_uuid(&state.conn, uuid)
+        .await
+        .map_err(|error| workout_error(error, locale))?;
     Ok(Json(WorkoutMapper::json(workout)))
 }
 
@@ -231,7 +249,7 @@ pub async fn add_exercises_by_workout_uuid(
     path = "/workout/api/workouts",
     request_body = WorkoutJson,
     responses(
-        (status = 200, description = "Workout added successfully", body = WorkoutJson),
+        (status = 201, description = "Workout added successfully", body = WorkoutJson),
         (status = 400, description = "Bad request", body = BadRequestErrorJson),
         (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
         (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
@@ -269,9 +287,9 @@ pub async fn add_workout(
 
 #[utoipa::path(
     get,
-    path = "/workout/api/workouts/{owner_id}",
+    path = "/workout/api/workouts/{person_id}",
     params(
-        ("owner_id" = i32, Path, description = "Owner id")
+        ("person_id" = i32, Path, description = "Person id; only the workouts the caller may read are returned")
     ),
     responses(
         (status = 200, description = "List of workouts", body = Vec<WorkoutJson>),
@@ -287,9 +305,12 @@ pub async fn add_workout(
 pub async fn get_workouts(
     state: State<AppState>,
     Path(person_id): Path<i32>,
+    Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<WorkoutJson>>> {
-    let result = WorkoutUseCase::find_all_by_owner_id(&state.conn, person_id)
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
+    let result = WorkoutUseCase::find_readable_by_person_id(&state.conn, person_id, &acting)
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutNotFound)
@@ -306,7 +327,7 @@ pub async fn get_workouts(
         ("workout_id" = i32, Path, description = "Workout id")
     ),
     responses(
-        (status = 200, description = "Exercises linked to workout", body = Vec<ExerciseJson>),
+        (status = 201, description = "Exercises linked to workout", body = Vec<ExerciseJson>),
         (status = 400, description = "Bad request", body = BadRequestErrorJson),
         (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
         (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
@@ -329,11 +350,8 @@ pub async fn add_exercises(
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutNotFound)
         })?;
-    let acting_owner_id = active_profile
-        .as_deref()
-        .and_then(|p| p.id)
-        .unwrap_or(current_user.person_id);
-    business::commons::authorization::ensure_owns(workout.owner_id, acting_owner_id)
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
+    business::commons::authorization::ensure_owns_as(workout.owner_id, &workout.owner_uuid, &acting)
         .map_err(|error| workout_error(error, locale))?;
 
     let domain_exercises: Vec<Exercise> = ExerciseMapper::domain_vec(exercises);
@@ -374,19 +392,23 @@ pub async fn get_exercises(
     state: State<AppState>,
     Path(workout_id): Path<i32>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<ExerciseJson>>> {
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
     let workout = WorkoutUseCase::get(&state.conn, workout_id)
         .await
         .map_err(|error| workout_error(error, locale))?;
-    WorkoutUseCase::ensure_readable(&workout, current_user.person_id)
+    WorkoutUseCase::ensure_readable(&state.conn, &workout, &acting)
+        .await
         .map_err(|error| workout_error(error, locale))?;
 
     let result = ExerciseUseCase::find_all_by_workout_id(&state.conn, workout_id).await;
     let exercises = result.map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesFetchFailed)
     })?;
-    ExerciseUseCase::ensure_all_readable(&exercises, current_user.person_id)
+    let exercises = ExerciseUseCase::retain_readable(&state.conn, exercises, &acting)
+        .await
         .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesFetchFailed))?;
     Ok(Json(ExerciseMapper::json_vec(exercises)))
 }

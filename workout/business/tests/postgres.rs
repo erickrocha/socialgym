@@ -218,8 +218,16 @@ async fn c004_workout_exercise_visibility_acceptance() {
     assert_eq!(workout.name, "Public Workout");
     let exercises = ExerciseUseCase::find_all_by_workout_id(&db, 1).await.unwrap();
     assert_eq!(exercises.len(), 1);
-    assert!(ExerciseUseCase::ensure_all_readable(&exercises, 1).is_ok());
-    assert!(ExerciseUseCase::ensure_all_readable(&exercises, 2).is_err());
+    let owner = business::commons::authorization::ActingOwner {
+        id: 1,
+        uuid: "00000000-0000-0000-0000-000000000031".to_string(),
+    };
+    let other = business::commons::authorization::ActingOwner {
+        id: 2,
+        uuid: "00000000-0000-0000-0000-000000000032".to_string(),
+    };
+    assert!(ExerciseUseCase::ensure_all_readable(&db, &exercises, &owner).await.is_ok());
+    assert!(ExerciseUseCase::ensure_all_readable(&db, &exercises, &other).await.is_err());
 }
 
 #[tokio::test]

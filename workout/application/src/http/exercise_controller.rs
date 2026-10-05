@@ -9,6 +9,7 @@ use crate::AppState;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use business::commons::authorization::ActingOwner;
 use business::domain::business_profile::BusinessProfile;
 use business::domain::user::User;
 use business::use_cases::exercise_use_case::ExerciseUseCase;
@@ -40,12 +41,15 @@ pub async fn get_exercise_by_id(
     State(state): State<AppState>,
     Path(id): Path<i32>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<ExerciseJson>> {
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
     let exercise = ExerciseUseCase::get(&state.conn, id)
         .await
         .map_err(|error| exercise_error(error, locale))?;
-    ExerciseUseCase::ensure_readable(&exercise, current_user.person_id)
+    ExerciseUseCase::ensure_readable(&state.conn, &exercise, &acting)
+        .await
         .map_err(|error| exercise_error(error, locale))?;
     Ok(Json(ExerciseMapper::json(exercise)))
 }
@@ -55,12 +59,15 @@ pub async fn get_exercise_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<ExerciseJson>> {
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
     let exercise = ExerciseUseCase::get_by_uuid(&state.conn, uuid)
         .await
         .map_err(|error| exercise_error(error, locale))?;
-    ExerciseUseCase::ensure_readable(&exercise, current_user.person_id)
+    ExerciseUseCase::ensure_readable(&state.conn, &exercise, &acting)
+        .await
         .map_err(|error| exercise_error(error, locale))?;
     Ok(Json(ExerciseMapper::json(exercise)))
 }
@@ -89,9 +96,11 @@ pub async fn delete_exercise_by_uuid(
     State(state): State<AppState>,
     Path(uuid): Path<String>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<StatusCode> {
-    ExerciseUseCase::delete_by_uuid(&state.conn, uuid, current_user.person_id)
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
+    ExerciseUseCase::delete_by_uuid(&state.conn, uuid, &acting)
         .await
         .map_err(|error| exercise_error(error, locale))?;
     Ok(StatusCode::NO_CONTENT)
@@ -156,9 +165,11 @@ pub async fn delete_exercise(
     state: State<AppState>,
     Path(exercise_id): Path<i32>,
     Extension(current_user): Extension<User>,
+    active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<StatusCode> {
-    ExerciseUseCase::delete_by_id(&state.conn, exercise_id, current_user.person_id)
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
+    ExerciseUseCase::delete_by_id(&state.conn, exercise_id, &acting)
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesNotAdded)
@@ -214,7 +225,10 @@ pub async fn query_exercises(
             page_size,
             payload.sort_by,
         )
-        .await;
+        .await
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::InvalidParameterValue)
+        })?;
         return Ok(Json(PaginatedExerciseJson {
             content: ExerciseMapper::json_vec(result.0),
             total_count: result.1,
@@ -223,7 +237,7 @@ pub async fn query_exercises(
             has_next_page: result.2,
         }));
     }
-    let person_id = current_user.person_id;
+    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
 
     // Validate and set defaults
     let page_number = payload.page_number.unwrap_or(1);
@@ -247,17 +261,14 @@ pub async fn query_exercises(
 
     let capped_page_size = if page_size > 100 { 100 } else { page_size };
 
-    // Set defaults for category
-    let category = payload.category.or_else(|| Some("Force".to_string()));
-
     // Get public_owner_ids, default to empty if not provided
     let public_owner_ids = payload.owners.unwrap_or_default();
 
     let result = ExerciseUseCase::find_by_complex_filters_paginated(
         &state.conn,
-        person_id,
+        &acting,
         public_owner_ids,
-        category,
+        payload.category,
         payload.visibility,
         page_number,
         capped_page_size,

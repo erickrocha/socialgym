@@ -84,6 +84,35 @@ impl FriendGateway {
             .await
     }
 
+    /// Whether two people (by uuid) are accepted friends. Any uuid that is not a
+    /// person (for example a Business Profile) simply has no friendship.
+    pub async fn are_accepted_friends_by_uuid(
+        db: &DbConn,
+        a: &str,
+        b: &str,
+    ) -> Result<bool, DbErr> {
+        let a = parse_uuid(a).map_err(|e| DbErr::Type(e.to_string()))?;
+        let b = parse_uuid(b).map_err(|e| DbErr::Type(e.to_string()))?;
+        Ok(FriendsQuery::find()
+            .filter(
+                Condition::any()
+                    .add(
+                        Condition::all()
+                            .add(Column::PersonUuid.eq(a))
+                            .add(Column::FriendUuid.eq(b)),
+                    )
+                    .add(
+                        Condition::all()
+                            .add(Column::PersonUuid.eq(b))
+                            .add(Column::FriendUuid.eq(a)),
+                    ),
+            )
+            .filter(Column::Status.eq(InviteStatus::Accepted.as_str()))
+            .one(db)
+            .await?
+            .is_some())
+    }
+
     pub async fn find_all_accepted_friends_by_uuid(
         db: &DbConn,
         person_uuid: String,

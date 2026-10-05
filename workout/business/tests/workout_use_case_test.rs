@@ -1,5 +1,7 @@
+use business::commons::authorization::ActingOwner;
 use business::domain::business_error::BusinessErrorKind;
-use business::domain::enums::{Difficulty, InviteStatus, Visibility};
+use business::domain::enums::{Category, Difficulty, InviteStatus, Visibility};
+use business::domain::exercise::Exercise;
 use business::domain::user::User;
 use business::domain::workout::Workout;
 use business::use_cases::workout_use_case::WorkoutUseCase;
@@ -78,37 +80,104 @@ fn owner_uuid_check_requires_authenticated_owner() {
     );
 }
 
-#[test]
-fn private_workout_is_readable_only_by_its_owner() {
-    let private = Workout {
+fn acting(id: i32) -> ActingOwner {
+    ActingOwner {
+        id,
+        uuid: Uuid::from_u128(id as u128).to_string(),
+    }
+}
+
+fn workout_owned_by(owner_id: i32, visibility: Visibility) -> Workout {
+    Workout {
         id: Some(1),
         uuid: Some(Uuid::new_v4().to_string()),
-        owner_id: 1,
-        owner_uuid: Uuid::new_v4().to_string(),
-        name: "Private workout".to_string(),
+        owner_id,
+        owner_uuid: Uuid::from_u128(owner_id as u128).to_string(),
+        name: "Workout".to_string(),
         description: None,
         difficulty: Difficulty::Easy,
         muscle_group: "Chest".to_string(),
         exercises: Vec::new(),
-        visibility: Visibility::Private,
+        visibility,
         status: InviteStatus::Accepted,
         assigned_by_profile_id: None,
         assigned_by_profile_uuid: None,
         created_at: None,
         updated_at: None,
-    };
+    }
+}
 
-    assert!(WorkoutUseCase::ensure_readable(&private, 1).is_ok());
+fn exercise_owned_by(owner_id: i32, visibility: Visibility) -> Exercise {
+    Exercise {
+        id: Some(owner_id),
+        uuid: Some(Uuid::new_v4().to_string()),
+        name: "Push Ups".to_string(),
+        description: None,
+        sets: 3,
+        owner_id,
+        owner_uuid: Uuid::from_u128(owner_id as u128).to_string(),
+        owner_name: "Owner".to_string(),
+        category: Category::Force,
+        reps_or_duration: 10,
+        visibility,
+        created_at: None,
+        updated_at: None,
+    }
+}
+
+fn empty_db() -> sea_orm::DatabaseConnection {
+    MockDatabase::new(DatabaseBackend::Postgres).into_connection()
+}
+
+#[tokio::test]
+async fn private_workout_is_readable_only_by_its_owner() {
+    let db = empty_db();
+    let private = workout_owned_by(1, Visibility::Private);
+
+    assert!(WorkoutUseCase::ensure_readable(&db, &private, &acting(1)).await.is_ok());
+    // Reported as not found, so it cannot be told apart from a missing workout.
     assert_eq!(
-        WorkoutUseCase::ensure_readable(&private, 2)
+        WorkoutUseCase::ensure_readable(&db, &private, &acting(2))
+            .await
             .unwrap_err()
             .kind,
-        BusinessErrorKind::Forbidden
+        BusinessErrorKind::NotFound
     );
+    // Same id, different identity (a Business Profile): not the owner.
+    let profile = ActingOwner {
+        id: 1,
+        uuid: Uuid::from_u128(999).to_string(),
+    };
+    assert!(WorkoutUseCase::ensure_readable(&db, &private, &profile).await.is_err());
 
-    let mut public = private;
-    public.visibility = Visibility::Public;
-    assert!(WorkoutUseCase::ensure_readable(&public, 2).is_ok());
+    let public = workout_owned_by(1, Visibility::Public);
+    assert!(WorkoutUseCase::ensure_readable(&db, &public, &acting(2)).await.is_ok());
+}
+
+#[tokio::test]
+async fn readable_by_hides_private_workouts_and_private_composed_exercises() {
+    let db = empty_db();
+    let mut public = workout_owned_by(1, Visibility::Public);
+    public.exercises = vec![
+        exercise_owned_by(1, Visibility::Public),
+        exercise_owned_by(1, Visibility::Private),
+    ];
+    let private = workout_owned_by(1, Visibility::Private);
+
+    // Another person sees the public workout, without the private exercise.
+    let seen = WorkoutUseCase::readable_by(&db, vec![public.clone(), private.clone()], &acting(2))
+        .await
+        .unwrap();
+    assert_eq!(seen.len(), 1);
+    assert_eq!(seen[0].exercises.len(), 1);
+    assert!(matches!(seen[0].exercises[0].visibility, Visibility::Public));
+
+    // The owner sees everything.
+    let own = WorkoutUseCase::readable_by(&db, vec![public, private], &acting(1))
+        .await
+        .unwrap();
+    assert_eq!(own.len(), 2);
+    assert_eq!(own[0].exercises.len(), 2);
 }
 
 #[tokio::test]
@@ -260,4 +329,38 @@ async fn assignment_transition_requires_pending_status() {
         .unwrap_err();
 
     assert_eq!(error.kind, BusinessErrorKind::Validation);
+}
+
+#[tokio::test]
+async fn delete_requires_the_owner_and_reports_a_missing_row_as_not_found() {
+    let owned = || workout_entity(Uuid::new_v4(), 1, Uuid::from_u128(1), "Accepted", None);
+    let deleted = |rows_affected| MockExecResult {
+        last_insert_id: 0,
+        rows_affected,
+    };
+
+    let db = MockDatabase::new(DatabaseBackend::Postgres)
+        .append_query_results(vec![vec![owned()]])
+        .append_exec_results(vec![deleted(1)])
+        .into_connection();
+    assert!(WorkoutUseCase::delete_by_id(&db, 7, &acting(1)).await.is_ok());
+
+    // The row vanished between the lookup and the delete.
+    let db = MockDatabase::new(DatabaseBackend::Postgres)
+        .append_query_results(vec![vec![owned()]])
+        .append_exec_results(vec![deleted(0)])
+        .into_connection();
+    let error = WorkoutUseCase::delete_by_id(&db, 7, &acting(1)).await.unwrap_err();
+    assert_eq!(error.kind, BusinessErrorKind::NotFound);
+
+    // A different identity, even with the same numeric id, is not the owner.
+    let db = MockDatabase::new(DatabaseBackend::Postgres)
+        .append_query_results(vec![vec![owned()]])
+        .into_connection();
+    let profile = ActingOwner {
+        id: 1,
+        uuid: Uuid::from_u128(999).to_string(),
+    };
+    let error = WorkoutUseCase::delete_by_id(&db, 7, &profile).await.unwrap_err();
+    assert_eq!(error.kind, BusinessErrorKind::Forbidden);
 }

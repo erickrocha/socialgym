@@ -1,4 +1,4 @@
-use crate::commons::authorization::ensure_owns;
+use crate::commons::authorization::{ensure_owns_as, ActingOwner};
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::BusinessProfile;
@@ -8,6 +8,7 @@ use crate::domain::user::User;
 use crate::domain::workout_exercise::{WorkoutExercise, WorkoutExerciseEntityMapper};
 use crate::gateway::exercise_gateway::ExerciseGateway;
 use crate::gateway::friend_gateway::FriendGateway;
+use crate::gateway::person_gateway::PersonGateway;
 use crate::gateway::workout_exercise_gateway::WorkoutExerciseGateway;
 use sea_orm::DbConn;
 
@@ -38,20 +39,17 @@ impl ExerciseUseCase {
             return Ok(Vec::new());
         }
 
-        let acting_owner_id = active_profile.and_then(|p| p.id).unwrap_or(actor.person_id);
-        let acting_owner_uuid = active_profile
-            .and_then(|p| p.uuid.clone())
-            .unwrap_or_else(|| actor.person_uuid.clone());
+        let acting = ActingOwner::new(actor, active_profile);
 
         let mut resolved: Vec<Exercise> = Vec::with_capacity(exercises.len());
         for mut exercise in exercises {
             if let Some(id) = exercise.id {
                 let existing = Self::get(db, id).await?;
-                Self::ensure_readable(&existing, acting_owner_id)?;
+                Self::ensure_readable(db, &existing, &acting).await?;
                 resolved.push(existing);
             } else {
-                exercise.owner_id = acting_owner_id;
-                exercise.owner_uuid = acting_owner_uuid.clone();
+                exercise.owner_id = acting.id;
+                exercise.owner_uuid = acting.uuid.clone();
                 let model = ExerciseGateway::persist(db, exercise).await.map_err(|e| {
                     log::error!("Error persisting new exercise: {}", e);
                     BusinessError::new("Error adding exercises".to_string())
@@ -143,14 +141,11 @@ impl ExerciseUseCase {
             actor.person_id
         );
 
-        let acting_owner_id = active_profile.and_then(|p| p.id).unwrap_or(actor.person_id);
-        let acting_owner_uuid = active_profile
-            .and_then(|p| p.uuid.clone())
-            .unwrap_or_else(|| actor.person_uuid.clone());
+        let acting = ActingOwner::new(actor, active_profile);
 
         if let Some(id) = exercise.id {
             let existing = Self::get(db, id).await?;
-            ensure_owns(existing.owner_id, acting_owner_id)?;
+            ensure_owns_as(existing.owner_id, &existing.owner_uuid, &acting)?;
         }
 
         // Matches the varchar(255) column (migration m20260129_000008); Postgres
@@ -163,8 +158,8 @@ impl ExerciseUseCase {
             )));
         }
 
-        exercise.owner_id = acting_owner_id;
-        exercise.owner_uuid = acting_owner_uuid;
+        exercise.owner_id = acting.id;
+        exercise.owner_uuid = acting.uuid;
 
         let model = ExerciseGateway::persist(db, exercise)
             .await
@@ -175,24 +170,55 @@ impl ExerciseUseCase {
         Ok(ExerciseEntityMapper::from_active_model(model))
     }
 
-    /// Read guard: an exercise is readable by its owner, or by anyone when
-    /// public. `Visibility::Friends`/`Professional` stay owner-only until the
-    /// permission model that can resolve their audience exists.
-    pub fn ensure_readable(exercise: &Exercise, acting_person_id: i32) -> Result<(), BusinessError> {
-        if matches!(exercise.visibility, Visibility::Public) {
-            return Ok(());
-        }
-        ensure_owns(exercise.owner_id, acting_person_id)
+    /// Read guard: an exercise is readable by its owner, by anyone when public,
+    /// and by an accepted friend of the owner when its visibility is `Friends`.
+    /// `Professional` stays owner-only until its audience can be resolved.
+    pub async fn is_readable(
+        db: &DbConn,
+        exercise: &Exercise,
+        acting: &ActingOwner,
+    ) -> Result<bool, BusinessError> {
+        audience_allows(db, &exercise.visibility, exercise.owner_id, &exercise.owner_uuid, acting)
+            .await
     }
 
-    pub fn ensure_all_readable(
+    /// An unreadable exercise is reported as not found, so a caller cannot tell a
+    /// private exercise from a missing one.
+    pub async fn ensure_readable(
+        db: &DbConn,
+        exercise: &Exercise,
+        acting: &ActingOwner,
+    ) -> Result<(), BusinessError> {
+        if Self::is_readable(db, exercise, acting).await? {
+            return Ok(());
+        }
+        Err(BusinessError::not_found("Exercise not found"))
+    }
+
+    pub async fn ensure_all_readable(
+        db: &DbConn,
         exercises: &[Exercise],
-        acting_person_id: i32,
+        acting: &ActingOwner,
     ) -> Result<(), BusinessError> {
         for exercise in exercises {
-            Self::ensure_readable(exercise, acting_person_id)?;
+            Self::ensure_readable(db, exercise, acting).await?;
         }
         Ok(())
+    }
+
+    /// Drops the exercises `acting` may not read.
+    pub async fn retain_readable(
+        db: &DbConn,
+        exercises: Vec<Exercise>,
+        acting: &ActingOwner,
+    ) -> Result<Vec<Exercise>, BusinessError> {
+        let mut readable = Vec::with_capacity(exercises.len());
+        for exercise in exercises {
+            if Self::is_readable(db, &exercise, acting).await? {
+                readable.push(exercise);
+            }
+        }
+        Ok(readable)
     }
 
     pub async fn get(db: &DbConn, exercise_id: i32) -> Result<Exercise, BusinessError> {
@@ -283,12 +309,12 @@ impl ExerciseUseCase {
     pub async fn delete_by_id(
         db: &DbConn,
         exercise_id: i32,
-        acting_person_id: i32,
+        acting: &ActingOwner,
     ) -> Result<(), BusinessError> {
         log::info!("Deleting exercise for exercise_id: {}", exercise_id);
 
         let existing = Self::get(db, exercise_id).await?;
-        ensure_owns(existing.owner_id, acting_person_id)?;
+        ensure_owns_as(existing.owner_id, &existing.owner_uuid, acting)?;
 
         let delete_result = ExerciseGateway::delete_by_id(db, exercise_id)
             .await
@@ -298,7 +324,7 @@ impl ExerciseUseCase {
             })?;
 
         if delete_result.rows_affected == 0 {
-            return Err(BusinessError::new("Exercise not found".to_string()));
+            return Err(BusinessError::not_found("Exercise not found"));
         }
         Ok(())
     }
@@ -306,12 +332,12 @@ impl ExerciseUseCase {
     pub async fn delete_by_uuid(
         db: &DbConn,
         uuid: String,
-        acting_person_id: i32,
+        acting: &ActingOwner,
     ) -> Result<(), BusinessError> {
         log::info!("Deleting exercise for uuid: {}", uuid);
 
         let existing = Self::get_by_uuid(db, uuid.clone()).await?;
-        ensure_owns(existing.owner_id, acting_person_id)?;
+        ensure_owns_as(existing.owner_id, &existing.owner_uuid, acting)?;
 
         let delete_result = ExerciseGateway::delete_by_uuid(db, uuid.clone())
             .await
@@ -325,7 +351,7 @@ impl ExerciseUseCase {
                 "Error deleting exercise with uuid: {} Exercise not found",
                 uuid
             );
-            return Err(BusinessError::new("Exercise not found".to_string()));
+            return Err(BusinessError::not_found("Exercise not found"));
         }
 
         Ok(())
@@ -416,10 +442,14 @@ impl ExerciseUseCase {
         Ok(exercises)
     }
 
+    /// Search by Person ids. Runs as the acting identity and matches owners by uuid
+    /// (see [`Self::find_by_complex_filters_paginated_uuid`]), so a Person id and a
+    /// Business Profile id with the same number are never mixed up. Owner ids that
+    /// match no Person are ignored.
     #[allow(clippy::too_many_arguments)]
     pub async fn find_by_complex_filters_paginated(
         db: &DbConn,
-        current_user_person_id: i32,
+        acting: &ActingOwner,
         public_owner_ids: Vec<i32>,
         category: Option<String>,
         visibility: Option<String>,
@@ -427,67 +457,23 @@ impl ExerciseUseCase {
         page_size: u64,
         sort_by: Option<String>,
     ) -> Result<(Vec<Exercise>, i64, bool), BusinessError> {
-        log::info!(
-            "Finding exercises with complex filters: current_user_id={}, public_owner_ids={:?}, category={:?}, page_number={}, page_size={}",
-            current_user_person_id,
-            public_owner_ids,
-            category,
-            page_number,
-            page_size
-        );
-
-        let page_index = page_number - 1;
-
-        let friends = FriendGateway::find_all_accepted_friends(db, current_user_person_id)
-            .await
-            .map_err(|error| {
-                log::error!("[ExerciseUseCase::find_by_complex_filters_paginated] Failed to find friends: {}", error);
-                BusinessError::infrastructure("Error finding friends")
-            })?;
-
-        let friend_ids: Vec<i32> = friends
-            .into_iter()
-            .map(|f| {
-                if f.person_id == current_user_person_id {
-                    f.friend_id
-                } else {
-                    f.person_id
-                }
-            })
-            .collect();
-
-        let result = ExerciseGateway::find_by_complex_filters_paginated(
+        let mut public_owner_uuids = Vec::with_capacity(public_owner_ids.len());
+        for id in public_owner_ids {
+            if let Some(person) = PersonGateway::find_by_id(db, id).await {
+                public_owner_uuids.push(person.uuid.to_string());
+            }
+        }
+        Self::find_by_complex_filters_paginated_uuid(
             db,
-            current_user_person_id,
-            friend_ids,
-            public_owner_ids,
+            acting.uuid.clone(),
+            public_owner_uuids,
             category,
             visibility,
-            page_index,
+            page_number,
             page_size,
             sort_by,
         )
-        .await;
-
-        if result.is_err() {
-            log::error!(
-                "Error finding exercises with complex filters: {}",
-                result.as_ref().err().unwrap()
-            );
-            return Err(BusinessError::infrastructure("Error finding exercises"));
-        }
-
-        let (models, total_count) = result.unwrap();
-        let exercises: Vec<Exercise> = ExerciseEntityMapper::from_models(models);
-        let has_next_page = ((page_index + 1) * page_size) < total_count;
-        let total_count_i64 = total_count as i64;
-
-        log::info!(
-            "Found {} exercises (total: {})",
-            exercises.len(),
-            total_count_i64
-        );
-        Ok((exercises, total_count_i64, has_next_page))
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -500,12 +486,15 @@ impl ExerciseUseCase {
         page_number: u64,
         page_size: u64,
         sort_by: Option<String>,
-    ) -> (Vec<Exercise>, i64, bool) {
+    ) -> Result<(Vec<Exercise>, i64, bool), BusinessError> {
         let page_index = page_number - 1;
 
         let friends = FriendGateway::find_all_accepted_friends_by_uuid(db, person_uuid.clone())
             .await
-            .unwrap_or_else(|_| Vec::new());
+            .map_err(|error| {
+                log::error!("[ExerciseUseCase::find_by_complex_filters_paginated_uuid] Failed to find friends: {}", error);
+                BusinessError::infrastructure("Error finding friends")
+            })?;
 
         let friend_uuids: Vec<String> = friends
             .into_iter()
@@ -536,7 +525,7 @@ impl ExerciseUseCase {
                 "Error finding exercises with complex filters: {}",
                 result.as_ref().err().unwrap()
             );
-            return (vec![], 0, false);
+            return Err(BusinessError::infrastructure("Error finding exercises"));
         }
 
         let (models, total_count) = result.unwrap();
@@ -549,6 +538,29 @@ impl ExerciseUseCase {
             exercises.len(),
             total_count_i64
         );
-        (exercises, total_count_i64, has_next_page)
+        Ok((exercises, total_count_i64, has_next_page))
     }
+}
+
+/// Shared audience rule for exercises and workouts: owner, public, or (for
+/// `Friends`) an accepted friend of the owner. Ownership matches on id and uuid.
+pub(crate) async fn audience_allows(
+    db: &DbConn,
+    visibility: &Visibility,
+    owner_id: i32,
+    owner_uuid: &str,
+    acting: &ActingOwner,
+) -> Result<bool, BusinessError> {
+    if matches!(visibility, Visibility::Public) || acting.owns(owner_id, owner_uuid) {
+        return Ok(true);
+    }
+    if matches!(visibility, Visibility::Friends) {
+        return FriendGateway::are_accepted_friends_by_uuid(db, &acting.uuid, owner_uuid)
+            .await
+            .map_err(|e| {
+                log::error!("[audience_allows] Failed to check friendship: {}", e);
+                BusinessError::infrastructure("Error checking friendship")
+            });
+    }
+    Ok(false)
 }

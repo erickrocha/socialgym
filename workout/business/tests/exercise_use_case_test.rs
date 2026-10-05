@@ -1,3 +1,4 @@
+use business::commons::authorization::ActingOwner;
 use business::commons::entity_mapper::EntityMapper;
 use business::commons::functions::uuid_to_string;
 use business::domain::business_error::BusinessErrorKind;
@@ -16,7 +17,7 @@ fn exercise_entity(owner_id: i32, visibility: &str) -> ExerciseEntity {
         name: "Push Ups".to_string(),
         description: Some("Standard push ups".to_string()),
         owner_id,
-        owner_uuid: Uuid::new_v4(),
+        owner_uuid: Uuid::from_u128(owner_id as u128),
         owner_name: "John Doe".to_string(),
         sets: 3,
         category: "Force".to_string(),
@@ -25,6 +26,32 @@ fn exercise_entity(owner_id: i32, visibility: &str) -> ExerciseEntity {
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
     }
+}
+
+/// The identity that owns `exercise_entity(id, _)`.
+fn acting(id: i32) -> ActingOwner {
+    ActingOwner {
+        id,
+        uuid: Uuid::from_u128(id as u128).to_string(),
+    }
+}
+
+fn friendship() -> entity::friends_entity::FriendsEntity {
+    entity::friends_entity::FriendsEntity {
+        id: 1,
+        person_id: 1,
+        friend_id: 2,
+        status: "Accepted".to_string(),
+        uuid: Uuid::new_v4(),
+        person_uuid: Uuid::from_u128(1),
+        friend_uuid: Uuid::from_u128(2),
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
+    }
+}
+
+fn empty_db() -> sea_orm::DatabaseConnection {
+    MockDatabase::new(DatabaseBackend::Postgres).into_connection()
 }
 
 fn actor(person_id: i32, person_uuid: String) -> User {
@@ -107,7 +134,7 @@ async fn delete_allows_owner() {
         }])
         .into_connection();
 
-    ExerciseUseCase::delete_by_id(&db, 1, 1).await.unwrap();
+    ExerciseUseCase::delete_by_id(&db, 1, &acting(1)).await.unwrap();
 }
 
 #[tokio::test]
@@ -116,7 +143,23 @@ async fn delete_forbids_non_owner() {
         .append_query_results(vec![vec![exercise_entity(1, "Public")]])
         .into_connection();
 
-    let error = ExerciseUseCase::delete_by_id(&db, 1, 2).await.unwrap_err();
+    let error = ExerciseUseCase::delete_by_id(&db, 1, &acting(2)).await.unwrap_err();
+
+    assert_eq!(error.kind, BusinessErrorKind::Forbidden);
+}
+
+#[tokio::test]
+async fn delete_forbids_a_profile_whose_id_equals_the_owner_person_id() {
+    let db = MockDatabase::new(DatabaseBackend::Postgres)
+        .append_query_results(vec![vec![exercise_entity(1, "Public")]])
+        .into_connection();
+    // Same numeric id as the owner, but a different identity (e.g. a Business Profile).
+    let profile = ActingOwner {
+        id: 1,
+        uuid: Uuid::from_u128(999).to_string(),
+    };
+
+    let error = ExerciseUseCase::delete_by_id(&db, 1, &profile).await.unwrap_err();
 
     assert_eq!(error.kind, BusinessErrorKind::Forbidden);
 }
@@ -142,28 +185,67 @@ async fn persist_uses_authenticated_owner_instead_of_client_owner() {
     assert_eq!(saved.owner_id, 7);
 }
 
-#[test]
-fn private_exercise_is_only_readable_by_owner() {
+#[tokio::test]
+async fn private_exercise_is_only_readable_by_owner() {
+    let db = empty_db();
     let mut exercise = ExerciseEntityMapper::from_model(exercise_entity(1, "Private"));
 
-    assert!(ExerciseUseCase::ensure_readable(&exercise, 1).is_ok());
+    assert!(ExerciseUseCase::ensure_readable(&db, &exercise, &acting(1)).await.is_ok());
+    // Reported as not found, so it cannot be told apart from a missing exercise.
     assert_eq!(
-        ExerciseUseCase::ensure_readable(&exercise, 2)
+        ExerciseUseCase::ensure_readable(&db, &exercise, &acting(2))
+            .await
             .unwrap_err()
             .kind,
-        BusinessErrorKind::Forbidden
+        BusinessErrorKind::NotFound
     );
+    // Same id, different identity: not the owner.
+    let profile = ActingOwner {
+        id: 1,
+        uuid: Uuid::from_u128(999).to_string(),
+    };
+    assert!(ExerciseUseCase::ensure_readable(&db, &exercise, &profile).await.is_err());
 
     exercise.visibility = Visibility::Public;
-    assert!(ExerciseUseCase::ensure_readable(&exercise, 2).is_ok());
+    assert!(ExerciseUseCase::ensure_readable(&db, &exercise, &acting(2)).await.is_ok());
 }
 
-#[test]
-fn collection_rejects_private_exercises_for_another_person() {
+#[tokio::test]
+async fn friends_exercise_is_readable_by_an_accepted_friend_only() {
+    let exercise = ExerciseEntityMapper::from_model(exercise_entity(1, "Friends"));
+
+    let friend_db = MockDatabase::new(DatabaseBackend::Postgres)
+        .append_query_results(vec![vec![friendship()]])
+        .into_connection();
+    assert!(ExerciseUseCase::ensure_readable(&friend_db, &exercise, &acting(2)).await.is_ok());
+
+    let stranger_db = MockDatabase::new(DatabaseBackend::Postgres)
+        .append_query_results(vec![Vec::<entity::friends_entity::FriendsEntity>::new()])
+        .into_connection();
+    assert_eq!(
+        ExerciseUseCase::ensure_readable(&stranger_db, &exercise, &acting(3))
+            .await
+            .unwrap_err()
+            .kind,
+        BusinessErrorKind::NotFound
+    );
+}
+
+#[tokio::test]
+async fn collection_rejects_private_exercises_for_another_person() {
+    let db = empty_db();
     let public = ExerciseEntityMapper::from_model(exercise_entity(1, "Public"));
     let private = ExerciseEntityMapper::from_model(exercise_entity(1, "Private"));
 
-    let error = ExerciseUseCase::ensure_all_readable(&[public, private], 2).unwrap_err();
+    let error =
+        ExerciseUseCase::ensure_all_readable(&db, &[public.clone(), private.clone()], &acting(2))
+            .await
+            .unwrap_err();
+    assert_eq!(error.kind, BusinessErrorKind::NotFound);
 
-    assert_eq!(error.kind, BusinessErrorKind::Forbidden);
+    let readable = ExerciseUseCase::retain_readable(&db, vec![public, private], &acting(2))
+        .await
+        .unwrap();
+    assert_eq!(readable.len(), 1);
+    assert!(matches!(readable[0].visibility, Visibility::Public));
 }

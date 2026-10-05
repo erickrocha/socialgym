@@ -7,7 +7,7 @@ use crate::proto::workout::{
     AssignedWorkoutListRequest, Workout, WorkoutExercisesRequest, WorkoutListRequest,
     WorkoutRequest, WorkoutResponse,
 };
-use business::commons::authorization::ensure_owns;
+use business::commons::authorization::{ensure_owns_as, ActingOwner};
 use business::domain::exercise::Exercise;
 use business::gateway::business_profile_gateway::BusinessProfileGateway;
 use business::use_cases::exercise_use_case::ExerciseUseCase;
@@ -16,7 +16,7 @@ use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 use crate::infrastructure::utils::{
-    business_status, require_active_profile, require_actor, validate_uuid,
+    business_status, require_acting_owner, require_active_profile, require_actor, validate_uuid,
 };
 
 pub struct GrpcWorkoutService {
@@ -52,7 +52,7 @@ impl GrpcWorkoutService {
 #[tonic::async_trait]
 impl WorkoutService for GrpcWorkoutService {
     async fn get_workout(&self,request: Request<WorkoutRequest>) -> Result<Response<Workout>, Status> {
-        let actor = require_actor(&request)?;
+        let acting = require_acting_owner(&request)?;
         let req = request.into_inner();
         let workout = match req.identifier {
             Some(Identifier::Id(id)) => WorkoutUseCase::get(&self.conn, id)
@@ -66,15 +66,21 @@ impl WorkoutService for GrpcWorkoutService {
             }
             None => return Err(Status::invalid_argument("Identifier is required")),
         };
-        WorkoutUseCase::ensure_readable(&workout, actor.person_id).map_err(business_status)?;
+        WorkoutUseCase::ensure_readable(&self.conn, &workout, &acting)
+            .await
+            .map_err(business_status)?;
+        let workout = WorkoutUseCase::redact_unreadable_exercises(&self.conn, workout, &acting)
+            .await
+            .map_err(business_status)?;
         Ok(Response::new(WorkoutMapper::response(workout)))
     }
 
     async fn get_workouts_by_owner(&self,request: Request<WorkoutListRequest>) -> Result<Response<WorkoutResponse>, Status> {
+        let acting = require_acting_owner(&request)?;
         let req = request.into_inner();
         match req.identifier {
             Some(OwnerIdentifier::OwnerId(owner_id)) => {
-                let workouts = WorkoutUseCase::find_all_by_owner_id(&self.conn, owner_id)
+                let workouts = WorkoutUseCase::find_readable_by_person_id(&self.conn, owner_id, &acting)
                     .await
                     .map_err(business_status)?;
 
@@ -85,7 +91,7 @@ impl WorkoutService for GrpcWorkoutService {
             }
             Some(OwnerIdentifier::OwnerUuid(owner_uuid)) => {
                 validate_uuid(&owner_uuid, "owner_uuid")?;
-                let workouts = WorkoutUseCase::find_all_by_owner_uuid(&self.conn, owner_uuid)
+                let workouts = WorkoutUseCase::find_readable_by_owner_uuid(&self.conn, owner_uuid, &acting)
                     .await
                     .map_err(business_status)?;
                 let grpc_workouts = WorkoutMapper::response_vec(workouts);
@@ -169,18 +175,18 @@ impl WorkoutService for GrpcWorkoutService {
     }
 
     async fn delete_workout(&self,request: Request<WorkoutRequest>) -> Result<Response<()>, Status> {
-        let actor = require_actor(&request)?;
+        let acting = require_acting_owner(&request)?;
         let payload = request.into_inner();
         match payload.identifier {
             Some(Identifier::Id(id)) => {
-                WorkoutUseCase::delete_by_id(&self.conn, id, actor.person_id)
+                WorkoutUseCase::delete_by_id(&self.conn, id, &acting)
                     .await
                     .map_err(business_status)?;
                 Ok(Response::new(()))
             }
             Some(Identifier::Uuid(uuid)) => {
                 validate_uuid(&uuid, "uuid")?;
-                WorkoutUseCase::delete_by_uuid(&self.conn, uuid, actor.person_id)
+                WorkoutUseCase::delete_by_uuid(&self.conn, uuid, &acting)
                     .await
                     .map_err(business_status)?;
                 Ok(Response::new(()))
@@ -238,8 +244,8 @@ impl WorkoutService for GrpcWorkoutService {
         let workout_result =WorkoutUseCase::get_by_uuid(&self.conn, payload.workout_uuid.clone()).await;
 
         let workout = workout_result.map_err(business_status)?;
-        let acting_owner_id = active_profile.as_ref().and_then(|p| p.id).unwrap_or(actor.person_id);
-        ensure_owns(workout.owner_id, acting_owner_id).map_err(business_status)?;
+        let acting = ActingOwner::new(&actor, active_profile.as_ref());
+        ensure_owns_as(workout.owner_id, &workout.owner_uuid, &acting).map_err(business_status)?;
 
         let domain_exercises: Vec<Exercise> = ExerciseMapper::domain_vec(payload.exercises);
         let result = ExerciseUseCase::add_all_to_workout(
@@ -250,9 +256,11 @@ impl WorkoutService for GrpcWorkoutService {
             active_profile.as_ref(),
         )
         .await;
-        let added_exercises = result.map_err(business_status)?;
-        let mut workout_response = WorkoutMapper::response(workout.clone());
-        workout_response.exercises = ExerciseMapper::response_vec(added_exercises);
-        Ok(Response::new(workout_response))
+        result.map_err(business_status)?;
+        // The full composition, not just the exercises added by this call.
+        let workout = WorkoutUseCase::get_by_uuid(&self.conn, payload.workout_uuid)
+            .await
+            .map_err(business_status)?;
+        Ok(Response::new(WorkoutMapper::response(workout)))
     }
 }

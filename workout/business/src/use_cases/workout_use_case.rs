@@ -1,4 +1,4 @@
-use crate::commons::authorization::ensure_owns;
+use crate::commons::authorization::{ensure_owns_as, ActingOwner};
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::uuid_to_string;
 use crate::domain::business_error::BusinessError;
@@ -12,7 +12,7 @@ use crate::gateway::workout_exercise_gateway::WorkoutExerciseGateway;
 use crate::gateway::workout_gateway::WorkoutGateway;
 use crate::domain::person::PersonEntityMapper;
 use crate::domain::user::User;
-use crate::use_cases::exercise_use_case::ExerciseUseCase;
+use crate::use_cases::exercise_use_case::{audience_allows, ExerciseUseCase};
 use crate::use_cases::team_member_use_case::TeamMemberUseCase;
 use sea_orm::DbConn;
 
@@ -113,7 +113,11 @@ impl WorkoutUseCase {
             },
             Some(id) => {
                 let existing = Self::find_entity_by_id(db, id).await?;
-                ensure_owns(existing.owner_id, acting_owner_id)?;
+                ensure_owns_as(
+                    existing.owner_id,
+                    &existing.owner_uuid.to_string(),
+                    &ActingOwner::new(actor, active_profile),
+                )?;
                 if InviteStatus::from_string(&existing.status) != InviteStatus::Accepted {
                     return Err(BusinessError::validation(
                         "Cannot edit a workout whose assignment is not accepted",
@@ -317,6 +321,29 @@ impl WorkoutUseCase {
         Self::fill_exercises(db, workouts).await
     }
 
+    /// The workouts of the Person `person_id` that `acting` may read. Matching is on
+    /// the Person's uuid, so a Business Profile whose id equals `person_id` is never
+    /// mixed in. An unknown Person yields an empty list (no way to probe for ids).
+    pub async fn find_readable_by_person_id(
+        db: &DbConn,
+        person_id: i32,
+        acting: &ActingOwner,
+    ) -> Result<Vec<Workout>, BusinessError> {
+        let Some(person) = PersonGateway::find_by_id(db, person_id).await else {
+            return Ok(Vec::new());
+        };
+        Self::find_readable_by_owner_uuid(db, person.uuid.to_string(), acting).await
+    }
+
+    pub async fn find_readable_by_owner_uuid(
+        db: &DbConn,
+        owner_uuid: String,
+        acting: &ActingOwner,
+    ) -> Result<Vec<Workout>, BusinessError> {
+        let workouts = Self::find_all_by_owner_uuid(db, owner_uuid).await?;
+        Self::readable_by(db, workouts, acting).await
+    }
+
     /// Every workout a business profile has assigned to a team member,
     /// regardless of status (Pending / Accepted / Rejected / Cancelled).
     pub async fn find_all_assigned_by_profile(
@@ -374,36 +401,46 @@ impl WorkoutUseCase {
     pub async fn delete_by_id(
         db: &DbConn,
         id: i32,
-        acting_person_id: i32,
+        acting: &ActingOwner,
     ) -> Result<(), BusinessError> {
         log::info!("[WorkoutUseCase::delete_by_id] Executing for id={}", id);
         let existing = Self::find_entity_by_id(db, id).await?;
-        ensure_owns(existing.owner_id, acting_person_id)?;
+        ensure_owns_as(existing.owner_id, &existing.owner_uuid.to_string(), acting)?;
         let result = WorkoutGateway::delete_by_id(db, id).await;
-        if result.is_err() {
-            log::error!("[WorkoutUseCase::delete_by_id] Failed for id={}", id);
-            return Err(BusinessError::infrastructure("Failed to delete workout"));
+        match result {
+            Err(_) => {
+                log::error!("[WorkoutUseCase::delete_by_id] Failed for id={}", id);
+                Err(BusinessError::infrastructure("Failed to delete workout"))
+            }
+            Ok(deleted) if deleted.rows_affected == 0 => {
+                Err(BusinessError::not_found("Workout not found"))
+            }
+            Ok(_) => Ok(()),
         }
-        Ok(())
     }
 
     pub async fn delete_by_uuid(
         db: &DbConn,
         uuid: String,
-        acting_person_id: i32,
+        acting: &ActingOwner,
     ) -> Result<(), BusinessError> {
         log::info!(
             "[WorkoutUseCase::delete_by_uuid] Executing for uuid={}",
             uuid
         );
         let existing = Self::find_entity_by_uuid(db, uuid.clone()).await?;
-        ensure_owns(existing.owner_id, acting_person_id)?;
+        ensure_owns_as(existing.owner_id, &existing.owner_uuid.to_string(), acting)?;
         let result = WorkoutGateway::delete_by_uuid(db, uuid.clone()).await;
-        if result.is_err() {
-            log::error!("[WorkoutUseCase::delete_by_uuid] Failed for uuid={}", uuid);
-            return Err(BusinessError::infrastructure("Failed to delete workout"));
+        match result {
+            Err(_) => {
+                log::error!("[WorkoutUseCase::delete_by_uuid] Failed for uuid={}", uuid);
+                Err(BusinessError::infrastructure("Failed to delete workout"))
+            }
+            Ok(deleted) if deleted.rows_affected == 0 => {
+                Err(BusinessError::not_found("Workout not found"))
+            }
+            Ok(_) => Ok(()),
         }
-        Ok(())
     }
 
     /// Owner id of a workout, without loading its exercises.
@@ -437,14 +474,58 @@ impl WorkoutUseCase {
             .ok_or_else(|| BusinessError::not_found("Workout not found"))
     }
 
-    /// Read guard: a workout is readable by its owner, or by anyone when public.
-    /// `Visibility::Friends`/`Professional` stay owner-only until the permission
-    /// model that can resolve their audience exists.
-    pub fn ensure_readable(workout: &Workout, acting_person_id: i32) -> Result<(), BusinessError> {
-        if matches!(workout.visibility, crate::domain::enums::Visibility::Public) {
+    /// Read guard: a workout is readable by its owner, by anyone when public, and
+    /// by an accepted friend of the owner when its visibility is `Friends`.
+    /// `Professional` stays owner-only until its audience can be resolved.
+    pub async fn is_readable(
+        db: &DbConn,
+        workout: &Workout,
+        acting: &ActingOwner,
+    ) -> Result<bool, BusinessError> {
+        audience_allows(db, &workout.visibility, workout.owner_id, &workout.owner_uuid, acting)
+            .await
+    }
+
+    /// An unreadable workout is reported as not found, so a caller cannot tell a
+    /// private workout from a missing one.
+    pub async fn ensure_readable(
+        db: &DbConn,
+        workout: &Workout,
+        acting: &ActingOwner,
+    ) -> Result<(), BusinessError> {
+        if Self::is_readable(db, workout, acting).await? {
             return Ok(());
         }
-        ensure_owns(workout.owner_id, acting_person_id)
+        Err(BusinessError::not_found("Workout not found"))
+    }
+
+    /// Hides, from a readable workout, the composed exercises `acting` may not
+    /// read (a public workout can contain its owner's private exercises).
+    pub async fn redact_unreadable_exercises(
+        db: &DbConn,
+        mut workout: Workout,
+        acting: &ActingOwner,
+    ) -> Result<Workout, BusinessError> {
+        workout.exercises =
+            ExerciseUseCase::retain_readable(db, std::mem::take(&mut workout.exercises), acting)
+                .await?;
+        Ok(workout)
+    }
+
+    /// The workouts in `workouts` that `acting` may read, each with its
+    /// unreadable exercises hidden.
+    pub async fn readable_by(
+        db: &DbConn,
+        workouts: Vec<Workout>,
+        acting: &ActingOwner,
+    ) -> Result<Vec<Workout>, BusinessError> {
+        let mut visible = Vec::with_capacity(workouts.len());
+        for workout in workouts {
+            if Self::is_readable(db, &workout, acting).await? {
+                visible.push(Self::redact_unreadable_exercises(db, workout, acting).await?);
+            }
+        }
+        Ok(visible)
     }
 
     async fn fill_exercises(

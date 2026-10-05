@@ -1,4 +1,5 @@
 
+use business::commons::authorization::ActingOwner;
 use business::commons::functions::parse_uuid;
 use business::domain::business_error::{BusinessError, BusinessErrorKind};
 use business::domain::business_profile::BusinessProfile;
@@ -18,6 +19,12 @@ pub(crate) fn require_actor<T>(request: &Request<T>) -> Result<User, Status> {
 /// alongside `User` when the JWT carries an `active_business_profile_id`.
 pub(crate) fn require_active_profile<T>(request: &Request<T>) -> Option<BusinessProfile> {
     request.extensions().get::<BusinessProfile>().cloned()
+}
+
+/// The identity the request acts as: the Person, or the Active Business Profile.
+pub(crate) fn require_acting_owner<T>(request: &Request<T>) -> Result<ActingOwner, Status> {
+    let actor = require_actor(request)?;
+    Ok(ActingOwner::new(&actor, require_active_profile(request).as_ref()))
 }
 
 pub(crate) fn require_person_id<T>(request: &Request<T>) -> Result<i32, Status> {

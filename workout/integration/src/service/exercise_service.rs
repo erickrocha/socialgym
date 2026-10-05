@@ -7,7 +7,8 @@ use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
 use crate::infrastructure::utils::{
-    business_status, require_active_profile, require_actor, validate_uuid, validate_uuids,
+    business_status, require_acting_owner, require_active_profile, require_actor, validate_uuid,
+    validate_uuids,
 };
 
 pub struct GrpcExerciseService {
@@ -26,7 +27,7 @@ impl ExerciseService for GrpcExerciseService {
         &self,
         request: Request<ExerciseRequest>,
     ) -> Result<Response<Exercise>, Status> {
-        let actor = require_actor(&request)?;
+        let acting = require_acting_owner(&request)?;
         let req = request.into_inner();
         let exercise = match req.identifier {
             Some(Identifier::Id(id)) => ExerciseUseCase::get(&self.conn, id)
@@ -40,7 +41,9 @@ impl ExerciseService for GrpcExerciseService {
             }
             None => return Err(Status::invalid_argument("Identifier is required")),
         };
-        ExerciseUseCase::ensure_readable(&exercise, actor.person_id).map_err(business_status)?;
+        ExerciseUseCase::ensure_readable(&self.conn, &exercise, &acting)
+            .await
+            .map_err(business_status)?;
         Ok(Response::new(ExerciseMapper::response(exercise)))
     }
 
@@ -54,9 +57,11 @@ impl ExerciseService for GrpcExerciseService {
         let page_number = req.page_number;
         let page_size = req.page_size;
 
-        let category = Some(req.category);
-        let visibility = Some(req.visibility);
-        let sort_by = Some(req.sort_by);
+        // proto3 strings default to ""; an unset filter must not filter on "".
+        let non_empty = |value: String| (!value.is_empty()).then_some(value);
+        let category = non_empty(req.category);
+        let visibility = non_empty(req.visibility);
+        let sort_by = non_empty(req.sort_by);
 
         // Validate page_number
         if page_number < 1 {
@@ -92,7 +97,8 @@ impl ExerciseService for GrpcExerciseService {
             capped_page_size as u64,
             sort_by,
         )
-        .await;
+        .await
+        .map_err(business_status)?;
         Ok(Response::new(PaginatedExercise {
             content: ExerciseMapper::response_vec(result.0),
             total_count: result.1,
@@ -131,18 +137,18 @@ impl ExerciseService for GrpcExerciseService {
         &self,
         request: Request<ExerciseRequest>,
     ) -> Result<Response<()>, Status> {
-        let actor = require_actor(&request)?;
+        let acting = require_acting_owner(&request)?;
         let req = request.into_inner();
         match req.identifier {
             Some(Identifier::Id(id)) => {
-                ExerciseUseCase::delete_by_id(&self.conn, id, actor.person_id)
+                ExerciseUseCase::delete_by_id(&self.conn, id, &acting)
                     .await
                     .map_err(business_status)?;
                 Ok(Response::new(()))
             }
             Some(Identifier::Uuid(uuid)) => {
                 validate_uuid(&uuid, "uuid")?;
-                ExerciseUseCase::delete_by_uuid(&self.conn, uuid, actor.person_id)
+                ExerciseUseCase::delete_by_uuid(&self.conn, uuid, &acting)
                     .await
                     .map_err(business_status)?;
                 Ok(Response::new(()))
