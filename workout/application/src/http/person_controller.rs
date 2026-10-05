@@ -12,6 +12,7 @@ use business::commons::functions::parse_uuid;
 use business::commons::legal_documents;
 use business::domain::person::Person;
 use business::domain::user::User;
+use business::use_cases::friend_use_case::FriendUseCase;
 use business::use_cases::person_use_case::PersonUseCase;
 use business::use_cases::consent_use_case::ConsentUseCase;
 use serde::Deserialize;
@@ -60,7 +61,12 @@ pub async fn search_mentionable_friends(
     State(state): State<AppState>,
     Path(person_id): Path<i32>,
     Query(params): Query<SearchPersonsQuery>,
+    Extension(current_user): Extension<User>,
+    Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<PersonJson>>> {
+    PersonUseCase::require_owner_access(person_id, current_user.person_id).map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::PersonNotFound)
+    })?;
     let people = PersonUseCase::search_mentionable_friends(
         &state.conn,
         person_id,
@@ -211,6 +217,7 @@ pub async fn get_me(
         (status = 400, description = "Bad request", body = BadRequestErrorJson),
         (status = 401, description = "Unauthorized", body = UnauthorizedErrorJson),
         (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
+        (status = 404, description = "Friend not found", body = InternalServerErrorJson),
         (status = 500, description = "Internal server error", body = InternalServerErrorJson),
     ),
     security(
@@ -221,7 +228,11 @@ pub async fn get_my_friend(
     state: State<AppState>,
     Path(friend_id): Path<i32>,
     Extension(locale): Extension<Locale>,
+    Extension(current_user): Extension<User>,
 ) -> HttpResponse<Json<PersonJson>> {
+    FriendUseCase::ensure_accepted_friend(&state.conn, current_user.person_id, friend_id)
+        .await
+        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::FriendNotFound))?;
     let person_entity = PersonUseCase::get(&state.conn, friend_id).await;
 
     if person_entity.is_err() {
