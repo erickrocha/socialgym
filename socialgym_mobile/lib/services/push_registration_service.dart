@@ -242,16 +242,25 @@ class PushRegistrationService {
 
     final data = _pendingTap!;
     _pendingTap = null;
+    final target = routeForTap(data);
+    navigator.pushNamed(target.route, arguments: target.arguments);
+  }
+
+  /// Maps a push `data` payload to the route it opens. Unknown or missing
+  /// targets fall back to `/notifications`.
+  @visibleForTesting
+  static ({String route, Map<String, String>? arguments}) routeForTap(
+    Map<String, dynamic> data,
+  ) {
     final targetType = data['targetType'] as String?;
     final targetUuid = data['targetUuid'] as String?;
-    if (targetType == 'post' && targetUuid != null && targetUuid.isNotEmpty) {
-      navigator.pushNamed('/feed', arguments: {'postUuid': targetUuid});
-    } else if (targetType == 'friendship_request' &&
-        targetUuid != null &&
-        targetUuid.isNotEmpty) {
-      navigator.pushNamed('/friends', arguments: {'friendshipUuid': targetUuid});
-    } else {
-      navigator.pushNamed('/notifications');
+    final hasTarget = targetUuid != null && targetUuid.isNotEmpty;
+    if (targetType == 'post' && hasTarget) {
+      return (route: '/feed', arguments: {'postUuid': targetUuid});
     }
+    if (targetType == 'friendship_request' && hasTarget) {
+      return (route: '/friends', arguments: {'friendshipUuid': targetUuid});
+    }
+    return (route: '/notifications', arguments: null);
   }
 }

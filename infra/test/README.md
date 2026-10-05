@@ -75,3 +75,21 @@ Add `-v` to remove the disposable PostgreSQL and MongoDB volumes too:
 ```
 
 The stack uses test-only credentials and ports. Do not use it as a production deployment.
+
+## Running the acceptance tests against this stack
+
+`./start.sh` also loads `seed.sql` (persons/users/settings/consents/friends that the Timeline tests
+expect from Workout) once Workout has migrated. Re-run `./start.sh seed` if a Workout acceptance test
+refreshed the database.
+
+Timeline `#[ignore]`d tests (Mongo, SQS FIFO, Workout gRPC) run from the host:
+
+```sh
+source infra/test/timeline-test-env.sh
+cd timeline && cargo test --workspace --all-features -- --include-ignored --test-threads=1
+```
+
+The environment points the friendship test at a dedicated queue,
+`social-notification-events-acceptance.fifo`, so it does not compete with the running Timeline
+service for messages. `./coverage.sh timeline|workout` measures line coverage with the approved
+exclusion list (see `01-project_truth/socialgym/product-decisions.md`).

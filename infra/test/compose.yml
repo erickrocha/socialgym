@@ -24,8 +24,9 @@ services:
       test:
         - CMD-SHELL
         - awslocal s3api head-bucket --bucket socialgym-test-media && awslocal sqs get-queue-url --queue-name person-media-events >/dev/null && awslocal sqs get-queue-url --queue-name social-notification-events.fifo >/dev/null
-      interval: 5s
-      timeout: 5s
+      interval: 10s
+      # Three awslocal CLI calls take >5s on a loaded host; a short timeout left the stack unhealthy.
+      timeout: 30s
       retries: 30
 
   postgres:
@@ -104,6 +105,8 @@ services:
       <<: *test-aws-environment
       ACCESS_TOKEN_SECRET: c005-test-secret
       REFRESH_TOKEN_SECRET: c005-refresh-secret
+      # Authenticates Timeline's internal SettingsService.GetPushPreferenceByOwnerUuid call.
+      INTERNAL_SERVICE_SECRET: c005-internal-secret
       RUST_LOG: info
     volumes:
       - "${TEST_TLS_CERT_DIR:-/tmp/socialgym-test-certs}/server.crt:/etc/grpc/certs/server.crt:ro"

@@ -541,3 +541,7 @@ impl Mapper<TeamMember, TeamMemberJson> for TeamMemberMapper {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "../tests/mapper_unit_test.rs"]
+mod tests;

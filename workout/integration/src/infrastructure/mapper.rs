@@ -556,3 +556,7 @@ impl Mapper<DomainTeamMember, proto::team_member::TeamMember> for TeamMemberMapp
         }
     }
 }
+
+#[cfg(test)]
+#[path = "../tests/mapper_unit_test.rs"]
+mod tests;

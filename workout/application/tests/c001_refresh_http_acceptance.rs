@@ -126,6 +126,6 @@ async fn refresh_succeeds_without_access_token_or_current_consent() {
         .await
         .unwrap();
     let tokens: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    assert!(tokens["access_token"].as_str().is_some_and(|token| !token.is_empty()));
-    assert!(tokens["refresh_token"].as_str().is_some_and(|token| !token.is_empty()));
+    assert!(tokens["accessToken"].as_str().is_some_and(|token| !token.is_empty()));
+    assert!(tokens["refreshToken"].as_str().is_some_and(|token| !token.is_empty()));
 }

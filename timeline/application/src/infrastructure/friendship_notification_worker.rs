@@ -180,6 +180,13 @@ mod tests {
                 occurred_at: "2026-10-04T00:00:01Z".to_string(),
             },
         ];
+        // FIFO queues drop repeated deduplication ids for 5 minutes, even after the message was
+        // consumed; make them unique per run so the test can be repeated. Idempotency under test
+        // comes from the duplicate `event_uuid`, not from the queue's deduplication.
+        let run_id = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
         for (index, event) in events.iter().enumerate() {
             let body = serde_json::json!({
                 "eventUuid": &event.event_uuid,
@@ -193,8 +200,9 @@ mod tests {
                 .send_message()
                 .queue_url(&queue_url)
                 .message_body(body.to_string())
-                .message_group_id("c006-tc008-friendship")
-                .message_deduplication_id(format!("c006-tc008-delivery-{index}"))
+                // Unique per run: an in-flight message from a prior run would otherwise block the group.
+                .message_group_id(format!("c006-tc008-friendship-{run_id}"))
+                .message_deduplication_id(format!("c006-tc008-delivery-{run_id}-{index}"))
                 .send()
                 .await
                 .unwrap();

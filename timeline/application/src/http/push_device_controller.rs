@@ -113,6 +113,7 @@ mod tests {
             .unwrap();
 
         let access_token_secret = "c005-test-secret";
+        let mut set_by_test = Vec::new();
         for (name, value) in [
             ("ACCESS_TOKEN_SECRET", access_token_secret),
             ("GRPC_PROTOCOL", "https"),
@@ -122,7 +123,11 @@ mod tests {
             ("GRPC_CERT_PATH", "/tmp/socialgym-c006-ca.crt"),
             ("GRPC_DOMAIN_NAME", "localhost"),
         ] {
-            unsafe { env::set_var(name, value) };
+            // Defaults for an ad-hoc local gRPC fixture; infra/test exports its own values.
+            if env::var_os(name).is_none() {
+                unsafe { env::set_var(name, value) };
+                set_by_test.push(name);
+            }
         }
         let now = chrono::Utc::now().timestamp();
         let claims = json!({
@@ -213,15 +218,8 @@ mod tests {
             .delete_many(doc! { "deviceUuid": device_uuid })
             .await
             .unwrap();
-        for name in [
-            "ACCESS_TOKEN_SECRET",
-            "GRPC_PROTOCOL",
-            "GRPC_HOST",
-            "GRPC_PORT",
-            "GRPC_USE_TLS",
-            "GRPC_CERT_PATH",
-            "GRPC_DOMAIN_NAME",
-        ] {
+        // Only undo what this test set; the environment may come from infra/test.
+        for name in set_by_test {
             unsafe { env::remove_var(name) };
         }
     }

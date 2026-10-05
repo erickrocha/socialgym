@@ -70,6 +70,10 @@ name = "person_use_case_test"
 required-features = ["mock"]
 
 [[test]]
+name = "person_use_case_lookup_test"
+required-features = ["mock"]
+
+[[test]]
 name = "user_use_case_test"
 required-features = ["mock"]
 

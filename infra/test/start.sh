@@ -6,6 +6,20 @@ test_cert_dir="${TMPDIR:-/tmp}/socialgym-test-certs"
 export TEST_TLS_CERT_DIR="$test_cert_dir"
 compose=(docker compose --project-directory "$script_dir" -f "$script_dir/compose.yml")
 
+# Wait for Workout's migrations, then load the fixtures the Timeline acceptance tests expect.
+apply_seed() {
+  until "${compose[@]}" exec -T postgres psql -U workout_test -d workout_test -tAc \
+      "SELECT 1 FROM information_schema.tables WHERE table_name = 'consent'" 2>/dev/null | grep -q 1; do
+    sleep 2
+  done
+  "${compose[@]}" exec -T postgres psql -v ON_ERROR_STOP=1 -U workout_test -d workout_test < "$script_dir/seed.sql"
+}
+
+if [[ "${1:-}" == "seed" ]]; then
+  apply_seed
+  exit 0
+fi
+
 if [[ "${1:-}" == "down" ]]; then
   shift
   "${compose[@]}" down "$@"
@@ -40,9 +54,14 @@ if [[ ! -s "$test_cert_dir/ca.crt" || ! -s "$test_cert_dir/server.crt" || ! -s "
       'subjectAltName=DNS:integration,DNS:localhost,IP:127.0.0.1')
 fi
 
+# The CA certificate is public; the umask above would otherwise make it unreadable by the
+# non-root user inside the timeline container (gRPC then fails with "Permission denied").
+chmod 644 "$test_cert_dir/ca.crt"
+
 if [[ "${1:-}" == "certs" ]]; then
   printf 'Ephemeral test certificates ready in %s\n' "$test_cert_dir"
   exit 0
 fi
 
 "${compose[@]}" up --build -d
+apply_seed

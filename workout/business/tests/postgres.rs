@@ -295,10 +295,9 @@ async fn c006_friendship_outbox_publishes_fifo_in_order() {
   assert_eq!(events[0].event_type, "friend_request_created");
   assert_eq!(events[1].event_type, "friend_request_accepted");
 
-  let unavailable_queue_url = queue_url.replace(
-    "social-notification-events.fifo",
-    "missing-social-notification-events.fifo",
-  );
+  // Independent of the queue's name, so a dedicated acceptance queue can be used.
+  let (queue_base, queue_name) = queue_url.rsplit_once('/').unwrap();
+  let unavailable_queue_url = format!("{queue_base}/missing-{queue_name}");
   for expected_attempt in 1..=5 {
     assert_eq!(
       FriendshipOutboxPublisherUseCase::publish_pending(
@@ -375,16 +374,13 @@ async fn c006_friendship_outbox_publishes_fifo_in_order() {
     .unwrap()
     .messages
     .unwrap_or_default();
+  // Only this run's friendship: the queue may still hold events left by an earlier run.
   let event_types: Vec<String> = messages
     .iter()
     .filter_map(|message| message.body())
-    .map(|body| {
-      serde_json::from_str::<serde_json::Value>(body)
-        .unwrap()["eventType"]
-        .as_str()
-        .unwrap()
-        .to_string()
-    })
+    .map(|body| serde_json::from_str::<serde_json::Value>(body).unwrap())
+    .filter(|event| event["friendshipUuid"].as_str() == Some(friendship_uuid.as_str()))
+    .map(|event| event["eventType"].as_str().unwrap().to_string())
     .collect();
   assert_eq!(
     event_types,
