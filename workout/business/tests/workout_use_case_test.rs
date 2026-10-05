@@ -81,10 +81,7 @@ fn owner_uuid_check_requires_authenticated_owner() {
 }
 
 fn acting(id: i32) -> ActingOwner {
-    ActingOwner {
-        id,
-        uuid: Uuid::from_u128(id as u128).to_string(),
-    }
+    ActingOwner::person(id, Uuid::from_u128(id as u128).to_string())
 }
 
 fn workout_owned_by(owner_id: i32, visibility: Visibility) -> Workout {
@@ -144,10 +141,12 @@ async fn private_workout_is_readable_only_by_its_owner() {
         BusinessErrorKind::NotFound
     );
     // Same id, different identity (a Business Profile): not the owner.
-    let profile = ActingOwner {
-        id: 1,
-        uuid: Uuid::from_u128(999).to_string(),
-    };
+    let profile = ActingOwner::profile(
+        1,
+        Uuid::from_u128(999).to_string(),
+        5,
+        Uuid::from_u128(5).to_string(),
+    );
     assert!(WorkoutUseCase::ensure_readable(&db, &private, &profile).await.is_err());
 
     let public = workout_owned_by(1, Visibility::Public);
@@ -357,10 +356,42 @@ async fn delete_requires_the_owner_and_reports_a_missing_row_as_not_found() {
     let db = MockDatabase::new(DatabaseBackend::Postgres)
         .append_query_results(vec![vec![owned()]])
         .into_connection();
-    let profile = ActingOwner {
-        id: 1,
-        uuid: Uuid::from_u128(999).to_string(),
-    };
+    let profile = ActingOwner::profile(
+        1,
+        Uuid::from_u128(999).to_string(),
+        5,
+        Uuid::from_u128(5).to_string(),
+    );
     let error = WorkoutUseCase::delete_by_id(&db, 7, &profile).await.unwrap_err();
     assert_eq!(error.kind, BusinessErrorKind::Forbidden);
+}
+
+#[tokio::test]
+async fn an_active_profile_keeps_access_to_its_own_persons_records_and_its_own() {
+    let db = empty_db();
+    // The caller is Person 1 acting as Business Profile 9.
+    let acting = ActingOwner::profile(
+        9,
+        Uuid::from_u128(9).to_string(),
+        1,
+        Uuid::from_u128(1).to_string(),
+    );
+
+    let persons_private = workout_owned_by(1, Visibility::Private);
+    let profiles_private = workout_owned_by(9, Visibility::Private);
+    let someone_elses_private = workout_owned_by(2, Visibility::Private);
+
+    assert!(WorkoutUseCase::ensure_readable(&db, &persons_private, &acting).await.is_ok());
+    assert!(WorkoutUseCase::ensure_readable(&db, &profiles_private, &acting).await.is_ok());
+    assert!(WorkoutUseCase::ensure_readable(&db, &someone_elses_private, &acting).await.is_err());
+
+    // Listing the Person's workouts while acting as the profile still returns them all.
+    let listed = WorkoutUseCase::readable_by(
+        &db,
+        vec![persons_private, profiles_private, someone_elses_private],
+        &acting,
+    )
+    .await
+    .unwrap();
+    assert_eq!(listed.len(), 2);
 }

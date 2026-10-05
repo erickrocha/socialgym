@@ -1,4 +1,4 @@
-use crate::commons::authorization::{ensure_owns_as, ActingOwner};
+use crate::commons::authorization::{ensure_can_access_as, ensure_owns_as, ActingOwner};
 use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::BusinessProfile;
@@ -314,7 +314,7 @@ impl ExerciseUseCase {
         log::info!("Deleting exercise for exercise_id: {}", exercise_id);
 
         let existing = Self::get(db, exercise_id).await?;
-        ensure_owns_as(existing.owner_id, &existing.owner_uuid, acting)?;
+        ensure_can_access_as(existing.owner_id, &existing.owner_uuid, acting)?;
 
         let delete_result = ExerciseGateway::delete_by_id(db, exercise_id)
             .await
@@ -337,7 +337,7 @@ impl ExerciseUseCase {
         log::info!("Deleting exercise for uuid: {}", uuid);
 
         let existing = Self::get_by_uuid(db, uuid.clone()).await?;
-        ensure_owns_as(existing.owner_id, &existing.owner_uuid, acting)?;
+        ensure_can_access_as(existing.owner_id, &existing.owner_uuid, acting)?;
 
         let delete_result = ExerciseGateway::delete_by_uuid(db, uuid.clone())
             .await
@@ -551,11 +551,12 @@ pub(crate) async fn audience_allows(
     owner_uuid: &str,
     acting: &ActingOwner,
 ) -> Result<bool, BusinessError> {
-    if matches!(visibility, Visibility::Public) || acting.owns(owner_id, owner_uuid) {
+    if matches!(visibility, Visibility::Public) || acting.can_access(owner_id, owner_uuid) {
         return Ok(true);
     }
     if matches!(visibility, Visibility::Friends) {
-        return FriendGateway::are_accepted_friends_by_uuid(db, &acting.uuid, owner_uuid)
+        // Friendships are between Persons, so use the caller's Person, not the profile.
+        return FriendGateway::are_accepted_friends_by_uuid(db, &acting.person_uuid, owner_uuid)
             .await
             .map_err(|e| {
                 log::error!("[audience_allows] Failed to check friendship: {}", e);

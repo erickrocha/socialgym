@@ -30,10 +30,7 @@ fn exercise_entity(owner_id: i32, visibility: &str) -> ExerciseEntity {
 
 /// The identity that owns `exercise_entity(id, _)`.
 fn acting(id: i32) -> ActingOwner {
-    ActingOwner {
-        id,
-        uuid: Uuid::from_u128(id as u128).to_string(),
-    }
+    ActingOwner::person(id, Uuid::from_u128(id as u128).to_string())
 }
 
 fn friendship() -> entity::friends_entity::FriendsEntity {
@@ -154,10 +151,12 @@ async fn delete_forbids_a_profile_whose_id_equals_the_owner_person_id() {
         .append_query_results(vec![vec![exercise_entity(1, "Public")]])
         .into_connection();
     // Same numeric id as the owner, but a different identity (e.g. a Business Profile).
-    let profile = ActingOwner {
-        id: 1,
-        uuid: Uuid::from_u128(999).to_string(),
-    };
+    let profile = ActingOwner::profile(
+        1,
+        Uuid::from_u128(999).to_string(),
+        5,
+        Uuid::from_u128(5).to_string(),
+    );
 
     let error = ExerciseUseCase::delete_by_id(&db, 1, &profile).await.unwrap_err();
 
@@ -200,10 +199,12 @@ async fn private_exercise_is_only_readable_by_owner() {
         BusinessErrorKind::NotFound
     );
     // Same id, different identity: not the owner.
-    let profile = ActingOwner {
-        id: 1,
-        uuid: Uuid::from_u128(999).to_string(),
-    };
+    let profile = ActingOwner::profile(
+        1,
+        Uuid::from_u128(999).to_string(),
+        5,
+        Uuid::from_u128(5).to_string(),
+    );
     assert!(ExerciseUseCase::ensure_readable(&db, &exercise, &profile).await.is_err());
 
     exercise.visibility = Visibility::Public;

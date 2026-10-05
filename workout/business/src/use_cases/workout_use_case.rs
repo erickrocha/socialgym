@@ -1,4 +1,4 @@
-use crate::commons::authorization::{ensure_owns_as, ActingOwner};
+use crate::commons::authorization::{ensure_can_access_as, ensure_owns_as, ActingOwner};
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::uuid_to_string;
 use crate::domain::business_error::BusinessError;
@@ -405,7 +405,7 @@ impl WorkoutUseCase {
     ) -> Result<(), BusinessError> {
         log::info!("[WorkoutUseCase::delete_by_id] Executing for id={}", id);
         let existing = Self::find_entity_by_id(db, id).await?;
-        ensure_owns_as(existing.owner_id, &existing.owner_uuid.to_string(), acting)?;
+        ensure_can_access_as(existing.owner_id, &existing.owner_uuid.to_string(), acting)?;
         let result = WorkoutGateway::delete_by_id(db, id).await;
         match result {
             Err(_) => {
@@ -429,7 +429,7 @@ impl WorkoutUseCase {
             uuid
         );
         let existing = Self::find_entity_by_uuid(db, uuid.clone()).await?;
-        ensure_owns_as(existing.owner_id, &existing.owner_uuid.to_string(), acting)?;
+        ensure_can_access_as(existing.owner_id, &existing.owner_uuid.to_string(), acting)?;
         let result = WorkoutGateway::delete_by_uuid(db, uuid.clone()).await;
         match result {
             Err(_) => {

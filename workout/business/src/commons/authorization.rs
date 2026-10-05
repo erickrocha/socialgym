@@ -25,13 +25,18 @@ pub fn ensure_owns(resource_owner_id: i32, acting_person_id: i32) -> Result<(), 
 mod tests;
 
 /// The identity a request acts as: the caller's Person, or the Active Business
-/// Profile when one is active. Owned records store only that id/uuid, so ownership
-/// must match on the uuid as well; a Person id and a Business Profile id can be
-/// the same number but their uuids never are.
+/// Profile when one is active. Owned records store only an owner id/uuid, so
+/// ownership must match on the uuid as well; a Person id and a Business Profile id
+/// can be the same number but their uuids never are.
+///
+/// The caller's own Person stays readable and deletable while acting as a profile
+/// (as before); changing a record (`owns`) is limited to the acting identity.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ActingOwner {
     pub id: i32,
     pub uuid: String,
+    pub person_id: i32,
+    pub person_uuid: String,
 }
 
 impl ActingOwner {
@@ -41,11 +46,41 @@ impl ActingOwner {
             uuid: active_profile
                 .and_then(|p| p.uuid.clone())
                 .unwrap_or_else(|| actor.person_uuid.clone()),
+            person_id: actor.person_id,
+            person_uuid: actor.person_uuid.clone(),
         }
     }
 
+    /// Acting as the Person themself.
+    pub fn person(id: i32, uuid: String) -> Self {
+        Self {
+            id,
+            uuid: uuid.clone(),
+            person_id: id,
+            person_uuid: uuid,
+        }
+    }
+
+    /// Acting as a Business Profile on behalf of a Person.
+    pub fn profile(id: i32, uuid: String, person_id: i32, person_uuid: String) -> Self {
+        Self {
+            id,
+            uuid,
+            person_id,
+            person_uuid,
+        }
+    }
+
+    /// The acting identity owns the record (required to change it).
     pub fn owns(&self, owner_id: i32, owner_uuid: &str) -> bool {
         self.id == owner_id && self.uuid == owner_uuid
+    }
+
+    /// The record belongs to the acting identity or to the caller's own Person
+    /// (enough to read or delete it).
+    pub fn can_access(&self, owner_id: i32, owner_uuid: &str) -> bool {
+        self.owns(owner_id, owner_uuid)
+            || (self.person_id == owner_id && self.person_uuid == owner_uuid)
     }
 }
 
@@ -60,6 +95,23 @@ pub fn ensure_owns_as(
     }
     log::warn!(
         "[ensure_owns_as] Denied: acting id={} on a resource owned by id={}",
+        acting.id,
+        resource_owner_id
+    );
+    Err(BusinessError::forbidden("Not the owner of this resource"))
+}
+
+/// Like [`ensure_owns_as`], also accepting the caller's own Person (read/delete).
+pub fn ensure_can_access_as(
+    resource_owner_id: i32,
+    resource_owner_uuid: &str,
+    acting: &ActingOwner,
+) -> Result<(), BusinessError> {
+    if acting.can_access(resource_owner_id, resource_owner_uuid) {
+        return Ok(());
+    }
+    log::warn!(
+        "[ensure_can_access_as] Denied: acting id={} on a resource owned by id={}",
         acting.id,
         resource_owner_id
     );
