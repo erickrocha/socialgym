@@ -238,32 +238,40 @@ impl Authentication {
     /// Validates a refresh token and returns it alongside its claims, so the
     /// caller (`RefreshToken::execute`) can rotate it: revoke this exact token
     /// once it's used, and detect reuse of an already-rotated one.
-    pub async fn validate_refresh_token(db: &DbConn, token: String) -> Result<(User, Claims), BusinessError> {
-        let public_key = env::var("REFRESH_TOKEN_SECRET").expect("REFRESH_TOKEN_SECRET must be set");
-        let result = decode::<Claims>(&token,&DecodingKey::from_secret(public_key.as_bytes()),&Validation::new(Algorithm::HS512));
+    pub async fn validate_refresh_token(
+        db: &DbConn,
+        token: String,
+    ) -> Result<(User, Claims), BusinessError> {
+        let public_key =
+            env::var("REFRESH_TOKEN_SECRET").expect("REFRESH_TOKEN_SECRET must be set");
+        let result = decode::<Claims>(
+            &token,
+            &DecodingKey::from_secret(public_key.as_bytes()),
+            &Validation::new(Algorithm::HS512),
+        );
 
-        if result.is_err() {
-            log::info!("Token is invalid: {:?}", result);
-            return Err(BusinessError::new("Token is invalid".to_string()));
-        }
-
-        let claims = result.unwrap().claims;
+        let claims = match result {
+            Ok(token_data) => token_data.claims,
+            Err(error) => {
+                log::info!("Refresh token is invalid: {}", error);
+                return Err(BusinessError::unauthorized("Token is invalid"));
+            }
+        };
         log::info!("Token is valid {:?}", claims.sub.clone());
         let email = claims.sub.clone();
 
-        let entity = UserGateway::find_by_email(db, email).await;
-
-        if entity.is_err() {
-            log::info!("User not found");
-            return Err(BusinessError::new("User not found".to_string()));
-        }
-
-        let opt_entity = entity.unwrap();
-        if opt_entity.is_none() {
-            log::info!("User not found");
-            return Err(BusinessError::new("User not found".to_string()));
-        }
-        let user = UserEntityMapper::from_model(opt_entity.unwrap());
+        let opt_entity = UserGateway::find_by_email(db, email)
+            .await
+            .map_err(|error| {
+                log::error!(
+                    "Failed to load user while validating refresh token: {}",
+                    error
+                );
+                BusinessError::infrastructure("Unable to validate refresh token")
+            })?;
+        let user = opt_entity
+            .map(UserEntityMapper::from_model)
+            .ok_or_else(|| BusinessError::unauthorized("User not found"))?;
 
         if auth_config::token_revocation_enabled() && Self::is_token_revoked(db, &user, &claims).await {
             // The presented refresh token was already rotated away: someone is
@@ -276,7 +284,7 @@ impl Authentication {
             if let Some(user_id) = user.id {
                 TokenRevocation::revoke_all_for_user(db, user_id).await;
             }
-            return Err(BusinessError::new("Token revoked".to_string()));
+            return Err(BusinessError::unauthorized("Token revoked"));
         }
 
         Ok((user, claims))
