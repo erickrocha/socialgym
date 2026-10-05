@@ -202,7 +202,8 @@ pub async fn sign_in(
     request_body = RefreshTokenRequest,
     responses(
         (status = 200, description = "Token refreshed successfully", body = AccessTokenJson),
-        (status = 401, description = "Unauthorized")
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = InternalServerErrorJson)
     )
 )]
 pub async fn refresh_token(

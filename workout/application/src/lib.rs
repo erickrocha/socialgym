@@ -353,3 +353,20 @@ pub fn main() {
         println!("Error: {err}");
     }
 }
+
+#[cfg(test)]
+mod openapi_tests {
+    use super::ApiDoc;
+    use utoipa::OpenApi;
+
+    #[test]
+    fn refresh_documents_internal_server_error_response() {
+        let document = ApiDoc::openapi().to_json().expect("OpenAPI document serializes");
+        let document: serde_json::Value =
+            serde_json::from_str(&document).expect("OpenAPI document is valid JSON");
+        let response = &document["paths"]["/refresh"]["post"]["responses"]["500"];
+
+        assert_eq!(response["description"], "Internal server error");
+        assert!(response["content"]["application/json"]["schema"].is_object());
+    }
+}
