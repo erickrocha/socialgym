@@ -1,4 +1,7 @@
-use application::{routes::friend_routes::friend_routes, AppState};
+use application::{
+    routes::{friend_routes::friend_routes, person_routes::person_routes},
+    AppState,
+};
 use business::domain::access_token::Claims;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use migration::{Migrator, MigratorTrait};
@@ -118,6 +121,7 @@ async fn friendship_rest_client_contract_smoke() {
     };
     let app = axum::Router::new()
         .nest("/workout/api/friends", friend_routes(state.clone()))
+        .nest("/workout/api/people", person_routes(state.clone()))
         .with_state(state);
 
     let sender_token = access_token(
@@ -269,6 +273,30 @@ async fn friendship_rest_client_contract_smoke() {
         forbidden_relationships.status(),
         axum::http::StatusCode::FORBIDDEN
     );
+
+    // 7b. Owner/friendship scope on person-profile routes: a non-friend is
+    //     forbidden, an accepted friend is allowed.
+    let status_of = |uri: &str, token: &str| {
+        let req = request("GET", uri.to_string(), token);
+        let app = app.clone();
+        async move { app.oneshot(req).await.unwrap().status() }
+    };
+    let status = status_of("/workout/api/people/me/friend/1", &bystander_token).await;
+    assert_eq!(status, axum::http::StatusCode::FORBIDDEN);
+    let status = status_of("/workout/api/people/me/friend/2", &sender_token).await;
+    assert_eq!(status, axum::http::StatusCode::OK);
+    let status = status_of(
+        "/workout/api/people/id/1/mentionable-friends?query=a",
+        &bystander_token,
+    )
+    .await;
+    assert_eq!(status, axum::http::StatusCode::FORBIDDEN);
+    let status = status_of(
+        "/workout/api/people/id/1/mentionable-friends?query=a",
+        &sender_token,
+    )
+    .await;
+    assert_eq!(status, axum::http::StatusCode::OK);
 
     // 8. Success: removing the friendship succeeds, and a second removal of
     //    the now-nonexistent friendship returns not-found.

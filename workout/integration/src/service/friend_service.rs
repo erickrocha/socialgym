@@ -65,6 +65,7 @@ impl FriendService for GrpcFriendService {
 		request: Request<FriendsRequest>,
 	) -> Result<Response<FriendsResponse>, Status> {
 		let caller_id = Self::caller_person_id(&request)?;
+		let caller_uuid = request.extensions().get::<User>().map(|u| u.person_uuid.clone());
 		let payload = request.into_inner();
 
 		if payload.id <= 0 && payload.uuid.is_empty() {
@@ -78,15 +79,14 @@ impl FriendService for GrpcFriendService {
 		let person_id = if payload.id > 0 {
 			payload.id
 		} else {
+			// Owner check before lookup (as REST): a foreign UUID is denied whether or not it exists.
+			if caller_uuid.as_deref() != Some(payload.uuid.as_str()) {
+				return Err(Status::permission_denied("Not the owner of this resource"));
+			}
 			let person = PersonUseCase::find_by_uuid(&self.conn, payload.uuid)
 				.await
-				.map_err(|e| Status::not_found(e.message))?;
-			business::commons::authorization::ensure_owns(
-				person.id.ok_or_else(|| Status::internal("person id missing"))?,
-				caller_id,
-			)
-			.map_err(to_status)?;
-			person.id.unwrap()
+				.map_err(to_status)?;
+			person.id.ok_or_else(|| Status::internal("person id missing"))?
 		};
 
 		let friends = FriendUseCase::find_all_friend(&self.conn, person_id)
