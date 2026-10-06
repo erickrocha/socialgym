@@ -898,3 +898,76 @@ async fn c005_post_comment_reaction_feed_acceptance() {
         .unwrap_err();
     assert_eq!(missing.kind, BusinessErrorKind::NotFound);
 }
+
+#[tokio::test]
+#[ignore = "requires a dedicated TEST_MONGO_URL MongoDB database"]
+async fn c006_concurrent_push_registrations_leave_one_document_per_token_and_device() {
+    let database = test_database().await;
+    let collection = database.collection::<domain::push_device::PushDevice>("push_devices");
+    collection.delete_many(doc! {}).await.unwrap();
+    for field in ["registrationToken", "deviceUuid"] {
+        collection
+            .create_index(
+                mongodb::IndexModel::builder()
+                    .keys(doc! { field: 1 })
+                    .options(mongodb::options::IndexOptions::builder().unique(true).build())
+                    .build(),
+            )
+            .await
+            .unwrap();
+    }
+
+    // Regression: a device that already holds a token registers one owned by another device.
+    // The stale token must be dropped before the document moves (unique deviceUuid).
+    PushDeviceGateway::register(&database, "c006-move-a", "c006-move-owner-a", "android", "c006-move-token-a").await.unwrap();
+    PushDeviceGateway::register(&database, "c006-move-b", "c006-move-owner-b", "android", "c006-move-token-b").await.unwrap();
+    PushDeviceGateway::register(&database, "c006-move-b", "c006-move-owner-b", "android", "c006-move-token-a").await.unwrap();
+    let moved = PushDeviceGateway::find_all_for_person(&database, "c006-move-owner-b").await.unwrap();
+    assert_eq!(moved.len(), 1);
+    assert_eq!(moved[0].registration_token, "c006-move-token-a");
+    assert!(PushDeviceGateway::find_all_for_person(&database, "c006-move-owner-a").await.unwrap().is_empty());
+
+    // Many installations racing to claim one token, repeated so the duplicate-key
+    // recovery paths run regardless of scheduling.
+    for round in 0..5 {
+        let token = format!("c006-race-token-{round}");
+        let results = futures::future::join_all((0..12).map(|i| {
+            let database = database.clone();
+            let token = token.clone();
+            async move {
+                PushDeviceGateway::register(
+                    &database,
+                    &format!("c006-race-device-{round}-{i}"),
+                    &format!("c006-race-owner-{i}"),
+                    "android",
+                    &token,
+                )
+                .await
+            }
+        }))
+        .await;
+        assert!(results.iter().all(|r| r.is_ok()), "round {round}: {results:?}");
+        assert_eq!(collection.count_documents(doc! { "registrationToken": &token }).await.unwrap(), 1);
+    }
+
+    // Installations that already hold a token all rotate to the same new one: the update
+    // collides on the unique token index and must fall back to transferring it.
+    for i in 0..12 {
+        PushDeviceGateway::register(&database, &format!("c006-rotate-device-{i}"), &format!("c006-rotate-owner-{i}"), "ios", &format!("c006-old-token-{i}"))
+            .await
+            .unwrap();
+    }
+    let results = futures::future::join_all((0..12).map(|i| {
+        let database = database.clone();
+        async move {
+            PushDeviceGateway::register(&database, &format!("c006-rotate-device-{i}"), &format!("c006-rotate-owner-{i}"), "ios", "c006-shared-new-token").await
+        }
+    }))
+    .await;
+    assert!(results.iter().all(|r| r.is_ok()), "{results:?}");
+    assert_eq!(collection.count_documents(doc! { "registrationToken": "c006-shared-new-token" }).await.unwrap(), 1);
+    assert_eq!(collection.count_documents(doc! { "registrationToken": { "$regex": "^c006-old-token" } }).await.unwrap() <= 11, true);
+
+    collection.delete_many(doc! {}).await.unwrap();
+    collection.drop_indexes().await.unwrap();
+}

@@ -26,6 +26,19 @@ impl PushDeviceGateway {
                 BusinessError::infrastructure(format!("failed to find push token: {error}"))
             })?
         {
+            // The device keeps one token (unique deviceUuid): drop its stale one before the
+            // moved document takes the device uuid.
+            collection
+                .delete_many(doc! {
+                    "deviceUuid": device_uuid,
+                    "registrationToken": { "$ne": registration_token },
+                })
+                .await
+                .map_err(|error| {
+                    BusinessError::infrastructure(format!(
+                        "failed to replace device token: {error}"
+                    ))
+                })?;
             collection
                 .update_one(
                     doc! { "_id": existing_token.id },
@@ -39,17 +52,6 @@ impl PushDeviceGateway {
                 .await
                 .map_err(|error| {
                     BusinessError::infrastructure(format!("failed to transfer push token: {error}"))
-                })?;
-            collection
-                .delete_many(doc! {
-                    "deviceUuid": device_uuid,
-                    "registrationToken": { "$ne": registration_token },
-                })
-                .await
-                .map_err(|error| {
-                    BusinessError::infrastructure(format!(
-                        "failed to replace device token: {error}"
-                    ))
                 })?;
             return Ok(());
         }
@@ -129,6 +131,15 @@ impl PushDeviceGateway {
         now: DateTime,
     ) -> Result<(), BusinessError> {
         collection
+            .delete_many(doc! {
+                "deviceUuid": device_uuid,
+                "registrationToken": { "$ne": registration_token },
+            })
+            .await
+            .map_err(|error| {
+                BusinessError::infrastructure(format!("failed to replace device token: {error}"))
+            })?;
+        collection
             .update_one(
                 doc! { "registrationToken": registration_token },
                 doc! { "$set": {
@@ -141,15 +152,6 @@ impl PushDeviceGateway {
             .await
             .map_err(|error| {
                 BusinessError::infrastructure(format!("failed to transfer push token: {error}"))
-            })?;
-        collection
-            .delete_many(doc! {
-                "deviceUuid": device_uuid,
-                "registrationToken": { "$ne": registration_token },
-            })
-            .await
-            .map_err(|error| {
-                BusinessError::infrastructure(format!("failed to replace device token: {error}"))
             })?;
         Ok(())
     }
