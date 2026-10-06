@@ -33,6 +33,7 @@ unic-langid = { version = "0.9", features = ["macros"] }
 [dev-dependencies]
 tonic = { workspace = true }
 tower = { version = "0.5.3", features = ["util"] }
+tokio-stream = { version = "0.1", features = ["net"] }
 
 
 
