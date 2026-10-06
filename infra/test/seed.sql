@@ -6,6 +6,9 @@
 --   person 2 / user ...062  "Receiver Person" notificationsEnabled = false, all consents
 --   person 99 is deliberately absent -> SettingsService returns NOT_FOUND
 --   persons 1 and 2 are accepted friends (mention eligibility)
+--
+-- Rows above use fixed ids, which do not advance the id sequences, so the block at the end moves every
+-- sequence past MAX(id); otherwise the next signup/insert without an id collides with a seeded row.
 
 INSERT INTO person (id, uuid, first_name, surname, date_of_birth, gender, created_at, updated_at) VALUES
   (1, '00000000-0000-0000-0000-000000000061', 'Sender',   'Person', '1990-01-01', 'X', now(), now()),
@@ -32,3 +35,20 @@ INSERT INTO friends (uuid, person_id, person_uuid, friend_id, friend_uuid, statu
   ('60000000-0000-0000-0000-000000000001', 1, '00000000-0000-0000-0000-000000000061', 2, '00000000-0000-0000-0000-000000000062', 'Accepted', now(), now()),
   ('60000000-0000-0000-0000-000000000002', 2, '00000000-0000-0000-0000-000000000062', 1, '00000000-0000-0000-0000-000000000061', 'Accepted', now(), now())
 ON CONFLICT DO NOTHING;
+
+-- Advance every id sequence (serial and identity columns) past the highest seeded id.
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN
+    SELECT c.table_name, c.column_name,
+           pg_get_serial_sequence(quote_ident(c.table_name), c.column_name) AS seq
+    FROM information_schema.columns c
+    WHERE c.table_schema = 'public'
+  LOOP
+    IF r.seq IS NOT NULL THEN
+      EXECUTE format('SELECT setval(%L, COALESCE((SELECT MAX(%I) FROM %I), 0) + 1, false)',
+                     r.seq, r.column_name, r.table_name);
+    END IF;
+  END LOOP;
+END $$;

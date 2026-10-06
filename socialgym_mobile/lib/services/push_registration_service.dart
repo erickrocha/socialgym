@@ -96,9 +96,11 @@ class PushRegistrationService {
         ?.createNotificationChannel(_channel);
   }
 
+  /// Remembers the signed-in user. It does NOT open a pending push tap: the
+  /// sign-in page replaces its own route right after login, which would swap the
+  /// pushed target away. The page calls [openPendingTap] once it has navigated.
   static Future<void> bindAuthenticatedUser(AuthResponse auth) async {
     _auth = auth;
-    _navigatePendingTap();
     if (!_initialized) return;
 
     try {
@@ -219,7 +221,23 @@ class PushRegistrationService {
     );
   }
 
+  /// Opens a push tap that arrived while the user was signed out (or before the
+  /// session was restored). Call it after the post-login navigation has run.
+  static void openPendingTap() => _navigatePendingTap();
+
   static void _handleRemoteTap(RemoteMessage message) => _queueTap(message.data);
+
+  @visibleForTesting
+  static void handleTapForTest(Map<String, dynamic> data) => _queueTap(data);
+
+  @visibleForTesting
+  static void resetForTest() {
+    _navigatorKey = null;
+    _auth = null;
+    _pendingTap = null;
+    _initialized = false;
+    _navigationScheduled = false;
+  }
 
   static void _queueTap(Map<String, dynamic> data) {
     _pendingTap = Map<String, dynamic>.from(data);

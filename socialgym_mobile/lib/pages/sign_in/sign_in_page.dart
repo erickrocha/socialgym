@@ -10,6 +10,7 @@ import '../../providers/locale_provider.dart';
 import '../../providers/person_provider.dart';
 import '../../providers/resource_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../services/push_registration_service.dart';
 import '../../widgets/language_selector.dart';
 import 'package:socialgym_mobile/pages/sign_up/sign_up_page.dart';
 
@@ -86,6 +87,8 @@ class _SignInPageState extends State<SignInPage> {
         final homePage = settingsProvider.homePage;
         final targetRoute = homePage == Pages.gallery ? '/gallery' : '/feed';
         Navigator.of(context).pushReplacementNamed(targetRoute);
+        // After the replacement, so a pending push target lands on top of the home route.
+        PushRegistrationService.openPendingTap();
         return;
       }
     }
@@ -146,6 +149,8 @@ class _SignInPageState extends State<SignInPage> {
         final homePage = settingsProvider.homePage;
         final targetRoute = homePage == Pages.gallery ? '/gallery' : '/feed';
         Navigator.of(context).pushReplacementNamed(targetRoute);
+        // After the replacement, so a pending push target lands on top of the home route.
+        PushRegistrationService.openPendingTap();
         return;
       }
     }
