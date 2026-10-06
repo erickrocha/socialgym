@@ -58,6 +58,18 @@ impl SettingsUseCase {
         domain.person_id = actor.person_id;
         domain.person_uuid = actor.person_uuid.clone();
 
+        // One settings row per person: creating a second one is a conflict, not a duplicate.
+        if domain.id.is_none()
+            && self
+                .gateway
+                .find_by_owner_ids(Some(actor.person_id), None)
+                .await
+                .map_err(|_| BusinessError::infrastructure("Error persisting settings"))?
+                .is_some()
+        {
+            return Err(BusinessError::conflict("Settings already exist for this person".to_string()));
+        }
+
         let result = self.gateway.persist(domain).await;
         if result.is_err() {
             log::error!("Error persisting settings: {:?}", result.err());

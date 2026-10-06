@@ -1,0 +1,4 @@
+# False positives triaged 2026-10-06 (C-006 Gate 3): test-only env value, Mongo query field name, PEM label template
+ff0a7b5f01516d93356145672b95bcb9dc667bca:workout/application/tests/c001_signup_http_acceptance.rs:generic-api-key:55
+301bcd3d279f7a194f321945ed428e307d7bac9b:timeline/application/src/infrastructure/push_notification_worker.rs:generic-api-key:396
+dde346b329ca91bdcaa14bd4de531b963560cd59:workout/business/src/use_cases/common_use_case.rs:private-key:59

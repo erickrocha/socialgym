@@ -104,7 +104,8 @@ impl ConversationGateway {
                 doc! {
                     "_id": conversation_uuid,
                     "$or": [
-                        { "lastMessage": { "$exists": false } },
+                        // `null` matches both a missing field and the null a new conversation is stored with
+                        { "lastMessage": null },
                         { "lastMessage.sentAt": { "$lte": sent_at } },
                     ],
                 },

@@ -136,7 +136,7 @@ impl ExerciseGateway {
         let mut query = ExerciseQuery::find().filter(Column::Visibility.eq(visibility));
 
         if let Some(name) = owner_name {
-            query = query.filter(Column::OwnerName.like(format!("%{}%", name)));
+            query = query.filter(Column::OwnerName.ilike(format!("%{}%", name)));
         }
 
         if let Some(cat) = category {
@@ -166,7 +166,7 @@ impl ExerciseGateway {
     ) -> Result<u64, DbErr> {
         let mut query = ExerciseQuery::find().filter(Column::Visibility.eq(visibility));
         if let Some(name) = owner_name {
-            query = query.filter(Column::OwnerName.like(format!("%{}%", name)));
+            query = query.filter(Column::OwnerName.ilike(format!("%{}%", name)));
         }
         if let Some(cat) = category {
             query = query.filter(Column::Category.eq(cat));

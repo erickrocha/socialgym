@@ -82,8 +82,8 @@ impl BusinessProfileGateway {
     ) -> Vec<i32> {
         let search_pattern = format!("%{}%", escape_like(query));
         let mut condition = Condition::any()
-            .add(entity::business_profile_entity::Column::BusinessName.like(&search_pattern))
-            .add(entity::business_profile_entity::Column::SocialName.like(&search_pattern));
+            .add(entity::business_profile_entity::Column::BusinessName.ilike(&search_pattern))
+            .add(entity::business_profile_entity::Column::SocialName.ilike(&search_pattern));
 
         let mut find = BusinessProfileQuery::find().filter(condition.clone());
         if let Some(business_type) = business_type {

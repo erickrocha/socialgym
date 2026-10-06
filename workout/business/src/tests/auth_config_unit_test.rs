@@ -1,10 +1,6 @@
 use super::*;
-use std::sync::Mutex;
-
-static ENV_LOCK: Mutex<()> = Mutex::new(());
-
 fn with_env<F: FnOnce()>(vars: &[(&str, Option<&str>)], f: F) {
-    let _guard = ENV_LOCK.lock().unwrap();
+    let _guard = crate::commons::lock_env();
     for (name, value) in vars {
         match value {
             Some(value) => env::set_var(name, value),

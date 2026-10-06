@@ -22,6 +22,7 @@ fn request(firstname: &str, password: &str, terms_version: &str) -> Registration
 
 #[test]
 fn rejects_blank_person_fields_before_database_access() {
+    let _env = crate::commons::lock_env();
     let mut invalid = request(" ", "Str0ng!Password", "1.0.0");
     invalid.person.firstname = " \t ".to_string();
 
@@ -33,6 +34,7 @@ fn rejects_blank_person_fields_before_database_access() {
 
 #[test]
 fn rejects_weak_password() {
+    let _env = crate::commons::lock_env();
     unsafe { std::env::set_var("AUTH_RULES_ENABLED", "true") };
     unsafe { std::env::remove_var("PASSWORD_POLICY_ENABLED") };
     let result = RegistrationUseCase::validate(&request("Person", "weak", "1.0.0"));
@@ -43,6 +45,7 @@ fn rejects_weak_password() {
 
 #[test]
 fn rejects_outdated_terms_version() {
+    let _env = crate::commons::lock_env();
     let current_terms = legal_documents::current_version(legal_documents::TERMS).unwrap();
     let result = RegistrationUseCase::validate(&request(
         "Person",
@@ -58,6 +61,7 @@ fn rejects_outdated_terms_version() {
 
 #[test]
 fn accepts_valid_person_password_and_current_legal_versions() {
+    let _env = crate::commons::lock_env();
     let current_terms = legal_documents::current_version(legal_documents::TERMS).unwrap();
     assert!(
         RegistrationUseCase::validate(&request("Person", "Str0ng!Password", &current_terms,))

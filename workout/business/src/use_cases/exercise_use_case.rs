@@ -58,13 +58,27 @@ impl ExerciseUseCase {
             }
         }
 
-        let associations: Vec<WorkoutExercise> = resolved
-            .iter()
-            .enumerate()
-            .map(|(order_index, exercise)| {
-                WorkoutExercise::new(workout_id, exercise.id.unwrap(), order_index as i32)
-            })
-            .collect();
+        // Re-sending a workout (an edit) repeats exercises it already has; skip those
+        // instead of violating the (workout_id, exercise_id) unique index, and append
+        // new ones after the current last position.
+        let existing = WorkoutExerciseGateway::find_by_workout_id(db, workout_id)
+            .await
+            .map_err(|e| {
+                log::error!("Error loading existing workout_exercise associations: {}", e);
+                BusinessError::new("Error associating exercises with workout".to_string())
+            })?;
+        let mut next_index = existing.iter().map(|we| we.order_index + 1).max().unwrap_or(0);
+        let mut associations: Vec<WorkoutExercise> = Vec::with_capacity(resolved.len());
+        for exercise in &resolved {
+            let exercise_id = exercise.id.unwrap();
+            if existing.iter().any(|we| we.exercise_id == exercise_id)
+                || associations.iter().any(|a| a.exercise_id == exercise_id)
+            {
+                continue;
+            }
+            associations.push(WorkoutExercise::new(workout_id, exercise_id, next_index));
+            next_index += 1;
+        }
 
         WorkoutExerciseGateway::persist_all(db, associations)
             .await

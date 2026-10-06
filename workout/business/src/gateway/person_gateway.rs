@@ -76,8 +76,8 @@ impl PersonGateway {
         PersonQuery::find()
             .filter(
                 Condition::any()
-                    .add(person::Column::FirstName.like(&search_pattern))
-                    .add(person::Column::Surname.like(&search_pattern)),
+                    .add(person::Column::FirstName.ilike(&search_pattern))
+                    .add(person::Column::Surname.ilike(&search_pattern)),
             )
             .filter(person::Column::Id.ne(exclude_person_id))
             .limit(limit)
@@ -101,8 +101,8 @@ impl PersonGateway {
         let people = PersonQuery::find()
             .filter(
                 Condition::any()
-                    .add(person::Column::FirstName.like(&search_pattern))
-                    .add(person::Column::Surname.like(&search_pattern)),
+                    .add(person::Column::FirstName.ilike(&search_pattern))
+                    .add(person::Column::Surname.ilike(&search_pattern)),
             )
             .filter(person::Column::Uuid.ne(exclude_person_uuid))
             .limit(limit)
@@ -126,8 +126,8 @@ impl PersonGateway {
         let users: Vec<user::UserEntity> = UserQuery::find()
             .filter(
                 Condition::any()
-                    .add(user::Column::Email.like(&search_pattern))
-                    .add(user::Column::Name.like(&search_pattern)),
+                    .add(user::Column::Email.ilike(&search_pattern))
+                    .add(user::Column::Name.ilike(&search_pattern)),
             )
             .limit(limit)
             .all(db)
@@ -154,8 +154,8 @@ impl PersonGateway {
         let users: Vec<user::UserEntity> = UserQuery::find()
             .filter(
                 Condition::any()
-                    .add(user::Column::Email.like(&search_pattern))
-                    .add(user::Column::Name.like(&search_pattern)),
+                    .add(user::Column::Email.ilike(&search_pattern))
+                    .add(user::Column::Name.ilike(&search_pattern)),
             )
             .limit(limit)
             .all(db)
@@ -185,8 +185,8 @@ impl PersonGateway {
             .filter(user::Column::PersonId.is_in(friend_ids))
             .filter(
                 Condition::any()
-                    .add(user::Column::Email.like(&search_pattern))
-                    .add(user::Column::Name.like(&search_pattern)),
+                    .add(user::Column::Email.ilike(&search_pattern))
+                    .add(user::Column::Name.ilike(&search_pattern)),
             )
             .limit(limit)
             .all(db)
@@ -213,10 +213,10 @@ impl PersonGateway {
             .filter(person::Column::Id.is_in(friend_ids))
             .filter(
                 Condition::any()
-                    .add(person::Column::FirstName.like(&search_pattern))
-                    .add(person::Column::Surname.like(&search_pattern))
-                    .add(user::Column::Email.like(&search_pattern))
-                    .add(user::Column::Name.like(&search_pattern)),
+                    .add(person::Column::FirstName.ilike(&search_pattern))
+                    .add(person::Column::Surname.ilike(&search_pattern))
+                    .add(user::Column::Email.ilike(&search_pattern))
+                    .add(user::Column::Name.ilike(&search_pattern)),
             )
             .limit(limit)
             .all(db)

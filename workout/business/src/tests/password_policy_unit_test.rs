@@ -1,11 +1,8 @@
 use super::*;
 use std::env;
-use std::sync::Mutex;
-
-static ENV_LOCK: Mutex<()> = Mutex::new(());
 
 fn with_policy_enabled<F: FnOnce()>(f: F) {
-    let _guard = ENV_LOCK.lock().unwrap();
+    let _guard = crate::commons::lock_env();
     env::remove_var("AUTH_RULES_ENABLED");
     env::remove_var("PASSWORD_POLICY_ENABLED");
     f();
@@ -29,7 +26,7 @@ fn weak_password_reports_every_violation() {
 
 #[test]
 fn policy_disabled_allows_any_password() {
-    let _guard = ENV_LOCK.lock().unwrap();
+    let _guard = crate::commons::lock_env();
     env::set_var("PASSWORD_POLICY_ENABLED", "false");
     assert!(validate("weak").is_ok());
     env::remove_var("PASSWORD_POLICY_ENABLED");
