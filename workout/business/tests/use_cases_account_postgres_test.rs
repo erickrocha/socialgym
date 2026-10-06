@@ -132,8 +132,8 @@ async fn settings_migration_collapses_existing_duplicates_and_enforces_uniquenes
     use sea_orm::{ConnectionTrait, DbBackend, Statement};
     let db = fresh_db().await;
     let a = register(&db, 1).await;
-    // go back one step (drops the unique index), create duplicates, then migrate forward again
-    Migrator::down(&db, Some(1)).await.unwrap();
+    // go back two steps (drops the unique index), create duplicates, then migrate forward again
+    Migrator::down(&db, Some(2)).await.unwrap();
     let dup = |lang: &str, updated: &str| format!(
         "INSERT INTO settings (uuid, person_id, person_uuid, language, theme, notifications_enabled, context_menu_position, home_page, created_at, updated_at) \
          VALUES (gen_random_uuid(), {}, '{}', '{lang}', 'light', true, 'Left', 'home', now(), '{updated}')", a.person_id, a.person_uuid);

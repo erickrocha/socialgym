@@ -34,6 +34,7 @@ mod m20260909_000001_fix_friends_uniques;
 mod m20260915_000001_add_settings_weight_unit;
 mod m20261002_000001_create_friendship_notification_outbox;
 mod m20261006_000001_unique_settings_per_person;
+mod m20261006_000002_widen_person_media_mime_type;
 
 pub struct Migrator;
 
@@ -77,6 +78,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260915_000001_add_settings_weight_unit::Migration),
             Box::new(m20261002_000001_create_friendship_notification_outbox::Migration),
             Box::new(m20261006_000001_unique_settings_per_person::Migration),
+            Box::new(m20261006_000002_widen_person_media_mime_type::Migration),
         ]
     }
 }

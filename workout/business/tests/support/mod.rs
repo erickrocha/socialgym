@@ -99,3 +99,30 @@ pub fn workout(name: &str, visibility: Visibility, exercises: Vec<Exercise>) -> 
         updated_at: None,
     }
 }
+
+/// Points the AWS SDK at LocalStack (the infra/test stack) unless the environment already does.
+pub fn aws_env() {
+    for (k, v) in [
+        ("AWS_ENDPOINT_URL", "http://localhost:4566"),
+        ("AWS_REGION", "us-east-1"),
+        ("AWS_ACCESS_KEY_ID", "test"),
+        ("AWS_SECRET_ACCESS_KEY", "test"),
+        ("AWS_WORKOUT_BUCKET", "socialgym-test-media"),
+    ] {
+        if std::env::var(k).is_err() {
+            unsafe { std::env::set_var(k, v) };
+        }
+    }
+}
+
+/// Ensures the test bucket exists and creates a private queue for one test.
+pub async fn localstack_bucket_and_queue() -> (String, String) {
+    aws_env();
+    let bucket = std::env::var("AWS_WORKOUT_BUCKET").unwrap();
+    let s3 = business::gateway::aws_clients::s3_client().await;
+    let _ = s3.create_bucket().bucket(&bucket).send().await;
+    let sqs = business::gateway::aws_clients::sqs_client().await;
+    let name = format!("uc-{}", uuid::Uuid::new_v4());
+    let queue = sqs.create_queue().queue_name(name).send().await.expect("LocalStack SQS must be reachable").queue_url.unwrap();
+    (bucket, queue)
+}
