@@ -282,6 +282,11 @@ fn retry_delay_seconds(attempts: i32) -> i64 {
     2_i64.pow(attempts.clamp(1, 8) as u32).min(300)
 }
 
+/// Tests that mutate process-wide environment variables (GRPC_*, PUSH_PROVIDER_*) hold this
+/// lock so they never observe each other's changes.
+#[cfg(test)]
+pub(crate) static ENV_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 #[cfg(test)]
 mod tests {
     use super::{PushProvider, process_pending, retry_delay_seconds};
@@ -298,6 +303,8 @@ mod tests {
     use futures::TryStreamExt;
     use mongodb::{Client as MongoClient, bson::doc};
     use tonic::{Request, Response, Status};
+
+    use super::ENV_LOCK;
 
     struct FakeSettingsService {
         enabled_owner_uuid: String,
@@ -362,6 +369,7 @@ mod tests {
     #[tokio::test]
     #[ignore = "requires a disposable TEST_MONGO_URL MongoDB database"]
     async fn c006_push_worker_obeys_preference_and_fake_provider() {
+        let _env = ENV_LOCK.lock().await;
         let database_url = std::env::var("TEST_MONGO_URL")
             .expect("TEST_MONGO_URL must point to a disposable timeline_test database");
         let client = MongoClient::with_uri_str(database_url).await.unwrap();
@@ -635,6 +643,7 @@ mod tests {
     #[tokio::test]
     #[ignore = "requires the disposable Workout SettingsService gRPC fixture"]
     async fn c006_live_workout_push_preference_rpc_acceptance() {
+        let _env = ENV_LOCK.lock().await;
         use business::gateway::push_preference_gateway::{
             PushPreferenceError, PushPreferenceGateway,
         };
@@ -660,5 +669,175 @@ mod tests {
             .await,
             Err(PushPreferenceError::NotFound)
         );
+    }
+
+    /// Answers by owner prefix so each worker failure branch can be driven independently.
+    struct ScriptedSettings;
+
+    #[tonic::async_trait]
+    impl SettingsService for ScriptedSettings {
+        async fn get_by_id(&self, _: Request<SettingIdRequest>) -> Result<Response<Setting>, Status> { Err(Status::unimplemented("")) }
+        async fn persist_settings(&self, _: Request<Setting>) -> Result<Response<Setting>, Status> { Err(Status::unimplemented("")) }
+        async fn get_by_uuid(&self, _: Request<SettingIdRequest>) -> Result<Response<Setting>, Status> { Err(Status::unimplemented("")) }
+        async fn get_by_owner_ids(&self, _: Request<SettingOwnerIdRequest>) -> Result<Response<Setting>, Status> { Err(Status::unimplemented("")) }
+        async fn get_push_preference_by_owner_uuid(
+            &self,
+            request: Request<OwnerUuidRequest>,
+        ) -> Result<Response<PushPreferenceResponse>, Status> {
+            let owner = request.into_inner().owner_uuid;
+            if owner.contains("-permanent-") {
+                Err(Status::permission_denied("not allowed"))
+            } else if owner.contains("-transient-") {
+                Err(Status::unavailable("settings down"))
+            } else if owner.contains("-missing-") {
+                Err(Status::not_found("no settings"))
+            } else {
+                Ok(Response::new(PushPreferenceResponse { notifications_enabled: true }))
+            }
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "requires a disposable TEST_MONGO_URL MongoDB database"]
+    async fn c006_push_worker_failure_branches_and_startup() {
+        let _env = ENV_LOCK.lock().await;
+        let database = MongoClient::with_uri_str(
+            std::env::var("TEST_MONGO_URL").expect("TEST_MONGO_URL must point to timeline_test"),
+        )
+        .await
+        .unwrap()
+        .database("timeline_test");
+        let notifications = database.collection::<InAppNotification>("in_app_notifications");
+        let owners = [
+            "c006-pw-permanent-owner", "c006-pw-transient-owner", "c006-pw-missing-owner",
+            "c006-pw-nodevice-owner", "c006-pw-exhaust-owner", "c006-pw-partial-owner", "c006-pw-start-owner",
+        ];
+        let cleanup = || async {
+            notifications.delete_many(doc! { "recipientPersonUuid": { "$in": owners.to_vec() } }).await.unwrap();
+            database
+                .collection::<domain::push_device::PushDevice>("push_devices")
+                .delete_many(doc! { "personUuid": { "$in": owners.to_vec() } })
+                .await
+                .unwrap();
+        };
+        cleanup().await;
+
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        drop(listener);
+        let service = tokio::spawn(async move {
+            tonic::transport::Server::builder()
+                .add_service(SettingsServiceServer::new(ScriptedSettings))
+                .serve(address)
+                .await
+                .unwrap();
+        });
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        for (name, value) in [
+            ("PUSH_PROVIDER_MODE", "fake"),
+            ("INTERNAL_SERVICE_SECRET", "test-header"),
+            ("GRPC_PROTOCOL", "http"),
+            ("GRPC_HOST", "127.0.0.1"),
+            ("GRPC_PORT", &address.port().to_string()),
+            ("GRPC_USE_TLS", "false"),
+        ] {
+            unsafe { std::env::set_var(name, value) };
+        }
+        unsafe { std::env::remove_var("FAKE_PUSH_PROVIDER_STATUS") };
+        let provider = PushProvider::from_environment().unwrap();
+
+        let add = |owner: &str, id: &str| {
+            let notification = InAppNotification::from_social_interaction(
+                id.to_string(), "Comment".into(), owner.to_string(), "actor".into(), "Actor".into(),
+                "post".into(), Some("comment".into()), "text".into(),
+            );
+            let gateway = MentionNotificationGateway::new(&database);
+            async move { gateway.persist_in_app_notification(notification).await.unwrap() }
+        };
+        let register = |owner: &str, device: &str, token: &str| {
+            let (database, owner, device, token) = (database.clone(), owner.to_string(), device.to_string(), token.to_string());
+            async move { PushDeviceGateway::register(&database, &device, &owner, "android", &token).await.unwrap() }
+        };
+        let status = |id: &str| {
+            let (notifications, id) = (notifications.clone(), id.to_string());
+            async move { notifications.find_one(doc! { "_id": id }).await.unwrap().unwrap() }
+        };
+
+        // Settings outcomes: permanent -> Failed, transient -> retry with backoff, unknown owner -> Suppressed.
+        add(owners[0], "c006-pw-n-permanent").await;
+        add(owners[1], "c006-pw-n-transient").await;
+        add(owners[2], "c006-pw-n-missing").await;
+        // Enabled owner without any registered device is suppressed, not retried.
+        add(owners[3], "c006-pw-n-nodevice").await;
+        process_pending(&database, &provider).await.unwrap();
+        assert_eq!(status("c006-pw-n-permanent").await.push_status.as_deref(), Some("Failed"));
+        let transient = status("c006-pw-n-transient").await;
+        assert_eq!((transient.push_status.as_deref(), transient.push_attempt_count), (Some("Pending"), 1));
+        assert!(transient.push_next_attempt_at.is_some());
+        assert_eq!(status("c006-pw-n-missing").await.push_status.as_deref(), Some("Suppressed"));
+        assert_eq!(status("c006-pw-n-nodevice").await.push_status.as_deref(), Some("Suppressed"));
+
+        // Fifth transient provider failure exhausts the retries.
+        register(owners[4], "c006-pw-exhaust-device", "c006-pw-exhaust-token").await;
+        add(owners[4], "c006-pw-n-exhaust").await;
+        notifications.update_one(doc! { "_id": "c006-pw-n-exhaust" }, doc! { "$set": { "pushAttemptCount": 4 } }).await.unwrap();
+        unsafe { std::env::set_var("FAKE_PUSH_PROVIDER_STATUS", "500") };
+        process_pending(&database, &provider).await.unwrap();
+        unsafe { std::env::remove_var("FAKE_PUSH_PROVIDER_STATUS") };
+        let exhausted = status("c006-pw-n-exhaust").await;
+        assert_eq!((exhausted.push_status.as_deref(), exhausted.push_attempt_count), (Some("Failed"), 5));
+
+        // A device already completed on an earlier attempt is not sent to again.
+        register(owners[5], "c006-pw-done-device", "c006-pw-done-token").await;
+        register(owners[5], "c006-pw-new-device", "c006-pw-new-token").await;
+        add(owners[5], "c006-pw-n-partial").await;
+        notifications
+            .update_one(doc! { "_id": "c006-pw-n-partial" }, doc! { "$set": { "pushCompletedDeviceUuids": ["c006-pw-done-device"] } })
+            .await
+            .unwrap();
+        process_pending(&database, &provider).await.unwrap();
+        let partial = status("c006-pw-n-partial").await;
+        assert_eq!(partial.push_status.as_deref(), Some("Sent"));
+        assert_eq!(partial.push_completed_device_uuids.len(), 2);
+        let sent_to_done = database
+            .collection::<mongodb::bson::Document>("push_provider_test_deliveries")
+            .count_documents(doc! { "notificationUuid": "c006-pw-n-partial" })
+            .await
+            .unwrap();
+        assert_eq!(sent_to_done, 1, "only the new device receives the push");
+
+        // start(): the loop picks up pending work on its own.
+        register(owners[6], "c006-pw-start-device", "c006-pw-start-token").await;
+        add(owners[6], "c006-pw-n-start").await;
+        super::start(std::sync::Arc::new(database.clone()));
+        let mut sent = false;
+        for _ in 0..50 {
+            if status("c006-pw-n-start").await.push_status.as_deref() == Some("Sent") {
+                sent = true;
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
+        assert!(sent, "start() did not deliver the pending notification within 5s");
+
+        // start() with an unusable provider configuration logs an alert and ends the worker.
+        unsafe {
+            std::env::set_var("PUSH_PROVIDER_MODE", "firebase");
+            std::env::remove_var("FCM_SERVICE_ACCOUNT_JSON");
+        }
+        super::start(std::sync::Arc::new(database.clone()));
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+
+        service.abort();
+        let _ = service.await;
+        cleanup().await;
+        database
+            .collection::<mongodb::bson::Document>("push_provider_test_deliveries")
+            .delete_many(doc! { "notificationUuid": { "$regex": "^c006-pw-n-" } })
+            .await
+            .unwrap();
+        for name in ["PUSH_PROVIDER_MODE", "INTERNAL_SERVICE_SECRET", "GRPC_PROTOCOL", "GRPC_HOST", "GRPC_PORT", "GRPC_USE_TLS"] {
+            unsafe { std::env::remove_var(name) };
+        }
     }
 }

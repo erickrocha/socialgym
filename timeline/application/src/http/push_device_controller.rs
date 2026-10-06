@@ -100,6 +100,7 @@ mod tests {
     #[tokio::test]
     #[ignore = "requires a dedicated TEST_MONGO_URL MongoDB database"]
     async fn c006_push_device_http_contract_returns_no_token_and_uses_authenticated_owner() {
+        let _env = crate::infrastructure::push_notification_worker::ENV_LOCK.lock().await;
         let mongo_url = std::env::var("TEST_MONGO_URL")
             .expect("TEST_MONGO_URL must point to the disposable timeline_test database");
         let mongo_client = Client::with_uri_str(mongo_url).await.unwrap();
