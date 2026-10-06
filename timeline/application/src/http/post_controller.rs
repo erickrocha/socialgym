@@ -75,7 +75,7 @@ pub async fn delete_post(
     Extension(locale): Extension<Locale>,
     Extension(current_user): Extension<User>,
 ) -> HttpResponse<StatusCode> {
-    PostUseCase::delete_owned(&state.database, post_id, &current_user.person_uuid)
+    PostUseCase::delete_owned(&state.database, post_id, current_user.person_id, &current_user.person_uuid)
         .await
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::PostDeleteFailed)
@@ -186,7 +186,7 @@ pub async fn remove_reaction(
     Extension(locale): Extension<Locale>,
     Extension(current_user): Extension<User>,
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
-    PostUseCase::remove_reaction(&state.database, post_id, current_user.person_uuid)
+    PostUseCase::remove_reaction(&state.database, post_id, current_user.person_id, current_user.person_uuid)
         .await
         .map(|p| (StatusCode::OK, Json(PostMapper::json(p))))
         .map_err(|error| {

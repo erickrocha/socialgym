@@ -66,6 +66,17 @@ pub async fn ws(
         Err(_) => return axum::http::StatusCode::UNAUTHORIZED.into_response(),
     };
 
+    // Same mandatory consents as the REST middleware: a person who has not accepted them
+    // cannot open the stream.
+    let consents = business::commons::token_context::with_forwarded_token(Some(token.clone()), async {
+        business::gateway::consent_gateway::ConsentGateway::require("terms").await?;
+        business::gateway::consent_gateway::ConsentGateway::require("privacy").await
+    })
+    .await;
+    if consents.is_err() {
+        return axum::http::StatusCode::FORBIDDEN.into_response();
+    }
+
     ws.on_upgrade(move |socket| handle_socket(socket, state, user, token))
 }
 

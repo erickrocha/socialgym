@@ -45,14 +45,14 @@ impl BusinessProfileService for GrpcBusinessProfileService {
             validate_uuid(&payload.uuid, "uuid")?;
             let business_profile = BusinessProfileUseCase::get_by_uuid(&self.conn, payload.uuid)
                 .await
-                .ok_or_else(|| Status::internal("Business profile not found"))?;
+                .ok_or_else(|| Status::not_found("Business profile not found"))?;
             let grpc_profile =
                 BusinessProfileMapper::response(business_profile.for_viewer(viewer.as_ref()));
             Ok(Response::new(grpc_profile))
         } else {
             let profile = BusinessProfileUseCase::get_by_id(&self.conn, payload.id)
                 .await
-                .ok_or_else(|| Status::internal("Business profile not found"))?;
+                .ok_or_else(|| Status::not_found("Business profile not found"))?;
 
             let grpc_profile = BusinessProfileMapper::response(profile.for_viewer(viewer.as_ref()));
             Ok(Response::new(grpc_profile))

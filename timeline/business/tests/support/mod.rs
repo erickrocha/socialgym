@@ -1,6 +1,8 @@
 //! Shared fixtures for use-case acceptance tests: a disposable MongoDB database and a
 //! plaintext gRPC stand-in for the workout service (roles, friends, team rosters).
 #![allow(dead_code)]
+use business::proto::proto::business_profile::business_profile_service_server::{BusinessProfileService, BusinessProfileServiceServer};
+use business::proto::proto::business_profile::*;
 use business::proto::proto::friend::friend_service_server::{FriendService, FriendServiceServer};
 use business::proto::proto::friend::*;
 use business::proto::proto::person::person_service_server::{PersonService, PersonServiceServer};
@@ -17,6 +19,8 @@ use tonic::{Request, Response, Status};
 pub struct StubState {
     pub moderator: Mutex<bool>,
     pub friends: Mutex<Vec<String>>,
+    /// uuids the stand-in reports as Business Profiles; any other uuid is NOT_FOUND.
+    pub business_profiles: Mutex<Vec<String>>,
     pub roster: Mutex<Option<TeamRosterResponse>>,
 }
 
@@ -43,6 +47,7 @@ pub async fn start_stub() -> Arc<StubState> {
         tonic::transport::Server::builder()
             .add_service(PersonServiceServer::new(stub.clone()))
             .add_service(FriendServiceServer::new(stub.clone()))
+            .add_service(BusinessProfileServiceServer::new(stub.clone()))
             .add_service(TeamMemberServiceServer::new(stub))
             .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(listener)),
     );
@@ -118,6 +123,24 @@ service_impl! { FriendService {
         deny_friend_request(FriendRequestRequest) -> Friend;
         cancel_friend_request(FriendRequestRequest) -> Friend;
         remove_friend(FriendRequestRequest) -> RemoveFriendResponse;
+}
+
+service_impl! { BusinessProfileService {
+    async fn get_business_profile_by_id(&self, req: Request<BusinessProfileRequestId>) -> Result<Response<BusinessProfile>, Status> {
+        let uuid = req.into_inner().uuid;
+        if self.0.business_profiles.lock().unwrap().contains(&uuid) {
+            Ok(Response::new(BusinessProfile { uuid, ..Default::default() }))
+        } else {
+            Err(Status::not_found("Business profile not found"))
+        }
+    }
+}
+        get_business_profile_by_owner_id(BusinessProfileRequestOwnerId) -> BusinessProfilesResponse;
+        add_business_profile(BusinessProfile) -> BusinessProfile;
+        update_business_profile(BusinessProfile) -> BusinessProfile;
+        add_business_profile_address(business::proto::proto::business_profile_address::BusinessProfileAddress) -> business::proto::proto::business_profile_address::BusinessProfileAddress;
+        update_business_profile_address(business::proto::proto::business_profile_address::BusinessProfileAddress) -> business::proto::proto::business_profile_address::BusinessProfileAddress;
+        remove_business_profile_address(RemoveBusinessProfileAddressRequest) -> RemoveBusinessProfileAddressResponse;
 }
 
 service_impl! { TeamMemberService {

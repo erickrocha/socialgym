@@ -2,7 +2,9 @@ use crate::gateway::content_report_gateway::ContentReportGateway;
 use crate::gateway::post_gateway::PostGateway;
 use crate::gateway::role_gateway::RoleGateway;
 use crate::repositories::repository::Repository;
+use crate::use_cases::post_use_case::PostUseCase;
 use domain::business_error::BusinessError;
+use domain::user::User;
 use domain::content_report::{ContentReport, ModerationEvent};
 use mongodb::Database;
 use mongodb::bson::DateTime;
@@ -11,7 +13,7 @@ pub struct ContentReportUseCase;
 impl ContentReportUseCase {
     pub async fn create(
         db: &Database,
-        reporter: &str,
+        reporter: &User,
         target_type: String,
         target_id: String,
         post_id: String,
@@ -25,19 +27,22 @@ impl ContentReportUseCase {
         {
             return Err(BusinessError::validation("invalid content report"));
         }
-        if PostGateway::new(db)
-            .find_by_id(post_id.clone())
-            .await
-            .is_none()
-        {
-            return Err(BusinessError::not_found("post not found"));
+        // Only a reader of the post can report it; the target must be part of that post.
+        let post = PostUseCase::load_readable(db, &post_id, reporter.person_id, &reporter.person_uuid).await?;
+        let target_in_post = match target_type.as_str() {
+            "post" => target_id == post.uuid,
+            "comment" => post.comments.iter().any(|c| c.uuid == target_id),
+            _ => post.media.iter().any(|m| m.uuid == target_id),
+        };
+        if !target_in_post {
+            return Err(BusinessError::not_found("report target not found"));
         }
         ContentReportGateway::new(db)
             .persist(ContentReport::new(
                 target_type,
                 target_id,
                 post_id,
-                reporter.to_string(),
+                reporter.person_uuid.clone(),
                 reason,
                 details,
             ))

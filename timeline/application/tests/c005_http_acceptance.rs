@@ -47,11 +47,15 @@ consent_stub! {
     has_role(RoleStatusRequest) -> RoleStatusResponse;
 }
 
-/// No friendships: the feed then contains only the caller's own posts.
+/// The owner and the other person are friends, so each can read the other's posts.
 #[tonic::async_trait]
 impl FriendService for ConsentStub {
-    async fn get_friends(&self, _: GrpcRequest<FriendsRequest>) -> Result<Response<FriendsResponse>, Status> {
-        Ok(Response::new(FriendsResponse { friends: vec![] }))
+    async fn get_friends(&self, request: GrpcRequest<FriendsRequest>) -> Result<Response<FriendsResponse>, Status> {
+        let me = request.into_inner().uuid;
+        let other = if me == "c005-owner" { "c005-other" } else { "c005-owner" };
+        Ok(Response::new(FriendsResponse {
+            friends: vec![Friend { person_uuid: me, friend_uuid: other.into(), ..Default::default() }],
+        }))
     }
     async fn get_friend_page(&self, _: GrpcRequest<FriendPageRequest>) -> Result<Response<FriendPageResponse>, Status> { Err(Status::unimplemented("")) }
     async fn search_friends(&self, _: GrpcRequest<SearchFriendsRequest>) -> Result<Response<SearchFriendsResponse>, Status> { Err(Status::unimplemented("")) }

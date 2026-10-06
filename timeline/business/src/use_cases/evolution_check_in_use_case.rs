@@ -35,6 +35,8 @@ where
     ) -> Result<EvolutionCheckIn, BusinessError> {
         self.consent_gateway.require_health_consent().await?;
         evolution.person_uuid = acting_person_uuid.to_string();
+        // Ids are server-generated so a client cannot overwrite or probe another check-in.
+        evolution.uuid = uuid::Uuid::new_v4().to_string();
         log::info!("Adding evolution check-in: {:?}", evolution);
         self.gateway
             .persist_check_in(evolution)

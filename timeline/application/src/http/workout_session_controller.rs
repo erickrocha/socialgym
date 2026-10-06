@@ -42,8 +42,19 @@ pub async fn create_workout_session(
     state: State<AppState>,
     Extension(locale): Extension<Locale>,
     Extension(current_user): Extension<User>,
-    Json(payload): Json<WorkoutSessionJson>,
+    Json(mut payload): Json<WorkoutSessionJson>,
 ) -> HttpResponse<(StatusCode, Json<WorkoutSessionJson>)> {
+    // The mapper needs every date and exercise owner name: reject instead of panicking.
+    let complete = payload.started_at.is_some()
+        && payload.completed_at.is_some()
+        && payload.executed_sets.iter().all(|set| {
+            set.started_at.is_some() && set.completed_at.is_some() && set.owner_name.is_some()
+        });
+    if !complete {
+        return Err(ExceptionResponse::BadRequest(locale, ErrorKey::WorkoutAddFailed));
+    }
+    // Ids are server-generated: a client-supplied id could overwrite someone else's session.
+    payload.uuid = None;
     let domain = WorkoutMapper::domain(payload);
 
     let done_workout =

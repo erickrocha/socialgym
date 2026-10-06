@@ -21,10 +21,10 @@ pub async fn authentication(
     let auth_header = match auth_header {
         Some(header) => header
             .to_str()
-            .map_err(|_| ExceptionResponse::Forbidden(locale, ErrorKey::AuthHeaderEmpty))?,
+            .map_err(|_| ExceptionResponse::Unauthorized(locale, ErrorKey::AuthHeaderEmpty))?,
         None => {
             log::warn!("No authorization header found in headers");
-            return Err(ExceptionResponse::Forbidden(
+            return Err(ExceptionResponse::Unauthorized(
                 locale,
                 ErrorKey::AuthTokenMissing,
             ));
@@ -36,8 +36,8 @@ pub async fn authentication(
     let (bearer, token) = (header.next(), header.next());
 
     if bearer != Some("Bearer") || token.is_none() {
-        log::info!("Invalid auth header format: {}", auth_header);
-        return Err(ExceptionResponse::Forbidden(
+        log::info!("Invalid auth header format");
+        return Err(ExceptionResponse::Unauthorized(
             locale,
             ErrorKey::AuthTokenInvalid,
         ));
@@ -49,7 +49,7 @@ pub async fn authentication(
     let current_user = Authentication::validate(token_str.clone()).await;
 
     if current_user.is_err() {
-        log::info!("Invalid auth token: {}", auth_header);
+        log::info!("Invalid auth token");
         return Err(ExceptionResponse::Unauthorized(
             locale,
             ErrorKey::AuthTokenMalformed,

@@ -266,7 +266,8 @@ pub async fn mark_read(
 )]
 pub async fn presence(
     state: State<AppState>,
-    Extension(_user): Extension<User>,
+    Extension(locale): Extension<Locale>,
+    Extension(user): Extension<User>,
     Query(query): Query<PresenceQuery>,
 ) -> HttpResponse<Json<PresenceJson>> {
     // ponytail: cap the batch so a caller cannot ask about the whole userbase
@@ -278,7 +279,10 @@ pub async fn presence(
         .filter(|uuid| !uuid.is_empty())
         .take(200)
         .collect();
+    let visible = ChatUseCase::visible_presence_candidates(&state.database, &user, candidates)
+        .await
+        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::Unknown))?;
     Ok(Json(PresenceJson {
-        online: state.chat_hub.online_among(&candidates),
+        online: state.chat_hub.online_among(&visible),
     }))
 }

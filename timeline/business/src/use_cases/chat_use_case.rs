@@ -181,6 +181,27 @@ impl ChatUseCase {
 
     // ── read paths ──────────────────────────────────────────────────────────
 
+    /// Keeps only the candidates the caller may see online: accepted friends and people who
+    /// share one of the caller's conversations. Presence of anyone else is never disclosed.
+    pub async fn visible_presence_candidates(
+        db: &Database,
+        user: &User,
+        candidates: Vec<String>,
+    ) -> Result<Vec<String>, BusinessError> {
+        let mut visible: std::collections::HashSet<String> = FriendGateway::new(GrpcConfig::build_endpoint())
+            .find_friend_uuids(user.person_id, &user.person_uuid)
+            .await?
+            .into_iter()
+            .collect();
+        for conversation in ConversationGateway::new(db)
+            .find_for_participant(&user.person_uuid, 0, 200)
+            .await?
+        {
+            visible.extend(conversation.participant_person_uuids);
+        }
+        Ok(candidates.into_iter().filter(|uuid| visible.contains(uuid)).collect())
+    }
+
     pub async fn list_conversations(
         db: &Database,
         user: &User,

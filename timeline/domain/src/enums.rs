@@ -109,15 +109,23 @@ impl Display for ReactionType {
 }
 
 impl ReactionType {
-    pub fn from_string(s: &str) -> ReactionType {
-        match s {
-            "love" => ReactionType::Love,
-            "haha" => ReactionType::Haha,
-            "wow" => ReactionType::Wow,
-            "sad" => ReactionType::Sad,
-            "angry" => ReactionType::Angry,
-            _ => ReactionType::Like,
+    /// Strict, case-insensitive parser: `Love`, `LOVE` and `love` are the same type and any other
+    /// name is `None`, so an invalid value can be rejected instead of silently becoming `like`.
+    pub fn parse(s: &str) -> Option<ReactionType> {
+        match s.to_ascii_lowercase().as_str() {
+            "like" => Some(ReactionType::Like),
+            "love" => Some(ReactionType::Love),
+            "haha" => Some(ReactionType::Haha),
+            "wow" => Some(ReactionType::Wow),
+            "sad" => Some(ReactionType::Sad),
+            "angry" => Some(ReactionType::Angry),
+            _ => None,
         }
+    }
+
+    /// Lenient form kept for stored data: unknown values read back as `like`.
+    pub fn from_string(s: &str) -> ReactionType {
+        Self::parse(s).unwrap_or(ReactionType::Like)
     }
 }
 

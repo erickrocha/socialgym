@@ -1,3 +1,5 @@
+mod support;
+
 use business::gateway::post_gateway::PostGateway;
 use business::gateway::evolution_check_in_gateway::EvolutionCheckInGateway;
 use business::gateway::mention_notification_gateway::MentionNotificationGateway;
@@ -18,6 +20,33 @@ use domain::reaction::Reaction;
 use domain::user::User;
 use futures::TryStreamExt;
 use mongodb::{Client, Database, bson::doc};
+
+/// Points the gRPC client at the in-process workout stand-in for the length of one test, then
+/// restores the real fixture's settings so the tests that need the live Workout are unaffected.
+struct StubGrpc(Vec<(&'static str, Option<String>)>);
+
+impl StubGrpc {
+    async fn start(friends: &[&str]) -> Self {
+        let keys = ["GRPC_PROTOCOL", "GRPC_HOST", "GRPC_PORT", "GRPC_USE_TLS"];
+        let saved = keys.iter().map(|k| (*k, std::env::var(k).ok())).collect();
+        let stub = support::start_stub().await;
+        *stub.friends.lock().unwrap() = friends.iter().map(|f| f.to_string()).collect();
+        Self(saved)
+    }
+}
+
+impl Drop for StubGrpc {
+    fn drop(&mut self) {
+        for (key, value) in &self.0 {
+            unsafe {
+                match value {
+                    Some(v) => std::env::set_var(key, v),
+                    None => std::env::remove_var(key),
+                }
+            }
+        }
+    }
+}
 
 async fn test_database() -> Database {
     let url = std::env::var("TEST_MONGO_URL")
@@ -327,6 +356,7 @@ async fn c006_friendship_notification_persistence_is_idempotent() {
 #[tokio::test]
 #[ignore = "requires a dedicated TEST_MONGO_URL MongoDB database"]
 async fn c006_social_interaction_producers_acceptance() {
+    let _grpc = StubGrpc::start(&["c006-tc007-owner"]).await;
     let database = test_database().await;
     let post_ids = vec!["c006-tc007-post", "c006-tc007-self-post"];
     let notification_ids = vec![
@@ -416,6 +446,7 @@ async fn c006_social_interaction_producers_acceptance() {
     PostUseCase::remove_reaction(
         &database,
         post_ids[0].to_string(),
+        actor.person_id,
         actor.person_uuid.clone(),
     )
     .await
@@ -757,6 +788,7 @@ async fn c006_push_claim_is_exclusive_and_recovers_expired_lease() {
 #[tokio::test]
 #[ignore = "requires a dedicated TEST_MONGO_URL MongoDB database"]
 async fn c005_post_comment_reaction_feed_acceptance() {
+    let _grpc = StubGrpc::start(&[]).await;
     let database = test_database().await;
     let posts = PostGateway::new(&database);
     database
@@ -873,10 +905,10 @@ async fn c005_post_comment_reaction_feed_acceptance() {
     assert_eq!(second_feed_page.len(), 1);
     assert_eq!(second_feed_page[0].uuid, "c005-post");
 
-    let forbidden = PostUseCase::delete_owned(&database, "c005-post".to_string(), "other-actor")
+    let forbidden = PostUseCase::delete_owned(&database, "c005-post".to_string(), 0, "other-actor")
         .await
         .unwrap_err();
-    assert_eq!(forbidden.kind, BusinessErrorKind::Forbidden);
+    assert_eq!(forbidden.kind, BusinessErrorKind::NotFound, "a stranger cannot tell the post exists");
     assert!(posts.find_by_id("c005-post".to_string()).await.is_some());
 
     let without_reaction = posts
@@ -889,11 +921,11 @@ async fn c005_post_comment_reaction_feed_acceptance() {
         "other-reactor-uuid"
     );
 
-    PostUseCase::delete_owned(&database, "c005-post".to_string(), "actor-uuid")
+    PostUseCase::delete_owned(&database, "c005-post".to_string(), 0, "actor-uuid")
         .await
         .unwrap();
     assert!(posts.find_by_id("c005-post".to_string()).await.is_none());
-    let missing = PostUseCase::delete_owned(&database, "c005-post".to_string(), "actor-uuid")
+    let missing = PostUseCase::delete_owned(&database, "c005-post".to_string(), 0, "actor-uuid")
         .await
         .unwrap_err();
     assert_eq!(missing.kind, BusinessErrorKind::NotFound);

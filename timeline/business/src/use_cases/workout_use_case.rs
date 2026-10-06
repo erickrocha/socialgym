@@ -1,4 +1,3 @@
-use crate::commons::authorization::ensure_owns;
 use crate::gateway::workout_session_gateway::WorkoutSessionGateway;
 use crate::repositories::repository::Repository;
 use domain::business_error::BusinessError;
@@ -40,10 +39,10 @@ impl WorkoutSessionUseCase {
             .find_by_id(id)
             .await
             .ok_or_else(|| BusinessError::not_found("Workout session not found"))?;
-        ensure_owns(
-            session.person_uuid.as_deref().unwrap_or_default(),
-            acting_person_uuid,
-        )?;
+        // Someone else's session is indistinguishable from a missing one.
+        if session.person_uuid.as_deref() != Some(acting_person_uuid) {
+            return Err(BusinessError::not_found("Workout session not found"));
+        }
         Ok(session)
     }
 

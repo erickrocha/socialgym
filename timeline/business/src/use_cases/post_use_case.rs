@@ -1,4 +1,5 @@
 use crate::commons::grpc_config::GrpcConfig;
+use crate::gateway::business_profile_gateway::BusinessProfileGateway;
 use crate::gateway::friend_gateway::FriendGateway;
 use crate::gateway::post_gateway::PostGateway;
 use crate::repositories::repository::Repository;
@@ -29,6 +30,7 @@ impl PostUseCase {
         Self::validate_content(&post.content)?;
         let author_person_id = author.person_id;
         Self::apply_post_author(&mut post, author);
+        post.uuid = uuid::Uuid::new_v4().to_string();
         log::info!("Creating post by author: {}", post.author_id);
         let persisted = PostGateway::new(db).persist(post).await?;
 
@@ -77,6 +79,10 @@ impl PostUseCase {
     pub async fn get_business_feed(db: &Database, business_profile_uuid: String, page: u32) -> Result<Vec<Post>, BusinessError> {
         log::info!("Fetching business feed for business_profile_uuid: {}, page: {}",business_profile_uuid,page);
 
+        // Only Business Profiles have a public feed; a person's posts are not listable by uuid.
+        if !BusinessProfileGateway::exists(&business_profile_uuid).await? {
+            return Err(BusinessError::not_found("Business profile not found"));
+        }
         let uuids = vec![business_profile_uuid.clone()];
 
         let gateway = PostGateway::new(db);
@@ -90,6 +96,7 @@ impl PostUseCase {
         let author_person_id = author.person_id;
         Self::apply_comment_author(&mut comment, author);
         log::info!("Adding comment to post: {}", post_id);
+        Self::load_readable(db, &post_id, author_person_id, &author.person_uuid).await?;
         let uuid = comment.uuid.clone();
         let persisted_post = PostGateway::new(db).add_comment(&post_id, comment).await?;
 
@@ -138,7 +145,7 @@ impl PostUseCase {
         reaction.author_name = author.name.clone();
         log::info!("Adding reaction to post: {}", post_id);
         let gateway = PostGateway::new(db);
-        let before = gateway.find_by_id_result(&post_id).await?;
+        let before = Some(Self::load_readable(db, &post_id, author.person_id, &author.person_uuid).await?);
         let had_reaction = before.as_ref().is_some_and(|post| {
             post.reactions
                 .iter()
@@ -169,18 +176,23 @@ impl PostUseCase {
         }
         Ok(updated)
     }
-    pub async fn remove_reaction(db: &Database, post_id: String, person_uuid: String) -> Result<Post, BusinessError> {
+    pub async fn remove_reaction(db: &Database, post_id: String, person_id: i32, person_uuid: String) -> Result<Post, BusinessError> {
         log::info!("Removing reaction from post: {}", post_id);
+        Self::load_readable(db, &post_id, person_id, &person_uuid).await?;
         PostGateway::new(db).remove_reaction(&post_id, &person_uuid).await
     }
 
     /// Only the author may delete their own post.
-    pub async fn delete_owned(db: &Database, uuid: String, acting_person_uuid: &str) -> Result<(), BusinessError> {
+    pub async fn delete_owned(db: &Database, uuid: String, author_person_id: i32, acting_person_uuid: &str) -> Result<(), BusinessError> {
         let gateway = PostGateway::new(db);
         let post = gateway
             .find_by_id_result(&uuid)
             .await?
             .ok_or_else(|| BusinessError::not_found("Post not found"))?;
+        if post.author_uuid != acting_person_uuid {
+            // Not the author: a reader learns they lack permission, anyone else learns nothing.
+            Self::ensure_can_read(&post, author_person_id, acting_person_uuid).await?;
+        }
         ensure_owns(&post.author_uuid, acting_person_uuid)?;
         let deleted = gateway.delete(uuid).await?;
         if deleted {
@@ -188,6 +200,31 @@ impl PostUseCase {
         } else {
             Err(BusinessError::not_found("Post not found"))
         }
+    }
+
+    /// Post audience (V1): the author, an accepted friend of the author, or any authenticated
+    /// person when the author is a Business Profile. Everyone else gets NOT_FOUND so the
+    /// post's existence is not revealed.
+    pub(crate) async fn load_readable(db: &Database, post_id: &str, person_id: i32, person_uuid: &str) -> Result<Post, BusinessError> {
+        let post = PostGateway::new(db)
+            .find_by_id_result(post_id)
+            .await?
+            .ok_or_else(|| BusinessError::not_found("Post not found"))?;
+        Self::ensure_can_read(&post, person_id, person_uuid).await?;
+        Ok(post)
+    }
+
+    async fn ensure_can_read(post: &Post, person_id: i32, person_uuid: &str) -> Result<(), BusinessError> {
+        if post.author_uuid == person_uuid {
+            return Ok(());
+        }
+        let friends = FriendGateway::new(GrpcConfig::build_endpoint())
+            .find_friend_uuids(person_id, person_uuid)
+            .await?;
+        if friends.contains(&post.author_uuid) || BusinessProfileGateway::exists(&post.author_uuid).await? {
+            return Ok(());
+        }
+        Err(BusinessError::not_found("Post not found"))
     }
 
     fn feed_skip(page: u32, page_size: u64) -> u64 {

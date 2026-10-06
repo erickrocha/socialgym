@@ -36,7 +36,7 @@ pub async fn create(
 ) -> HttpResponse<(StatusCode, Json<ContentReport>)> {
     ContentReportUseCase::create(
         &state.database,
-        &user.person_uuid,
+        &user,
         payload.target_type,
         payload.target_id,
         payload.post_id,

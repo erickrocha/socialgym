@@ -36,6 +36,7 @@ async fn seed_post(db: &Database, author: &User, text: &str) -> Post {
 async fn content_report_validates_persists_and_resolves_moderation() {
     let db = support::database().await;
     let stub = support::start_stub().await;
+    *stub.friends.lock().unwrap() = vec!["person-1".into(), "person-2".into(), "person-3".into()];
     let (author, reporter) = (user(1), user(2));
     let post = seed_post(&db, &author, "hello").await;
     let commented = PostUseCase::add_comment(
@@ -46,13 +47,13 @@ async fn content_report_validates_persists_and_resolves_moderation() {
 
     // create: validation, missing post, success
     for (tt, tid, pid, reason) in [("video", "x", post.uuid.as_str(), "spam"), ("post", "", post.uuid.as_str(), "spam"), ("post", "x", "", "spam"), ("post", "x", post.uuid.as_str(), "")] {
-        let e = ContentReportUseCase::create(&db, "person-2", tt.into(), tid.into(), pid.into(), reason.into(), None).await.unwrap_err();
+        let e = ContentReportUseCase::create(&db, &user(2), tt.into(), tid.into(), pid.into(), reason.into(), None).await.unwrap_err();
         assert!(matches!(e.kind, BusinessErrorKind::Validation), "{tt}/{tid}/{pid}/{reason}");
     }
-    let e = ContentReportUseCase::create(&db, "person-2", "post".into(), "x".into(), "missing".into(), "spam".into(), None).await.unwrap_err();
+    let e = ContentReportUseCase::create(&db, &user(2), "post".into(), "x".into(), "missing".into(), "spam".into(), None).await.unwrap_err();
     assert!(matches!(e.kind, BusinessErrorKind::NotFound));
-    let on_comment = ContentReportUseCase::create(&db, "person-2", "comment".into(), "c1".into(), post.uuid.clone(), "abuse".into(), Some("details".into())).await.unwrap();
-    let on_post = ContentReportUseCase::create(&db, "person-3", "post".into(), post.uuid.clone(), post.uuid.clone(), "spam".into(), None).await.unwrap();
+    let on_comment = ContentReportUseCase::create(&db, &user(2), "comment".into(), "c1".into(), post.uuid.clone(), "abuse".into(), Some("details".into())).await.unwrap();
+    let on_post = ContentReportUseCase::create(&db, &user(3), "post".into(), post.uuid.clone(), post.uuid.clone(), "spam".into(), None).await.unwrap();
     assert_ne!(on_comment.status, "resolved");
 
     // moderator role is required to list and decide
@@ -82,7 +83,7 @@ async fn content_report_validates_persists_and_resolves_moderation() {
     let dismissed = ContentReportUseCase::decide(&db, &on_post.uuid, "mod-1", "dismissed", "fine").await.unwrap();
     assert_eq!(dismissed.decision.as_deref(), Some("dismissed"));
     assert!(PostGateway::new(&db).find_by_id_result(&post.uuid).await.unwrap().is_some());
-    let on_post2 = ContentReportUseCase::create(&db, "person-3", "post".into(), post.uuid.clone(), post.uuid.clone(), "spam".into(), None).await.unwrap();
+    let on_post2 = ContentReportUseCase::create(&db, &user(3), "post".into(), post.uuid.clone(), post.uuid.clone(), "spam".into(), None).await.unwrap();
     ContentReportUseCase::decide(&db, &on_post2.uuid, "mod-1", "removed", "spam").await.unwrap();
     assert!(PostGateway::new(&db).find_by_id_result(&post.uuid).await.unwrap().is_none());
     assert!(ContentReportGateway::new(&db).find(&on_post2.uuid).await.unwrap().is_some());
@@ -102,7 +103,7 @@ async fn workout_session_use_case_scopes_sessions_to_their_owner() {
 
     assert_eq!(WorkoutSessionUseCase::find_by_id(&db, "w1".into(), "person-1").await.unwrap().uuid, "w1");
     let e = WorkoutSessionUseCase::find_by_id(&db, "w1".into(), "person-2").await.unwrap_err();
-    assert!(matches!(e.kind, BusinessErrorKind::Forbidden));
+    assert!(matches!(e.kind, BusinessErrorKind::NotFound), "someone else's session reads as missing");
     let e = WorkoutSessionUseCase::find_by_id(&db, "missing".into(), "person-1").await.unwrap_err();
     assert!(matches!(e.kind, BusinessErrorKind::NotFound));
 
@@ -117,7 +118,8 @@ async fn workout_session_use_case_scopes_sessions_to_their_owner() {
 #[ignore = "requires TEST_MONGO_URL"]
 async fn account_deletion_removes_every_record_of_the_person_and_keeps_the_rest() {
     let db = support::database().await;
-    let _stub = support::start_stub().await;
+    let stub = support::start_stub().await;
+    *stub.friends.lock().unwrap() = vec!["person-1".into(), "person-2".into()];
     let (a, b) = (user(1), user(2));
     let post_a = seed_post(&db, &a, "from a").await;
     let post_b = seed_post(&db, &b, "from b").await;
@@ -127,7 +129,7 @@ async fn account_deletion_removes_every_record_of_the_person_and_keeps_the_rest(
     EvolutionCheckInGateway::new(&db)
         .persist_check_in(EvolutionCheckIn::new("e1".into(), "person-2".into(), DateTime::from_millis(5), None, Visibility::Private, None, None))
         .await.unwrap();
-    ContentReportUseCase::create(&db, "person-2", "post".into(), post_a.uuid.clone(), post_a.uuid.clone(), "spam".into(), None).await.unwrap();
+    ContentReportUseCase::create(&db, &user(2), "post".into(), post_a.uuid.clone(), post_a.uuid.clone(), "spam".into(), None).await.unwrap();
 
     AccountDataDeletionUseCase::delete_all_for_person(&db, "person-2").await.unwrap();
 
