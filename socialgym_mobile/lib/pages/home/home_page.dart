@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/feed_provider.dart';
 import '../../providers/person_provider.dart';
 import '../../providers/resource_provider.dart';
+import '../../utils/lazy_list_scroll.dart';
 import '../../widgets/feed_post_widget.dart';
 import '../../widgets/main_layout.dart';
 import '../../widgets/person_avatar_widget.dart';
@@ -105,14 +106,8 @@ class _FeedPageState extends State<FeedPage> {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final targetContext = _postKeys[targetPostUuid]?.currentContext;
-      if (targetContext != null) {
-        Scrollable.ensureVisible(
-          targetContext,
-          alignment: 0.08,
-          duration: const Duration(milliseconds: 350),
-        );
-      }
+      // The list is lazy: a post below the first screens has no key/context until it is built.
+      scrollToLazyListItem(_scrollController, () => _postKeys[targetPostUuid]);
     });
   }
 
