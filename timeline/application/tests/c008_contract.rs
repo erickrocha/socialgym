@@ -11,7 +11,7 @@
 mod standin;
 
 use application::{
-    AppState, grpc,
+    AppState,
     routes::{
         chat_routes::chat_routes,
         content_report_routes::{moderation_routes, report_routes},
@@ -27,15 +27,15 @@ use axum::{Router, body::Body, http::Request as HttpRequest};
 use business::proto::proto::business_profile::business_profile_service_server::BusinessProfileServiceServer;
 use business::proto::proto::friend::friend_service_server::FriendServiceServer;
 use business::proto::proto::person::person_service_server::PersonServiceServer;
-use business::proto::proto::timeline::chat_service_client::ChatServiceClient;
-use business::proto::proto::timeline::content_report_service_client::ContentReportServiceClient;
-use business::proto::proto::timeline::evolution_check_in_service_client::EvolutionCheckInServiceClient;
-use business::proto::proto::timeline::feed_service_client::FeedServiceClient;
-use business::proto::proto::timeline::notification_service_client::NotificationServiceClient;
-use business::proto::proto::timeline::post_service_client::PostServiceClient;
-use business::proto::proto::timeline::push_device_service_client::PushDeviceServiceClient;
-use business::proto::proto::timeline::workout_session_service_client::WorkoutSessionServiceClient;
-use business::proto::proto::timeline::*;
+use integration::proto::timeline::chat_service_client::ChatServiceClient;
+use integration::proto::timeline::content_report_service_client::ContentReportServiceClient;
+use integration::proto::timeline::evolution_check_in_service_client::EvolutionCheckInServiceClient;
+use integration::proto::timeline::feed_service_client::FeedServiceClient;
+use integration::proto::timeline::notification_service_client::NotificationServiceClient;
+use integration::proto::timeline::post_service_client::PostServiceClient;
+use integration::proto::timeline::push_device_service_client::PushDeviceServiceClient;
+use integration::proto::timeline::workout_session_service_client::WorkoutSessionServiceClient;
+use integration::proto::timeline::*;
 use domain::access_token::Claims;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use mongodb::Client;
@@ -150,6 +150,7 @@ async fn world() -> World {
         moderator_tokens: vec![moderator_token.clone()],
         denied_tokens: vec![denied_token.clone()],
         role_error_tokens: vec![broken_role_token.clone()],
+        ..Default::default()
     };
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let workout_port = listener.local_addr().unwrap().port();
@@ -172,7 +173,7 @@ async fn world() -> World {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
     tokio::spawn(
-        grpc::router(tonic::transport::Server::builder(), state.clone())
+        integration::router(tonic::transport::Server::builder(), state.database.clone(), state.chat_hub.clone())
             .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(listener)),
     );
     let grpc_url = format!("http://127.0.0.1:{port}");

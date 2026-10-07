@@ -17,7 +17,7 @@ protoc \
   --dart_out=grpc:"$OUT_DIR" \
   "$PROTO_DIR"/*.proto
 
-# The timeline contract lives in its own subfolder (mirror of timeline/business/proto/timeline).
+# The timeline contract lives in its own subfolder (mirror of timeline/integration/proto/timeline).
 # Its files import each other as "timeline/<name>.proto", so the proto path stays the parent folder.
 protoc \
   --proto_path="$PROTO_DIR" \

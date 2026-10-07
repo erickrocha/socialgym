@@ -1,6 +1,5 @@
 use crate::http::welcome_controller::welcome;
-pub mod grpc;
-use crate::infrastructure::chat_hub::ChatHub;
+use business::commons::chat_hub::ChatHub;
 use crate::routes::chat_routes::chat_routes;
 use crate::routes::content_report_routes::{moderation_routes, report_routes};
 use crate::routes::evolution_checkin_routes::evolution_checkin_routes;
@@ -139,32 +138,13 @@ impl Modify for SecurityAddon {
     }
 }
 
-#[tokio::main]
-async fn start() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
-    dotenvy::dotenv().ok();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let database_name = env::var("DATABASE_NAME").expect("DATABASE_NAME must be set");
-    // Library default is unbounded; give it an explicit, env-configurable cap
-    // so this process can't open more connections to Mongo than intended.
-    let mut client_options = mongodb::options::ClientOptions::parse(&database_url).await?;
-    client_options.max_pool_size = Some(
-        std::env::var("DB_POOL_MAX_SIZE")
-            .ok()
-            .and_then(|s| s.parse().ok())
-            .unwrap_or(10),
-    );
-    let client = mongodb::Client::with_options(client_options)?;
-    let database = client.database(&database_name);
+/// Serves the REST API (and runs the background workers) on `HOST:PORT` until it stops.
+pub async fn serve(database: Arc<Database>, chat_hub: ChatHub) -> anyhow::Result<()> {
     let host = env::var("HOST").expect("HOST is not set in .env file");
     let port = env::var("PORT").expect("PORT is not set in .env file");
     let server_url = format!("{host}:{port}");
 
-    let state = AppState {
-        database: Arc::new(database),
-        chat_hub: ChatHub::new(),
-    };
+    let state = AppState { database, chat_hub };
 
     infrastructure::mongo_indexes::ensure_indexes(&state.database).await;
     infrastructure::mention_notification_worker::start(Arc::clone(&state.database));
@@ -224,38 +204,14 @@ async fn start() -> anyhow::Result<()> {
         .layer(cors)
         .with_state(state.clone());
 
-    // The two servers are independent: one failing to start or stopping later must not take the
-    // other down (SYS-C008-010), so each failure is logged and the process lives while one serves.
-    let grpc_state = state.clone();
-    let grpc = tokio::spawn(async move {
-        if let Err(error) = grpc::serve(grpc_state).await {
-            log::error!("gRPC server stopped: {error}");
-        }
-    });
-    let rest = async {
-        let listener = tokio::net::TcpListener::bind(&server_url).await?;
-        log::info!("Server started on address {}", server_url);
-        axum::serve(listener, app).await
-    }
-    .await;
-    if let Err(error) = &rest {
-        log::error!("REST server stopped: {error}");
-    }
-    // Reached when REST ended: stay up for as long as gRPC serves, and report a total failure.
-    let _ = grpc.await;
-    rest.map_err(Into::into)
+    let listener = tokio::net::TcpListener::bind(&server_url).await?;
+    log::info!("Server started on address {}", server_url);
+    axum::serve(listener, app).await?;
+    Ok(())
 }
 
 #[derive(Clone)]
 pub struct AppState {
     pub database: Arc<Database>,
     pub chat_hub: ChatHub,
-}
-
-pub fn main() {
-    let result = start();
-
-    if let Some(err) = result.err() {
-        println!("Error: {err}");
-    }
 }

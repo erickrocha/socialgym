@@ -5,15 +5,15 @@
 //! Cast: Alice has a post and is Bob's friend; Carol is a stranger; Mod holds the moderator role.
 mod standin;
 
-use application::{AppState, grpc, routes::workout_session_routes::workout_session_routes};
+use application::{AppState, routes::workout_session_routes::workout_session_routes};
 use axum::{Router, body::Body, http::Request as HttpRequest};
 use business::proto::proto::business_profile::business_profile_service_server::BusinessProfileServiceServer;
 use business::proto::proto::friend::friend_service_server::FriendServiceServer;
 use business::proto::proto::person::person_service_server::PersonServiceServer;
-use business::proto::proto::timeline::content_report_service_client::ContentReportServiceClient;
-use business::proto::proto::timeline::post_service_client::PostServiceClient;
-use business::proto::proto::timeline::workout_session_service_client::WorkoutSessionServiceClient;
-use business::proto::proto::timeline::*;
+use integration::proto::timeline::content_report_service_client::ContentReportServiceClient;
+use integration::proto::timeline::post_service_client::PostServiceClient;
+use integration::proto::timeline::workout_session_service_client::WorkoutSessionServiceClient;
+use integration::proto::timeline::*;
 use domain::access_token::Claims;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use mongodb::Client;
@@ -91,7 +91,7 @@ async fn world() -> World {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
     tokio::spawn(
-        grpc::router(tonic::transport::Server::builder(), state.clone())
+        integration::router(tonic::transport::Server::builder(), state.database.clone(), state.chat_hub.clone())
             .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(listener)),
     );
     let channel = Channel::from_shared(format!("http://127.0.0.1:{port}")).unwrap().connect().await.unwrap();

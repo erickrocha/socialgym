@@ -4,51 +4,22 @@ use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::error_response_json::ErrorResponseJson;
 use crate::http::json::post_json::PostJson;
 use crate::http::post_controller::FeedParams;
-use crate::infrastructure::mapper::PostMapper;
+use crate::infrastructure::mapper::{Mapper, PostMapper};
 use axum::extract::{Path, Query, State};
 use axum::{Extension, Json};
-use business::use_cases::media_use_case::MediaUseCase;
 use business::use_cases::post_use_case::PostUseCase;
 use domain::post::Post;
 use domain::user::User;
-use std::collections::{HashMap, HashSet};
 
-async fn signed_url_cache(
-    posts: &[Post],
-    locale: Locale,
-) -> Result<HashMap<String, String>, ExceptionResponse> {
-    build_signed_url_cache(posts)
+/// The posts as a feed shows them: avatar and media URLs signed.
+async fn signed_posts(posts: Vec<Post>, locale: Locale) -> Result<Vec<PostJson>, ExceptionResponse> {
+    let url_cache = PostUseCase::signed_urls_for(&posts)
         .await
-        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::FeedFetchFailed))
-}
-
-/// CloudFront signed URLs for every avatar and media key in `posts`, shared by REST and gRPC.
-pub async fn build_signed_url_cache(
-    posts: &[Post],
-) -> Result<HashMap<String, String>, domain::business_error::BusinessError> {
-    let mut unique_keys = HashSet::new();
-    for post in posts {
-        if let Some(key) = &post.author_object_key {
-            unique_keys.insert(key.clone());
-        }
-        for media in &post.media {
-            if !media.object_key.is_empty() {
-                unique_keys.insert(media.object_key.clone());
-            }
-        }
-        for comment in &post.comments {
-            if let Some(key) = &comment.author_object_key {
-                unique_keys.insert(key.clone());
-            }
-        }
-    }
-
-    let mut url_cache = HashMap::new();
-    for key in unique_keys {
-        let url = MediaUseCase::generate_cloud_front_signed_url(&key).await?;
-        url_cache.insert(key, url);
-    }
-    Ok(url_cache)
+        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::FeedFetchFailed))?;
+    Ok(posts
+        .into_iter()
+        .map(|post| PostMapper::json(PostUseCase::with_signed_urls(post, &url_cache)))
+        .collect())
 }
 
 // ── Feed (page-based pagination) ───────────────────────────────────────────────
@@ -84,16 +55,7 @@ pub async fn get_feed(
     )
     .await
     {
-        Ok(posts) => {
-            let url_cache = signed_url_cache(&posts, locale).await?;
-
-            let result: Vec<PostJson> = posts
-                .into_iter()
-                .map(|post| PostMapper::json_with_avatars(post, &url_cache))
-                .collect();
-
-            Ok(Json(result))
-        }
+        Ok(posts) => Ok(Json(signed_posts(posts, locale).await?)),
         Err(e) => Err(ExceptionResponse::from_business(
             e,
             locale,
@@ -127,16 +89,7 @@ pub async fn get_feed_by_uuid(
 ) -> HttpResponse<Json<Vec<PostJson>>> {
     let page = params.page.unwrap_or(0);
     match PostUseCase::get_business_feed(&state.database, uuid, page).await {
-        Ok(posts) => {
-            let url_cache = signed_url_cache(&posts, locale).await?;
-
-            let result: Vec<PostJson> = posts
-                .into_iter()
-                .map(|post| PostMapper::json_with_avatars(post, &url_cache))
-                .collect();
-
-            Ok(Json(result))
-        }
+        Ok(posts) => Ok(Json(signed_posts(posts, locale).await?)),
         Err(e) => Err(ExceptionResponse::from_business(
             e,
             locale,

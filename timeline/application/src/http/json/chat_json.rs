@@ -141,3 +141,64 @@ pub struct PresenceJson {
     /// Subset of the requested uuids currently holding a chat WebSocket.
     pub online: Vec<String>,
 }
+
+/// A frame pushed from the server to a WebSocket chat client. Serialized as
+/// `{ "type": "<kebab>", ...payload }`.
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "type", rename_all = "kebab-case")]
+pub enum ServerEventJson {
+    #[serde(rename = "message.new", rename_all = "camelCase")]
+    MessageNew {
+        conversation_uuid: String,
+        conversation_type: String,
+        message: MessageJson,
+    },
+    #[serde(rename = "conversation.updated")]
+    ConversationUpdated { conversation: ConversationJson },
+    #[serde(rename = "message.read", rename_all = "camelCase")]
+    MessageRead {
+        conversation_uuid: String,
+        person_uuid: String,
+        last_read_message_uuid: String,
+    },
+    #[serde(rename = "typing", rename_all = "camelCase")]
+    Typing {
+        conversation_uuid: String,
+        person_uuid: String,
+    },
+    #[serde(rename = "pong")]
+    Pong,
+    #[serde(rename = "error")]
+    Error { message: String },
+}
+
+impl ServerEventJson {
+    pub fn to_frame(&self) -> String {
+        serde_json::to_string(self).unwrap_or_else(|_| "{\"type\":\"error\"}".to_string())
+    }
+}
+
+/// A frame a WebSocket chat client sends.
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "kebab-case")]
+pub enum ClientFrameJson {
+    #[serde(rename_all = "camelCase")]
+    Send {
+        conversation_uuid: String,
+        #[serde(default)]
+        body: String,
+        #[serde(default)]
+        media: Vec<MessageMediaJson>,
+        client_message_id: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    Read {
+        conversation_uuid: String,
+        last_read_message_uuid: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    Typing {
+        conversation_uuid: String,
+    },
+    Ping,
+}

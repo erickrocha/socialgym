@@ -4,7 +4,7 @@ use crate::http::json::error_response_json::{
     BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,NotFoundErrorJson
 };
 use crate::http::json::workout_session_json::WorkoutSessionJson;
-use crate::infrastructure::data_tools::opt_naive_to_bson_datetime;
+use business::commons::data_tools::opt_naive_to_bson_datetime;
 use crate::infrastructure::mapper::{Mapper, WorkoutMapper};
 use crate::AppState;
 use axum::extract::{Extension, Path, Query,State};

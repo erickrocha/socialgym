@@ -3,13 +3,15 @@ use std::time::Duration;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Query, State};
 use axum::response::IntoResponse;
+use business::commons::chat_hub::ChatEvent;
 use business::use_cases::authentication::Authentication;
+use business::use_cases::chat_session_use_case::ChatSessionUseCase;
 use domain::user::User;
 use futures::{SinkExt, StreamExt};
 use serde::Deserialize;
 
-use crate::infrastructure::chat_hub::ServerEvent;
-use crate::infrastructure::chat_session::{self, ClientFrame};
+use crate::http::json::chat_json::ClientFrameJson;
+use crate::infrastructure::mapper::{ClientFrameMapper, ServerEventMapper};
 use crate::AppState;
 
 #[derive(Debug, Deserialize)]
@@ -69,7 +71,8 @@ async fn handle_socket(socket: WebSocket, state: AppState, user: User, token: St
         loop {
             tokio::select! {
                 frame = rx.recv() => match frame {
-                    Some(text) => {
+                    Some(event) => {
+                        let text = ServerEventMapper::json(event).to_frame();
                         if sink.send(Message::Text(text.into())).await.is_err() {
                             break;
                         }
@@ -93,12 +96,12 @@ async fn handle_socket(socket: WebSocket, state: AppState, user: User, token: St
             Message::Ping(_) | Message::Pong(_) | Message::Binary(_) => continue,
         };
 
-        let frame: ClientFrame = match serde_json::from_str(&text) {
+        let frame: ClientFrameJson = match serde_json::from_str(&text) {
             Ok(f) => f,
             Err(_) => {
                 state.chat_hub.publish(
                     std::slice::from_ref(&person_uuid),
-                    &ServerEvent::Error {
+                    &ChatEvent::Error {
                         message: "Malformed frame".to_string(),
                     },
                 );
@@ -106,7 +109,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, user: User, token: St
             }
         };
 
-        chat_session::handle_frame(&state, &user, &token, frame).await;
+        ChatSessionUseCase::handle_frame(&state.chat_hub, &state.database, &user, &token, ClientFrameMapper::domain(frame)).await;
     }
 
     outbound.abort();
@@ -114,42 +117,5 @@ async fn handle_socket(socket: WebSocket, state: AppState, user: User, token: St
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::infrastructure::chat_session::ClientFrame;
-
-    /// The whole API speaks camelCase — REST, gRPC and the socket. Serde's
-    /// enum-level `rename_all` renames variants, not their fields, so each
-    /// variant needs its own. Without it every frame the app sends fails to
-    /// deserialize and is dropped, and the client never learns it happened.
-    #[test]
-    fn client_frames_parse_camel_case_fields() {
-        let send: ClientFrame = serde_json::from_str(
-            r#"{"type":"send","conversationUuid":"c1","body":"oi","media":[],"clientMessageId":"m1"}"#,
-        )
-        .expect("send frame");
-        match send {
-            ClientFrame::Send {
-                conversation_uuid,
-                client_message_id,
-                body,
-                ..
-            } => {
-                assert_eq!(conversation_uuid, "c1");
-                assert_eq!(client_message_id, "m1");
-                assert_eq!(body, "oi");
-            }
-            other => panic!("wrong variant: {other:?}"),
-        }
-
-        let read: ClientFrame = serde_json::from_str(
-            r#"{"type":"read","conversationUuid":"c1","lastReadMessageUuid":"m9"}"#,
-        )
-        .expect("read frame");
-        assert!(matches!(read, ClientFrame::Read { .. }));
-
-        let typing: ClientFrame =
-            serde_json::from_str(r#"{"type":"typing","conversationUuid":"c1"}"#)
-                .expect("typing frame");
-        assert!(matches!(typing, ClientFrame::Typing { .. }));
-    }
-}
+#[path = "../tests/chat_ws_handler_unit_test.rs"]
+mod tests;

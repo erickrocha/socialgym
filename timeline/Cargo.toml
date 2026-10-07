@@ -4,10 +4,17 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace]
-members = ["application", "domain", "business"]
+members = ["application", "domain", "business", "integration"]
 
 [dependencies]
 application = { path = "application" }
+integration = { path = "integration" }
+business = { path = "business" }
+tokio = { workspace = true }
+dotenvy = { workspace = true }
+tracing-subscriber = "0.3.23"
+anyhow = "1.0.102"
+log = "0.4.29"
 
 [workspace.dependencies]
 mongodb = "3.7.0"

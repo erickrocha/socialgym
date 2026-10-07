@@ -63,10 +63,10 @@ Both are Cargo workspaces split into layered crates. Always build/test from insi
 ### Layering (both services follow the same shape)
 
 ```
-entity / domain   →  business            →  application          (+ integration, workout only)
+entity / domain   →  business            →  application          +  integration
 (DB models /         (gateway traits,       (Axum HTTP controllers,   (Tonic gRPC server exposing
  plain structs)       use_cases, mapping     routes, DI/AppState,      the same use_cases to
-                       from entity→domain)    OpenAPI/utoipa docs)      timeline & mobile clients)
+                       from entity→domain)    OpenAPI/utoipa docs)      other services & mobile clients)
 ```
 
 - `entity` (workout only) — SeaORM entities, one file per table, generated/maintained by hand to match `migration/`.
@@ -74,7 +74,7 @@ entity / domain   →  business            →  application          (+ integrat
 - `business/src/gateway` — persistence-access structs (not traits) with `async fn` methods taking `&DbConn` (workout, SeaORM) or a Mongo `Database`/collection handle (timeline). No repository trait abstraction — call the gateway struct's associated functions directly.
 - `business/src/use_cases` — orchestration layer; controllers and gRPC services call into these, never gateways directly.
 - `application/src/http` + `application/src/routes` — Axum controllers and route builders; `application/src/lib.rs` wires the `Router`, CORS, Swagger UI (`utoipa`), auth middleware, and runs migrations on boot (workout: `Migrator::up`).
-- `integration/` (workout only) — Tonic gRPC server. Proto files live in `integration/proto/`; the same `.proto` files are mirrored (and must stay in sync) under `timeline/business/proto/` and `socialgym_mobile/proto/` for their respective clients.
+- `integration/` — Tonic gRPC server, laid out the same in both services: `proto/` (the `.proto` files), `service/` (one file per gRPC service, each a struct that translates the request and calls the use cases), `auth/` (interceptors), `infrastructure/` (proto↔domain mapper, status mapping), and the bootstrap that registers the services and starts tonic. Workout's `.proto` files live in `workout/integration/proto/` and are mirrored (and must stay in sync) under `timeline/business/proto/` and `socialgym_mobile/proto/`; timeline's own contract lives in `timeline/integration/proto/timeline/` and is mirrored in `socialgym_mobile/proto/timeline/` and `workout/integration/proto/timeline/`. `workout` runs `integration` as its own process; `timeline` runs it in the same process as the REST server (the root `src/main.rs` starts both) so both transports share one chat hub. `application` and `integration` never depend on each other: what both need lives in `business`.
 - `migration/` (workout only) — SeaORM migrations, filenames timestamp-prefixed (`m20260129_...`). Timeline has no migration crate since MongoDB is schemaless.
 
 ### Common commands
@@ -86,7 +86,7 @@ cargo check                          # fast type-check across the workspace
 cargo build --release --package workout   # (or --package timeline) — what the Dockerfile builds
 cargo test                           # runs default tests
 cargo test --features mock --test mock    # business-logic unit tests against sea_orm::MockDatabase (workout)
-cargo run                            # runs src/main.rs, which just calls application::main()
+cargo run                            # runs src/main.rs (workout: calls application::main(); timeline: starts the REST and the gRPC servers)
 ```
 
 - Business-logic tests use the `mock` Cargo feature (see `business/Cargo.toml` `[features] mock = [...]`) with `sea_orm::MockDatabase` — they live in `business/tests/mock.rs` and `application/tests/mock.rs` and require `--features mock`.
@@ -113,7 +113,7 @@ gRPC stubs are generated, not hand-written:
 ./tool/generate_proto.sh   # regenerates lib/src/generated/grpc/ from proto/*.proto
 ```
 
-Keep `.proto` files in `socialgym_mobile/proto/`, `workout/integration/proto/`, and `timeline/business/proto/` in sync when changing the gRPC contract.
+Keep `.proto` files in `socialgym_mobile/proto/`, `workout/integration/proto/`, `timeline/business/proto/` (workout mirrors) and `timeline/integration/proto/timeline/` in sync when changing the gRPC contract.
 
 ## Local environment
 

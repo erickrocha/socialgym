@@ -63,6 +63,17 @@ pub struct ChatUseCase;
 impl ChatUseCase {
     // ── create / get-or-create ───────────────────────────────────────────────
 
+    /// A conversation just created or fetched, shown the way the list shows it: the business
+    /// logo as a signed URL and nothing unread for the caller.
+    pub async fn view_of(mut conversation: Conversation) -> ConversationView {
+        if let Some(key) = conversation.business_profile_logo_object_key.clone().filter(|key| !key.is_empty()) {
+            if let Ok(url) = MediaUseCase::generate_cloud_front_signed_url(&key).await {
+                conversation.business_profile_logo_object_key = Some(url);
+            }
+        }
+        ConversationView { conversation, unread: false }
+    }
+
     pub async fn get_or_create_direct(
         db: &Database,
         user: &User,

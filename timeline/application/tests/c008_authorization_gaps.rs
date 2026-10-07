@@ -8,7 +8,8 @@
 use application::{
     AppState,
     routes::{
-        chat_routes::chat_routes, content_report_routes::report_routes, feed_routes::feed_route,
+        chat_routes::chat_routes, content_report_routes::report_routes, evolution_checkin_routes::evolution_checkin_routes,
+        feed_routes::feed_route,
         post_routes::post_routes,
         workout_session_routes::workout_session_routes,
     },
@@ -130,6 +131,7 @@ async fn world() -> World {
         .nest("/reports", report_routes(state.clone()))
         .nest("/workout-sessions", workout_session_routes(state.clone()))
         .nest("/chat", chat_routes(state.clone()))
+        .nest("/check-ins", evolution_checkin_routes(state.clone()))
         .with_state(state.clone());
     World { app, state, alice, bob, carol, _guard: guard }
 }
@@ -300,8 +302,8 @@ gap_test!(gap_the_person_data_export_holds_only_the_persons_own_content, "SYS-C0
 
     // The export is served by the internal gRPC service (the REST internal routes are retired);
     // the interceptor that checks the secret has its own tests, so call the handler directly.
-    use business::proto::proto::timeline::{PersonDataRequest, internal_service_server::InternalService};
-    let services = application::grpc::services::Services { state: w.state.clone() };
+    use integration::proto::timeline::{PersonDataRequest, internal_service_server::InternalService};
+    let services = integration::service::internal_service::GrpcInternalService::new(w.state.database.clone());
     let export = services
         .export_person_data(tonic::Request::new(PersonDataRequest { person_uuid: w.bob.uuid.clone() }))
         .await
@@ -310,4 +312,16 @@ gap_test!(gap_the_person_data_export_holds_only_the_persons_own_content, "SYS-C0
         .export_json;
     assert!(export.contains("bob's own words"), "the export must hold Bob's own comment");
     assert!(!export.contains(&alice_text), "the export must not hold another person's post text");
+});
+
+gap_test!(gap_a_client_supplied_check_in_id_is_ignored, "SYS-C008-015", |w| {
+    let body = |uuid: Option<&str>| json!({
+        "uuid": uuid, "personUuid": "ignored", "createdAt": "2026-10-06T10:00:00", "note": "weekly", "visibility": "Private"
+    });
+    let (status, first, raw) = call(&w.app, "POST", "/check-ins", Some(&w.alice.token), Some(body(None))).await;
+    assert_eq!(status, 201, "setup: {raw}");
+    let existing = first["uuid"].as_str().unwrap().to_string();
+    let (status, second, raw) = call(&w.app, "POST", "/check-ins", Some(&w.alice.token), Some(body(Some(&existing)))).await;
+    assert_eq!(status, 201, "a duplicate client id must not fail the create: {raw}");
+    assert_ne!(second["uuid"].as_str().unwrap(), existing, "the server generates the id");
 });

@@ -1,11 +1,5 @@
-use business::commons::token_context::with_forwarded_token;
-use business::gateway::consent_gateway::ConsentGateway;
 use business::use_cases::authentication::Authentication;
-use domain::user::User;
-use std::future::Future;
 use tonic::{Request, Status};
-
-use super::status::status_from_business;
 
 const INTERNAL_SECRET_METADATA: &str = "x-internal-secret";
 
@@ -69,49 +63,6 @@ pub fn secrets_match(provided: &str, expected: &str) -> bool {
     diff == 0
 }
 
-/// The caller of an authenticated request.
-#[allow(clippy::result_large_err)]
-pub fn caller<T>(request: &Request<T>) -> Result<(User, BearerToken), Status> {
-    let user = request.extensions().get::<User>().cloned();
-    let token = request.extensions().get::<BearerToken>().cloned();
-    user.zip(token)
-        .ok_or_else(|| Status::unauthenticated("missing or invalid credential"))
-}
-
-/// Runs `work` for an authenticated caller the way the REST middleware does: mandatory Terms and
-/// Privacy consent first (`PERMISSION_DENIED` when missing, `UNAVAILABLE` when `workout` cannot
-/// answer), then the work inside the forwarded-token scope so its own `workout` calls are
-/// authenticated as the caller.
-#[allow(clippy::result_large_err)]
-pub async fn with_caller<T, F, Fut, R>(request: &Request<T>, work: F) -> Result<R, Status>
-where
-    F: FnOnce(User) -> Fut,
-    Fut: Future<Output = Result<R, Status>>,
-{
-    let (user, BearerToken(token)) = caller(request)?;
-    with_forwarded_token(Some(token), async move {
-        ConsentGateway::require("terms").await.map_err(|e| status_from_business(&e))?;
-        ConsentGateway::require("privacy").await.map_err(|e| status_from_business(&e))?;
-        work(user).await
-    })
-    .await
-}
-
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn secrets_match_only_when_equal() {
-        assert!(secrets_match("abc", "abc"));
-        assert!(!secrets_match("abc", "abd"));
-        assert!(!secrets_match("abc", "abcd"));
-        assert!(!secrets_match("", "abc"));
-        assert!(secrets_match("", ""));
-    }
-
-    #[test]
-    fn the_token_never_appears_in_debug_output() {
-        assert!(!format!("{:?}", BearerToken("secret-token".into())).contains("secret-token"));
-    }
-}
+#[path = "../tests/grpc_auth_unit_test.rs"]
+mod tests;

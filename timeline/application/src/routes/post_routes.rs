@@ -1,5 +1,6 @@
 use crate::authentication::authentication_middleware::authentication;
-use crate::authentication::rate_limit::{content_limiter, rate_limit};
+use crate::authentication::rate_limit::rate_limit;
+use business::commons::rate_limit::content_limiter;
 use crate::{http, AppState};
 use axum::routing::post;
 use axum::{middleware, Router};

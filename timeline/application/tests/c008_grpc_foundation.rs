@@ -1,8 +1,7 @@
 //! C-008 task 3: the gRPC foundation (authentication, internal secret, rate limit, failure
 //! isolation) exercised through a real in-process server and client. No MongoDB or workout needed.
-use application::grpc;
-use business::proto::proto::timeline::health_service_client::HealthServiceClient;
-use business::proto::proto::timeline::HealthRequest;
+use integration::proto::timeline::health_service_client::HealthServiceClient;
+use integration::proto::timeline::HealthRequest;
 use domain::access_token::Claims;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use tonic::metadata::MetadataValue;
@@ -37,7 +36,7 @@ async fn client() -> HealthServiceClient<Channel> {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
     tokio::spawn(
-        grpc::router(Server::builder(), idle_state().await)
+        { let state = idle_state().await; integration::router(Server::builder(), state.database.clone(), state.chat_hub.clone()) }
             .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(listener)),
     );
     let channel = Channel::from_shared(format!("http://127.0.0.1:{port}")).unwrap().connect().await.unwrap();
@@ -84,7 +83,7 @@ fn the_internal_interceptor_accepts_only_the_shared_secret() {
         if let Some(value) = value {
             request.metadata_mut().insert("x-internal-secret", MetadataValue::try_from(value).unwrap());
         }
-        grpc::auth::internal_interceptor(request).map(|_| ()).map_err(|s| s.code())
+        integration::auth::grpc_auth::internal_interceptor(request).map(|_| ()).map_err(|s| s.code())
     };
     assert_eq!(with(None), Err(Code::Unauthenticated));
     assert_eq!(with(Some("wrong")), Err(Code::Unauthenticated));
@@ -93,16 +92,16 @@ fn the_internal_interceptor_accepts_only_the_shared_secret() {
     // A user token is not a service credential.
     let mut request = Request::new(());
     request.metadata_mut().insert("authorization", MetadataValue::try_from(format!("Bearer {}", token(SECRET, 60))).unwrap());
-    assert_eq!(grpc::auth::internal_interceptor(request).map(|_| ()).map_err(|s| s.code()), Err(Code::Unauthenticated));
+    assert_eq!(integration::auth::grpc_auth::internal_interceptor(request).map(|_| ()).map_err(|s| s.code()), Err(Code::Unauthenticated));
 }
 
 #[test]
 fn the_rate_limit_turns_into_resource_exhausted_for_one_address() {
-    let limiter = application::authentication::rate_limit::content_limiter();
+    let limiter = business::commons::rate_limit::content_limiter();
     let from = |ip: &str| {
         let mut request = Request::new(());
         request.metadata_mut().insert("x-real-ip", MetadataValue::try_from(ip).unwrap());
-        grpc::rate_limit::enforce(&limiter, &request).map_err(|s| s.code())
+        integration::infrastructure::utils::enforce(&limiter, &request).map_err(|s| s.code())
     };
     let outcomes: Vec<_> = (0..61).map(|_| from("203.0.113.7")).collect();
     assert!(outcomes[..60].iter().all(Result::is_ok));
@@ -118,7 +117,7 @@ async fn a_busy_grpc_port_is_reported_and_does_not_panic() {
         std::env::set_var("TIMELINE_GRPC_PORT", busy.local_addr().unwrap().port().to_string());
         std::env::set_var("TIMELINE_GRPC_TLS", "false");
     }
-    assert!(grpc::serve(idle_state().await).await.is_err(), "the caller logs this and keeps the REST server running");
+    assert!({ let state = idle_state().await; integration::serve(state.database, state.chat_hub).await }.is_err(), "the caller logs this and keeps the REST server running");
 }
 
 /// TC-011 step 3 against the real container: TLS, the published port and token validation.

@@ -11,6 +11,8 @@ use domain::post::Post;
 use domain::reaction::Reaction;
 use domain::in_app_notification::InAppNotification;
 use mongodb::Database;
+use std::collections::{HashMap, HashSet};
+use crate::use_cases::media_use_case::MediaUseCase;
 use crate::use_cases::mention_use_case::MentionUseCase;
 use crate::gateway::mention_notification_gateway::MentionNotificationGateway;
 
@@ -258,6 +260,55 @@ impl PostUseCase {
             )));
         }
         Ok(())
+    }
+
+    /// CloudFront signed URLs for every avatar and media key in `posts`.
+    pub async fn signed_urls_for(posts: &[Post]) -> Result<HashMap<String, String>, BusinessError> {
+        let mut unique_keys = HashSet::new();
+        for post in posts {
+            if let Some(key) = &post.author_object_key {
+                unique_keys.insert(key.clone());
+            }
+            for media in &post.media {
+                if !media.object_key.is_empty() {
+                    unique_keys.insert(media.object_key.clone());
+                }
+            }
+            for comment in &post.comments {
+                if let Some(key) = &comment.author_object_key {
+                    unique_keys.insert(key.clone());
+                }
+            }
+        }
+
+        let mut url_cache = HashMap::new();
+        for key in unique_keys {
+            let url = MediaUseCase::generate_cloud_front_signed_url(&key).await?;
+            url_cache.insert(key, url);
+        }
+        Ok(url_cache)
+    }
+
+    /// The post as a feed shows it: the avatar and media URLs replaced by the signed ones in
+    /// `url_cache`. A comment's avatar is only ever the signed one.
+    pub fn with_signed_urls(mut post: Post, url_cache: &HashMap<String, String>) -> Post {
+        post.author_avatar = post
+            .author_object_key
+            .as_ref()
+            .and_then(|key| url_cache.get(key).cloned())
+            .or(post.author_avatar);
+        for media in &mut post.media {
+            if let Some(url) = url_cache.get(&media.object_key) {
+                media.url = url.clone();
+            }
+        }
+        for comment in &mut post.comments {
+            comment.author_avatar = comment
+                .author_object_key
+                .as_ref()
+                .and_then(|key| url_cache.get(key).cloned());
+        }
+        post
     }
 
     fn apply_post_author(post: &mut Post, author: &User) {

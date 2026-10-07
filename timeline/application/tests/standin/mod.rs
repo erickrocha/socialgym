@@ -1,5 +1,5 @@
 //! The in-process stand-in for the `workout` gRPC service shared by the C-008 acceptance tests:
-//! consent is always active, nobody holds a role, no Business Profile exists, and friendships come
+//! consent is always active, nobody holds a role, no Business Profile exists unless listed, and friendships come
 //! from a fixed map.
 #![allow(dead_code)]
 use business::proto::proto::business_profile::business_profile_service_server::BusinessProfileService;
@@ -24,6 +24,10 @@ pub struct Workout {
     pub moderator_tokens: Vec<String>,
     /// Access tokens whose role lookup fails with an error (the role service misbehaves).
     pub role_error_tokens: Vec<String>,
+    /// Uuids that are Business Profiles; every other lookup is NOT_FOUND.
+    pub business_profiles: Vec<String>,
+    /// The Business Profile lookup fails as if `workout` were down.
+    pub business_lookup_down: bool,
 }
 
 macro_rules! person_stub {
@@ -113,7 +117,15 @@ impl FriendService for Workout {
 /// The cast has no Business Profiles: every lookup is NOT_FOUND, like workout's real answer.
 #[tonic::async_trait]
 impl BusinessProfileService for Workout {
-    async fn get_business_profile_by_id(&self, _: GrpcRequest<BusinessProfileRequestId>) -> Result<Response<BusinessProfile>, Status> { Err(Status::not_found("Business profile not found")) }
+    async fn get_business_profile_by_id(&self, request: GrpcRequest<BusinessProfileRequestId>) -> Result<Response<BusinessProfile>, Status> {
+        if self.business_lookup_down {
+            return Err(Status::unavailable("workout is down"));
+        }
+        if self.business_profiles.contains(&request.into_inner().uuid) {
+            return Ok(Response::new(BusinessProfile::default()));
+        }
+        Err(Status::not_found("Business profile not found"))
+    }
     async fn get_business_profile_by_owner_id(&self, _: GrpcRequest<BusinessProfileRequestOwnerId>) -> Result<Response<BusinessProfilesResponse>, Status> { Err(Status::unimplemented("")) }
     async fn add_business_profile(&self, _: GrpcRequest<BusinessProfile>) -> Result<Response<BusinessProfile>, Status> { Err(Status::unimplemented("")) }
     async fn update_business_profile(&self, _: GrpcRequest<BusinessProfile>) -> Result<Response<BusinessProfile>, Status> { Err(Status::unimplemented("")) }

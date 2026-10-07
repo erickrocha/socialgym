@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Fails when a mirror of a timeline proto differs from its source (SYS-C008-011).
-# Source of truth: timeline/business/proto/timeline/. Mirrors: socialgym_mobile/proto/timeline/ for
+# Source of truth: timeline/integration/proto/timeline/. Mirrors: socialgym_mobile/proto/timeline/ for
 # every proto except MOBILE_EXCLUDED; workout/integration/proto/timeline/ only for WORKOUT_MIRRORED.
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-src="$root/timeline/business/proto/timeline"
+src="$root/timeline/integration/proto/timeline"
 WORKOUT_MIRRORED=(internal.proto)
 MOBILE_EXCLUDED=(internal.proto)
 status=0

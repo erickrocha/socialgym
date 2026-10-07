@@ -138,7 +138,7 @@ Mobile apps regenerate gRPC stubs from `.proto` files with:
 ```
 
 Keep the mirrored `.proto` files in sync across `workout/integration/proto/`,
-`timeline/business/proto/`, and each mobile app's `proto/` when changing the
+`timeline/business/proto/` (the `workout` mirrors), `timeline/integration/proto/timeline/` (the timeline's own contract), and each mobile app's `proto/` when changing the
 gRPC contract.
 
 See `CLAUDE.md` for the fuller architectural notes (crate layering, domain

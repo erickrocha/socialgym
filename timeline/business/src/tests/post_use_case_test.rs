@@ -74,3 +74,57 @@ fn post_and_comment_attribution_comes_from_authenticated_user() {
     assert_eq!(comment.author_uuid, "actor-uuid");
     assert_eq!(comment.author_name, "Actor Name");
 }
+
+fn post_with_media_and_comment() -> Post {
+    use domain::enums::MediaType;
+    use domain::media::Media;
+    let mut post = Post::new(
+        42,
+        "actor-uuid".to_string(),
+        "Actor Name".to_string(),
+        Some("avatars/actor".to_string()),
+        Some("stored-avatar".to_string()),
+        "hello".to_string(),
+        vec![Media {
+            uuid: "m1".to_string(),
+            url: "stored-url".to_string(),
+            media_type: MediaType::Image,
+            object_key: "media/one".to_string(),
+        }],
+        Vec::new(),
+    );
+    post.comments.push(Comment::new(
+        "c1".to_string(),
+        post.uuid.clone(),
+        "friend-uuid".to_string(),
+        "Friend".to_string(),
+        Some("avatars/friend".to_string()),
+        Some("stored-comment-avatar".to_string()),
+        "nice".to_string(),
+        None,
+        Vec::new(),
+    ));
+    post
+}
+
+#[test]
+fn signed_urls_replace_the_avatar_and_media_urls() {
+    let cache = std::collections::HashMap::from([
+        ("avatars/actor".to_string(), "signed-actor".to_string()),
+        ("media/one".to_string(), "signed-media".to_string()),
+        ("avatars/friend".to_string(), "signed-friend".to_string()),
+    ]);
+    let post = PostUseCase::with_signed_urls(post_with_media_and_comment(), &cache);
+    assert_eq!(post.author_avatar.as_deref(), Some("signed-actor"));
+    assert_eq!(post.media[0].url, "signed-media");
+    assert_eq!(post.comments[0].author_avatar.as_deref(), Some("signed-friend"));
+}
+
+#[test]
+fn without_a_signed_url_the_post_keeps_its_stored_values_but_a_comment_avatar_is_dropped() {
+    let post = PostUseCase::with_signed_urls(post_with_media_and_comment(), &Default::default());
+    assert_eq!(post.author_avatar.as_deref(), Some("stored-avatar"));
+    assert_eq!(post.media[0].url, "stored-url");
+    // A comment's avatar is only ever a signed URL: the stored value is never shown.
+    assert_eq!(post.comments[0].author_avatar, None);
+}

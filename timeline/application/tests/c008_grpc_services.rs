@@ -5,17 +5,17 @@
 //! Cast: Alice authors; Bob is her accepted friend; Carol has no relationship with either.
 mod standin;
 
-use application::{AppState, grpc, routes::feed_routes::feed_route};
+use application::{AppState, routes::feed_routes::feed_route};
 use axum::{Router, body::Body, http::Request};
 use business::proto::proto::business_profile::business_profile_service_server::BusinessProfileServiceServer;
 use business::proto::proto::friend::friend_service_server::FriendServiceServer;
 use business::proto::proto::person::person_service_server::PersonServiceServer;
-use business::proto::proto::timeline::evolution_check_in_service_client::EvolutionCheckInServiceClient;
-use business::proto::proto::timeline::feed_service_client::FeedServiceClient;
-use business::proto::proto::timeline::notification_service_client::NotificationServiceClient;
-use business::proto::proto::timeline::post_service_client::PostServiceClient;
-use business::proto::proto::timeline::push_device_service_client::PushDeviceServiceClient;
-use business::proto::proto::timeline::*;
+use integration::proto::timeline::evolution_check_in_service_client::EvolutionCheckInServiceClient;
+use integration::proto::timeline::feed_service_client::FeedServiceClient;
+use integration::proto::timeline::notification_service_client::NotificationServiceClient;
+use integration::proto::timeline::post_service_client::PostServiceClient;
+use integration::proto::timeline::push_device_service_client::PushDeviceServiceClient;
+use integration::proto::timeline::*;
 use domain::access_token::Claims;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use mongodb::Client;
@@ -26,6 +26,16 @@ use tonic::metadata::MetadataValue;
 use tonic::transport::Channel;
 use tonic::{Code, Request as Rpc};
 use tower::ServiceExt;
+
+static LOGS: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+struct Capture;
+impl log::Log for Capture {
+    fn enabled(&self, _: &log::Metadata<'_>) -> bool { true }
+    fn log(&self, record: &log::Record<'_>) { LOGS.lock().unwrap().push(record.args().to_string()); }
+    fn flush(&self) {}
+}
+static CAPTURE: Capture = Capture;
 
 const SECRET: &str = "c008-services-test-secret";
 
@@ -60,23 +70,33 @@ struct World {
     alice: Actor,
     bob: Actor,
     carol: Actor,
+    /// Owns a Business Profile when the world is built with `dave_is_business`.
+    dave: Actor,
     /// Address the rate limiter sees; unique per test so budgets do not mix.
     ip: String,
     _guard: tokio::sync::MutexGuard<'static, ()>,
 }
 
 async fn world() -> World {
+    world_with(false, false).await
+}
+
+/// With `dave_is_business` `workout` answers to Dave's uuid as a Business Profile; `lookup_down`
+/// makes that lookup fail like a stopped `workout`.
+async fn world_with(dave_is_business: bool, lookup_down: bool) -> World {
     let guard = ENV_LOCK.lock().await;
     let mongo = std::env::var("TEST_MONGO_URL").expect("TEST_MONGO_URL must be set");
     assert!(mongo.contains("/timeline_test"), "refusing to run against a non-test database");
     let database = std::sync::Arc::new(Client::with_uri_str(mongo).await.unwrap().database("timeline_test"));
 
     let (alice, bob, carol) = (person(8101, "alice"), person(8102, "bob"), person(8103, "carol"));
+    let dave = person(8104, "dave");
+    let business_profiles = if dave_is_business { vec![dave.uuid.clone()] } else { Vec::new() };
     let friends = HashMap::from([
         (alice.uuid.clone(), vec![bob.uuid.clone()]),
         (bob.uuid.clone(), vec![alice.uuid.clone()]),
     ]);
-    let workout = || Workout { friends: friends.clone(), ..Default::default() };
+    let workout = || Workout { friends: friends.clone(), business_profiles: business_profiles.clone(), business_lookup_down: lookup_down, ..Default::default() };
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let workout_port = listener.local_addr().unwrap().port();
     tokio::spawn(
@@ -98,14 +118,14 @@ async fn world() -> World {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
     tokio::spawn(
-        grpc::router(tonic::transport::Server::builder(), state.clone())
+        integration::router(tonic::transport::Server::builder(), state.database.clone(), state.chat_hub.clone())
             .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(listener)),
     );
     let channel = Channel::from_shared(format!("http://127.0.0.1:{port}")).unwrap().connect().await.unwrap();
 
     let rest = Router::new().nest("/feed", feed_route(state.clone())).with_state(state);
     let ip = format!("198.51.100.{}", rand_octet());
-    World { channel, rest, alice, bob, carol, ip, _guard: guard }
+    World { channel, rest, alice, bob, carol, dave, ip, _guard: guard }
 }
 
 fn rand_octet() -> u8 {
@@ -330,7 +350,7 @@ async fn every_service_refuses_a_call_without_a_credential() {
 #[ignore = "requires a disposable TEST_MONGO_URL"]
 async fn an_oversized_message_is_out_of_range_before_any_use_case_runs() {
     let w = world().await;
-    let huge = CreatePostRequest { content: "x".repeat(grpc::MAX_MESSAGE_BYTES + 1024), ..Default::default() };
+    let huge = CreatePostRequest { content: "x".repeat(integration::MAX_MESSAGE_BYTES + 1024), ..Default::default() };
     let status = w.posts().max_encoding_message_size(usize::MAX).create_post(w.rpc(huge, Some(&w.alice))).await.unwrap_err();
     assert_eq!(status.code(), Code::OutOfRange, "{status:?}");
 }
@@ -340,7 +360,7 @@ async fn an_oversized_message_is_out_of_range_before_any_use_case_runs() {
 #[tokio::test]
 #[ignore = "requires a disposable TEST_MONGO_URL"]
 async fn the_internal_service_accepts_only_the_shared_secret_and_exports_only_own_content() {
-    use business::proto::proto::timeline::internal_service_client::InternalServiceClient;
+    use integration::proto::timeline::internal_service_client::InternalServiceClient;
     let w = world().await;
     unsafe { std::env::set_var("INTERNAL_SERVICE_SECRET", "c008-internal-secret") };
     let mut internal = InternalServiceClient::new(w.channel.clone());
@@ -380,4 +400,153 @@ async fn the_internal_service_accepts_only_the_shared_secret_and_exports_only_ow
     }
     let after = internal.export_person_data(ask(Some("c008-internal-secret"), None, &w.alice.uuid)).await.unwrap().into_inner().export_json;
     assert!(!after.contains(&alice_words));
+}
+
+// ---------------------------------------------------------------- TC-014 audience
+
+#[tokio::test]
+#[ignore = "requires a disposable TEST_MONGO_URL"]
+async fn strangers_cannot_touch_a_personal_post_and_business_feeds_are_public() {
+    let w = world_with(true, false).await;
+    let alice_post = w.publish(&w.alice, &format!("alice {}", uuid::Uuid::new_v4())).await;
+    let dave_post = w.publish(&w.dave, &format!("dave {}", uuid::Uuid::new_v4())).await;
+    let id = alice_post.uuid.clone().unwrap();
+
+    // Step 1: Carol can neither comment nor react, and nothing of hers is stored.
+    let comment = w.posts().add_comment(w.rpc(AddCommentRequest { post_uuid: id.clone(), content: "hi".into(), ..Default::default() }, Some(&w.carol))).await;
+    let reaction = w.posts().add_reaction(w.rpc(AddReactionRequest { post_uuid: id.clone(), reaction_type: "like".into() }, Some(&w.carol))).await;
+    assert_eq!((code(comment), code(reaction)), (Code::NotFound, Code::NotFound));
+
+    // Step 3: Carol's remove is NOT_FOUND; Bob's removes only his own reaction.
+    w.posts().add_reaction(w.rpc(AddReactionRequest { post_uuid: id.clone(), reaction_type: "like".into() }, Some(&w.alice))).await.unwrap();
+    w.posts().add_reaction(w.rpc(AddReactionRequest { post_uuid: id.clone(), reaction_type: "love".into() }, Some(&w.bob))).await.unwrap();
+    assert_eq!(code(w.posts().remove_reaction(w.rpc(RemoveReactionRequest { post_uuid: id.clone() }, Some(&w.carol))).await), Code::NotFound);
+    assert_eq!(code(w.posts().remove_reaction(w.rpc(RemoveReactionRequest { post_uuid: id.clone() }, Some(&w.bob))).await), Code::Ok);
+    let seen = w.feed().get_feed(w.rpc(GetFeedRequest { page: 0 }, Some(&w.alice))).await.unwrap().into_inner().posts;
+    let stored = seen.iter().find(|p| p.uuid.as_deref() == Some(id.as_str())).expect("Alice sees her post");
+    assert_eq!(stored.reactions.len(), 1, "only Alice's reaction is left");
+    assert_eq!(stored.reactions[0].reaction_type.to_lowercase(), "like");
+    assert!(stored.comments.is_empty(), "nothing from Carol was stored");
+
+    // Step 5: a Business Profile's posts are listable by anyone, and only its own.
+    let by_business = w.feed().get_feed_by_author(w.rpc(GetFeedByAuthorRequest { author_uuid: w.dave.uuid.clone(), page: 0 }, Some(&w.carol))).await.unwrap().into_inner().posts;
+    assert!(by_business.iter().any(|p| p.uuid == dave_post.uuid), "Dave's post is listed");
+    assert!(by_business.iter().all(|p| p.author_uuid == w.dave.uuid), "and nothing else");
+
+    // Step 6: the main feed is the caller and friends only.
+    let carol_feed = w.feed().get_feed(w.rpc(GetFeedRequest { page: 0 }, Some(&w.carol))).await.unwrap().into_inner().posts;
+    assert!(carol_feed.iter().all(|p| p.uuid != alice_post.uuid && p.uuid != dave_post.uuid));
+
+    // Step 7: a uuid that is neither a Business Profile nor a person.
+    let nobody = w.feed().get_feed_by_author(w.rpc(GetFeedByAuthorRequest { author_uuid: uuid::Uuid::new_v4().to_string(), page: 0 }, Some(&w.carol))).await;
+    assert_eq!(code(nobody), Code::NotFound);
+}
+
+#[tokio::test]
+#[ignore = "requires a disposable TEST_MONGO_URL"]
+async fn a_stopped_workout_is_unavailable_never_not_a_business_profile() {
+    let w = world_with(true, true).await;
+    let listed = w.feed().get_feed_by_author(w.rpc(GetFeedByAuthorRequest { author_uuid: w.dave.uuid.clone(), page: 0 }, Some(&w.carol))).await;
+    assert_eq!(code(listed), Code::Unavailable);
+}
+
+// ---------------------------------------------------------------- TC-015 input rules
+
+#[tokio::test]
+#[ignore = "requires a disposable TEST_MONGO_URL"]
+async fn reaction_names_are_validated_and_stored_as_sent() {
+    let w = world().await;
+    let w = &w;
+    let id = w.publish(&w.alice, &format!("react {}", uuid::Uuid::new_v4())).await.uuid.unwrap();
+    let react = |kind: &str| {
+        let request = w.rpc(AddReactionRequest { post_uuid: id.clone(), reaction_type: kind.into() }, Some(&w.bob));
+        async move { w.posts().add_reaction(request).await }
+    };
+
+    for kind in ["like", "love", "haha", "wow", "sad", "angry"] {
+        let reactions = react(kind).await.unwrap().into_inner().reactions;
+        assert_eq!(reactions.last().unwrap().reaction_type.to_lowercase(), kind, "{kind} is stored as sent");
+    }
+    let capitalized = react("Like").await.unwrap().into_inner().reactions;
+    assert_eq!(capitalized.last().unwrap().reaction_type.to_lowercase(), "like");
+    let before = capitalized.iter().map(|r| r.reaction_type.clone()).collect::<Vec<_>>();
+    for bad in ["", "dislike"] {
+        assert_eq!(code(react(bad).await), Code::InvalidArgument, "{bad:?} is refused");
+    }
+    let feed = w.feed().get_feed(w.rpc(GetFeedRequest { page: 0 }, Some(&w.alice))).await.unwrap().into_inner().posts;
+    let after = feed.iter().find(|p| p.uuid.as_deref() == Some(id.as_str())).unwrap().reactions.iter().map(|r| r.reaction_type.clone()).collect::<Vec<_>>();
+    assert_eq!(before, after, "a refused reaction changes nothing");
+}
+
+#[tokio::test]
+#[ignore = "requires a disposable TEST_MONGO_URL"]
+async fn post_content_is_limited_to_5000_characters() {
+    let w = world().await;
+    let w = &w;
+    let create = |n: usize| {
+        let request = w.rpc(CreatePostRequest { content: "x".repeat(n), ..Default::default() }, Some(&w.alice));
+        async move { w.posts().create_post(request).await }
+    };
+    assert_eq!(code(create(5001).await), Code::InvalidArgument);
+    assert_eq!(code(create(5000).await), Code::Ok, "the limit itself is allowed");
+}
+
+fn session_request(uuid: Option<&str>, dated: bool) -> CreateWorkoutSessionRequest {
+    let when = dated.then(|| "2026-10-06T10:00:00".to_string());
+    CreateWorkoutSessionRequest {
+        session: Some(WorkoutSession {
+            uuid: uuid.map(String::from),
+            person_uuid: "someone-else".into(),
+            workout_name: Some("Leg day".into()),
+            duration: 45,
+            started_at: when.clone(),
+            completed_at: when.clone(),
+            executed_sets: vec![ExecutedSet {
+                exercise_name: Some("Squat".into()),
+                owner_id: 1,
+                owner_name: Some("Alice".into()),
+                set_number: 1,
+                reps_or_duration: 10,
+                weight: 80.0,
+                started_at: when.clone(),
+                completed_at: when,
+                ..Default::default()
+            }],
+            total_volume: 800.0,
+            total_sets: 1.0,
+            ..Default::default()
+        }),
+    }
+}
+
+#[tokio::test]
+#[ignore = "requires a disposable TEST_MONGO_URL"]
+async fn workout_sessions_need_their_dates_and_ignore_a_client_chosen_id() {
+    use integration::proto::timeline::workout_session_service_client::WorkoutSessionServiceClient;
+    let w = world().await;
+    let sessions = || WorkoutSessionServiceClient::new(w.channel.clone());
+
+    // Step 7: no dates is a validation error, and the server keeps serving.
+    assert_eq!(code(sessions().create_workout_session(w.rpc(session_request(None, false), Some(&w.alice))).await), Code::InvalidArgument);
+    let first = sessions().create_workout_session(w.rpc(session_request(None, true), Some(&w.alice))).await.expect("still serving").into_inner();
+
+    // Step 8: an id that already exists is ignored; the new record gets its own id.
+    let first_id = first.uuid.clone().unwrap();
+    let second = sessions().create_workout_session(w.rpc(session_request(Some(&first_id), true), Some(&w.alice))).await.unwrap().into_inner();
+    assert_ne!(second.uuid.unwrap(), first_id);
+    let kept = sessions().get_workout_session(w.rpc(GetWorkoutSessionRequest { session_uuid: first_id }, Some(&w.alice))).await.unwrap().into_inner();
+    assert_eq!(kept.workout_name, first.workout_name, "the existing session is unchanged");
+}
+
+#[tokio::test]
+#[ignore = "requires a disposable TEST_MONGO_URL"]
+async fn a_rejected_token_is_never_written_to_the_logs() {
+    let _ = log::set_logger(&CAPTURE);
+    log::set_max_level(log::LevelFilter::Trace);
+    let w = world().await;
+    let marker = format!("leaky-token-{}", uuid::Uuid::new_v4());
+    let mut request = w.rpc(GetFeedRequest { page: 0 }, None);
+    request.metadata_mut().insert("authorization", MetadataValue::try_from(format!("Bearer {marker}")).unwrap());
+    assert_eq!(code(w.feed().get_feed(request).await), Code::Unauthenticated);
+    assert!(!LOGS.lock().unwrap().iter().any(|line| line.contains(&marker)), "a credential must never reach the logs");
 }

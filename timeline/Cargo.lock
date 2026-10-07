@@ -74,11 +74,11 @@ dependencies = [
  "dotenvy",
  "fluent-templates",
  "futures",
+ "integration",
  "jsonwebtoken",
  "log",
  "mongodb",
  "reqwest",
- "rustls 0.23.45",
  "serde",
  "serde_json",
  "tokio",
@@ -2137,6 +2137,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "integration"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "business",
+ "chrono",
+ "domain",
+ "log",
+ "mongodb",
+ "prost",
+ "protoc-bin-vendored",
+ "rustls 0.23.45",
+ "serde_json",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+ "uuid",
+]
+
+[[package]]
 name = "intl-memoizer"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4017,7 +4039,14 @@ dependencies = [
 name = "timeline"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "application",
+ "business",
+ "dotenvy",
+ "integration",
+ "log",
+ "tokio",
+ "tracing-subscriber",
 ]
 
 [[package]]

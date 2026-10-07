@@ -4,7 +4,7 @@ use crate::http::json::error_response_json::{
     BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,
 };
 use crate::http::json::evolution_check_in_json::EvolutionCheckInJson;
-use crate::infrastructure::data_tools::opt_naive_to_bson_datetime;
+use business::commons::data_tools::opt_naive_to_bson_datetime;
 use crate::infrastructure::mapper::{EvolutionCheckInMapper, Mapper};
 use crate::AppState;
 use axum::extract::{Query, State};

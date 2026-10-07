@@ -5,44 +5,16 @@ use crate::http::json::chat_json::{
     CreateBusinessTeamGroupJson, CreateDirectConversationJson, MarkReadJson, MarkReadResultJson,
     MessageJson, PresenceJson, PresenceQuery, SendMessageJson,
 };
-use crate::infrastructure::chat_hub::ServerEvent;
 use crate::infrastructure::mapper::{ConversationMapper, MessageMapper};
 use crate::AppState;
 use axum::extract::{Extension, Path, Query, State};
 use axum::Json;
-use business::use_cases::chat_use_case::{ChatUseCase, ConversationView};
+use business::use_cases::chat_session_use_case::ChatSessionUseCase;
+use business::use_cases::chat_use_case::ChatUseCase;
 use domain::user::User;
 
 fn business_err(locale: Locale) -> impl Fn(domain::business_error::BusinessError) -> ExceptionResponse {
     move |error| ExceptionResponse::from_business(error, locale, ErrorKey::Unknown)
-}
-
-pub(crate) async fn single_conversation_json(
-    state: &AppState,
-    user: &User,
-    conversation: domain::conversation::Conversation,
-) -> ConversationJson {
-    // Reuse the list mapper so a freshly created conversation renders exactly
-    // like it will in the list (signed logo url, unread=false for the creator).
-    let mut conversation = conversation;
-    if let Some(key) = conversation.business_profile_logo_object_key.clone() {
-        if !key.is_empty() {
-            if let Ok(url) =
-                business::use_cases::media_use_case::MediaUseCase::generate_cloud_front_signed_url(
-                    &key,
-                )
-                .await
-            {
-                conversation.business_profile_logo_object_key = Some(url);
-            }
-        }
-    }
-    let _ = state;
-    let _ = user;
-    ConversationMapper::view(ConversationView {
-        conversation,
-        unread: false,
-    })
 }
 
 #[utoipa::path(
@@ -63,7 +35,7 @@ pub async fn create_direct(
             .await
             .map_err(business_err(locale))?;
     Ok(Json(
-        single_conversation_json(&state, &user, conversation).await,
+        ConversationMapper::view(ChatUseCase::view_of(conversation).await),
     ))
 }
 
@@ -88,7 +60,7 @@ pub async fn create_business_team_group(
     .await
     .map_err(business_err(locale))?;
     Ok(Json(
-        single_conversation_json(&state, &user, conversation).await,
+        ConversationMapper::view(ChatUseCase::view_of(conversation).await),
     ))
 }
 
@@ -114,7 +86,7 @@ pub async fn create_business_direct(
     .await
     .map_err(business_err(locale))?;
     Ok(Json(
-        single_conversation_json(&state, &user, conversation).await,
+        ConversationMapper::view(ChatUseCase::view_of(conversation).await),
     ))
 }
 
@@ -197,7 +169,8 @@ pub async fn send_message(
         .map(MessageMapper::to_domain_media)
         .collect();
 
-    let outcome = ChatUseCase::send_message(
+    let message = ChatSessionUseCase::send_message(
+        &state.chat_hub,
         &state.database,
         &user,
         &conversation_uuid,
@@ -207,17 +180,7 @@ pub async fn send_message(
     )
     .await
     .map_err(business_err(locale))?;
-
-    let json = MessageMapper::json(outcome.message);
-    state.chat_hub.publish(
-        &outcome.recipients,
-        &ServerEvent::MessageNew {
-            conversation_uuid: conversation_uuid.clone(),
-            conversation_type: outcome.conversation_type,
-            message: json.clone(),
-        },
-    );
-    Ok(Json(json))
+    Ok(Json(MessageMapper::json(message)))
 }
 
 #[utoipa::path(
@@ -235,7 +198,8 @@ pub async fn mark_read(
     Path(conversation_uuid): Path<String>,
     Json(payload): Json<MarkReadJson>,
 ) -> HttpResponse<Json<MarkReadResultJson>> {
-    let outcome = ChatUseCase::mark_read(
+    ChatSessionUseCase::mark_read(
+        &state.chat_hub,
         &state.database,
         &user,
         &conversation_uuid,
@@ -243,15 +207,6 @@ pub async fn mark_read(
     )
     .await
     .map_err(business_err(locale))?;
-
-    state.chat_hub.publish(
-        &outcome.recipients,
-        &ServerEvent::MessageRead {
-            conversation_uuid: outcome.conversation_uuid,
-            person_uuid: outcome.reader_person_uuid,
-            last_read_message_uuid: outcome.last_read_message_uuid,
-        },
-    );
     Ok(Json(MarkReadResultJson { read: true }))
 }
 
@@ -279,7 +234,7 @@ pub async fn presence(
         .filter(|uuid| !uuid.is_empty())
         .take(200)
         .collect();
-    let online = crate::infrastructure::chat_session::presence_online(&state, &user, candidates)
+    let online = ChatSessionUseCase::presence_online(&state.chat_hub, &state.database, &user, candidates)
         .await
         .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::Unknown))?;
     Ok(Json(PresenceJson { online }))

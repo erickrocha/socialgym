@@ -1,14 +1,17 @@
 use crate::http::json::body_composition_json::BodyCompositionJson;
+use crate::http::json::chat_json::{ClientFrameJson, ServerEventJson};
 use crate::http::json::circumferences_json::CircumferencesJson;
 use crate::http::json::evolution_check_in_json::EvolutionCheckInJson;
 use crate::http::json::exercise_json::ExerciseJson;
 use crate::http::json::notification_json::NotificationJson;
 use crate::http::json::post_json::{CommentJson, MediaJson, MentionJson, PostJson, ReactionJson};
 use crate::http::json::workout_session_json::WorkoutSessionJson;
-use crate::infrastructure::data_tools::{
+use business::commons::chat_hub::ChatEvent;
+use business::commons::data_tools::{
     bson_datetime_to_naive, naive_to_bson_datetime, opt_bson_datetime_to_naive,
     opt_naive_to_bson_datetime,
 };
+use business::use_cases::chat_session_use_case::ClientFrame;
 use domain::body_composition::BodyComposition;
 use domain::circumferences::{Biceps, Circumferences, Thighs};
 use domain::comment::Comment;
@@ -244,33 +247,6 @@ impl Mapper<Comment, CommentJson> for CommentMapper {
     }
 }
 
-impl CommentMapper {
-    /// Convert comment to JSON, resolving the avatar URL from the shared CloudFront cache.
-    pub fn json_with_avatar(
-        comment: Comment,
-        url_cache: &std::collections::HashMap<String, String>,
-    ) -> CommentJson {
-        let author_avatar_url = comment
-            .author_object_key
-            .as_ref()
-            .and_then(|key| url_cache.get(key).cloned());
-
-        CommentJson {
-            uuid: Some(comment.uuid),
-            post_uuid: comment.post_uuid,
-            author_uuid: comment.author_uuid,
-            author_name: comment.author_name,
-            author_object_key: comment.author_object_key,
-            author_avatar: author_avatar_url,
-            content: comment.content,
-            parent_uuid: comment.parent_uuid,
-            created_at: opt_bson_datetime_to_naive(comment.created_at),
-            updated_at: opt_bson_datetime_to_naive(comment.updated_at),
-            mentions: MentionMapper::json_vec(comment.mentions),
-        }
-    }
-}
-
 // ── Post ─────────────────────────────────────────────────────────────────────
 
 pub struct PostMapper {}
@@ -320,52 +296,6 @@ impl Mapper<Post, PostJson> for PostMapper {
                 .updated_at
                 .and_then(opt_naive_to_bson_datetime)
                 .unwrap_or(now),
-        }
-    }
-}
-
-impl PostMapper {
-    /// Convert post to JSON, replacing media and comment avatar URLs
-    /// from the shared CloudFront signed-URL cache.
-    pub fn json_with_avatars(
-        post: Post,
-        url_cache: &std::collections::HashMap<String, String>,
-    ) -> PostJson {
-        PostJson {
-            uuid: Some(post.uuid),
-            author_id: post.author_id,
-            author_uuid: post.author_uuid,
-            author_name: post.author_name,
-            author_object_key: post.author_object_key.clone(),
-            author_avatar: post
-                .author_object_key
-                .as_ref()
-                .and_then(|k| url_cache.get(k).cloned())
-                .or(post.author_avatar),
-            content: post.content,
-            media: post
-                .media
-                .into_iter()
-                .map(|m| {
-                    let url = url_cache.get(&m.object_key).cloned().unwrap_or(m.url);
-                    MediaJson {
-                        uuid: Some(m.uuid),
-                        url,
-                        media_type: m.media_type.to_string(),
-                        object_key: m.object_key,
-                    }
-                })
-                .collect(),
-            reactions: ReactionMapper::json_vec(post.reactions),
-            comments: post
-                .comments
-                .into_iter()
-                .map(|c| CommentMapper::json_with_avatar(c, url_cache))
-                .collect(),
-            created_at: opt_bson_datetime_to_naive(post.created_at),
-            updated_at: opt_bson_datetime_to_naive(post.updated_at),
-            mentions: MentionMapper::json_vec(post.mentions),
-            third_party_consent_confirmed: false,
         }
     }
 }
@@ -633,6 +563,55 @@ impl Mapper<Mention, MentionJson> for MentionMapper {
         Mention {
             name: t.name,
             mentioned_uuid: t.mentioned_uuid,
+        }
+    }
+}
+
+pub struct ServerEventMapper {}
+
+impl ServerEventMapper {
+    /// The WebSocket form of an event the hub fans out.
+    pub fn json(event: ChatEvent) -> ServerEventJson {
+        match event {
+            ChatEvent::MessageNew { conversation_uuid, conversation_type, message } => {
+                ServerEventJson::MessageNew {
+                    conversation_uuid,
+                    conversation_type,
+                    message: MessageMapper::json(message),
+                }
+            }
+            ChatEvent::ConversationUpdated { conversation } => {
+                ServerEventJson::ConversationUpdated { conversation: ConversationMapper::view(conversation) }
+            }
+            ChatEvent::MessageRead { conversation_uuid, person_uuid, last_read_message_uuid } => {
+                ServerEventJson::MessageRead { conversation_uuid, person_uuid, last_read_message_uuid }
+            }
+            ChatEvent::Typing { conversation_uuid, person_uuid } => {
+                ServerEventJson::Typing { conversation_uuid, person_uuid }
+            }
+            ChatEvent::Pong => ServerEventJson::Pong,
+            ChatEvent::Error { message } => ServerEventJson::Error { message },
+        }
+    }
+}
+
+pub struct ClientFrameMapper {}
+
+impl ClientFrameMapper {
+    /// What a frame the WebSocket client sent asks the chat use cases to do.
+    pub fn domain(frame: ClientFrameJson) -> ClientFrame {
+        match frame {
+            ClientFrameJson::Send { conversation_uuid, body, media, client_message_id } => ClientFrame::Send {
+                conversation_uuid,
+                body,
+                media: media.into_iter().map(MessageMapper::to_domain_media).collect(),
+                client_message_id,
+            },
+            ClientFrameJson::Read { conversation_uuid, last_read_message_uuid } => {
+                ClientFrame::Read { conversation_uuid, last_read_message_uuid }
+            }
+            ClientFrameJson::Typing { conversation_uuid } => ClientFrame::Typing { conversation_uuid },
+            ClientFrameJson::Ping => ClientFrame::Ping,
         }
     }
 }

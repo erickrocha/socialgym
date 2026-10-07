@@ -1,13 +1,13 @@
-use business::proto::proto::timeline::health_service_server::HealthService;
-use business::proto::proto::timeline::{HealthRequest, HealthResponse};
+//! HealthService: tells an authenticated caller the service is up and who it is.
+use crate::infrastructure::utils::caller;
+use crate::proto::timeline::health_service_server::HealthService;
+use crate::proto::timeline::{HealthRequest, HealthResponse};
 use tonic::{Request, Response, Status};
 
-use super::auth::caller;
-
-pub struct Health;
+pub struct GrpcHealthService;
 
 #[tonic::async_trait]
-impl HealthService for Health {
+impl HealthService for GrpcHealthService {
     async fn check(&self, request: Request<HealthRequest>) -> Result<Response<HealthResponse>, Status> {
         let (user, _) = caller(&request)?;
         Ok(Response::new(HealthResponse {
