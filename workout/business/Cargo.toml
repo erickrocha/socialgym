@@ -86,6 +86,10 @@ name = "user_use_case_test"
 required-features = ["mock"]
 
 [[test]]
+name = "c010_log_hygiene_test"
+required-features = ["mock"]
+
+[[test]]
 name = "workout_use_case_test"
 required-features = ["mock"]
 

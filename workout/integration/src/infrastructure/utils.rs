@@ -39,8 +39,15 @@ pub(crate) fn business_status(error: BusinessError) -> Status {
         BusinessErrorKind::NotFound => Status::not_found(error.message),
         BusinessErrorKind::Conflict => Status::already_exists(error.message),
         BusinessErrorKind::Locked => Status::failed_precondition(error.message),
-        BusinessErrorKind::Infrastructure => Status::internal(error.message),
+        // A failing dependency (database, queue, object store) is retryable; REST answers 500 for it.
+        BusinessErrorKind::Infrastructure => Status::unavailable(error.message),
     }
+}
+
+/// A caller that exceeded the per-IP limit (REST answers 429).
+#[allow(dead_code)]
+pub(crate) fn rate_limited() -> Status {
+    Status::resource_exhausted("too many requests")
 }
 
 pub(crate) fn validate_uuid(value: &str, field: &str) -> Result<(), Status> {
@@ -55,3 +62,6 @@ pub(crate) fn validate_uuids(values: &[String], field: &str) -> Result<(), Statu
     }
     Ok(())
 }
+#[cfg(test)]
+#[path = "../tests/status_mapping_unit_test.rs"]
+mod status_tests;

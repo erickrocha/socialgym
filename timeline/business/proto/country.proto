@@ -3,8 +3,9 @@ package grpc.country;
 
 message Country {
   int32 id = 1;
-  string name = 2;
-  string acronym = 3;
-  string currency = 4;
+  string ddi = 2;
+  string name = 3;
+  string acronym = 4;
+  string currency = 5;
 }
 

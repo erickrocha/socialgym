@@ -249,7 +249,10 @@ fn address_search_routes(state: AppState) -> Router<AppState> {
 
 #[tokio::main]
 async fn start() -> anyhow::Result<()> {
-    env::set_var("RUST_LOG", "debug");
+    // Configurable: at debug level the SQL driver writes statements with their values (emails among them).
+    if env::var_os("RUST_LOG").is_none() {
+        env::set_var("RUST_LOG", "info");
+    }
     tracing_subscriber::fmt::init();
     dotenvy::dotenv().ok();
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");

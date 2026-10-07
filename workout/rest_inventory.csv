@@ -1,0 +1,98 @@
+route,grpc_twin,status,task,note
+GET /,,REST,-,"welcome page; infrastructure, stays REST"
+POST /auth/profile/deactivate,AuthService.DeactivateBusinessProfile,needs,T3,
+POST /auth/profile/{business_profile_uuid}/activate,AuthService.ActivateBusinessProfile,needs,T3,
+GET /legal/documents,LegalDocumentService.ListLegalDocuments,needs,T8,
+GET /legal/documents/{document},LegalDocumentService.GetLegalDocument,needs,T8,
+POST /login,AuthService.Login,needs,T3,
+POST /logout,AuthService.Logout,needs,T3,
+POST /refresh,AuthService.Refresh,needs,T3,
+POST /signup,AuthService.Signup,needs,T3,
+GET /workout/api/address/search,AddressSearchService.SearchAddress,needs,T8,
+GET /workout/api/business-profiles,BusinessProfileService.GetBusinessProfileByOwnerId,exists,-,the caller passes their own Person id
+POST /workout/api/business-profiles,BusinessProfileService.AddBusinessProfile,exists,T7,create is not transactional (W8)
+PUT /workout/api/business-profiles,BusinessProfileService.UpdateBusinessProfile,exists,-,
+GET /workout/api/business-profiles/active,BusinessProfileService.GetActiveBusinessProfile,needs,T7,
+POST /workout/api/business-profiles/addresses,BusinessProfileService.AddBusinessProfileAddress,exists,-,
+PUT /workout/api/business-profiles/addresses,BusinessProfileService.UpdateBusinessProfileAddress,exists,-,
+DELETE /workout/api/business-profiles/addresses/id/{id},BusinessProfileService.RemoveBusinessProfileAddress,exists,-,
+DELETE /workout/api/business-profiles/addresses/uuid/{uuid},BusinessProfileService.RemoveBusinessProfileAddress,exists,T7,the RPC deletes by id only and ignores the uuid (W3)
+GET /workout/api/business-profiles/discover,BusinessProfileService.DiscoverBusinessProfiles,needs,T7,
+DELETE /workout/api/business-profiles/id/{id},BusinessProfileService.DeleteBusinessProfile,needs,T7,
+GET /workout/api/business-profiles/id/{id},BusinessProfileService.GetBusinessProfileById,exists,T7,addresses and owner ids not restricted (W5)
+GET /workout/api/business-profiles/owner/id/{id},BusinessProfileService.GetBusinessProfileByOwnerId,exists,T7,W5
+GET /workout/api/business-profiles/owner/uuid/{uuid},BusinessProfileService.GetBusinessProfileByOwnerId,exists,T7,owner_uuid form handled; W5
+GET /workout/api/business-profiles/upload/{image_type},BusinessProfileService.GetBusinessProfileImageUploadUrl,needs,T5,
+GET /workout/api/business-profiles/uuid/{uuid},BusinessProfileService.GetBusinessProfileById,exists,T7,uuid form handled; same W5
+POST /workout/api/exercises,ExerciseService.AddExercise,exists,-,
+PUT /workout/api/exercises,ExerciseService.UpdateExercise,exists,T9,non-owner update answers 403 (W4)
+GET /workout/api/exercises/id/{id},ExerciseService.GetExercise,exists,-,
+POST /workout/api/exercises/query,ExerciseService.GetExercises,exists,-,
+DELETE /workout/api/exercises/uuid/{uuid},ExerciseService.DeleteExercise,exists,T9,W4
+GET /workout/api/exercises/uuid/{uuid},ExerciseService.GetExercise,exists,-,
+DELETE /workout/api/exercises/{exercise_id},ExerciseService.DeleteExercise,exists,T9,W4
+GET /workout/api/friends,FriendService.GetFriendPage,exists,-,
+PUT /workout/api/friends/accept/{id},FriendService.AcceptFriendRequest,exists,-,
+PUT /workout/api/friends/cancel/{sender_id},FriendService.CancelFriendRequest,exists,-,
+PUT /workout/api/friends/deny/{id},FriendService.DenyFriendRequest,exists,-,
+GET /workout/api/friends/relationships/id/{id},FriendService.GetFriends,exists,-,
+GET /workout/api/friends/relationships/uuid/{uuid},FriendService.GetFriends,exists,-,
+PUT /workout/api/friends/request/{receiver_id},FriendService.SendFriendRequest,exists,-,
+GET /workout/api/friends/search,FriendService.SearchFriends,exists,-,
+DELETE /workout/api/friends/{friend_id},FriendService.RemoveFriend,exists,-,
+GET /workout/api/friends/{friend_id},FriendService.GetFriendProfile,needs,T6,
+GET /workout/api/media/upload,MediaService.GetPostMediaUploadUrl,needs,T5,
+GET /workout/api/people/id/{id},PersonService.GetPerson,exists,-,id and uuid forms handled; owner check and health_data consent in the handler
+GET /workout/api/people/id/{id}/mentionable-friends,PersonService.SearchMentionableFriends,exists,T9,handler takes no actor: any caller can list any person's friends (W1)
+GET /workout/api/people/me,PersonService.GetMe,exists,-,
+PUT /workout/api/people/me,PersonService.updatePerson,exists,-,
+POST /workout/api/people/me/account/cancel-deletion,AccountService.CancelAccountDeletion,needs,T4,
+POST /workout/api/people/me/account/delete,AccountService.RequestAccountDeletion,needs,T4,
+POST /workout/api/people/me/address,PersonService.AddPersonAddress,exists,-,
+DELETE /workout/api/people/me/address/uuid/{uuid},PersonService.RemovePersonAddress,exists,T6,the RPC deletes by id only and rejects a uuid request (W13)
+DELETE /workout/api/people/me/address/{person_address_id},PersonService.RemovePersonAddress,exists,-,
+PUT /workout/api/people/me/address/{person_address_id},PersonService.UpdatePersonAddress,exists,-,
+GET /workout/api/people/me/consents,ConsentService.ListConsents,needs,T4,
+POST /workout/api/people/me/consents,ConsentService.AcceptConsent,needs,T4,
+GET /workout/api/people/me/consents/pending,ConsentService.ListPendingConsents,needs,T4,
+DELETE /workout/api/people/me/consents/{document},ConsentService.RevokeConsent,needs,T4,
+GET /workout/api/people/me/data-exports,AccountService.ListDataExports,needs,T4,
+POST /workout/api/people/me/data-exports,AccountService.CreateDataExport,needs,T4,
+GET /workout/api/people/me/data-exports/{id},AccountService.GetDataExport,needs,T4,
+GET /workout/api/people/me/data-exports/{id}/download,AccountService.GetDataExportDownloadUrl,needs,T4,
+DELETE /workout/api/people/me/delete/{image_type},PersonService.DeletePersonImage,exists,-,
+GET /workout/api/people/me/friend/{friend_id},FriendService.GetFriendProfile,needs,T6,
+PUT /workout/api/people/me/info/{person_info_id},PersonService.UpdatePersonInfo,exists,-,
+GET /workout/api/people/me/upload/{image_type},PersonService.GetPersonImageUploadUrl,exists,-,
+GET /workout/api/people/me/{uuid},PersonService.GetPerson,exists,-,id and uuid forms handled; owner check and health_data consent in the handler
+GET /workout/api/people/search,PersonService.SearchPersons,exists,-,
+GET /workout/api/people/uuid/{uuid},PersonService.GetPerson,exists,-,id and uuid forms handled; owner check and health_data consent in the handler
+GET /workout/api/resource,ResourceService.GetResource,exists,-,
+POST /workout/api/settings,SettingsService.PersistSettings,exists,-,owner check confirmed in the handler (ensure_owns / persist with the actor)
+GET /workout/api/settings/me,SettingsService.GetMySettings,needs,T6,
+PUT /workout/api/settings/me,SettingsService.UpdateMySettings,needs,T6,
+GET /workout/api/settings/owner/id/{id},SettingsService.GetByOwnerIds,exists,-,owner check confirmed in the handler (ensure_owns / persist with the actor)
+GET /workout/api/settings/owner/uuid/{uuid},SettingsService.GetByOwnerIds,exists,T6,the RPC has no owner_uuid form: a uuid-only request is PERMISSION_DENIED (W14)
+GET /workout/api/settings/uuid/{uuid},SettingsService.GetByUuid,exists,-,owner check confirmed in the handler (ensure_owns / persist with the actor)
+GET /workout/api/settings/{id},SettingsService.GetById,exists,-,owner check confirmed in the handler (ensure_owns / persist with the actor)
+GET /workout/api/team-members,TeamMemberService.GetTeamMemberPage,exists,-,
+PUT /workout/api/team-members/accept/{business_profile_id},TeamMemberService.AcceptTeamMemberRequest,exists,-,
+PUT /workout/api/team-members/cancel/{person_id},TeamMemberService.CancelTeamMemberRequest,exists,-,
+PUT /workout/api/team-members/deny/{business_profile_id},TeamMemberService.DenyTeamMemberRequest,exists,-,
+PUT /workout/api/team-members/request/{person_id},TeamMemberService.SendTeamMemberRequest,exists,-,
+GET /workout/api/team-members/{person_id},TeamMemberService.GetTeamMember,exists,-,
+POST /workout/api/workouts,WorkoutService.AddWorkout,exists,-,
+PUT /workout/api/workouts,WorkoutService.UpdateWorkout,exists,T9,W4
+GET /workout/api/workouts/assigned-by-profile,WorkoutService.GetWorkoutsAssignedByProfile,exists,-,
+DELETE /workout/api/workouts/id/{id},WorkoutService.DeleteWorkout,exists,T9,non-owner mutation answers 403 (W4)
+GET /workout/api/workouts/id/{id},WorkoutService.GetWorkout,exists,-,
+GET /workout/api/workouts/owner/uuid/{uuid},WorkoutService.GetWorkoutsByOwner,exists,-,
+DELETE /workout/api/workouts/uuid/{uuid},WorkoutService.DeleteWorkout,exists,T9,W4
+GET /workout/api/workouts/uuid/{uuid},WorkoutService.GetWorkout,exists,-,
+PUT /workout/api/workouts/uuid/{uuid}/accept,WorkoutService.AcceptWorkout,exists,-,
+PUT /workout/api/workouts/uuid/{uuid}/cancel,WorkoutService.CancelWorkout,exists,-,
+POST /workout/api/workouts/uuid/{uuid}/exercises,WorkoutService.AddExercisesToWorkout,exists,T9,W4
+PUT /workout/api/workouts/uuid/{uuid}/reject,WorkoutService.RejectWorkout,exists,-,
+GET /workout/api/workouts/{person_id},WorkoutService.GetWorkoutsByOwner,exists,-,owner_id form
+GET /workout/api/workouts/{workout_id}/exercises,WorkoutService.GetWorkoutExercises,needs,T8,
+POST /workout/api/workouts/{workout_id}/exercises,WorkoutService.AddExercisesToWorkout,needs,T8,the RPC takes a workout uuid only; the numeric-id form is REST-only

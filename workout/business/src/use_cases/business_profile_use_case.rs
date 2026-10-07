@@ -231,7 +231,7 @@ impl BusinessProfileUseCase {
 
         match s3_result {
             Ok(image_storage) => {
-                log::info!("Pre-signed URL generated successfully: {:?}",image_storage.url);
+                log::info!("Pre-signed URL generated for business_profile_id={}", id);
                 let business_profile_entity = BusinessProfileGateway::find_by_id(db, id).await;
                 if business_profile_entity.is_none() {
                     log::error!("Business profile with id {} not found", id);

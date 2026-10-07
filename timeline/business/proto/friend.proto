@@ -48,7 +48,7 @@ message RemoveFriendResponse {
 }
 
 message FriendPageRequest {
-  int32 person_id = 1;          // optional override; when <= 0 the caller's token is used
+  int32 person_id = 1;          // optional self selector; when set it must match the caller's token
   optional double latitude = 2;
   optional double longitude = 3;
   optional double radius_km = 4;

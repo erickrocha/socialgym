@@ -7,6 +7,8 @@ pub mod functions;
 pub mod gateway;
 pub mod legal_documents;
 pub mod password_policy;
+pub mod rate_limit;
+pub mod secret;
 
 /// Serializes unit tests that read or write process environment variables (auth and
 /// password-policy flags): the test harness runs tests in parallel, so unsynchronized

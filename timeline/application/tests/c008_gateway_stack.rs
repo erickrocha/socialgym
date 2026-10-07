@@ -70,6 +70,19 @@ impl WorkoutDown {
 impl Drop for WorkoutDown {
     fn drop(&mut self) {
         let _ = std::process::Command::new("docker").args(["start", WORKOUT]).status();
+        // Leave the stack as found: wait until the container answers its health check, so the next test
+        // does not connect to a server that is still starting.
+        for _ in 0..60 {
+            let health = std::process::Command::new("docker")
+                .args(["inspect", "--format", "{{.State.Health.Status}}", WORKOUT])
+                .output()
+                .map(|out| String::from_utf8_lossy(&out.stdout).trim().to_string())
+                .unwrap_or_default();
+            if health == "healthy" {
+                return;
+            }
+            std::thread::sleep(std::time::Duration::from_secs(2));
+        }
     }
 }
 

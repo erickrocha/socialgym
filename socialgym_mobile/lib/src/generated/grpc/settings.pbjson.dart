@@ -42,6 +42,38 @@ final $typed_data.Uint8List settingOwnerIdRequestDescriptor = $convert.base64Dec
     'ChVTZXR0aW5nT3duZXJJZFJlcXVlc3QSGQoIb3duZXJfaWQYASABKAVSB293bmVySWQSHQoKb3'
     'duZXJfdXVpZBgCIAEoCVIJb3duZXJVdWlk');
 
+@$core.Deprecated('Use ownerUuidRequestDescriptor instead')
+const OwnerUuidRequest$json = {
+  '1': 'OwnerUuidRequest',
+  '2': [
+    {'1': 'owner_uuid', '3': 1, '4': 1, '5': 9, '10': 'ownerUuid'},
+  ],
+};
+
+/// Descriptor for `OwnerUuidRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List ownerUuidRequestDescriptor = $convert.base64Decode(
+    'ChBPd25lclV1aWRSZXF1ZXN0Eh0KCm93bmVyX3V1aWQYASABKAlSCW93bmVyVXVpZA==');
+
+@$core.Deprecated('Use pushPreferenceResponseDescriptor instead')
+const PushPreferenceResponse$json = {
+  '1': 'PushPreferenceResponse',
+  '2': [
+    {
+      '1': 'notifications_enabled',
+      '3': 1,
+      '4': 1,
+      '5': 8,
+      '10': 'notificationsEnabled'
+    },
+  ],
+};
+
+/// Descriptor for `PushPreferenceResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List pushPreferenceResponseDescriptor =
+    $convert.base64Decode(
+        'ChZQdXNoUHJlZmVyZW5jZVJlc3BvbnNlEjMKFW5vdGlmaWNhdGlvbnNfZW5hYmxlZBgBIAEoCF'
+        'IUbm90aWZpY2F0aW9uc0VuYWJsZWQ=');
+
 @$core.Deprecated('Use settingsResponseDescriptor instead')
 const SettingsResponse$json = {
   '1': 'SettingsResponse',

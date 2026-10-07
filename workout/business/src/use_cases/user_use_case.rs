@@ -15,7 +15,7 @@ pub struct UserUseCase {}
 
 impl UserUseCase {
     pub async fn add(db: &DbConn, user: User) -> Result<User, UserUseCaseError> {
-        log::info!("Adding user: {:?}", user);
+        log::info!("Adding user for person_id={}", user.person_id);
 
         if user.email.is_empty() || user.password.is_empty() {
             log::warn!("Email or password is empty");
@@ -48,7 +48,6 @@ impl UserUseCase {
             ..user
         };
 
-        log::info!("Adding user: {:?}", user_with_password_encrypted);
         let entity = UserGateway::persist(db, user_with_password_encrypted).await;
         if entity.is_err() {
             let error = entity.err().unwrap();

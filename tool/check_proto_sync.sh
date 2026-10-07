@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fails when a mirror of a timeline proto differs from its source (SYS-C008-011).
+# Fails when a mirror of a proto differs from its source (C-008 SYS-C008-011, C-010 SYS-C010-012).
 # Source of truth: timeline/integration/proto/timeline/. Mirrors: socialgym_mobile/proto/timeline/ for
 # every proto except MOBILE_EXCLUDED; workout/integration/proto/timeline/ only for WORKOUT_MIRRORED.
 set -euo pipefail
@@ -19,6 +19,21 @@ for proto in "$src"/*.proto; do
   done
   for mirror in "${mirrors[@]}"; do
     if ! cmp -s "$proto" "$mirror"; then
+      echo "proto drift: ${mirror#"$root"/} differs from ${proto#"$root"/}" >&2
+      status=1
+    fi
+  done
+done
+
+# workout protos: source workout/integration/proto/, mirrored in the mobile app and in timeline.
+wsrc="$root/workout/integration/proto"
+for proto in "$wsrc"/*.proto; do
+  name="$(basename "$proto")"
+  for mirror in "$root/socialgym_mobile/proto/$name" "$root/timeline/business/proto/$name"; do
+    if [[ ! -f "$mirror" ]]; then
+      echo "proto mirror missing: ${mirror#"$root"/} for ${proto#"$root"/}" >&2
+      status=1
+    elif ! cmp -s "$proto" "$mirror"; then
       echo "proto drift: ${mirror#"$root"/} differs from ${proto#"$root"/}" >&2
       status=1
     fi

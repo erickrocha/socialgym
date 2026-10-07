@@ -60,6 +60,14 @@ class SettingsServiceClient extends $grpc.Client {
     return $createUnaryCall(_$getByOwnerIds, request, options: options);
   }
 
+  $grpc.ResponseFuture<$0.PushPreferenceResponse> getPushPreferenceByOwnerUuid(
+    $0.OwnerUuidRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$getPushPreferenceByOwnerUuid, request,
+        options: options);
+  }
+
   // method descriptors
 
   static final _$getById = $grpc.ClientMethod<$0.SettingIdRequest, $0.Setting>(
@@ -80,6 +88,11 @@ class SettingsServiceClient extends $grpc.Client {
           '/grpc.settings.SettingsService/GetByOwnerIds',
           ($0.SettingOwnerIdRequest value) => value.writeToBuffer(),
           $0.Setting.fromBuffer);
+  static final _$getPushPreferenceByOwnerUuid =
+      $grpc.ClientMethod<$0.OwnerUuidRequest, $0.PushPreferenceResponse>(
+          '/grpc.settings.SettingsService/GetPushPreferenceByOwnerUuid',
+          ($0.OwnerUuidRequest value) => value.writeToBuffer(),
+          $0.PushPreferenceResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('grpc.settings.SettingsService')
@@ -116,6 +129,15 @@ abstract class SettingsServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.SettingOwnerIdRequest.fromBuffer(value),
         ($0.Setting value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.OwnerUuidRequest, $0.PushPreferenceResponse>(
+            'GetPushPreferenceByOwnerUuid',
+            getPushPreferenceByOwnerUuid_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.OwnerUuidRequest.fromBuffer(value),
+            ($0.PushPreferenceResponse value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.Setting> getById_Pre($grpc.ServiceCall $call,
@@ -149,4 +171,13 @@ abstract class SettingsServiceBase extends $grpc.Service {
 
   $async.Future<$0.Setting> getByOwnerIds(
       $grpc.ServiceCall call, $0.SettingOwnerIdRequest request);
+
+  $async.Future<$0.PushPreferenceResponse> getPushPreferenceByOwnerUuid_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.OwnerUuidRequest> $request) async {
+    return getPushPreferenceByOwnerUuid($call, await $request);
+  }
+
+  $async.Future<$0.PushPreferenceResponse> getPushPreferenceByOwnerUuid(
+      $grpc.ServiceCall call, $0.OwnerUuidRequest request);
 }

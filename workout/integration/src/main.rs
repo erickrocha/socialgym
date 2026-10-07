@@ -3,6 +3,10 @@ pub mod service;
 pub mod infrastructure;
 pub mod auth;
 
+#[cfg(test)]
+#[path = "tests/c010_authorization_gaps_test.rs"]
+mod c010_authorization_gaps_test;
+
 use std::sync::Arc;
 use std::{env, fs};
 use std::path::Path;
@@ -25,6 +29,9 @@ use crate::service::resource_service::GrpcResourceService;
 use crate::service::settings_service::GrpcSettingService;
 use crate::service::team_member_service::GrpcTeamMemberService;
 use crate::service::workout_service::GrpcWorkoutService;
+
+/// Largest message the server accepts or sends; a larger one is `OUT_OF_RANGE` before any use case runs.
+const MAX_MESSAGE_BYTES: usize = 5 * 1024 * 1024;
 
 const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("socialgym_descriptor");
 
@@ -77,14 +84,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Server::builder()
         .tls_config(tls_config)?
         .add_service(reflection)
-        .add_service(auth_layer.clone().service(PersonServiceServer::new(person_service)))
-        .add_service(auth_layer.clone().service(FriendServiceServer::new(friend_service)))
-        .add_service(auth_layer.clone().service(WorkoutServiceServer::new(workout_service)))
-        .add_service(auth_layer.clone().service(BusinessProfileServiceServer::new(business_profile_service)))
-        .add_service(auth_layer.clone().service(SettingsServiceServer::new(settings_service)))
-        .add_service(auth_layer.clone().service(ExerciseServiceServer::new(exercise_service)))
-        .add_service(auth_layer.clone().service(TeamMemberServiceServer::new(team_member_service)))
-        .add_service(auth_layer.clone().service(ResourceServiceServer::new(resource_service)))
+        .add_service(auth_layer.clone().service(PersonServiceServer::new(person_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(FriendServiceServer::new(friend_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(WorkoutServiceServer::new(workout_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(BusinessProfileServiceServer::new(business_profile_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(SettingsServiceServer::new(settings_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(ExerciseServiceServer::new(exercise_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(TeamMemberServiceServer::new(team_member_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(ResourceServiceServer::new(resource_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
         .serve(addr)
         .await?;
     log::info!("Server created and services registered");

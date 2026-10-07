@@ -149,6 +149,116 @@ class SettingOwnerIdRequest extends $pb.GeneratedMessage {
   void clearOwnerUuid() => $_clearField(2);
 }
 
+class OwnerUuidRequest extends $pb.GeneratedMessage {
+  factory OwnerUuidRequest({
+    $core.String? ownerUuid,
+  }) {
+    final result = create();
+    if (ownerUuid != null) result.ownerUuid = ownerUuid;
+    return result;
+  }
+
+  OwnerUuidRequest._();
+
+  factory OwnerUuidRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory OwnerUuidRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'OwnerUuidRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.settings'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'ownerUuid')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  OwnerUuidRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  OwnerUuidRequest copyWith(void Function(OwnerUuidRequest) updates) =>
+      super.copyWith((message) => updates(message as OwnerUuidRequest))
+          as OwnerUuidRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static OwnerUuidRequest create() => OwnerUuidRequest._();
+  @$core.override
+  OwnerUuidRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static OwnerUuidRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<OwnerUuidRequest>(create);
+  static OwnerUuidRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get ownerUuid => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set ownerUuid($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasOwnerUuid() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearOwnerUuid() => $_clearField(1);
+}
+
+class PushPreferenceResponse extends $pb.GeneratedMessage {
+  factory PushPreferenceResponse({
+    $core.bool? notificationsEnabled,
+  }) {
+    final result = create();
+    if (notificationsEnabled != null)
+      result.notificationsEnabled = notificationsEnabled;
+    return result;
+  }
+
+  PushPreferenceResponse._();
+
+  factory PushPreferenceResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory PushPreferenceResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'PushPreferenceResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.settings'),
+      createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'notificationsEnabled')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PushPreferenceResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PushPreferenceResponse copyWith(
+          void Function(PushPreferenceResponse) updates) =>
+      super.copyWith((message) => updates(message as PushPreferenceResponse))
+          as PushPreferenceResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static PushPreferenceResponse create() => PushPreferenceResponse._();
+  @$core.override
+  PushPreferenceResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static PushPreferenceResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<PushPreferenceResponse>(create);
+  static PushPreferenceResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get notificationsEnabled => $_getBF(0);
+  @$pb.TagNumber(1)
+  set notificationsEnabled($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasNotificationsEnabled() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearNotificationsEnabled() => $_clearField(1);
+}
+
 class SettingsResponse extends $pb.GeneratedMessage {
   factory SettingsResponse({
     $core.Iterable<Setting>? settings,

@@ -1,9 +1,15 @@
+use business::commons::legal_documents::{PRIVACY, TERMS};
+use business::commons::rate_limit::RateLimiter;
+use business::commons::secret::constant_time_eq;
+use business::domain::business_error::BusinessErrorKind;
 use business::domain::user::User;
+use business::use_cases::consent_use_case::ConsentUseCase;
 use business::use_cases::authentication::{Authentication, ValidateError};
 use hyper::http::HeaderValue;
 use hyper::{http, Request, Response, StatusCode};
 use sea_orm::DatabaseConnection;
 use std::future::Future;
+use std::net::IpAddr;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -16,18 +22,44 @@ use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
 // Type alias for simpler signatures
 type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send + 'static>>;
 
+/// gRPC methods that only the internal services may call: they carry `x-internal-secret` and never a
+/// user token, so a user token never opens them and the secret never opens a user method.
+const INTERNAL_METHODS: &[&str] = &["/grpc.settings.SettingsService/GetPushPreferenceByOwnerUuid"];
+
+/// Methods (or whole services, when the entry ends with `/`) that stay reachable when the caller has no
+/// current Terms and Privacy consent: the consent check itself, consent management, and the account
+/// recovery paths (data export, account deletion and cancelling it), as REST allows.
+const CONSENT_EXEMPT: &[&str] = &[
+    "/grpc.person.PersonService/HasActiveConsent",
+    "/grpc.consent.ConsentService/",
+    "/grpc.account.AccountService/",
+];
+
+/// A method reachable without an access token, limited per IP like REST limits login and signup.
+#[derive(Clone)]
+struct PublicMethod {
+    path: &'static str,
+    limiter: RateLimiter,
+}
+
 #[derive(Clone, Default)]
 pub struct GrpcAuthLayer {
     conn: Arc<DatabaseConnection>,
+    public: Arc<Vec<PublicMethod>>,
 }
 
 impl GrpcAuthLayer {
     pub fn new(conn: Arc<DatabaseConnection>) -> Self {
-        Self { conn }
+        Self { conn, public: Arc::new(Vec::new()) }
+    }
+
+    /// Allows `path` (for example `/grpc.auth.AuthService/Login`) without an access token, limited per IP
+    /// by `limiter`. Every other method still needs a valid token.
+    pub fn public_method(mut self, path: &'static str, limiter: RateLimiter) -> Self {
+        Arc::make_mut(&mut self.public).push(PublicMethod { path, limiter });
+        self
     }
 }
-
-
 
 impl<S> Layer<S> for GrpcAuthLayer {
     type Service = GrpcAuthMiddleware<S>;
@@ -36,6 +68,7 @@ impl<S> Layer<S> for GrpcAuthLayer {
         GrpcAuthMiddleware {
             inner,
             conn: Arc::clone(&self.conn),
+            public: Arc::clone(&self.public),
         }
     }
 }
@@ -44,6 +77,7 @@ impl<S> Layer<S> for GrpcAuthLayer {
 pub struct GrpcAuthMiddleware<S> {
     inner: S,
     conn: Arc<DatabaseConnection>,
+    public: Arc<Vec<PublicMethod>>,
 }
 
 /// Forward `NamedService` so that `Server::add_service` can identify the
@@ -70,14 +104,19 @@ where
         let mut inner = self.inner.clone();
 
         let conn = Arc::clone(&self.conn);
+        let public = Arc::clone(&self.public);
 
         Box::pin(async move {
-            if is_internal_push_preference_request(&req) {
+            if let Some(method) = public.iter().find(|method| method.path == req.uri().path()) {
+                if !method.limiter.check(client_ip(&req)) {
+                    return Ok(grpc_error_response(GRPC_RESOURCE_EXHAUSTED, "too many requests"));
+                }
+                return inner.call(req).await;
+            }
+
+            if is_internal_request(&req) {
                 let expected_secret = std::env::var("INTERNAL_SERVICE_SECRET").ok();
-                if is_authorized_internal_push_preference_request(
-                    &req,
-                    expected_secret.as_deref(),
-                ) {
+                if is_authorized_internal_request(&req, expected_secret.as_deref()) {
                     return inner.call(req).await;
                 }
                 return Ok(grpc_unauthenticated_response(
@@ -85,10 +124,15 @@ where
                 ));
             }
 
-            match authenticate_request(&mut req, conn).await {
+            match authenticate_request(&mut req, Arc::clone(&conn)).await {
                 // Insert each value under its own type: services look these up as
                 // `User` / `BusinessProfile`, which a tuple extension never matches.
                 Ok((user, business_profile)) => {
+                    if !is_consent_exempt(req.uri().path()) {
+                        if let Err(response) = require_current_consent(&conn, user.person_id).await {
+                            return Ok(response);
+                        }
+                    }
                     req.extensions_mut().insert(user);
                     if let Some(business_profile) = business_profile {
                         req.extensions_mut().insert(business_profile);
@@ -101,21 +145,46 @@ where
     }
 }
 
-fn is_internal_push_preference_request(req: &Request<TonicBody>) -> bool {
-    req.uri().path() == "/grpc.settings.SettingsService/GetPushPreferenceByOwnerUuid"
+/// The address the gateway saw, from `X-Real-IP` (the nginx gateway always sets it); calls that reach the
+/// server without it share one bucket.
+fn client_ip(req: &Request<TonicBody>) -> IpAddr {
+    req.headers()
+        .get("x-real-ip")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.parse::<IpAddr>().ok())
+        .unwrap_or(IpAddr::from([0, 0, 0, 0]))
 }
 
-fn is_authorized_internal_push_preference_request(
-    req: &Request<TonicBody>,
-    expected_secret: Option<&str>,
-) -> bool {
+fn is_consent_exempt(path: &str) -> bool {
+    CONSENT_EXEMPT.iter().any(|exempt| if exempt.ends_with('/') { path.starts_with(exempt) } else { path == *exempt })
+}
+
+/// Terms and Privacy must be current for an ordinary call, as the REST middleware requires.
+async fn require_current_consent(conn: &DatabaseConnection, person_id: i32) -> Result<(), Response<TonicBody>> {
+    for document in [TERMS, PRIVACY] {
+        if let Err(error) = ConsentUseCase::require_current(conn, person_id, document).await {
+            return Err(if error.kind == BusinessErrorKind::Infrastructure {
+                grpc_error_response(GRPC_UNAVAILABLE, "consent check temporarily unavailable")
+            } else {
+                grpc_error_response(GRPC_PERMISSION_DENIED, &format!("{document} consent is required"))
+            });
+        }
+    }
+    Ok(())
+}
+
+fn is_internal_request(req: &Request<TonicBody>) -> bool {
+    INTERNAL_METHODS.contains(&req.uri().path())
+}
+
+fn is_authorized_internal_request(req: &Request<TonicBody>, expected_secret: Option<&str>) -> bool {
     let Some(expected_secret) = expected_secret.filter(|value| !value.is_empty()) else {
         return false;
     };
     req.headers()
         .get("x-internal-secret")
         .and_then(|value| value.to_str().ok())
-        .map(|value| value == expected_secret)
+        .map(|value| constant_time_eq(value, expected_secret))
         .unwrap_or(false)
 }
 
@@ -149,18 +218,26 @@ async fn authenticate_request(req: &mut Request<TonicBody>,conn: Arc<DatabaseCon
     }
 }
 
+const GRPC_PERMISSION_DENIED: &str = "7";
+const GRPC_RESOURCE_EXHAUSTED: &str = "8";
+const GRPC_UNAVAILABLE: &str = "14";
+const GRPC_UNAUTHENTICATED: &str = "16";
+
 fn grpc_unauthenticated_response(message: &str) -> Response<TonicBody> {
+    grpc_error_response(GRPC_UNAUTHENTICATED, message)
+}
+
+fn grpc_error_response(code: &'static str, message: &str) -> Response<TonicBody> {
     let mut response = Response::new(empty_grpc_body());
 
     *response.status_mut() = StatusCode::OK;
 
     let headers = response.headers_mut();
     headers.insert("content-type", HeaderValue::from_static("application/grpc"));
-    headers.insert("grpc-status", HeaderValue::from_static("16")); // UNAUTHENTICATED
+    headers.insert("grpc-status", HeaderValue::from_static(code));
     headers.insert(
         "grpc-message",
-        HeaderValue::from_str(message)
-            .unwrap_or(HeaderValue::from_static("unauthenticated")),
+        HeaderValue::from_str(message).unwrap_or(HeaderValue::from_static("error")),
     );
 
     response
@@ -173,8 +250,8 @@ fn empty_grpc_body() -> TonicBody {
 #[cfg(test)]
 mod tests {
     use super::{
-        is_authorized_internal_push_preference_request,
-        is_internal_push_preference_request,
+        is_authorized_internal_request as is_authorized_internal_push_preference_request,
+        is_internal_request as is_internal_push_preference_request,
     };
     use hyper::Request;
     use tonic::body::Body;
@@ -227,3 +304,7 @@ mod tests {
         ));
     }
 }
+
+#[cfg(test)]
+#[path = "../tests/grpc_auth_layer_unit_test.rs"]
+mod layer_tests;

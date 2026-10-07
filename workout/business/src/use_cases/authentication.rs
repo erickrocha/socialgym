@@ -41,7 +41,7 @@ pub struct AuthenticatedContext {
 
 impl Authentication {
     pub async fn execute(db: &DbConn, email: String, password: String) -> Result<AccessToken, AuthenticationError> {
-        log::info!("Login user: {:?}", email);
+        log::info!("Login attempt");
         if email.is_empty() || password.is_empty() {
             log::info!("Email and password are required");
             return Err(AuthenticationError::InvalidCredentials);
@@ -130,7 +130,7 @@ impl Authentication {
     }
 
     pub fn generate_access_token(user: &User,person: &Person,active_business_profile: Option<&BusinessProfile>,reissue_refresh_token: bool) -> AccessToken {
-        log::info!("Generating access token to user: {:?}", user.email);
+        log::info!("Generating access token for person_id={}", user.person_id);
         let expiration = Utc::now()
             .checked_add_signed(chrono::Duration::hours(3))
             .expect("valid timestamp")
@@ -180,7 +180,7 @@ impl Authentication {
     }
 
     fn generate_refresh_token(user: &User, person: &Person) -> String {
-        log::info!("Generating refresh token for user: {:?}", user.email);
+        log::info!("Generating refresh token for person_id={}", user.person_id);
         let expiration = Utc::now()
             .checked_add_signed(chrono::Duration::days(7))
             .expect("valid timestamp")
@@ -205,7 +205,7 @@ impl Authentication {
         }
 
         let claims = result.unwrap().claims;
-        log::info!("Token is valid {:?}", claims.sub.clone());
+        log::info!("Access token is valid for person_id={}", claims.person_id);
         let email = claims.sub.clone();
         let active_business_profile_id = claims.active_business_profile_id;
 
@@ -257,7 +257,7 @@ impl Authentication {
                 return Err(BusinessError::unauthorized("Token is invalid"));
             }
         };
-        log::info!("Token is valid {:?}", claims.sub.clone());
+        log::info!("Refresh token is valid for person_id={}", claims.person_id);
         let email = claims.sub.clone();
 
         let opt_entity = UserGateway::find_by_email(db, email)
