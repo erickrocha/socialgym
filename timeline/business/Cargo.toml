@@ -8,7 +8,7 @@ domain = { path = "../domain" }
 tonic = { workspace = true }
 tokio = { workspace = true }
 log = "0.4.32"
-jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
+jsonwebtoken = { version = "11.1.0", features = ["aws_lc_rs"] }
 mongodb = { workspace = true }
 futures = "0.3.32"
 cloudfront_sign = "0.4.1"

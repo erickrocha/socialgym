@@ -15,3 +15,7 @@ pub async fn connect() -> Result<Database, Box<dyn std::error::Error + Send + Sy
     );
     Ok(Client::with_options(options)?.database(&name))
 }
+
+#[cfg(test)]
+#[path = "../tests/db_pool_unit_test.rs"]
+mod tests;

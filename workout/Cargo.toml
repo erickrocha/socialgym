@@ -17,8 +17,8 @@ business = { path = "business" }
 mock = ["business/mock"]
 
 [workspace.dependencies]
-utoipa = { version = "^5.5.0", features = ["axum_extras", "chrono"] }
-utoipa-swagger-ui = { version = "^9.0.2", features = ["axum"] }
+utoipa = { version = "^6.0.0", features = ["axum_extras", "chrono"] }
+utoipa-swagger-ui = { version = "^10.0.1", features = ["axum"] }
 dotenvy = "0.15.7"
 tokio = { version = "1.53.1", features = ["full"] }
 chrono = { version = "0.4.45", features = ["serde"] }

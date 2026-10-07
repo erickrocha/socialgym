@@ -615,3 +615,7 @@ impl ClientFrameMapper {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "../tests/chat_mapper_unit_test.rs"]
+mod chat_mapper_tests;

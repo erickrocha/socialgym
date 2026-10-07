@@ -1,0 +1,6 @@
+[advisories]
+# RUSTSEC-2023-0071 (rsa, Marvin timing attack): no patched release exists. Only reachable through
+# cloudfront_sign, which signs CloudFront URLs server-side with RSA-SHA1 (not offered by ring/aws-lc-rs).
+# The attacker would have to time many signatures over a private key and see the output. Revisit when
+# rsa publishes a fix or cloudfront_sign is replaced.
+ignore = ["RUSTSEC-2023-0071"]
