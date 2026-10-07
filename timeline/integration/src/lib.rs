@@ -35,7 +35,7 @@ use tonic::transport::server::Router;
 use tonic::transport::{Identity, Server, ServerTlsConfig};
 
 /// Largest message the server accepts or sends. REST caps bodies at 5 MiB; a larger gRPC message
-/// is `RESOURCE_EXHAUSTED` before any use case runs.
+/// is `OUT_OF_RANGE` (the code Tonic raises) before any use case runs.
 pub const MAX_MESSAGE_BYTES: usize = 5 * 1024 * 1024;
 
 /// A service behind the user authentication interceptor with the explicit message limits.

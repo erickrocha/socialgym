@@ -55,24 +55,6 @@ class ApiConfig {
   static const String exercisesEndpoint = '/workout/api/exercises';
   static const String exercisesQueryEndpoint = '/workout/api/exercises/query';
 
-  static const String workoutSessionsEndpoint =
-      '/timeline/api/workout-sessions';
-
-  static const String feedEndpoint = '/timeline/api/feed';
-  static const String businessFeedEndpoint = '/timeline/api/feed';
-  static const String postEndpoint = '/timeline/api/posts';
-  static const String notificationsEndpoint = '/timeline/api/notifications';
-    static const String pushDevicesEndpoint = '/timeline/api/push-devices';
-
-  static const String chatConversationsEndpoint =
-      '/timeline/api/chat/conversations';
-  static const String chatPresenceEndpoint = '/timeline/api/chat/presence';
-
-  /// WebSocket base (wss://…) derived from [baseUrl]; append
-  /// `/timeline/api/chat/ws?access_token=<jwt>`.
-  static String get wsBaseUrl =>
-      baseUrl.replaceFirst(RegExp(r'^http', caseSensitive: false), 'ws');
-
   static const String feedUploadEndpoint = '/workout/api/media/upload';
   static const String resourceEndpoint = '/workout/api/resource';
   static const String addressSearchEndpoint = '/workout/api/address/search';
