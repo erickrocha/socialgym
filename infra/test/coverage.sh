@@ -31,6 +31,8 @@ case "$service" in
     # The friendship outbox test publishes to SQS: reuse the stack's LocalStack (database stays isolated).
     (exec 3<>/dev/tcp/localhost/4566) 2>/dev/null || { echo "infra/test stack is not up (LocalStack); run ./start.sh" >&2; exit 1; }
     source "$(dirname "$0")/aws-test-env.sh"
+    # timeline_internal_grpc_test calls the stack's real timeline over TLS and needs the CA.
+    export GRPC_CERT_PATH="${TEST_TLS_CERT_DIR:-/tmp/socialgym-test-certs}/ca.crt"
     ;;
   *) echo "unknown service: $service" >&2; exit 2 ;;
 esac

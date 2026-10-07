@@ -1,8 +1,10 @@
 // TC-012 steps 1 and 4: the app's timeline flows on a device against the infra/test stack, with
 // every timeline call going over gRPC. Run by scripts/e2e-android.sh, which also starts the stack,
 // reads the gateway log (step 2) and restarts the timeline when this test asks (step 4).
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socialgym_mobile/models/business_profile.dart';
 import 'package:socialgym_mobile/providers/feed_provider.dart';
 import 'package:socialgym_mobile/services/base_service.dart';
@@ -14,6 +16,7 @@ import 'package:socialgym_mobile/services/grpc/grpc_evolution_service.dart';
 import 'package:socialgym_mobile/services/grpc/grpc_feed_service.dart';
 import 'package:socialgym_mobile/services/grpc/grpc_notification_service.dart';
 import 'package:socialgym_mobile/services/grpc/grpc_workout_session_service.dart';
+import 'package:socialgym_mobile/services/push_registration_service.dart';
 
 import 'support.dart';
 
@@ -178,6 +181,22 @@ void main() {
     await subscription.cancel();
     stream.dispose();
   });
+
+  test('push device: the app registers a real FCM token over gRPC and the device can be removed', () async {
+    // Needs the FIREBASE_* defines and the notification permission, which e2e-android.sh provides.
+    await PushRegistrationService.initialize(GlobalKey<NavigatorState>());
+    await PushRegistrationService.bindAuthenticatedUser(alice.auth);
+    final preferences = await SharedPreferences.getInstance();
+    final deviceUuid = preferences.getString('push_device_uuid');
+    expect(deviceUuid, isNotNull, reason: 'the app did not reach the registration: Firebase options or permission missing');
+    // The timeline answers NOT_FOUND for a device it does not hold for the person, so a successful
+    // removal proves the app's registration reached it.
+    await expectLater(
+      GrpcNotificationService.removePushDevice(token: alice.auth.accessToken, deviceUuid: '00000000-0000-4000-8000-000000000000'),
+      throwsA(isA<AppException>().having((e) => e.statusCode, 'statusCode', 404)),
+    );
+    await GrpcNotificationService.removePushDevice(token: alice.auth.accessToken, deviceUuid: deviceUuid!);
+  }, timeout: const Timeout(Duration(minutes: 2)));
 
   test('the feed provider shows the posts of a profile it loaded', () async {
     final provider = FeedProvider();

@@ -325,3 +325,28 @@ gap_test!(gap_a_client_supplied_check_in_id_is_ignored, "SYS-C008-015", |w| {
     assert_eq!(status, 201, "a duplicate client id must not fail the create: {raw}");
     assert_ne!(second["uuid"].as_str().unwrap(), existing, "the server generates the id");
 });
+
+gap_test!(gap_a_client_supplied_workout_session_id_is_ignored, "SYS-C008-015", |w| {
+    let body = |uuid: Option<&str>, name: &str| json!({
+        "uuid": uuid, "personUuid": "ignored", "workoutName": name, "duration": 10,
+        "startedAt": "2026-10-06T10:00:00", "completedAt": "2026-10-06T10:10:00",
+        "executedSets": [], "totalVolume": 0.0, "totalSets": 0.0
+    });
+    let (status, first, raw) = call(&w.app, "POST", "/workout-sessions", Some(&w.alice.token), Some(body(None, "first"))).await;
+    assert_eq!(status, 201, "setup: {raw}");
+    let existing = first["uuid"].as_str().unwrap().to_string();
+    let (status, second, raw) = call(&w.app, "POST", "/workout-sessions", Some(&w.alice.token), Some(body(Some(&existing), "second"))).await;
+    assert_eq!(status, 201, "a duplicate client id must not fail the create: {raw}");
+    assert_ne!(second["uuid"].as_str().unwrap(), existing, "the server generates the id");
+    let (status, kept, raw) = call(&w.app, "GET", &format!("/workout-sessions/{existing}"), Some(&w.alice.token), None).await;
+    assert_eq!(status, 200, "{raw}");
+    assert_eq!(kept["workoutName"], "first", "the existing session must be unchanged");
+});
+
+gap_test!(gap_post_content_is_limited_to_5000_characters_over_rest, "SYS-C008-015", |w| {
+    let post = |len: usize| json!({ "authorId": 1, "authorUuid": "x", "authorName": "x", "content": "a".repeat(len) });
+    let (status, _, raw) = call(&w.app, "POST", "/posts", Some(&w.alice.token), Some(post(5001))).await;
+    assert_eq!(status, 400, "5001 characters must be rejected: {raw}");
+    let (status, _, raw) = call(&w.app, "POST", "/posts", Some(&w.alice.token), Some(post(5000))).await;
+    assert_eq!(status, 201, "5000 characters must be accepted: {raw}");
+});
