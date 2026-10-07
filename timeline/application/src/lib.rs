@@ -1,10 +1,10 @@
 use crate::http::welcome_controller::welcome;
+pub mod grpc;
 use crate::infrastructure::chat_hub::ChatHub;
 use crate::routes::chat_routes::chat_routes;
 use crate::routes::content_report_routes::{moderation_routes, report_routes};
 use crate::routes::evolution_checkin_routes::evolution_checkin_routes;
 use crate::routes::feed_routes::feed_route;
-use crate::routes::internal_routes::internal_routes;
 use crate::routes::notification_routes::notification_routes;
 use crate::routes::post_routes::post_routes;
 use crate::routes::workout_session_routes::workout_session_routes;
@@ -21,7 +21,7 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::{Modify, OpenApi};
 use utoipa_swagger_ui::SwaggerUi;
 
-mod authentication;
+pub mod authentication;
 mod commons;
 mod http;
 mod infrastructure;
@@ -216,20 +216,34 @@ async fn start() -> anyhow::Result<()> {
                 .nest("/chat", chat_routes(state.clone()))
                 .route("/chat/ws", get(http::chat_ws_handler::ws))
                 .nest("/reports", report_routes(state.clone()))
-                .nest("/moderation", moderation_routes(state.clone()))
-                .nest("/internal", internal_routes(state.clone())),
+                .nest("/moderation", moderation_routes(state.clone())),
         )
         // 5 MiB cap: posts/workout-sessions carry JSON payloads (media metadata,
         // executed sets) but never raw file bytes — those go to S3 via presigned URLs.
         .layer(axum::extract::DefaultBodyLimit::max(5 * 1024 * 1024))
         .layer(cors)
-        .with_state(state);
+        .with_state(state.clone());
 
-    let listener = tokio::net::TcpListener::bind(&server_url).await?;
-    log::info!("Server started on address {}", server_url);
-    axum::serve(listener, app).await?;
-
-    Ok(())
+    // The two servers are independent: one failing to start or stopping later must not take the
+    // other down (SYS-C008-010), so each failure is logged and the process lives while one serves.
+    let grpc_state = state.clone();
+    let grpc = tokio::spawn(async move {
+        if let Err(error) = grpc::serve(grpc_state).await {
+            log::error!("gRPC server stopped: {error}");
+        }
+    });
+    let rest = async {
+        let listener = tokio::net::TcpListener::bind(&server_url).await?;
+        log::info!("Server started on address {}", server_url);
+        axum::serve(listener, app).await
+    }
+    .await;
+    if let Err(error) = &rest {
+        log::error!("REST server stopped: {error}");
+    }
+    // Reached when REST ended: stay up for as long as gRPC serves, and report a total failure.
+    let _ = grpc.await;
+    rest.map_err(Into::into)
 }
 
 #[derive(Clone)]

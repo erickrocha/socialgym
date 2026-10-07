@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/feed_post.dart';
-import '../services/feed_service.dart';
+import '../services/grpc/grpc_feed_service.dart';
 import '../services/base_service.dart';
 
 class FeedProvider extends ChangeNotifier {
@@ -38,9 +38,8 @@ class FeedProvider extends ChangeNotifier {
 
     try {
       final fetchedPosts = businessProfileUuid == null
-          ? await FeedService.fetchPosts(token, page: 0)
-          : await FeedService.fetchBusinessFeed(
-              token,
+          ? await GrpcFeedService.fetchPosts(page: 0)
+          : await GrpcFeedService.fetchBusinessFeed(
               businessProfileUuid,
               page: 0,
             );
@@ -77,9 +76,8 @@ class FeedProvider extends ChangeNotifier {
     try {
       final nextPage = _currentPage + 1;
       final fetchedPosts = businessProfileUuid == null
-          ? await FeedService.fetchPosts(token, page: nextPage)
-          : await FeedService.fetchBusinessFeed(
-              token,
+          ? await GrpcFeedService.fetchPosts(page: nextPage)
+          : await GrpcFeedService.fetchBusinessFeed(
               businessProfileUuid,
               page: nextPage,
             );
@@ -139,7 +137,7 @@ class FeedProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final newPost = await FeedService.createPost(data, token);
+      final newPost = await GrpcFeedService.createPost(data);
       _posts = [newPost, ..._posts];
       _posting = false;
       notifyListeners();
@@ -165,7 +163,7 @@ class FeedProvider extends ChangeNotifier {
     String token,
   ) async {
     try {
-      final updatedPost = await FeedService.addComment(data, token);
+      final updatedPost = await GrpcFeedService.addComment(data);
       _posts = _posts.map((post) {
         if (post.uuid == postId) {
           return updatedPost;
@@ -189,13 +187,7 @@ class FeedProvider extends ChangeNotifier {
     String token,
   ) async {
     try {
-      await FeedService.addReaction(
-        postId,
-        reactionType,
-        authorId,
-        authorName,
-        token,
-      );
+      await GrpcFeedService.addReaction(postId, reactionType);
       // Optimistically add the reaction locally
       _posts = _posts.map((post) {
         if (post.uuid == postId) {

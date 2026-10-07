@@ -40,6 +40,18 @@ pub trait Mapper<T, U> {
 
 pub struct WorkoutMapper {}
 
+impl WorkoutMapper {
+    /// The mapper needs every date and each set's owner name; callers reject an incomplete
+    /// session (400 / INVALID_ARGUMENT) instead of letting the mapper fail.
+    pub fn is_complete(session: &WorkoutSessionJson) -> bool {
+        session.started_at.is_some()
+            && session.completed_at.is_some()
+            && session.executed_sets.iter().all(|set| {
+                set.started_at.is_some() && set.completed_at.is_some() && set.owner_name.is_some()
+            })
+    }
+}
+
 impl Mapper<WorkoutSession, WorkoutSessionJson> for WorkoutMapper {
     fn json(t: WorkoutSession) -> WorkoutSessionJson {
         WorkoutSessionJson {

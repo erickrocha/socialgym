@@ -25,6 +25,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         proto_dir.join("resource.proto"),
     ];
 
+    // The timeline's own contract lives in its subfolder, apart from the mirrored workout protos.
+    let timeline_dir = proto_dir.join("timeline");
+    // A new proto in the folder must trigger the build too, not only edits of known files.
+    println!("cargo:rerun-if-changed={}", timeline_dir.display());
+    let mut proto_files = proto_files;
+    for entry in std::fs::read_dir(&timeline_dir)? {
+        let path = entry?.path();
+        if path.extension().is_some_and(|ext| ext == "proto") {
+            proto_files.push(path);
+        }
+    }
+
     for proto in &proto_files {
         println!("cargo:rerun-if-changed={}", proto.display());
     }

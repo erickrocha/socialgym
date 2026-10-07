@@ -51,12 +51,12 @@ if [[ ! -s "$test_cert_dir/ca.crt" || ! -s "$test_cert_dir/server.crt" || ! -s "
       'basicConstraints=critical,CA:FALSE' \
       'keyUsage=critical,digitalSignature,keyEncipherment' \
       'extendedKeyUsage=serverAuth' \
-      'subjectAltName=DNS:integration,DNS:localhost,IP:127.0.0.1')
+      'subjectAltName=DNS:integration,DNS:timeline,DNS:localhost,IP:127.0.0.1,IP:10.0.2.2')
 fi
 
 # The CA certificate is public; the umask above would otherwise make it unreadable by the
 # non-root user inside the timeline container (gRPC then fails with "Permission denied").
-chmod 644 "$test_cert_dir/ca.crt"
+chmod 644 "$test_cert_dir/ca.crt" "$test_cert_dir/server.crt" "$test_cert_dir/server.key"
 
 if [[ "${1:-}" == "certs" ]]; then
   printf 'Ephemeral test certificates ready in %s\n' "$test_cert_dir"

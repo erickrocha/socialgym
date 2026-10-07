@@ -88,10 +88,15 @@ services:
       - TERMS_VERSION=${TERMS_VERSION:-1.0.0}
       - PRIVACY_VERSION=${PRIVACY_VERSION:-1.0.0}
       - HEALTH_DATA_CONSENT_VERSION=${HEALTH_DATA_CONSENT_VERSION:-1.0.0}
-      - TIMELINE_BASE_URL=${TIMELINE_BASE_URL:-http://timeline-app:8091}
+      # Timeline's internal gRPC service (account deletion and data export); TLS verified with the shared certificate.
+      - TIMELINE_GRPC_URL=${TIMELINE_GRPC_URL:-https://timeline-app:50052}
+      - TIMELINE_GRPC_CERT_PATH=/etc/grpc/certs/server.crt
+      - TIMELINE_GRPC_DOMAIN=${GRPC_DOMAIN_NAME}
       - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:?INTERNAL_SERVICE_SECRET must be set}
       - ACCOUNT_DELETION_GRACE_DAYS=${ACCOUNT_DELETION_GRACE_DAYS:-30}
       - ACCOUNT_PURGE_INTERVAL_SECONDS=${ACCOUNT_PURGE_INTERVAL_SECONDS:-900}
+    volumes:
+      - ../certs/server.crt:/etc/grpc/certs/server.crt:ro
     networks:
       - edge
       - data
@@ -188,8 +193,13 @@ services:
       - GRPC_USE_TLS=${GRPC_USE_TLS}
       - GRPC_CERT_PATH=${GRPC_CERT_PATH}
       - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:?INTERNAL_SERVICE_SECRET must be set}
+      # Timeline's own gRPC server (mobile app and workout's internal calls), TLS with the shared certificate.
+      - TIMELINE_GRPC_PORT=50052
+      - TLS_CERT_PATH=/etc/grpc/certs/server.crt
+      - TLS_KEY_PATH=/etc/grpc/certs/server.key
     volumes:
       - ../certs/server.crt:/etc/grpc/certs/server.crt:ro
+      - ../certs/server.key:/etc/grpc/certs/server.key:ro
     networks:
       - edge
       - data

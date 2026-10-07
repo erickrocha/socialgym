@@ -1,0 +1,15 @@
+syntax = "proto3";
+package grpc.timeline;
+
+// Authenticated liveness probe of the timeline gRPC server: it proves the gateway route, TLS
+// and token validation work end to end. It touches no data.
+service HealthService {
+  rpc Check (HealthRequest) returns (HealthResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string person_uuid = 2;
+}

@@ -1,0 +1,24 @@
+syntax = "proto3";
+package grpc.timeline;
+
+import "timeline/post.proto";
+
+service FeedService {
+  // The caller's feed: own posts and accepted friends' posts, 20 per zero-based page.
+  rpc GetFeed (GetFeedRequest) returns (FeedResponse);
+  // The posts of a Business Profile. Any other uuid is NOT_FOUND.
+  rpc GetFeedByAuthor (GetFeedByAuthorRequest) returns (FeedResponse);
+}
+
+message GetFeedRequest {
+  uint32 page = 1;
+}
+
+message GetFeedByAuthorRequest {
+  string author_uuid = 1;
+  uint32 page = 2;
+}
+
+message FeedResponse {
+  repeated Post posts = 1;
+}

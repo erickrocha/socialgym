@@ -1,0 +1,44 @@
+syntax = "proto3";
+package grpc.timeline;
+
+// Notifications of the person in the token; there is no owner field.
+service NotificationService {
+  rpc ListNotifications (ListNotificationsRequest) returns (ListNotificationsResponse);
+  rpc MarkNotificationRead (MarkNotificationReadRequest) returns (MarkNotificationReadResponse);
+}
+
+message Notification {
+  optional string uuid = 1;
+  string notification_type = 2;
+  string recipient_person_uuid = 3;
+  string actor_person_uuid = 4;
+  string actor_name = 5;
+  optional string post_uuid = 6;
+  optional string comment_uuid = 7;
+  string entity_type = 8;
+  string entity_uuid = 9;
+  optional string target_type = 10;
+  optional string target_uuid = 11;
+  string snippet = 12;
+  bool read = 13;
+  string created_at = 14;
+  string updated_at = 15;
+}
+
+message ListNotificationsRequest {
+  bool unread_only = 1;
+  // 1..100, default 50 when 0.
+  uint32 limit = 2;
+}
+
+message ListNotificationsResponse {
+  repeated Notification notifications = 1;
+}
+
+message MarkNotificationReadRequest {
+  string idempotency_key = 1;
+}
+
+message MarkNotificationReadResponse {
+  bool read = 1;
+}

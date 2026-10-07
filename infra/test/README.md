@@ -7,7 +7,7 @@ This isolated Compose stack starts the dependencies required for cross-service a
 - LocalStack S3 and SQS, including an S3 object-created notification to the workout media queue
 - `workout` REST API
 - `integration` consent/person gRPC service
-- `timeline` REST API
+- `timeline` REST API, and its gRPC server on host port `18092` (TLS with the stack's test certificate)
 
 Start it from this directory:
 

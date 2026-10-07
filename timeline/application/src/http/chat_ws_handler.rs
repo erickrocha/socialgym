@@ -3,45 +3,18 @@ use std::time::Duration;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Query, State};
 use axum::response::IntoResponse;
-use business::commons::token_context::with_forwarded_token;
-use business::gateway::conversation_gateway::ConversationGateway;
 use business::use_cases::authentication::Authentication;
-use business::use_cases::chat_use_case::ChatUseCase;
 use domain::user::User;
 use futures::{SinkExt, StreamExt};
 use serde::Deserialize;
 
 use crate::infrastructure::chat_hub::ServerEvent;
-use crate::infrastructure::mapper::MessageMapper;
+use crate::infrastructure::chat_session::{self, ClientFrame};
 use crate::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct WsAuthQuery {
     pub access_token: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(tag = "type", rename_all = "kebab-case")]
-enum ClientFrame {
-    #[serde(rename_all = "camelCase")]
-    Send {
-        conversation_uuid: String,
-        #[serde(default)]
-        body: String,
-        #[serde(default)]
-        media: Vec<crate::http::json::chat_json::MessageMediaJson>,
-        client_message_id: String,
-    },
-    #[serde(rename_all = "camelCase")]
-    Read {
-        conversation_uuid: String,
-        last_read_message_uuid: String,
-    },
-    #[serde(rename_all = "camelCase")]
-    Typing {
-        conversation_uuid: String,
-    },
-    Ping,
 }
 
 /// `GET /timeline/api/chat/ws?access_token=<jwt>`
@@ -73,8 +46,13 @@ pub async fn ws(
         business::gateway::consent_gateway::ConsentGateway::require("privacy").await
     })
     .await;
-    if consents.is_err() {
-        return axum::http::StatusCode::FORBIDDEN.into_response();
+    if let Err(error) = consents {
+        return if error.kind == domain::business_error::BusinessErrorKind::Infrastructure {
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR
+        } else {
+            axum::http::StatusCode::FORBIDDEN
+        }
+        .into_response();
     }
 
     ws.on_upgrade(move |socket| handle_socket(socket, state, user, token))
@@ -128,119 +106,16 @@ async fn handle_socket(socket: WebSocket, state: AppState, user: User, token: St
             }
         };
 
-        handle_frame(&state, &user, &token, frame).await;
+        chat_session::handle_frame(&state, &user, &token, frame).await;
     }
 
     outbound.abort();
     state.chat_hub.unregister(&person_uuid, conn_id);
 }
 
-async fn handle_frame(state: &AppState, user: &User, token: &str, frame: ClientFrame) {
-    match frame {
-        ClientFrame::Ping => {
-            state
-                .chat_hub
-                .publish(std::slice::from_ref(&user.person_uuid), &ServerEvent::Pong);
-        }
-        ClientFrame::Send {
-            conversation_uuid,
-            body,
-            media,
-            client_message_id,
-        } => {
-            let domain_media = media.into_iter().map(MessageMapper::to_domain_media).collect();
-            // gRPC calls inside the use case need the forwarded JWT.
-            let result = with_forwarded_token(Some(token.to_string()), async {
-                ChatUseCase::send_message(
-                    &state.database,
-                    user,
-                    &conversation_uuid,
-                    &body,
-                    domain_media,
-                    &client_message_id,
-                )
-                .await
-            })
-            .await;
-
-            match result {
-                Ok(outcome) => {
-                    let json = MessageMapper::json(outcome.message);
-                    state.chat_hub.publish(
-                        &outcome.recipients,
-                        &ServerEvent::MessageNew {
-                            conversation_uuid,
-                            conversation_type: outcome.conversation_type,
-                            message: json,
-                        },
-                    );
-                }
-                Err(e) => state.chat_hub.publish(
-                    std::slice::from_ref(&user.person_uuid),
-                    &ServerEvent::Error { message: e.message },
-                ),
-            }
-        }
-        ClientFrame::Read {
-            conversation_uuid,
-            last_read_message_uuid,
-        } => {
-            let result = with_forwarded_token(Some(token.to_string()), async {
-                ChatUseCase::mark_read(
-                    &state.database,
-                    user,
-                    &conversation_uuid,
-                    &last_read_message_uuid,
-                )
-                .await
-            })
-            .await;
-
-            if let Ok(outcome) = result {
-                state.chat_hub.publish(
-                    &outcome.recipients,
-                    &ServerEvent::MessageRead {
-                        conversation_uuid: outcome.conversation_uuid,
-                        person_uuid: outcome.reader_person_uuid,
-                        last_read_message_uuid: outcome.last_read_message_uuid,
-                    },
-                );
-            }
-        }
-        ClientFrame::Typing { conversation_uuid } => {
-            // Ephemeral: forward to the other participants, nothing persisted.
-            let Ok(Some(conversation)) = ConversationGateway::new(&state.database)
-                .find_by_uuid(&conversation_uuid)
-                .await
-            else {
-                return;
-            };
-            if !conversation
-                .participant_person_uuids
-                .iter()
-                .any(|u| u == &user.person_uuid)
-            {
-                return;
-            }
-            let others: Vec<String> = conversation
-                .participant_person_uuids
-                .into_iter()
-                .filter(|u| u != &user.person_uuid)
-                .collect();
-            state.chat_hub.publish(
-                &others,
-                &ServerEvent::Typing {
-                    conversation_uuid,
-                    person_uuid: user.person_uuid.clone(),
-                },
-            );
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::ClientFrame;
+    use crate::infrastructure::chat_session::ClientFrame;
 
     /// The whole API speaks camelCase — REST, gRPC and the socket. Serde's
     /// enum-level `rename_all` renames variants, not their fields, so each

@@ -39,15 +39,10 @@ pub async fn create_post(
     Extension(current_user): Extension<User>,
     Json(payload): Json<PostJson>,
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
-    if !payload.media.is_empty() && !payload.third_party_consent_confirmed {
-        return Err(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::PostCreateFailed,
-        ));
-    }
+    let consent = payload.third_party_consent_confirmed;
     let post = PostMapper::domain(payload);
 
-    PostUseCase::create(&state.database, &current_user, post)
+    PostUseCase::create_with_consent(&state.database, &current_user, post, consent)
         .await
         .map(|p| (StatusCode::CREATED, Json(PostMapper::json(p))))
         .map_err(|error| {
@@ -145,15 +140,8 @@ pub async fn add_reaction(
     Extension(current_user): Extension<User>,
     Json(payload): Json<ReactionJson>,
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
-    if !matches!(
-        payload.reaction_type.to_ascii_lowercase().as_str(),
-        "like" | "love" | "haha" | "wow" | "sad" | "angry"
-    ) {
-        return Err(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::ReactionAddFailed,
-        ));
-    }
+    PostUseCase::parse_reaction_type(&payload.reaction_type)
+        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::ReactionAddFailed))?;
     let reaction = ReactionMapper::domain(payload);
     PostUseCase::add_reaction(&state.database, &current_user, post_id, reaction)
         .await

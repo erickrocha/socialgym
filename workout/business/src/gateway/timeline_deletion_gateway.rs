@@ -1,89 +1,90 @@
 use crate::domain::business_error::BusinessError;
 use std::env;
-use std::sync::OnceLock;
+use tonic::metadata::MetadataValue;
+use tonic::transport::{Certificate, Channel, ClientTlsConfig};
+use tonic::Request;
 
-const TIMELINE_BASE_URL: &str = "TIMELINE_BASE_URL";
+mod proto {
+    tonic::include_proto!("grpc.timeline");
+}
+use proto::internal_service_client::InternalServiceClient;
+use proto::PersonDataRequest;
+
+const TIMELINE_GRPC_URL: &str = "TIMELINE_GRPC_URL";
+const TIMELINE_GRPC_CERT_PATH: &str = "TIMELINE_GRPC_CERT_PATH";
+const TIMELINE_GRPC_DOMAIN: &str = "TIMELINE_GRPC_DOMAIN";
 const INTERNAL_SERVICE_SECRET: &str = "INTERNAL_SERVICE_SECRET";
 
-static HTTP_CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
-
-fn http_client() -> &'static reqwest::Client {
-    HTTP_CLIENT.get_or_init(reqwest::Client::new)
-}
-
+/// Calls `timeline`'s internal gRPC service, authenticated by the shared service secret. An
+/// `https` URL verifies the server with the CA in `TIMELINE_GRPC_CERT_PATH` (and the name in
+/// `TIMELINE_GRPC_DOMAIN`); an `http` URL is plaintext, for tests only.
 pub struct TimelineDeletionGateway {}
 
 impl TimelineDeletionGateway {
-    pub async fn export_person_data(person_uuid: &str) -> Result<serde_json::Value, BusinessError> {
-        let base_url = std::env::var(TIMELINE_BASE_URL)
-            .unwrap_or_else(|_| "http://127.0.0.1:8091".to_string());
-        let secret = std::env::var(INTERNAL_SERVICE_SECRET).map_err(|_| {
-            BusinessError::infrastructure("INTERNAL_SERVICE_SECRET is not configured")
-        })?;
-        let url = format!(
-            "{}/timeline/api/internal/persons/{}/export",
-            base_url.trim_end_matches('/'),
-            person_uuid
-        );
-        let response = reqwest::Client::new()
-            .get(url)
-            .header("x-internal-secret", secret)
-            .send()
-            .await
-            .map_err(|e| BusinessError::infrastructure(format!("Timeline export failed: {e}")))?;
-        if !response.status().is_success() {
-            return Err(BusinessError::infrastructure(format!(
-                "Timeline export returned {}",
-                response.status()
-            )));
+    async fn client() -> Result<InternalServiceClient<Channel>, BusinessError> {
+        let url = env::var(TIMELINE_GRPC_URL).unwrap_or_else(|_| "https://127.0.0.1:50052".to_string());
+        let mut endpoint = Channel::from_shared(url.clone())
+            .map_err(|e| BusinessError::infrastructure(format!("Invalid {TIMELINE_GRPC_URL}: {e}")))?;
+        if url.starts_with("https://") {
+            let mut tls = ClientTlsConfig::new();
+            if let Ok(path) = env::var(TIMELINE_GRPC_CERT_PATH) {
+                let pem = std::fs::read_to_string(&path)
+                    .map_err(|e| BusinessError::infrastructure(format!("Cannot read {path}: {e}")))?;
+                tls = tls.ca_certificate(Certificate::from_pem(pem));
+            }
+            if let Ok(domain) = env::var(TIMELINE_GRPC_DOMAIN) {
+                tls = tls.domain_name(domain);
+            }
+            endpoint = endpoint
+                .tls_config(tls)
+                .map_err(|e| BusinessError::infrastructure(format!("Invalid timeline TLS config: {e}")))?;
         }
-        response
-            .json()
+        let channel = endpoint
+            .connect()
             .await
+            .map_err(|e| BusinessError::infrastructure(format!("Timeline is unreachable: {e}")))?;
+        Ok(InternalServiceClient::new(channel))
+    }
+
+    fn request(person_uuid: &str) -> Result<Request<PersonDataRequest>, BusinessError> {
+        let secret = env::var(INTERNAL_SERVICE_SECRET)
+            .map_err(|_| BusinessError::infrastructure("INTERNAL_SERVICE_SECRET is not configured"))?;
+        let mut request = Request::new(PersonDataRequest { person_uuid: person_uuid.to_string() });
+        request.metadata_mut().insert(
+            "x-internal-secret",
+            MetadataValue::try_from(secret)
+                .map_err(|_| BusinessError::infrastructure("INTERNAL_SERVICE_SECRET is not a valid header value"))?,
+        );
+        Ok(request)
+    }
+
+    /// Everything `timeline` holds for the person, for their data export.
+    pub async fn export_person_data(person_uuid: &str) -> Result<serde_json::Value, BusinessError> {
+        let request = Self::request(person_uuid)?;
+        let response = Self::client()
+            .await?
+            .export_person_data(request)
+            .await
+            .map_err(|status| {
+                log::error!("Timeline export failed: {}", status.code());
+                BusinessError::infrastructure(format!("Timeline export failed: {}", status.code()))
+            })?;
+        serde_json::from_str(&response.into_inner().export_json)
             .map_err(|e| BusinessError::infrastructure(format!("Invalid timeline export: {e}")))
     }
-    /// Calls `timeline`'s internal endpoint to cascade-delete every document
-    /// belonging to `person_uuid` (posts, comments, reactions, evolution
-    /// check-ins, workout-session mirrors, notifications). Idempotent — safe
-    /// to retry on failure.
+
+    /// Cascade-deletes every document `timeline` holds for the person (posts, comments, reactions,
+    /// check-ins, sessions, notifications, chat). Idempotent, so a failed purge can retry it.
     pub async fn delete_person_data(person_uuid: &str) -> Result<(), BusinessError> {
-        let base_url = env::var(TIMELINE_BASE_URL).expect("TIMELINE_BASE_URL must be set");
-        let secret =
-            env::var(INTERNAL_SERVICE_SECRET).expect("INTERNAL_SERVICE_SECRET must be set");
-        let url = format!("{}/timeline/api/internal/persons/{}", base_url, person_uuid);
-
-        let response = http_client()
-            .delete(&url)
-            .header("X-Internal-Secret", secret)
-            .send()
-            .await;
-
-        let response = match response {
-            Ok(response) => response,
-            Err(error) => {
-                log::error!(
-                    "Error calling timeline account-deletion endpoint: {}",
-                    error
-                );
-                return Err(BusinessError::infrastructure(
-                    "Failed to delete timeline data for account".to_string(),
-                ));
-            }
-        };
-
-        if !response.status().is_success() {
-            let status = response.status();
-            let body = response.text().await.unwrap_or_default();
-            log::error!(
-                "Timeline account-deletion endpoint returned {}: {}",
-                status,
-                body
-            );
-            return Err(BusinessError::infrastructure(
-                "Failed to delete timeline data for account".to_string(),
-            ));
-        }
-
+        let request = Self::request(person_uuid)?;
+        Self::client()
+            .await?
+            .delete_person_data(request)
+            .await
+            .map_err(|status| {
+                log::error!("Timeline account deletion failed: {}", status.code());
+                BusinessError::infrastructure("Failed to delete timeline data for account".to_string())
+            })?;
         Ok(())
     }
 }

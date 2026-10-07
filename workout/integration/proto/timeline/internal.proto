@@ -1,0 +1,24 @@
+syntax = "proto3";
+package grpc.timeline;
+
+// Service-to-service only: called by `workout` for account deletion and data export. The caller
+// authenticates with the gRPC metadata `x-internal-secret` (never a user token). Not exposed to
+// the mobile app, so it has no mobile mirror.
+service InternalService {
+  // Cascade-deletes everything the person has in the timeline. Idempotent.
+  rpc DeletePersonData (PersonDataRequest) returns (DeletePersonDataResponse);
+  // The person's own content only: own posts, own comments and reactions on other people's posts
+  // (never the text of those posts), check-ins, workout sessions and notifications.
+  rpc ExportPersonData (PersonDataRequest) returns (ExportPersonDataResponse);
+}
+
+message PersonDataRequest {
+  string person_uuid = 1;
+}
+
+message DeletePersonDataResponse {}
+
+message ExportPersonDataResponse {
+  // JSON object with the keys posts, evolutions, workoutSessions and notifications.
+  string export_json = 1;
+}

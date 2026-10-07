@@ -1,0 +1,57 @@
+syntax = "proto3";
+package grpc.timeline;
+
+// Mirrors /timeline/api/workout-sessions. A session belongs to the person in the token, whatever
+// the message says; another person's session is NOT_FOUND, like a missing one.
+service WorkoutSessionService {
+  rpc CreateWorkoutSession (CreateWorkoutSessionRequest) returns (WorkoutSession);
+  rpc GetWorkoutSession (GetWorkoutSessionRequest) returns (WorkoutSession);
+  rpc ListWorkoutSessions (ListWorkoutSessionsRequest) returns (ListWorkoutSessionsResponse);
+}
+
+message ExecutedSet {
+  optional string uuid = 1;
+  optional string exercise_name = 2;
+  int32 owner_id = 3;
+  optional string owner_name = 4;
+  optional string category = 5;
+  optional string visibility = 6;
+  int32 set_number = 7;
+  int32 reps_or_duration = 8;
+  float weight = 9;
+  optional string started_at = 10;
+  optional string completed_at = 11;
+}
+
+message WorkoutSession {
+  optional string uuid = 1;
+  string person_uuid = 2;
+  optional string workout_name = 3;
+  int32 duration = 4;
+  optional string started_at = 5;
+  optional string day_of_week = 6;
+  optional string completed_at = 7;
+  repeated ExecutedSet executed_sets = 8;
+  float total_volume = 9;
+  float total_sets = 10;
+}
+
+// started_at, completed_at and every set's dates and owner_name are required (INVALID_ARGUMENT
+// otherwise); uuid and person_uuid are ignored.
+message CreateWorkoutSessionRequest {
+  WorkoutSession session = 1;
+}
+
+message GetWorkoutSessionRequest {
+  string session_uuid = 1;
+}
+
+message ListWorkoutSessionsRequest {
+  // ISO-8601; the end defaults to now and the start to seven days before the end.
+  optional string start_date = 1;
+  optional string end_date = 2;
+}
+
+message ListWorkoutSessionsResponse {
+  repeated WorkoutSession sessions = 1;
+}

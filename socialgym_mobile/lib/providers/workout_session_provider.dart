@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/workout_session.dart';
-import '../services/workout_session_service.dart';
+import '../services/grpc/grpc_workout_session_service.dart';
 import '../services/base_service.dart';
 
 class WorkoutSessionProvider extends ChangeNotifier {
@@ -29,7 +29,7 @@ class WorkoutSessionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await WorkoutSessionService.saveWorkoutSession(sessionData, token);
+      await GrpcWorkoutSessionService.saveWorkoutSession(sessionData);
       _saving = false;
       notifyListeners();
       return true;
@@ -59,11 +59,9 @@ class WorkoutSessionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _sessions = await WorkoutSessionService.fetchWorkoutSessions(
-        personUuid: personUuid,
+      _sessions = await GrpcWorkoutSessionService.fetchWorkoutSessions(
         startDate: startDate,
         endDate: endDate,
-        token: token,
       );
       _fetching = false;
       notifyListeners();

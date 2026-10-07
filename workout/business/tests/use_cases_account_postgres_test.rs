@@ -15,30 +15,50 @@ use sea_orm::{EntityTrait, PaginatorTrait};
 use std::sync::atomic::{AtomicU16, Ordering};
 use std::sync::Arc;
 use support::{business_profile, exercise, fresh_db, kind, register, workout};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-/// Minimal HTTP server standing in for timeline's internal deletion endpoint.
+/// Stand-in for timeline's internal gRPC service: succeeds while `status` is below 300.
+mod timeline_proto {
+    tonic::include_proto!("grpc.timeline");
+}
+use timeline_proto::internal_service_server::{InternalService, InternalServiceServer};
+use timeline_proto::*;
+
+struct TimelineStub(Arc<AtomicU16>);
+
+#[tonic::async_trait]
+impl InternalService for TimelineStub {
+    async fn delete_person_data(
+        &self,
+        request: tonic::Request<PersonDataRequest>,
+    ) -> Result<tonic::Response<DeletePersonDataResponse>, tonic::Status> {
+        // The caller must present the shared secret.
+        assert_eq!(request.metadata().get("x-internal-secret").and_then(|v| v.to_str().ok()), Some("test-secret"));
+        // Mirrors the old HTTP stub's convention: a status below 300 is success.
+        match self.0.load(Ordering::SeqCst) {
+            status if status < 300 => Ok(tonic::Response::new(DeletePersonDataResponse {})),
+            _ => Err(tonic::Status::unavailable("timeline down")),
+        }
+    }
+    async fn export_person_data(
+        &self,
+        _: tonic::Request<PersonDataRequest>,
+    ) -> Result<tonic::Response<ExportPersonDataResponse>, tonic::Status> {
+        Ok(tonic::Response::new(ExportPersonDataResponse { export_json: "{}".into() }))
+    }
+}
+
 async fn timeline_stub(status: Arc<AtomicU16>) {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
     unsafe {
-        std::env::set_var("TIMELINE_BASE_URL", format!("http://127.0.0.1:{port}"));
+        std::env::set_var("TIMELINE_GRPC_URL", format!("http://127.0.0.1:{port}"));
         std::env::set_var("INTERNAL_SERVICE_SECRET", "test-secret");
     }
-    tokio::spawn(async move {
-        loop {
-            let (mut socket, _) = listener.accept().await.unwrap();
-            let status = status.clone();
-            tokio::spawn(async move {
-                let mut buf = [0u8; 2048];
-                let _ = socket.read(&mut buf).await;
-                let code = status.load(Ordering::SeqCst);
-                let _ = socket
-                    .write_all(format!("HTTP/1.1 {code} X\r\ncontent-length: 0\r\nconnection: close\r\n\r\n").as_bytes())
-                    .await;
-            });
-        }
-    });
+    tokio::spawn(
+        tonic::transport::Server::builder()
+            .add_service(InternalServiceServer::new(TimelineStub(status)))
+            .serve_with_incoming(tokio_stream::wrappers::TcpListenerStream::new(listener)),
+    );
 }
 
 #[tokio::test]

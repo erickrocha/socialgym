@@ -1,0 +1,159 @@
+syntax = "proto3";
+package grpc.timeline;
+
+// Mirrors /timeline/api/chat (REST) and /timeline/api/chat/ws (WebSocket). The acting person is
+// always the one in the access token. Dates are ISO-8601 strings, as in the REST JSON.
+service ChatService {
+  rpc ListConversations (ListConversationsRequest) returns (ListConversationsResponse);
+  // Online subset of the requested people, limited to friends and people who share a
+  // conversation with the caller; anyone else is omitted exactly like an offline person.
+  rpc GetPresence (GetPresenceRequest) returns (GetPresenceResponse);
+  rpc CreateDirectConversation (CreateDirectConversationRequest) returns (Conversation);
+  rpc CreateBusinessTeamGroup (CreateBusinessTeamGroupRequest) returns (Conversation);
+  rpc CreateBusinessDirectConversation (CreateBusinessDirectConversationRequest) returns (Conversation);
+  // since_epoch_ms > 0 returns the messages newer than it (reconnect replay); otherwise a page.
+  rpc ListMessages (ListMessagesRequest) returns (ListMessagesResponse);
+  rpc SendMessage (SendMessageRequest) returns (Message);
+  rpc MarkConversationRead (MarkConversationReadRequest) returns (MarkConversationReadResponse);
+
+  // Real-time stream replacing the WebSocket for the mobile app. Opening requires current Terms
+  // and Privacy consent (PERMISSION_DENIED otherwise); the server ends the stream when the access
+  // token expires (UNAUTHENTICATED) and the client reopens it with a fresh token.
+  rpc OpenStream (stream ClientFrame) returns (stream ServerFrame);
+}
+
+message MessageMedia {
+  string media_type = 1;
+  string object_key = 2;
+  string url = 3;
+}
+
+message ConversationParticipant {
+  string person_uuid = 1;
+  string role = 2;
+  optional string last_read_at = 3;
+  optional string last_read_message_uuid = 4;
+}
+
+message LastMessagePreview {
+  string message_uuid = 1;
+  string sender_person_uuid = 2;
+  string sender_display_name = 3;
+  string snippet = 4;
+  string sent_at = 5;
+  bool has_media = 6;
+}
+
+message Conversation {
+  string uuid = 1;
+  string conversation_type = 2;
+  optional string business_profile_uuid = 3;
+  optional string business_profile_name = 4;
+  optional string business_profile_logo_url = 5;
+  repeated string participant_person_uuids = 6;
+  repeated ConversationParticipant participants = 7;
+  optional LastMessagePreview last_message = 8;
+  bool unread = 9;
+  string created_at = 10;
+  string updated_at = 11;
+}
+
+message Message {
+  string uuid = 1;
+  string conversation_uuid = 2;
+  string sender_person_uuid = 3;
+  string sender_kind = 4;
+  string sender_display_name = 5;
+  optional string sender_avatar_url = 6;
+  optional string sender_business_profile_uuid = 7;
+  string body = 8;
+  repeated MessageMedia media = 9;
+  string client_message_id = 10;
+  string sent_at = 11;
+}
+
+message ListConversationsRequest { uint32 page = 1; }
+message ListConversationsResponse { repeated Conversation conversations = 1; }
+
+message GetPresenceRequest { repeated string person_uuids = 1; }
+message GetPresenceResponse { repeated string online = 1; }
+
+message CreateDirectConversationRequest { string target_person_uuid = 1; }
+message CreateBusinessTeamGroupRequest { string business_profile_uuid = 1; }
+message CreateBusinessDirectConversationRequest {
+  string business_profile_uuid = 1;
+  optional string member_person_uuid = 2;
+}
+
+message ListMessagesRequest {
+  string conversation_uuid = 1;
+  uint32 page = 2;
+  int64 since_epoch_ms = 3;
+}
+message ListMessagesResponse { repeated Message messages = 1; }
+
+message SendMessageRequest {
+  string conversation_uuid = 1;
+  string body = 2;
+  repeated MessageMedia media = 3;
+  string client_message_id = 4;
+}
+
+message MarkConversationReadRequest {
+  string conversation_uuid = 1;
+  string last_read_message_uuid = 2;
+}
+message MarkConversationReadResponse { bool read = 1; }
+
+// ---- stream frames
+
+message SendFrame {
+  string conversation_uuid = 1;
+  string body = 2;
+  repeated MessageMedia media = 3;
+  string client_message_id = 4;
+}
+message ReadFrame {
+  string conversation_uuid = 1;
+  string last_read_message_uuid = 2;
+}
+message TypingFrame { string conversation_uuid = 1; }
+message PingFrame {}
+
+message ClientFrame {
+  oneof frame {
+    SendFrame send = 1;
+    ReadFrame read = 2;
+    TypingFrame typing = 3;
+    PingFrame ping = 4;
+  }
+}
+
+message MessageNewEvent {
+  string conversation_uuid = 1;
+  string conversation_type = 2;
+  Message message = 3;
+}
+message ConversationUpdatedEvent { Conversation conversation = 1; }
+message MessageReadEvent {
+  string conversation_uuid = 1;
+  string person_uuid = 2;
+  string last_read_message_uuid = 3;
+}
+message TypingEvent {
+  string conversation_uuid = 1;
+  string person_uuid = 2;
+}
+message PongEvent {}
+message ErrorEvent { string message = 1; }
+
+message ServerFrame {
+  oneof event {
+    MessageNewEvent message_new = 1;
+    ConversationUpdatedEvent conversation_updated = 2;
+    MessageReadEvent message_read = 3;
+    TypingEvent typing = 4;
+    PongEvent pong = 5;
+    ErrorEvent error = 6;
+  }
+}

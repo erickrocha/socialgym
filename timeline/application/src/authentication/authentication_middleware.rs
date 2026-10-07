@@ -33,9 +33,10 @@ pub async fn authentication(
 
     let mut header = auth_header.split_whitespace();
 
-    let (bearer, token) = (header.next(), header.next());
+    // Exactly `Bearer <token>`: a header with trailing parts is malformed, as it is for gRPC.
+    let (bearer, token, extra) = (header.next(), header.next(), header.next());
 
-    if bearer != Some("Bearer") || token.is_none() {
+    if bearer != Some("Bearer") || token.is_none() || extra.is_some() {
         log::info!("Invalid auth header format");
         return Err(ExceptionResponse::Unauthorized(
             locale,
@@ -63,11 +64,15 @@ pub async fn authentication(
         ConsentGateway::require("privacy").await
     })
     .await;
-    if mandatory_consents.is_err() {
-        return Err(ExceptionResponse::Forbidden(
-            locale,
-            ErrorKey::ConsentRequired,
-        ));
+    // A missing consent is 403; `workout` being unreachable is a dependency outage (500), not a
+    // refusal, the same difference gRPC draws between PERMISSION_DENIED and UNAVAILABLE.
+    if let Err(error) = mandatory_consents {
+        return Err(match error.kind {
+            domain::business_error::BusinessErrorKind::Infrastructure => {
+                ExceptionResponse::InternalServerError(locale, ErrorKey::ConsentRequired)
+            }
+            _ => ExceptionResponse::Forbidden(locale, ErrorKey::ConsentRequired),
+        });
     }
 
     // Run the rest of the request stack inside the token scope so gRPC

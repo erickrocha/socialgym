@@ -17,6 +17,15 @@ async fn signed_url_cache(
     posts: &[Post],
     locale: Locale,
 ) -> Result<HashMap<String, String>, ExceptionResponse> {
+    build_signed_url_cache(posts)
+        .await
+        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::FeedFetchFailed))
+}
+
+/// CloudFront signed URLs for every avatar and media key in `posts`, shared by REST and gRPC.
+pub async fn build_signed_url_cache(
+    posts: &[Post],
+) -> Result<HashMap<String, String>, domain::business_error::BusinessError> {
     let mut unique_keys = HashSet::new();
     for post in posts {
         if let Some(key) = &post.author_object_key {
@@ -36,11 +45,7 @@ async fn signed_url_cache(
 
     let mut url_cache = HashMap::new();
     for key in unique_keys {
-        let url = MediaUseCase::generate_cloud_front_signed_url(&key)
-            .await
-            .map_err(|error| {
-                ExceptionResponse::from_business(error, locale, ErrorKey::FeedFetchFailed)
-            })?;
+        let url = MediaUseCase::generate_cloud_front_signed_url(&key).await?;
         url_cache.insert(key, url);
     }
     Ok(url_cache)

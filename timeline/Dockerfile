@@ -41,7 +41,7 @@ COPY --from=builder /app/target/release/timeline /app/timeline
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8091}/ || exit 1
 
-EXPOSE 8091
+EXPOSE 8091 50052
 
 USER nobody
 CMD ["./timeline"]

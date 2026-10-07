@@ -1,0 +1,93 @@
+syntax = "proto3";
+package grpc.timeline;
+
+// Mirrors the REST post surface (/timeline/api/posts). The author is always the person in the
+// access token; no request carries an author. Dates are ISO-8601 strings, as in the REST JSON.
+
+service PostService {
+  rpc CreatePost (CreatePostRequest) returns (Post);
+  rpc DeletePost (DeletePostRequest) returns (DeletePostResponse);
+  rpc AddComment (AddCommentRequest) returns (Post);
+  rpc AddReaction (AddReactionRequest) returns (Post);
+  rpc RemoveReaction (RemoveReactionRequest) returns (Post);
+}
+
+message Media {
+  optional string uuid = 1;
+  string url = 2;
+  string media_type = 3;
+  string object_key = 4;
+}
+
+message Reaction {
+  optional string uuid = 1;
+  string author_id = 2;
+  string author_name = 3;
+  string reaction_type = 4;
+}
+
+message Mention {
+  string name = 1;
+  string mentioned_uuid = 2;
+}
+
+message Comment {
+  optional string uuid = 1;
+  string post_uuid = 2;
+  string author_uuid = 3;
+  string author_name = 4;
+  optional string author_object_key = 5;
+  optional string author_avatar = 6;
+  string content = 7;
+  optional string parent_uuid = 8;
+  optional string created_at = 9;
+  optional string updated_at = 10;
+  repeated Mention mentions = 11;
+}
+
+message Post {
+  optional string uuid = 1;
+  int32 author_id = 2;
+  string author_uuid = 3;
+  string author_name = 4;
+  optional string author_object_key = 5;
+  optional string author_avatar = 6;
+  string content = 7;
+  repeated Media media = 8;
+  repeated Reaction reactions = 9;
+  repeated Comment comments = 10;
+  optional string created_at = 11;
+  optional string updated_at = 12;
+  repeated Mention mentions = 13;
+}
+
+message CreatePostRequest {
+  string content = 1;
+  repeated Media media = 2;
+  repeated Mention mentions = 3;
+  // Required (true) when media is attached.
+  bool third_party_consent_confirmed = 4;
+}
+
+message DeletePostRequest {
+  string post_uuid = 1;
+}
+
+message DeletePostResponse {}
+
+message AddCommentRequest {
+  string post_uuid = 1;
+  string content = 2;
+  optional string parent_uuid = 3;
+  repeated Mention mentions = 4;
+}
+
+message AddReactionRequest {
+  string post_uuid = 1;
+  // like, love, haha, wow, sad or angry; read case-insensitively.
+  string reaction_type = 2;
+}
+
+message RemoveReactionRequest {
+  string post_uuid = 1;
+}

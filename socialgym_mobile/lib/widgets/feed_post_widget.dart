@@ -19,7 +19,7 @@ import '../providers/feed_provider.dart';
 import '../services/grpc/grpc_person_service.dart';
 import '../pages/profile/person_profile_page.dart';
 import '../utils/mention_text_utils.dart';
-import '../services/content_report_service.dart';
+import '../services/grpc/grpc_content_report_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Post Card
@@ -292,7 +292,7 @@ class _FeedPostWidgetState extends State<FeedPostWidget>
       return;
     }
     try {
-      await ContentReportService.create(
+      await GrpcContentReportService.create(
         targetType: 'post',
         targetId: widget.post.uuid,
         postId: widget.post.uuid,

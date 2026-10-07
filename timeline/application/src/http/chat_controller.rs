@@ -17,7 +17,7 @@ fn business_err(locale: Locale) -> impl Fn(domain::business_error::BusinessError
     move |error| ExceptionResponse::from_business(error, locale, ErrorKey::Unknown)
 }
 
-async fn single_conversation_json(
+pub(crate) async fn single_conversation_json(
     state: &AppState,
     user: &User,
     conversation: domain::conversation::Conversation,
@@ -279,10 +279,8 @@ pub async fn presence(
         .filter(|uuid| !uuid.is_empty())
         .take(200)
         .collect();
-    let visible = ChatUseCase::visible_presence_candidates(&state.database, &user, candidates)
+    let online = crate::infrastructure::chat_session::presence_online(&state, &user, candidates)
         .await
         .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::Unknown))?;
-    Ok(Json(PresenceJson {
-        online: state.chat_hub.online_among(&visible),
-    }))
+    Ok(Json(PresenceJson { online }))
 }

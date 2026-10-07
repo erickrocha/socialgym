@@ -9,25 +9,20 @@ use application::{
     AppState,
     routes::{
         chat_routes::chat_routes, content_report_routes::report_routes, feed_routes::feed_route,
-        internal_routes::internal_routes, post_routes::post_routes,
+        post_routes::post_routes,
         workout_session_routes::workout_session_routes,
     },
 };
 use axum::{Router, body::Body, http::Request};
-use business::proto::proto::business_profile::business_profile_service_server::{BusinessProfileService, BusinessProfileServiceServer};
-use business::proto::proto::business_profile::*;
-use business::proto::proto::business_profile_address::BusinessProfileAddress;
-use business::proto::proto::friend::friend_service_server::{FriendService, FriendServiceServer};
-use business::proto::proto::friend::*;
-use business::proto::proto::person::person_service_server::{PersonService, PersonServiceServer};
-use business::proto::proto::person::*;
+use business::proto::proto::business_profile::business_profile_service_server::BusinessProfileServiceServer;
+use business::proto::proto::friend::friend_service_server::FriendServiceServer;
+use business::proto::proto::person::person_service_server::PersonServiceServer;
 use domain::access_token::Claims;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use mongodb::Client;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::sync::{Mutex, Once};
-use tonic::{Request as GrpcRequest, Response, Status};
 use tower::ServiceExt;
 
 const SECRET: &str = "c008-gaps-test-secret";
@@ -36,90 +31,8 @@ const INTERNAL_SECRET: &str = "c008-internal-test-secret";
 /// The environment (`GRPC_*`, token secret) is process-wide: one test at a time.
 static ENV_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
-// ---------------------------------------------------------------- workout stand-in
-
-/// Consent is always active, nobody holds a role, and friends come from a fixed map.
-struct Workout {
-    friends: HashMap<String, Vec<String>>,
-}
-
-macro_rules! person_stub {
-    ($($name:ident($req:ty) -> $res:ty;)*) => {
-        #[tonic::async_trait]
-        impl PersonService for Workout {
-            async fn has_active_consent(
-                &self,
-                _: GrpcRequest<ConsentStatusRequest>,
-            ) -> Result<Response<ConsentStatusResponse>, Status> {
-                Ok(Response::new(ConsentStatusResponse { active: true, version: "test".into() }))
-            }
-            async fn has_role(
-                &self,
-                _: GrpcRequest<RoleStatusRequest>,
-            ) -> Result<Response<RoleStatusResponse>, Status> {
-                Ok(Response::new(RoleStatusResponse { active: false }))
-            }
-            $(async fn $name(&self, _: GrpcRequest<$req>) -> Result<Response<$res>, Status> {
-                Err(Status::unimplemented("not used by the C-008 gap tests"))
-            })*
-        }
-    };
-}
-
-person_stub! {
-    get_person(PersonIdRequest) -> PersonResponse;
-    get_me(GetMeRequest) -> PersonResponse;
-    search_mentionable_friends(SearchMentionableFriendsRequest) -> PeopleResponse;
-    update_person(Person) -> PersonResponse;
-    search_persons(PersonParams) -> PeopleResponse;
-    update_person_info(business::proto::proto::person_info::PersonInfo) -> business::proto::proto::person_info::PersonInfo;
-    add_person_address(business::proto::proto::person_address::PersonAddress) -> business::proto::proto::person_address::PersonAddress;
-    update_person_address(business::proto::proto::person_address::PersonAddress) -> business::proto::proto::person_address::PersonAddress;
-    remove_person_address(RemovePersonAddressRequest) -> RemovePersonAddressResponse;
-    get_person_image_upload_url(PersonImageUploadRequest) -> PersonImageUploadResponse;
-    delete_person_image(PersonImageRequest) -> DeletePersonImageResponse;
-}
-
-#[tonic::async_trait]
-impl FriendService for Workout {
-    async fn get_friends(
-        &self,
-        request: GrpcRequest<FriendsRequest>,
-    ) -> Result<Response<FriendsResponse>, Status> {
-        let me = request.into_inner().uuid;
-        let friends = self
-            .friends
-            .get(&me)
-            .into_iter()
-            .flatten()
-            .map(|other| Friend {
-                person_uuid: me.clone(),
-                friend_uuid: other.clone(),
-                ..Default::default()
-            })
-            .collect();
-        Ok(Response::new(FriendsResponse { friends }))
-    }
-    async fn get_friend_page(&self, _: GrpcRequest<FriendPageRequest>) -> Result<Response<FriendPageResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn search_friends(&self, _: GrpcRequest<SearchFriendsRequest>) -> Result<Response<SearchFriendsResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn send_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn accept_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn deny_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn cancel_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn remove_friend(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<RemoveFriendResponse>, Status> { Err(Status::unimplemented("")) }
-}
-
-/// The cast has no Business Profiles: every lookup is NOT_FOUND, like workout's real answer.
-#[tonic::async_trait]
-impl BusinessProfileService for Workout {
-    async fn get_business_profile_by_id(&self, _: GrpcRequest<BusinessProfileRequestId>) -> Result<Response<BusinessProfile>, Status> { Err(Status::not_found("Business profile not found")) }
-    async fn get_business_profile_by_owner_id(&self, _: GrpcRequest<BusinessProfileRequestOwnerId>) -> Result<Response<BusinessProfilesResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn add_business_profile(&self, _: GrpcRequest<BusinessProfile>) -> Result<Response<BusinessProfile>, Status> { Err(Status::unimplemented("")) }
-    async fn update_business_profile(&self, _: GrpcRequest<BusinessProfile>) -> Result<Response<BusinessProfile>, Status> { Err(Status::unimplemented("")) }
-    async fn add_business_profile_address(&self, _: GrpcRequest<BusinessProfileAddress>) -> Result<Response<BusinessProfileAddress>, Status> { Err(Status::unimplemented("")) }
-    async fn update_business_profile_address(&self, _: GrpcRequest<BusinessProfileAddress>) -> Result<Response<BusinessProfileAddress>, Status> { Err(Status::unimplemented("")) }
-    async fn remove_business_profile_address(&self, _: GrpcRequest<RemoveBusinessProfileAddressRequest>) -> Result<Response<RemoveBusinessProfileAddressResponse>, Status> { Err(Status::unimplemented("")) }
-}
+mod standin;
+use standin::Workout;
 
 // ---------------------------------------------------------------- log capture
 
@@ -193,7 +106,7 @@ async fn world() -> World {
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
-    let workout = || Workout { friends: friends.clone() };
+    let workout = || Workout { friends: friends.clone(), ..Default::default() };
     tokio::spawn(
         tonic::transport::Server::builder()
             .add_service(PersonServiceServer::new(workout()))
@@ -217,7 +130,6 @@ async fn world() -> World {
         .nest("/reports", report_routes(state.clone()))
         .nest("/workout-sessions", workout_session_routes(state.clone()))
         .nest("/chat", chat_routes(state.clone()))
-        .nest("/internal", internal_routes(state.clone()))
         .with_state(state.clone());
     World { app, state, alice, bob, carol, _guard: guard }
 }
@@ -386,16 +298,16 @@ gap_test!(gap_the_person_data_export_holds_only_the_persons_own_content, "SYS-C0
     }))).await;
     assert_eq!(status, 201, "setup: {raw}");
 
-    let req = Request::builder()
-        .method("GET")
-        .uri(format!("/internal/persons/{}/export", w.bob.uuid))
-        .header("x-internal-secret", INTERNAL_SECRET)
-        .body(Body::empty())
-        .unwrap();
-    let res = w.app.clone().oneshot(req).await.unwrap();
-    assert_eq!(res.status().as_u16(), 200);
-    let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
-    let export = String::from_utf8_lossy(&bytes);
+    // The export is served by the internal gRPC service (the REST internal routes are retired);
+    // the interceptor that checks the secret has its own tests, so call the handler directly.
+    use business::proto::proto::timeline::{PersonDataRequest, internal_service_server::InternalService};
+    let services = application::grpc::services::Services { state: w.state.clone() };
+    let export = services
+        .export_person_data(tonic::Request::new(PersonDataRequest { person_uuid: w.bob.uuid.clone() }))
+        .await
+        .expect("export")
+        .into_inner()
+        .export_json;
     assert!(export.contains("bob's own words"), "the export must hold Bob's own comment");
     assert!(!export.contains(&alice_text), "the export must not hold another person's post text");
 });

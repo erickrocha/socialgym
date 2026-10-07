@@ -1,0 +1,61 @@
+syntax = "proto3";
+package grpc.timeline;
+
+// Mirrors /timeline/api/reports and /timeline/api/moderation. Listing and deciding need the
+// moderator role (PERMISSION_DENIED otherwise, also when the role check itself fails).
+service ContentReportService {
+  // Needs permission to read the post; the target must belong to it. Anything else is NOT_FOUND.
+  rpc CreateReport (CreateReportRequest) returns (ContentReport);
+  rpc ListReports (ListReportsRequest) returns (ListReportsResponse);
+  rpc DecideReport (DecideReportRequest) returns (ContentReport);
+}
+
+message ModerationEvent {
+  string actor_person_uuid = 1;
+  string action = 2;
+  string reason = 3;
+  string created_at = 4;
+}
+
+message ContentReport {
+  string uuid = 1;
+  // post, comment or media.
+  string target_type = 2;
+  string target_id = 3;
+  string post_id = 4;
+  string reporter_person_uuid = 5;
+  string reason = 6;
+  optional string details = 7;
+  string priority = 8;
+  string status = 9;
+  optional string assigned_moderator_uuid = 10;
+  optional string decision = 11;
+  optional string removal_reason = 12;
+  repeated ModerationEvent history = 13;
+  string created_at = 14;
+  string updated_at = 15;
+}
+
+message CreateReportRequest {
+  string target_type = 1;
+  string target_id = 2;
+  string post_id = 3;
+  string reason = 4;
+  optional string details = 5;
+}
+
+message ListReportsRequest {
+  // open or resolved; all reports when empty.
+  optional string status = 1;
+}
+
+message ListReportsResponse {
+  repeated ContentReport reports = 1;
+}
+
+message DecideReportRequest {
+  string report_id = 1;
+  // removed or dismissed.
+  string decision = 2;
+  string reason = 3;
+}

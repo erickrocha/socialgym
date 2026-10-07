@@ -7,7 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/friends_provider.dart';
 import '../../providers/person_provider.dart';
-import '../../services/chat_socket.dart';
+import '../../services/grpc/grpc_chat_stream.dart';
 import '../../widgets/chat/conversation_tile.dart';
 import '../../widgets/main_layout.dart';
 import 'chat_thread_page.dart';

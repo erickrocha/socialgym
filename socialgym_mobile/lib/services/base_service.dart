@@ -38,9 +38,15 @@ abstract class BaseService {
 
   /// Convert gRPC error to AppException
   static AppException handleGrpcError(grpc.GrpcError error, String fallback) {
+    final message = error.message ?? fallback;
     return AppException(
       statusCode: _grpcStatusToHttpStatus(error.code),
-      message: error.message ?? fallback,
+      message: message,
+      // The timeline answers a missing legal consent as PERMISSION_DENIED with
+      // "<document> consent is required"; REST carried it as the CONSENT_REQUIRED error key.
+      errorKey: error.code == grpc.StatusCode.permissionDenied && message.contains('consent is required')
+          ? 'CONSENT_REQUIRED'
+          : null,
     );
   }
 

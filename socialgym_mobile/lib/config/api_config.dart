@@ -87,4 +87,19 @@ class ApiConfig {
   }
 
   static String? get grpcAuthority => grpcHost;
+
+  /// Where the timeline gRPC services answer. Behind the gateway they share the workout gRPC host
+  /// and port (the gateway routes `/grpc.timeline.*` to the timeline); against a stack that
+  /// publishes the timeline directly, override with `--dart-define=TIMELINE_GRPC_HOST=...` and
+  /// `--dart-define=TIMELINE_GRPC_PORT=...`.
+  static const String _timelineGrpcHostOverride = String.fromEnvironment('TIMELINE_GRPC_HOST');
+  static String get timelineGrpcHost =>
+      _timelineGrpcHostOverride.isEmpty ? grpcHost : _timelineGrpcHostOverride;
+  static const int timelineGrpcPort = int.fromEnvironment('TIMELINE_GRPC_PORT', defaultValue: grpcPort);
+
+  /// TLS server name to verify; the certificate is issued for the gateway host even when the
+  /// connection goes straight to the timeline (`--dart-define=TIMELINE_GRPC_AUTHORITY=...`).
+  static const String _timelineGrpcAuthorityOverride = String.fromEnvironment('TIMELINE_GRPC_AUTHORITY');
+  static String? get timelineGrpcAuthority =>
+      _timelineGrpcAuthorityOverride.isEmpty ? grpcAuthority : _timelineGrpcAuthorityOverride;
 }

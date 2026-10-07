@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../models/evolution_check_in.dart';
-import '../services/evolution_service.dart';
+import '../services/grpc/grpc_evolution_service.dart';
 import '../services/base_service.dart';
 
 class EvolutionProvider extends ChangeNotifier {
@@ -40,10 +40,9 @@ class EvolutionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _checkins = await EvolutionService.fetchEvolutionCheckIns(
+      _checkins = await GrpcEvolutionService.fetchEvolutionCheckIns(
         startDate: startDate,
         endDate: endDate,
-        token: token,
       );
       _loading = false;
       notifyListeners();
@@ -67,7 +66,7 @@ class EvolutionProvider extends ChangeNotifier {
 
     try {
       jsonEncode(payload);
-      final created = await EvolutionService.createEvolutionCheckIn(payload: payload, token: token);
+      final created = await GrpcEvolutionService.createEvolutionCheckIn(payload: payload);
       _checkins = [created, ..._checkins];
       _submitting = false;
       notifyListeners();

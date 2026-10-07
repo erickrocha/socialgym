@@ -9,7 +9,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socialgym_mobile/config/firebase_runtime_options.dart';
 import 'package:socialgym_mobile/models/auth_response.dart';
-import 'package:socialgym_mobile/services/notification_service.dart';
+import 'package:socialgym_mobile/services/grpc/grpc_notification_service.dart';
 import 'package:uuid/uuid.dart';
 
 class PushRegistrationService {
@@ -161,7 +161,7 @@ class PushRegistrationService {
     String registrationToken,
   ) async {
     try {
-      await NotificationService.registerPushDevice(
+      await GrpcNotificationService.registerPushDevice(
         token: auth.accessToken,
         deviceUuid: await _deviceUuid(),
         registrationToken: registrationToken,
@@ -182,7 +182,7 @@ class PushRegistrationService {
   static Future<void> _removeDevice(AuthResponse auth) async {
     if (!_initialized) return;
     try {
-      await NotificationService.removePushDevice(
+      await GrpcNotificationService.removePushDevice(
         token: auth.accessToken,
         deviceUuid: await _deviceUuid(),
       );

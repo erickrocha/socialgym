@@ -41,6 +41,25 @@ impl PostUseCase {
         Ok(persisted)
     }
 
+    /// Media may only be attached once the author confirms they may share it (third-party consent).
+    pub async fn create_with_consent(
+        db: &Database,
+        author: &User,
+        post: Post,
+        third_party_consent_confirmed: bool,
+    ) -> Result<Post, BusinessError> {
+        if !post.media.is_empty() && !third_party_consent_confirmed {
+            return Err(BusinessError::validation("third-party consent is required for media"));
+        }
+        Self::create(db, author, post).await
+    }
+
+    /// The accepted reaction names, case-insensitively; anything else is a validation error.
+    pub fn parse_reaction_type(name: &str) -> Result<domain::enums::ReactionType, BusinessError> {
+        domain::enums::ReactionType::parse(name)
+            .ok_or_else(|| BusinessError::validation("unknown reaction type"))
+    }
+
     pub async fn delete(db: &Database, uuid: String,) -> Result<(), BusinessError> {
         log::info!("Deleting post by id: {}", uuid);
         let deleted_post = PostGateway::new(db).delete(uuid).await;

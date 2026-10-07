@@ -1,0 +1,23 @@
+syntax = "proto3";
+package grpc.timeline;
+
+service PushDeviceService {
+  // The registration token is accepted here and never returned by any RPC.
+  rpc RegisterPushDevice (RegisterPushDeviceRequest) returns (RegisterPushDeviceResponse);
+  rpc RemovePushDevice (RemovePushDeviceRequest) returns (RemovePushDeviceResponse);
+}
+
+message RegisterPushDeviceRequest {
+  string device_uuid = 1;
+  // android or ios.
+  string platform = 2;
+  string registration_token = 3;
+}
+
+message RegisterPushDeviceResponse {}
+
+message RemovePushDeviceRequest {
+  string device_uuid = 1;
+}
+
+message RemovePushDeviceResponse {}

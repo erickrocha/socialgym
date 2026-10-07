@@ -32,7 +32,7 @@ impl RateLimiter {
         }
     }
 
-    fn check(&self, ip: IpAddr) -> bool {
+    pub(crate) fn allow(&self, ip: IpAddr) -> bool {
         let mut buckets = self.buckets.lock().unwrap_or_else(|e| e.into_inner());
         let now = Instant::now();
         let entry = buckets.entry(ip).or_insert((now, 0));
@@ -84,7 +84,7 @@ pub async fn rate_limit(
         })
         .unwrap_or(IpAddr::from([0, 0, 0, 0]));
 
-    if !limiter.check(ip) {
+    if !limiter.allow(ip) {
         let locale = req
             .extensions()
             .get::<Locale>()

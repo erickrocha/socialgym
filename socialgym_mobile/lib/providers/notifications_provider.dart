@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:socialgym_mobile/models/notification.dart';
 import 'package:socialgym_mobile/services/base_service.dart';
-import 'package:socialgym_mobile/services/notification_service.dart';
+import 'package:socialgym_mobile/services/grpc/grpc_notification_service.dart';
 
 class NotificationsProvider extends ChangeNotifier {
   static const int _pageSize = 50;
@@ -30,9 +30,7 @@ class NotificationsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final fetchedNotifications = await NotificationService.fetchNotifications(
-        token,
-        ownerUUid,
+      final fetchedNotifications = await GrpcNotificationService.fetchNotifications(
         limit: _pageLimitForPage(0),
       );
       _notifications = fetchedNotifications;
@@ -61,9 +59,7 @@ class NotificationsProvider extends ChangeNotifier {
 
     try {
       final nextPage = _currentPage + 1;
-      final fetchedNotifications = await NotificationService.fetchNotifications(
-        token,
-        ownerUuid,
+      final fetchedNotifications = await GrpcNotificationService.fetchNotifications(
         limit: _pageLimitForPage(nextPage),
       );
 
@@ -96,11 +92,9 @@ class NotificationsProvider extends ChangeNotifier {
     if (!currentNotification.isUnread) return;
 
     try {
-      final updatedNotification =
-          await NotificationService.markNotificationAsRead(token,ownerUuid, uuid);
-      final replacement = updatedNotification.uuid.isNotEmpty
-          ? updatedNotification
-          : currentNotification.copyWith(read: true, updatedAt: DateTime.now());
+      // The server confirms with `read: true`; the notification is the one already held.
+      await GrpcNotificationService.markNotificationAsRead(uuid);
+      final replacement = currentNotification.copyWith(read: true, updatedAt: DateTime.now());
 
       _notifications = _notifications.map((notification) {
         if (notification.uuid == uuid) {

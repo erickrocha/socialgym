@@ -3,7 +3,6 @@ pub mod chat_ws_handler;
 pub mod content_report_controller;
 pub mod evolution_controller;
 pub mod feed_controller;
-pub mod internal_controller;
 pub mod json;
 pub mod notification_controller;
 pub mod push_device_controller;

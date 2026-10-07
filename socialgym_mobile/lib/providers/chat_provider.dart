@@ -5,8 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:socialgym_mobile/models/chat_message.dart';
 import 'package:socialgym_mobile/models/conversation.dart';
 import 'package:socialgym_mobile/services/base_service.dart';
-import 'package:socialgym_mobile/services/chat_service.dart';
-import 'package:socialgym_mobile/services/chat_socket.dart';
+import 'package:socialgym_mobile/services/grpc/grpc_chat_service.dart';
+import 'package:socialgym_mobile/services/grpc/grpc_chat_stream.dart';
 import 'package:uuid/uuid.dart';
 
 class ChatProvider extends ChangeNotifier {
@@ -18,7 +18,7 @@ class ChatProvider extends ChangeNotifier {
   /// as failed.
   static const Duration _ackTimeout = Duration(seconds: 10);
 
-  final ChatSocket _socket = ChatSocket();
+  final GrpcChatStream _socket = GrpcChatStream();
   final Uuid _uuid = const Uuid();
 
   StreamSubscription? _eventsSub;
@@ -83,7 +83,7 @@ class ChatProvider extends ChangeNotifier {
   /// status to change while the user is looking at it.
   Future<void> refreshPresence(List<String> personUuids) async {
     if (_token.isEmpty) return;
-    _onlinePersonUuids = await ChatService.presence(_token, personUuids);
+    _onlinePersonUuids = await GrpcChatService.presence(personUuids);
     notifyListeners();
   }
 
@@ -125,7 +125,7 @@ class ChatProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _conversations = await ChatService.listConversations(_token);
+      _conversations = await GrpcChatService.listConversations();
     } on AppException catch (e) {
       _error = e.message;
     } catch (_) {
@@ -140,8 +140,7 @@ class ChatProvider extends ChangeNotifier {
     _loadingMessages = true;
     notifyListeners();
     try {
-      final fetched = await ChatService.listMessages(
-        _token,
+      final fetched = await GrpcChatService.listMessages(
         conversationUuid,
         page: page,
       );
@@ -186,17 +185,16 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<Conversation?> openDirect(String targetPersonUuid) =>
-      _open(() => ChatService.createDirect(_token, targetPersonUuid));
+      _open(() => GrpcChatService.createDirect(targetPersonUuid));
 
   Future<Conversation?> openTeamGroup(String businessProfileUuid) =>
-      _open(() => ChatService.createTeamGroup(_token, businessProfileUuid));
+      _open(() => GrpcChatService.createTeamGroup(businessProfileUuid));
 
   Future<Conversation?> openBusinessDirect(
     String businessProfileUuid, {
     String? memberPersonUuid,
   }) => _open(
-    () => ChatService.createBusinessDirect(
-      _token,
+    () => GrpcChatService.createBusinessDirect(
       businessProfileUuid,
       memberPersonUuid: memberPersonUuid,
     ),
@@ -287,7 +285,7 @@ class ChatProvider extends ChangeNotifier {
     try {
       final media = images.isEmpty
           ? const <Map<String, dynamic>>[]
-          : await ChatService.uploadImages(_token, images);
+          : await GrpcChatService.uploadImages(_token, images);
 
       final sentViaSocket =
           media.isEmpty &&
@@ -299,8 +297,7 @@ class ChatProvider extends ChangeNotifier {
           );
 
       if (!sentViaSocket) {
-        final message = await ChatService.sendMessage(
-          _token,
+        final message = await GrpcChatService.sendMessage(
           conversationUuid,
           body: body,
           media: media,
@@ -369,7 +366,7 @@ class ChatProvider extends ChangeNotifier {
     );
     if (!sentViaSocket) {
       try {
-        await ChatService.markRead(_token, conversationUuid, last.uuid);
+        await GrpcChatService.markRead(conversationUuid, last.uuid);
       } catch (_) {
         /* best effort */
       }
@@ -517,8 +514,7 @@ class ChatProvider extends ChangeNotifier {
     fetchConversations();
     _lastSeenSentAt.forEach((conversationUuid, sentAt) async {
       try {
-        final missed = await ChatService.listMessages(
-          _token,
+        final missed = await GrpcChatService.listMessages(
           conversationUuid,
           since: sentAt.toUtc().millisecondsSinceEpoch,
         );

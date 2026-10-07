@@ -1,0 +1,57 @@
+syntax = "proto3";
+package grpc.timeline;
+
+// Requires current health_data consent to add; listing is limited to the caller's own check-ins.
+service EvolutionCheckInService {
+  rpc AddEvolutionCheckIn (AddEvolutionCheckInRequest) returns (EvolutionCheckIn);
+  rpc ListEvolutionCheckIns (ListEvolutionCheckInsRequest) returns (ListEvolutionCheckInsResponse);
+}
+
+message BodyComposition {
+  optional string uuid = 1;
+  double weight = 2;
+  double body_fat_pct = 3;
+  double muscle_mass_pct = 4;
+  double visceral_fat = 5;
+}
+
+message Circumferences {
+  optional string uuid = 1;
+  double neck = 2;
+  double chest = 3;
+  double waist = 4;
+  double abdomen = 5;
+  double hip = 6;
+  double biceps_right = 7;
+  double biceps_left = 8;
+  double thigh_right = 9;
+  double thigh_left = 10;
+}
+
+message EvolutionCheckIn {
+  optional string uuid = 1;
+  string person_uuid = 2;
+  string created_at = 3;
+  optional string note = 4;
+  string visibility = 5;
+  optional BodyComposition composition = 6;
+  optional Circumferences circumferences = 7;
+}
+
+message AddEvolutionCheckInRequest {
+  string created_at = 1;
+  optional string note = 2;
+  string visibility = 3;
+  optional BodyComposition composition = 4;
+  optional Circumferences circumferences = 5;
+}
+
+message ListEvolutionCheckInsRequest {
+  // ISO-8601; the end defaults to now and the start to seven days before the end.
+  optional string start_date = 1;
+  optional string end_date = 2;
+}
+
+message ListEvolutionCheckInsResponse {
+  repeated EvolutionCheckIn check_ins = 1;
+}
