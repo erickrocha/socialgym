@@ -15,6 +15,11 @@ use tokio::time::{sleep, Duration};
 /// If `AWS_SQS_QUEUE_URL` is not set the task exits immediately with an info
 /// log so the rest of the application starts unaffected.
 pub fn start(db: Arc<DatabaseConnection>) {
+    // `poll_and_process` answers `Ok(0)` at once when the queue is not configured, so the loop below would spin.
+    if std::env::var("AWS_SQS_QUEUE_URL").map_or(true, |v| v.is_empty()) {
+        log::info!("AWS_SQS_QUEUE_URL is not set – SQS consumer worker not started");
+        return;
+    }
     tokio::spawn(async move {
         log::info!("SQS consumer worker starting…");
 

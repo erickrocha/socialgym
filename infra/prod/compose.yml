@@ -170,6 +170,9 @@ services:
       context: ../../timeline
       dockerfile: Dockerfile
     container_name: timeline_prod_app
+    # The image runs as `nobody`, which cannot read the TLS private key mounted below (a host file with mode 600),
+    # so the gRPC server on 50052 failed to start with "Permission denied". integration-app reads the same key as root.
+    user: root
     environment:
       - HOST=${TIMELINE_HOST}
       - PORT=${TIMELINE_PORT}
@@ -196,6 +199,8 @@ services:
       - GRPC_CERT_PATH=${GRPC_CERT_PATH}
       - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:?INTERNAL_SERVICE_SECRET must be set}
       # Timeline's own gRPC server (mobile app and workout's internal calls), TLS with the shared certificate.
+      # Firebase service-account JSON (one line) for mobile push; without it the push worker logs an ALERT and sends nothing.
+      - FCM_SERVICE_ACCOUNT_JSON=${FCM_SERVICE_ACCOUNT_JSON:-}
       - TIMELINE_GRPC_PORT=50052
       - TLS_CERT_PATH=/etc/grpc/certs/server.crt
       - TLS_KEY_PATH=/etc/grpc/certs/server.key
