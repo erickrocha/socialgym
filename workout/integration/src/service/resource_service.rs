@@ -1,5 +1,6 @@
 use crate::infrastructure::mapper::{CountryMapper, Mapper, SettingsMapper};
-use crate::infrastructure::utils::business_status;
+use crate::infrastructure::utils::{business_status, require_actor, validate_uuid};
+use business::commons::authorization::ensure_owns;
 use crate::proto::resource::resource_request::Identifier;
 use crate::proto::resource::resource_service_server::ResourceService;
 use crate::proto::resource::{ResourceRequest, ResourceResponse};
@@ -27,7 +28,20 @@ impl ResourceService for GrpcResourceService {
         &self,
         request: Request<ResourceRequest>,
     ) -> Result<Response<ResourceResponse>, Status> {
+        // The settings that come with the countries are the caller's own, as over REST: another person's id
+        // or uuid is refused, not served (C-010 W22).
+        let actor = require_actor(&request)?;
         let req = request.into_inner();
+        match &req.identifier {
+            Some(Identifier::UserId(id)) => ensure_owns(*id, actor.person_id).map_err(business_status)?,
+            Some(Identifier::OwnerUuid(uuid)) => {
+                validate_uuid(uuid, "owner_uuid")?;
+                if *uuid != actor.person_uuid {
+                    return Err(Status::permission_denied("Not the owner of this resource"));
+                }
+            }
+            None => {}
+        }
         let resource_use_case = ResourceUseCase::new(CountryGateway::new((*self.conn).clone()));
         let countries_response = resource_use_case
             .get_countries()

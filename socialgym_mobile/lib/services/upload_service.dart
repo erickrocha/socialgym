@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
-import '../config/api_config.dart';
-import '../utils/dio_client.dart';
 import 'base_service.dart';
+import 'grpc/grpc_business_profile_service.dart';
+import 'grpc/grpc_media_service.dart';
 import 'grpc/grpc_person_service.dart';
 
 class PresignedUrlResponse {
@@ -20,7 +20,6 @@ class PresignedUrlResponse {
 }
 
 class UploadService {
-  static final _dio = DioClient().dio;
   static String _getImageFormat(String filePath) {
     final extension = filePath.split('.').last.toLowerCase();
     switch (extension) {
@@ -54,49 +53,20 @@ class UploadService {
     return PresignedUrlResponse(url: result.url, objectKey: result.objectKey);
   }
 
-  static Future<PresignedUrlResponse> getBusinessProfileLogoPresignedUrl(
-    String token,
-    int businessProfileId,
-    String format,
-  ) async {
-    try {
-      DioClient().setAuthToken(token);
-      final response = await _dio.get(
-        '${ApiConfig.businessProfilesEndpoint}/upload/avatar?format=$format',
-      );
-      if (response.statusCode == 200) {
-        return PresignedUrlResponse.fromJson(response.data as Map<String, dynamic>);
-      } else {
-        throw AppException(
-          statusCode: response.statusCode ?? 500,
-          message: response.data?['message'] ?? 'Failed to get presigned URL',
-        );
-      }
-    } on DioException catch (e) {
-      throw BaseService.handleDioError(e, 'Failed to get presigned URL');
-    }
+  static Future<PresignedUrlResponse> getBusinessProfileLogoPresignedUrl(String format) async {
+    final result = await GrpcBusinessProfileService.getBusinessProfileImageUploadUrl(
+      imageType: 'logo',
+      format: format,
+    );
+    return PresignedUrlResponse(url: result.url, objectKey: result.objectKey);
   }
 
-  static Future<PresignedUrlResponse> getBusinessProfileCoverPresignedUrl(
-    String token,
-    String format,
-  ) async {
-    try {
-      DioClient().setAuthToken(token);
-      final response = await _dio.get(
-        '${ApiConfig.businessProfilesEndpoint}/upload/cover?format=$format',
-      );
-      if (response.statusCode == 200) {
-        return PresignedUrlResponse.fromJson(response.data as Map<String, dynamic>);
-      } else {
-        throw AppException(
-          statusCode: response.statusCode ?? 500,
-          message: response.data?['message'] ?? 'Failed to get presigned URL',
-        );
-      }
-    } on DioException catch (e) {
-      throw BaseService.handleDioError(e, 'Failed to get presigned URL');
-    }
+  static Future<PresignedUrlResponse> getBusinessProfileCoverPresignedUrl(String format) async {
+    final result = await GrpcBusinessProfileService.getBusinessProfileImageUploadUrl(
+      imageType: 'cover',
+      format: format,
+    );
+    return PresignedUrlResponse(url: result.url, objectKey: result.objectKey);
   }
 
   static bool _isVideoExtension(String ext) =>
@@ -116,40 +86,16 @@ class UploadService {
     return ('Image', fmt, 'image/$fmt');
   }
 
-  static Future<PresignedUrlResponse> getPostMediaPresignedUrl(
-    String token,
-    String mediaType,
-    String format,
-    String album,
-  ) async {
-    try {
-      DioClient().setAuthToken(token);
-      final response = await _dio.get(
-        ApiConfig.feedUploadEndpoint,
-        queryParameters: {'mediaType': mediaType, 'format': format, 'album': album},
-      );
-      if (response.statusCode == 200) {
-        return PresignedUrlResponse.fromJson(response.data as Map<String, dynamic>);
-      } else {
-        throw AppException(
-          statusCode: response.statusCode ?? 500,
-          message: response.data?['message'] ?? 'Failed to get presigned URL for post media',
-        );
-      }
-    } on DioException catch (e) {
-      throw BaseService.handleDioError(e, 'Failed to get presigned URL for post media');
-    }
+  static Future<PresignedUrlResponse> getPostMediaPresignedUrl(String format, String album) async {
+    final result = await GrpcMediaService.getPostMediaUploadUrl(album: album, format: format);
+    return PresignedUrlResponse(url: result.url, objectKey: result.objectKey);
   }
 
-  static Future<PresignedUrlResponse> uploadPostMedia(
-    String token,
-    XFile file,
-    String album,
-  ) async {
+  static Future<PresignedUrlResponse> uploadPostMedia(XFile file, String album) async {
     final (mediaType, format, contentType) = _mediaInfo(
       file.name.isNotEmpty ? file.name : file.path,
     );
-    final presigned = await getPostMediaPresignedUrl(token, mediaType, contentType, album);
+    final presigned = await getPostMediaPresignedUrl(contentType, album);
     await uploadToS3(presigned.url, file, format, contentType: contentType);
     return presigned;
   }
@@ -205,22 +151,18 @@ class UploadService {
     return true;
   }
 
-  static Future<bool> uploadBusinessProfileLogo(
-    String token,
-    int businessProfileId,
-    XFile imageFile,
-  ) async {
+  static Future<bool> uploadBusinessProfileLogo(XFile imageFile) async {
     final (mediaType, format, contentType) = _mediaInfo(
       imageFile.name.isNotEmpty ? imageFile.name : imageFile.path,
     );
-    final presignedResponse = await getBusinessProfileLogoPresignedUrl(token, businessProfileId, contentType);
+    final presignedResponse = await getBusinessProfileLogoPresignedUrl(contentType);
     await uploadToS3(presignedResponse.url, imageFile, format);
     return true;
   }
 
-  static Future<bool> uploadBusinessProfileCover(String token,XFile imageFile) async {
+  static Future<bool> uploadBusinessProfileCover(XFile imageFile) async {
     final (mediaType, format, contentType) = _mediaInfo(imageFile.name.isNotEmpty ? imageFile.name : imageFile.path);
-    final presignedResponse = await getBusinessProfileCoverPresignedUrl(token, contentType);
+    final presignedResponse = await getBusinessProfileCoverPresignedUrl(contentType);
     await uploadToS3(presignedResponse.url, imageFile, format);
     return true;
   }

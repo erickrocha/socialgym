@@ -17,7 +17,7 @@ export const getBusinessProfileById = createAsyncThunk(
     'business/getBusinessProfileById',
     async (id, {rejectWithValue}) => {
         try {
-            const {data} = await axios.get(`/workout/api/business-profiles/${id}`);
+            const {data} = await axios.get(`/workout/api/business-profiles/id/${id}`);
             return data;
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Error fetching business profile');
@@ -29,7 +29,7 @@ export const updateBusinessProfile = createAsyncThunk(
     'business/updateBusinessProfile',
     async (profile, {rejectWithValue}) => {
         try {
-            const {data} = await axios.put(`/api/business-profiles/${profile.id}`, profile);
+            const {data} = await axios.put('/workout/api/business-profiles', profile);
             return data;
         } catch (error) {
             return rejectWithValue(error.response?.data || 'Error updating business profile');

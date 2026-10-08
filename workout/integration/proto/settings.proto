@@ -7,6 +7,9 @@ service SettingsService {
   rpc GetByUuid(SettingIdRequest) returns (Setting);
   rpc GetByOwnerIds(SettingOwnerIdRequest) returns (Setting);
   rpc GetPushPreferenceByOwnerUuid(OwnerUuidRequest) returns (PushPreferenceResponse);
+  // The caller's own settings (REST GET and PUT /settings/me): the owner is the person in the token.
+  rpc GetMySettings(GetMySettingsRequest) returns (Setting);
+  rpc UpdateMySettings(Setting) returns (Setting);
 }
 
 message SettingIdRequest {
@@ -47,3 +50,5 @@ message Setting{
   // the effective unit from `language` instead).
   string weight_unit = 12;
 }
+
+message GetMySettingsRequest {}

@@ -101,7 +101,7 @@ async fn count(db: &DatabaseConnection, table: &str, id: i32) -> i64 {
 
 /// W1 (task 9): the mentionable-friends search must act only for the caller.
 #[tokio::test]
-#[ignore = "requires a disposable TEST_DATABASE_URL; expected to FAIL until C-010 task 9"]
+#[ignore = "requires a disposable TEST_DATABASE_URL"]
 async fn w1_mentionable_friends_are_searchable_only_by_their_owner() {
     let service = GrpcPersonService::new(world().await);
     let search = |caller: Option<i32>| {
@@ -117,9 +117,9 @@ async fn w1_mentionable_friends_are_searchable_only_by_their_owner() {
     assert_eq!(search(None).await.unwrap_err().code(), Code::Unauthenticated, "no actor, no answer");
 }
 
-/// W3 (task 7): removing a business-profile address by `uuid` removes that address.
+/// W3 (fixed in task 7): removing a business-profile address by `uuid` removes that address.
 #[tokio::test]
-#[ignore = "requires a disposable TEST_DATABASE_URL; expected to FAIL until C-010 task 7"]
+#[ignore = "requires a disposable TEST_DATABASE_URL"]
 async fn w3_a_business_profile_address_is_removed_by_uuid() {
     let db = world().await;
     let service = GrpcBusinessProfileService::new(db.clone());
@@ -129,9 +129,9 @@ async fn w3_a_business_profile_address_is_removed_by_uuid() {
     assert_eq!(count(&db, "business_profile_address", 1).await, 1, "the other address stays");
 }
 
-/// W13 (task 6): removing a person address by `uuid` removes that address (the REST route does).
+/// W13 (fixed in task 6): removing a person address by `uuid` removes that address (the REST route does).
 #[tokio::test]
-#[ignore = "requires a disposable TEST_DATABASE_URL; expected to FAIL until C-010 task 6"]
+#[ignore = "requires a disposable TEST_DATABASE_URL"]
 async fn w13_a_person_address_is_removed_by_uuid() {
     let db = world().await;
     let service = GrpcPersonService::new(db.clone());
@@ -141,9 +141,9 @@ async fn w13_a_person_address_is_removed_by_uuid() {
     assert_eq!(count(&db, "person_address", 1).await, 1, "the other address stays");
 }
 
-/// W14 (task 6): the settings read by owner uuid that REST serves (`/settings/owner/uuid/{uuid}`).
+/// W14 (fixed in task 6): the settings read by owner uuid that REST serves (`/settings/owner/uuid/{uuid}`).
 #[tokio::test]
-#[ignore = "requires a disposable TEST_DATABASE_URL; expected to FAIL until C-010 task 6"]
+#[ignore = "requires a disposable TEST_DATABASE_URL"]
 async fn w14_settings_are_readable_by_the_owner_uuid() {
     let service = GrpcSettingService::new(world().await);
     let own = SettingOwnerIdRequest { owner_id: 0, owner_uuid: ALICE.into() };
@@ -153,10 +153,11 @@ async fn w14_settings_are_readable_by_the_owner_uuid() {
     assert_eq!(service.get_by_owner_ids(as_person(foreign, 3)).await.unwrap_err().code(), Code::PermissionDenied);
 }
 
-/// W5 (task 7): addresses and owner ids reach only the owner and accepted team members.
+/// W5 (fixed in task 7): the street-level address fields and the owner ids reach only the owner and the
+/// accepted team members; everyone else still gets each address's locality, administrative area and country.
 #[tokio::test]
-#[ignore = "requires a disposable TEST_DATABASE_URL; expected to FAIL until C-010 task 7"]
-async fn w5_business_profile_addresses_and_owner_ids_are_restricted() {
+#[ignore = "requires a disposable TEST_DATABASE_URL"]
+async fn w5_business_profile_street_addresses_and_owner_ids_are_restricted() {
     let service = GrpcBusinessProfileService::new(world().await);
     let by_uuid = |caller: i32| {
         let request = BusinessProfileRequestId { id: 0, uuid: PROFILE.into() };
@@ -165,17 +166,25 @@ async fn w5_business_profile_addresses_and_owner_ids_are_restricted() {
     for member in [1, 4] {
         let profile = by_uuid(member).await.unwrap().into_inner();
         assert_eq!(profile.addresses.len(), 2, "person {member} sees the addresses");
+        assert!(profile.addresses.iter().all(|a| !a.address_line_1.is_empty()), "person {member} sees the street");
         assert_eq!(profile.owner_uuid, ALICE, "person {member} sees the owner");
     }
     for outsider in [2, 3] {
         let profile = by_uuid(outsider).await.unwrap().into_inner();
-        assert!(profile.addresses.is_empty(), "person {outsider} must not see the addresses");
+        assert_eq!(profile.addresses.len(), 2, "person {outsider} still sees where the profile is");
+        for address in &profile.addresses {
+            assert!(address.address_line_1.is_empty() && address.address_line_2.is_empty() && address.postal_code.is_empty(), "person {outsider} must not see the street: {address:?}");
+            assert_eq!((address.locality.as_str(), address.administrative_area.as_str(), address.country_code.as_str()), ("Sao Paulo", "SP", "BR"));
+        }
         assert!(profile.owner_uuid.is_empty() && profile.owner_id == 0, "person {outsider} must not see the owner ids");
         assert_eq!(profile.business_name, "Alice Gym", "the public fields stay");
     }
     let by_owner = BusinessProfileRequestOwnerId { owner_id: 1, owner_uuid: String::new() };
     let listed = service.get_business_profile_by_owner_id(as_person(by_owner, 3)).await.unwrap().into_inner();
-    assert!(listed.business_profiles.iter().all(|p| p.addresses.is_empty() && p.owner_uuid.is_empty()), "the owner listing hides them too");
+    assert!(
+        listed.business_profiles.iter().all(|p| p.owner_uuid.is_empty() && p.addresses.iter().all(|a| a.address_line_1.is_empty())),
+        "the owner listing hides them too"
+    );
 }
 
 fn private_exercise() -> Exercise {
@@ -198,7 +207,7 @@ fn workout_id(id: i32) -> WorkoutRequest {
 /// W4 (task 9): a mutation on a resource the caller cannot read is `NOT_FOUND`; a reader who is not the
 /// owner still gets `PERMISSION_DENIED`.
 #[tokio::test]
-#[ignore = "requires a disposable TEST_DATABASE_URL; expected to FAIL until C-010 task 9"]
+#[ignore = "requires a disposable TEST_DATABASE_URL"]
 async fn w4_mutating_an_unreadable_workout_or_exercise_is_not_found() {
     let db = world().await;
     let exercises = GrpcExerciseService::new(db.clone());
@@ -215,7 +224,7 @@ async fn w4_mutating_an_unreadable_workout_or_exercise_is_not_found() {
     let created = workouts.add_workout(as_person(workout, 1)).await.unwrap().into_inner();
     assert_eq!(status(workouts.delete_workout(as_person(workout_id(created.id), 3)).await), Code::NotFound, "private workout, stranger deletes");
     assert_eq!(status(workouts.update_workout(as_person(Workout { name: "x".into(), ..created.clone() }, 3)).await), Code::NotFound, "private workout, stranger updates");
-    let add = WorkoutExercisesRequest { workout_uuid: created.uuid.clone(), exercises: vec![private.clone()] };
+    let add = WorkoutExercisesRequest { workout_uuid: created.uuid.clone(), exercises: vec![private.clone()], workout_id: 0 };
     assert_eq!(status(workouts.add_exercises_to_workout(as_person(add, 3)).await), Code::NotFound, "private workout, stranger adds exercises");
 }
 
@@ -270,7 +279,7 @@ async fn w11_grpc_enforces_current_terms_and_privacy_consent() {
 
 /// W2 (task 9): `GetTeamRoster` opens only to the internal secret, never to a user token.
 #[tokio::test]
-#[ignore = "requires a disposable TEST_DATABASE_URL; expected to FAIL until C-010 task 9"]
+#[ignore = "requires a disposable TEST_DATABASE_URL"]
 async fn w2_the_team_roster_accepts_only_the_internal_secret() {
     unsafe {
         std::env::set_var("ACCESS_TOKEN_SECRET", SECRET);
@@ -284,5 +293,39 @@ async fn w2_the_team_roster_accepts_only_the_internal_secret() {
     let wrong = vec![("x-internal-secret", "wrong".to_string())];
     assert_eq!(through_layer(db.clone(), path, &wrong).await.as_deref(), Some("16"), "a wrong secret is refused");
     let internal = vec![("x-internal-secret", "c010-internal-secret".to_string())];
-    assert_eq!(through_layer(db, path, &internal).await, None, "the secret opens it");
+    assert_eq!(through_layer(db.clone(), path, &internal).await, None, "the secret opens it");
+
+    // What the secret opens is the roster of the profile: its owner and its Accepted members.
+    use crate::proto::team_member::team_member_service_server::TeamMemberService;
+    use crate::proto::team_member::TeamRosterRequest;
+    use crate::service::team_member_service::GrpcTeamMemberService;
+    let roster = GrpcTeamMemberService::new(db)
+        .get_team_roster(Request::new(TeamRosterRequest { business_profile_uuid: PROFILE.into() }))
+        .await
+        .expect("roster")
+        .into_inner();
+    assert_eq!((roster.owner_person_uuid.as_str(), roster.accepted_member_person_uuids.as_slice()), (ALICE, [DAVE.to_string()].as_slice()));
+}
+
+/// W22: `GetResource` returned the settings of whichever owner id or uuid the request named; it serves the
+/// caller's own, as REST does.
+#[tokio::test]
+#[ignore = "requires a disposable TEST_DATABASE_URL"]
+async fn w22_the_resource_lookup_serves_only_the_callers_own_settings() {
+    use crate::proto::resource::resource_request::Identifier;
+    use crate::proto::resource::resource_service_server::ResourceService;
+    use crate::proto::resource::ResourceRequest;
+    use crate::service::resource_service::GrpcResourceService;
+    let service = GrpcResourceService::new(world().await);
+    let lookup = |identifier, id| as_person(ResourceRequest { identifier: Some(identifier) }, id);
+
+    let own = service.get_resource(lookup(Identifier::UserId(1), 1)).await.expect("own settings by id").into_inner();
+    assert_eq!(own.setting.map(|s| s.owner_id), Some(1));
+    assert!(service.get_resource(lookup(Identifier::OwnerUuid(ALICE.into()), 1)).await.is_ok(), "own settings by uuid");
+    let other_id = service.get_resource(lookup(Identifier::UserId(1), 3)).await.unwrap_err();
+    assert_eq!(other_id.code(), Code::PermissionDenied, "another person's id");
+    let other_uuid = service.get_resource(lookup(Identifier::OwnerUuid(ALICE.into()), 3)).await.unwrap_err();
+    assert_eq!(other_uuid.code(), Code::PermissionDenied, "another person's uuid");
+    let anonymous = service.get_resource(Request::new(ResourceRequest { identifier: Some(Identifier::UserId(1)) })).await.unwrap_err();
+    assert_eq!(anonymous.code(), Code::Unauthenticated);
 }

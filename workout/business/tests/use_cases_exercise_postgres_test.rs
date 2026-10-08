@@ -25,10 +25,11 @@ async fn exercise_ownership_audience_and_lookup_rules() {
     long.description = Some("x".repeat(256));
     assert!(matches!(kind(&ExerciseUseCase::persist(&db, long, &owner, None).await.unwrap_err()), K::Validation));
 
-    // update: only the owner
+    // update: only the owner. A stranger who cannot read the exercise is told it does not exist (W4), so
+    // ids cannot be probed.
     let mut edit = private.clone();
     edit.name = "Back Squat".into();
-    assert!(matches!(kind(&ExerciseUseCase::persist(&db, edit.clone(), &stranger, None).await.unwrap_err()), K::Forbidden));
+    assert!(matches!(kind(&ExerciseUseCase::persist(&db, edit.clone(), &stranger, None).await.unwrap_err()), K::NotFound));
     assert_eq!(ExerciseUseCase::persist(&db, edit, &owner, None).await.unwrap().name, "Back Squat");
 
     // audience: private is owner-only and reported as not found to others
@@ -73,8 +74,9 @@ async fn exercise_ownership_audience_and_lookup_rules() {
     let (none, total0, _) = ExerciseUseCase::find_by_complex_filters_paginated(&db, &acting(&stranger), vec![9999], None, Some("Private".into()), 1, 10, None).await.unwrap();
     assert_eq!((none.len(), total0), (0, 0), "unknown owners are ignored and private is never exposed");
 
-    // delete: owner only; missing is not found
-    assert!(matches!(kind(&ExerciseUseCase::delete_by_id(&db, id, &acting(&stranger)).await.unwrap_err()), K::Forbidden));
+    // delete: owner only; a private exercise is not found for a stranger, a public one is forbidden to a
+    // reader who is not the owner (W4); a missing one is not found
+    assert!(matches!(kind(&ExerciseUseCase::delete_by_id(&db, id, &acting(&stranger)).await.unwrap_err()), K::NotFound));
     assert!(matches!(kind(&ExerciseUseCase::delete_by_uuid(&db, public.uuid.clone().unwrap(), &acting(&stranger)).await.unwrap_err()), K::Forbidden));
     ExerciseUseCase::delete_by_id(&db, id, &acting(&owner)).await.unwrap();
     ExerciseUseCase::delete_by_uuid(&db, public.uuid.clone().unwrap(), &acting(&owner)).await.unwrap();

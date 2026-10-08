@@ -61,6 +61,10 @@ pub async fn authentication(
             ValidateError::Invalid => {
                 ExceptionResponse::Unauthorized(locale, ErrorKey::BadCredentials)
             }
+            // The database is down: a server error, not a refusal of the caller.
+            ValidateError::Unavailable => {
+                ExceptionResponse::InternalServerError(locale, ErrorKey::UnknowAuthError)
+            }
         })?;
 
     // Revoking a mandatory document enters restricted mode: authentication is
@@ -68,7 +72,8 @@ pub async fn authentication(
     let path = req.uri().path();
     let restricted_mode_path = path.contains("/consents")
         || path.contains("/data-exports")
-        || path.contains("/account/delete");
+        || path.contains("/account/delete")
+        || path.contains("/account/cancel-deletion");
     if !restricted_mode_path {
         ConsentUseCase::require_current(&state.conn, auth_context.user.person_id, TERMS)
             .await

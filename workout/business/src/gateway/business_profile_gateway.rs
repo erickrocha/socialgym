@@ -17,7 +17,7 @@ pub fn escape_like(text: &str) -> String {
 pub struct BusinessProfileGateway {}
 
 impl BusinessProfileGateway {
-    pub async fn persist(db: &DbConn, entity: BusinessProfile) -> Result<ActiveModel, DbErr> {
+    pub async fn persist<C: ConnectionTrait>(db: &C, entity: BusinessProfile) -> Result<ActiveModel, DbErr> {
         let active_model = BusinessProfileEntityMapper::build_active_model(entity);
         active_model.save(db).await
     }

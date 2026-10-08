@@ -120,12 +120,12 @@ class GrpcChatService {
         objectKey: '${media['objectKey'] ?? ''}',
       );
 
-  /// Uploads picked images to S3 (shared media-upload endpoint, still REST) and returns the
+  /// Uploads picked images to S3 (the MediaService pre-signed URL) and returns the
   /// `{mediaType, objectKey}` maps ready for [sendMessage].
-  static Future<List<Map<String, dynamic>>> uploadImages(String token, List<XFile> files) async {
+  static Future<List<Map<String, dynamic>>> uploadImages(List<XFile> files) async {
     final media = <Map<String, dynamic>>[];
     for (final file in files) {
-      final presigned = await UploadService.uploadPostMedia(token, file, 'chat');
+      final presigned = await UploadService.uploadPostMedia(file, 'chat');
       media.add({'mediaType': 'Image', 'objectKey': presigned.objectKey});
     }
     return media;

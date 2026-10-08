@@ -285,7 +285,7 @@ class ChatProvider extends ChangeNotifier {
     try {
       final media = images.isEmpty
           ? const <Map<String, dynamic>>[]
-          : await GrpcChatService.uploadImages(_token, images);
+          : await GrpcChatService.uploadImages(images);
 
       final sentViaSocket =
           media.isEmpty &&

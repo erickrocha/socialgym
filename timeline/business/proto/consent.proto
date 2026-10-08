@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package grpc.consent;
+
+// Consent to the legal documents (terms, privacy, health_data): the gRPC twin of the REST
+// /people/me/consents routes (C-010). Reachable without current Terms and Privacy consent, so a person
+// can accept again after a document changes or revoke consent.
+service ConsentService {
+  rpc ListConsents (ListConsentsRequest) returns (ListConsentsResponse);
+  rpc ListPendingConsents (ListPendingConsentsRequest) returns (ListPendingConsentsResponse);
+  rpc AcceptConsent (AcceptConsentRequest) returns (Consent);
+  rpc RevokeConsent (RevokeConsentRequest) returns (RevokeConsentResponse);
+}
+
+message ListConsentsRequest {}
+
+message ListConsentsResponse {
+  repeated Consent consents = 1;
+}
+
+message ListPendingConsentsRequest {}
+
+message ListPendingConsentsResponse {
+  repeated PendingConsent pending = 1;
+}
+
+message AcceptConsentRequest {
+  string document = 1;
+  string version = 2;
+  bool accepted = 3;   // must be true; false is refused as a missing consent
+}
+
+message RevokeConsentRequest {
+  string document = 1;
+}
+
+message RevokeConsentResponse {}
+
+message Consent {
+  int32 id = 1;
+  string document = 2;
+  string version = 3;
+  string accepted_at = 4;            // RFC 3339
+  optional string revoked_at = 5;    // RFC 3339
+}
+
+// A document whose current version the person has not accepted.
+message PendingConsent {
+  string document = 1;
+  string current_version = 2;
+  optional string accepted_version = 3;
+}

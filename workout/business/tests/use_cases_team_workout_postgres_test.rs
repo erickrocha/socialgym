@@ -83,10 +83,10 @@ async fn workout_ownership_audience_and_assignment_rules() {
     long.description = Some("x".repeat(5001));
     assert!(matches!(kind(&WorkoutUseCase::persist(&db, long, &owner, None, None).await.unwrap_err()), K::Validation));
 
-    // update: only the owner
+    // update: only the owner; a stranger cannot read the private workout, so for them it does not exist
     let mut edit = loaded.clone();
     edit.name = "Leg Day".into();
-    assert!(matches!(kind(&WorkoutUseCase::persist(&db, edit.clone(), &stranger, None, None).await.unwrap_err()), K::Forbidden));
+    assert!(matches!(kind(&WorkoutUseCase::persist(&db, edit.clone(), &stranger, None, None).await.unwrap_err()), K::NotFound));
     // an edit re-sends the exercises the workout already has: they are kept once, new ones are appended
     edit.exercises.push(exercise("Lunge", Visibility::Private));
     assert_eq!(WorkoutUseCase::persist(&db, edit.clone(), &owner, None, None).await.unwrap().name, "Leg Day");
@@ -145,9 +145,12 @@ async fn workout_ownership_audience_and_assignment_rules() {
     assert!(WorkoutUseCase::ensure_owner_uuid(&owner.person_uuid, &owner.person_uuid).is_ok());
     assert!(WorkoutUseCase::ensure_owner_uuid(&owner.person_uuid, &stranger.person_uuid).is_err());
 
-    // delete: owner only
-    assert!(matches!(kind(&WorkoutUseCase::delete_by_id(&db, id, &acting(&stranger)).await.unwrap_err()), K::Forbidden));
-    assert!(matches!(kind(&WorkoutUseCase::delete_by_uuid(&db, uuid.clone(), &acting(&stranger)).await.unwrap_err()), K::Forbidden));
+    // delete: owner only. The private workout does not exist for a stranger (C-010 decision 2026-10-07); a reader
+    // who is not the owner is told they may not.
+    assert!(matches!(kind(&WorkoutUseCase::delete_by_id(&db, id, &acting(&stranger)).await.unwrap_err()), K::NotFound));
+    assert!(matches!(kind(&WorkoutUseCase::delete_by_uuid(&db, uuid.clone(), &acting(&stranger)).await.unwrap_err()), K::NotFound));
+    let public_uuid = public.uuid.clone().expect("saved workout has a uuid");
+    assert!(matches!(kind(&WorkoutUseCase::delete_by_uuid(&db, public_uuid, &acting(&stranger)).await.unwrap_err()), K::Forbidden), "a public workout can be read, so the refusal says so");
     WorkoutUseCase::delete_by_id(&db, id, &acting(&owner)).await.unwrap();
     WorkoutUseCase::delete_by_uuid(&db, uuid.clone(), &acting(&member)).await.unwrap();
     assert!(matches!(kind(&WorkoutUseCase::delete_by_id(&db, id, &acting(&owner)).await.unwrap_err()), K::NotFound));

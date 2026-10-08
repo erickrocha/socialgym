@@ -15,14 +15,10 @@ use axum::http::HeaderMap;
 use axum::http::StatusCode;
 use axum::{Extension, Form, Json};
 use business::commons::functions::parse_uuid;
-use business::commons::legal_documents;
 use business::domain::business_error::BusinessErrorKind;
-use business::domain::person::Person;
 use business::domain::user::User;
 use business::use_cases::logout_use_case::LogoutUseCase;
-use business::use_cases::registration_use_case::{
-    RegistrationError, RegistrationRequest, RegistrationUseCase,
-};
+use business::use_cases::sign_up_use_case::{SignUpError, SignUpRequest, SignUpUseCase};
 use business::use_cases::switch_business_profile::{
     SwitchBusinessProfile, SwitchBusinessProfileError,
 };
@@ -30,12 +26,6 @@ use business::use_cases::{
     authentication::{AuthenticatedContext, Authentication, AuthenticationError},
     refresh_token::RefreshToken,
 };
-
-fn is_at_least_eighteen(date_of_birth: chrono::NaiveDate, today: chrono::NaiveDate) -> bool {
-    date_of_birth
-        .checked_add_months(chrono::Months::new(18 * 12))
-        .is_some_and(|birthday| birthday <= today)
-}
 
 #[utoipa::path(
     post,
@@ -52,114 +42,34 @@ pub async fn sign_up(
     headers: HeaderMap,
     Json(payload): Json<SignUpJson>,
 ) -> HttpResponse<Json<AccessTokenJson>> {
-    let today = chrono::Utc::now().date_naive();
-    if !is_at_least_eighteen(payload.date_of_birth, today) {
-        return Err(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::UnderageRegistration,
-        ));
-    }
-    if !payload.terms_accepted
-        || !payload.privacy_accepted
-        || !legal_documents::is_current(legal_documents::TERMS, &payload.terms_version)
-        || !legal_documents::is_current(legal_documents::PRIVACY, &payload.privacy_version)
-    {
-        return Err(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::ConsentRequired,
-        ));
-    }
-    let acceptance_ip = headers
-        .get("x-real-ip")
-        .or_else(|| headers.get("x-forwarded-for"))
-        .and_then(|value| value.to_str().ok())
-        .and_then(|value| value.split(',').next())
-        .map(str::trim)
-        .filter(|value| !value.is_empty() && value.len() <= 45)
-        .unwrap_or("unknown")
-        .to_string();
-    let terms_version = payload.terms_version.clone();
-    let privacy_version = payload.privacy_version.clone();
-    let person = Person::new(
-        payload.firstname,
-        payload.surname,
-        payload.date_of_birth,
-        payload.gender,
-    );
-
-    let password = payload.password.clone();
-    let current = match RegistrationUseCase::execute(
+    let header = |name: &str| headers.get(name).and_then(|value| value.to_str().ok()).map(str::to_string);
+    let result = SignUpUseCase::execute(
         &state.conn,
-        RegistrationRequest {
-            person,
+        SignUpRequest {
+            firstname: payload.firstname,
+            surname: payload.surname,
+            date_of_birth: payload.date_of_birth,
+            gender: payload.gender,
             email: payload.email,
             password: payload.password,
+            terms_accepted: payload.terms_accepted,
+            privacy_accepted: payload.privacy_accepted,
+            terms_version: payload.terms_version,
+            privacy_version: payload.privacy_version,
             language: locale.to_string(),
-            terms_version,
-            privacy_version,
-            ip: acceptance_ip,
+            real_ip: header("x-real-ip"),
+            forwarded_for: header("x-forwarded-for"),
         },
+        chrono::Utc::now().date_naive(),
     )
-    .await
-    {
-        Ok(current) => current,
-        Err(RegistrationError::WeakPassword) => {
-            return Err(ExceptionResponse::BadRequest(
-                locale,
-                ErrorKey::WeakPassword,
-            ));
-        }
-        Err(RegistrationError::OutdatedLegalDocument) => {
-            return Err(ExceptionResponse::BadRequest(
-                locale,
-                ErrorKey::ConsentRequired,
-            ));
-        }
-        Err(_) => {
-            return Err(ExceptionResponse::BadRequest(
-                locale,
-                ErrorKey::SignUpUserFailed,
-            ));
-        }
-    };
-
-    let access_token = Authentication::execute(&state.conn, current.email, password).await;
-    match access_token {
+    .await;
+    match result {
         Ok(token) => Ok(Json(AccessTokenMapper::json(token))),
-        Err(_e) => Err(ExceptionResponse::Unauthorized(
-            locale,
-            ErrorKey::UnknowAuthError,
-        )),
-    }
-}
-
-#[cfg(test)]
-mod age_tests {
-    use super::is_at_least_eighteen;
-    use chrono::NaiveDate;
-
-    #[test]
-    fn rejects_the_day_before_the_eighteenth_birthday() {
-        assert!(!is_at_least_eighteen(
-            NaiveDate::from_ymd_opt(2008, 8, 28).unwrap(),
-            NaiveDate::from_ymd_opt(2026, 8, 27).unwrap(),
-        ));
-    }
-
-    #[test]
-    fn accepts_on_the_eighteenth_birthday() {
-        assert!(is_at_least_eighteen(
-            NaiveDate::from_ymd_opt(2008, 8, 27).unwrap(),
-            NaiveDate::from_ymd_opt(2026, 8, 27).unwrap(),
-        ));
-    }
-
-    #[test]
-    fn handles_leap_day_without_year_subtraction_errors() {
-        assert!(is_at_least_eighteen(
-            NaiveDate::from_ymd_opt(2008, 2, 29).unwrap(),
-            NaiveDate::from_ymd_opt(2026, 2, 28).unwrap(),
-        ));
+        Err(SignUpError::Underage) => Err(ExceptionResponse::BadRequest(locale, ErrorKey::UnderageRegistration)),
+        Err(SignUpError::ConsentRequired) => Err(ExceptionResponse::BadRequest(locale, ErrorKey::ConsentRequired)),
+        Err(SignUpError::WeakPassword) => Err(ExceptionResponse::BadRequest(locale, ErrorKey::WeakPassword)),
+        Err(SignUpError::Failed) => Err(ExceptionResponse::BadRequest(locale, ErrorKey::SignUpUserFailed)),
+        Err(SignUpError::Unauthorized) => Err(ExceptionResponse::Unauthorized(locale, ErrorKey::UnknowAuthError)),
     }
 }
 

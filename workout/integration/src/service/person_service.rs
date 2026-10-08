@@ -1,5 +1,6 @@
 use crate::infrastructure::mapper::{Mapper, PersonAddressMapper, PersonInfoMapper, PersonMapper};
-use crate::infrastructure::utils::{business_status, require_actor, require_person_id, validate_uuid};
+use crate::infrastructure::utils::{business_status, locale_of, localized_status, require_actor, require_person_id, validate_uuid};
+use business::commons::i18n::ErrorKey;
 use crate::proto::person::person_id_request::Identifier;
 use crate::proto::person::person_params::ParamIdentifier;
 use crate::proto::person::person_service_server::PersonService;
@@ -166,11 +167,15 @@ impl PersonService for GrpcPersonService {
         &self,
         request: Request<SearchMentionableFriendsRequest>,
     ) -> Result<Response<PeopleResponse>, Status> {
+        let actor = require_actor(&request)?;
         let payload = request.into_inner();
 
         if payload.person_id <= 0 {
             return Err(Status::invalid_argument("person_id must be informed"));
         }
+
+        // The friends of a person are searched only by that person, as the REST route requires.
+        PersonUseCase::require_owner_access(payload.person_id, actor.person_id).map_err(business_status)?;
 
         let query = payload.query.trim().trim_start_matches('@').to_string();
         if query.is_empty() {
@@ -354,24 +359,20 @@ impl PersonService for GrpcPersonService {
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
 
-        if payload.id <= 0 {
-            return Err(Status::invalid_argument("id must be a positive integer"));
+        // The address is named by id or by uuid, as the two REST routes do; the owner check and the
+        // delete are the use case's.
+        if payload.id > 0 {
+            PersonAddressUseCase::delete_person_address(&self.conn, payload.id, person_id)
+                .await
+                .map_err(business_status)?;
+        } else if !payload.uuid.is_empty() {
+            validate_uuid(&payload.uuid, "uuid")?;
+            PersonAddressUseCase::delete_person_address_by_uuid(&self.conn, payload.uuid, person_id)
+                .await
+                .map_err(business_status)?;
+        } else {
+            return Err(Status::invalid_argument("either id or uuid must be informed"));
         }
-
-        let existing = PersonAddressGateway::find_by_id(&self.conn, payload.id)
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?
-            .ok_or_else(|| Status::not_found("Person address not found"))?;
-
-        if existing.person_id != person_id {
-            return Err(Status::permission_denied(
-                "address does not belong to the authenticated person",
-            ));
-        }
-
-        PersonAddressUseCase::delete_person_address(&self.conn, existing.id, person_id)
-            .await
-            .map_err(|e| Status::internal(e.message))?;
 
         Ok(Response::new(RemovePersonAddressResponse { success: true }))
     }
@@ -380,6 +381,7 @@ impl PersonService for GrpcPersonService {
         &self,
         request: Request<PersonImageUploadRequest>,
     ) -> Result<Response<PersonImageUploadResponse>, Status> {
+        let locale = locale_of(&request);
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
 
@@ -393,7 +395,7 @@ impl PersonService for GrpcPersonService {
         let image_storage =
             PersonUseCase::upload_person_image(&self.conn, person_id, image_type, format)
                 .await
-                .map_err(|e| Status::internal(e.message))?;
+                .map_err(|_| localized_status(tonic::Code::InvalidArgument, ErrorKey::PersonPreSignedUrlNotGenerated, locale))?;
 
         Ok(Response::new(PersonImageUploadResponse {
             url: image_storage.url,
@@ -406,6 +408,7 @@ impl PersonService for GrpcPersonService {
         &self,
         request: Request<PersonImageRequest>,
     ) -> Result<Response<DeletePersonImageResponse>, Status> {
+        let locale = locale_of(&request);
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
 
@@ -413,7 +416,7 @@ impl PersonService for GrpcPersonService {
 
         PersonUseCase::delete_person_image(&self.conn, person_id, image_type)
             .await
-            .map_err(|e| Status::internal(e.message))?;
+            .map_err(|_| localized_status(tonic::Code::InvalidArgument, ErrorKey::PersonPreSignedUrlNotDeleted, locale))?;
 
         Ok(Response::new(DeletePersonImageResponse { success: true }))
     }

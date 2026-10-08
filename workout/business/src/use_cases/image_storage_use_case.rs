@@ -70,7 +70,6 @@ impl ImageStorageUseCase {
         }
 
         let uri = s3_response?;
-        println!("Presigned PUT URI: {}", uri);
         Ok(ImageStorage::new(uri, object_key, person_id))
     }
 
@@ -112,7 +111,7 @@ impl ImageStorageUseCase {
 
         match s3_response {
             Ok(uri) => {
-                log::info!("Presigned PUT URI (album): {}", uri);
+                log::info!("Pre-signed upload link generated for owner_id={}", owner_id);
                 Ok(ImageStorage::new(uri, object_key, owner_id))
             }
             Err(e) => {

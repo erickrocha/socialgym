@@ -19,48 +19,8 @@ class ApiConfig {
   static const bool grpcSelfSignedCert =
       bool.fromEnvironment('GRPC_SELF_SIGNED', defaultValue: false);
 
-  static const String loginEndpoint = '/login';
-  static const String signUpEndpoint = '/signup';
-  static String authProfileActivateEndpoint(String uuid) => '/auth/profile/$uuid/activate';
-  static const String authProfileDeactivateEndpoint = '/auth/profile/deactivate';
-
-  static const String workoutsEndpoint = '/workout/api/workouts';
-  static const String peopleMe = '/workout/api/people/me';
-  static const String peopleInfoEndpoint = '/workout/api/people/me/info';
-  static const String peopleDeleteAvatarEndpoint =
-      '/workout/api/people/me/delete/avatar';
-  static const String peopleDeleteCoverEndpoint =
-      '/workout/api/people/me/delete/cover';
-  static const String peopleAddressEndpoint = '/workout/api/people/me/address';
-  static const String peopleSearchEndpoint = '/workout/api/people';
-  static const String peopleUploadAvatarEndpoint =
-      '/workout/api/people/me/upload/avatar';
-  static const String peopleUploadCoverEndpoint =
-      '/workout/api/people/me/upload/cover';
-  static const String accountDeleteEndpoint =
-      '/workout/api/people/me/account/delete';
-  static const String accountCancelDeletionEndpoint =
-      '/workout/api/people/me/account/cancel-deletion';
-
-  static const String businessProfilesEndpoint =
-      '/workout/api/business-profiles';
-
-  static const String friendsEndpoint = '/workout/api/friends';
-  static const String friendsSearchEndpoint = '/workout/api/friends/search';
-  static const String friendsRequestEndpoint = '/workout/api/friends/request';
-  static const String friendsAcceptEndpoint = '/workout/api/friends/accept';
-  static const String friendsRejectEndpoint = '/workout/api/friends/reject';
-  static const String friendsCancelEndpoint = '/workout/api/friends/cancel';
-
-  static const String exercisesEndpoint = '/workout/api/exercises';
-  static const String exercisesQueryEndpoint = '/workout/api/exercises/query';
-
-  static const String feedUploadEndpoint = '/workout/api/media/upload';
-  static const String resourceEndpoint = '/workout/api/resource';
-  static const String addressSearchEndpoint = '/workout/api/address/search';
-  static const String evolutionCheckInEndpoint =
-      '/timeline/api/evolution-checkin';
-
+  // The workout and timeline APIs are gRPC only; REST stays for the web client.
+ 
   static const Duration timeout = Duration(seconds: 30);
 
   /// Returns the correct base URL depending on the current platform.

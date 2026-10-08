@@ -46,6 +46,14 @@ class FriendServiceClient extends $grpc.Client {
     return $createUnaryCall(_$getFriendPage, request, options: options);
   }
 
+  /// A friend's profile, only with an accepted friendship (REST GET /friends/{friend_id}).
+  $grpc.ResponseFuture<$0.FriendProfileResponse> getFriendProfile(
+    $0.FriendProfileRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$getFriendProfile, request, options: options);
+  }
+
   $grpc.ResponseFuture<$0.SearchFriendsResponse> searchFriends(
     $0.SearchFriendsRequest request, {
     $grpc.CallOptions? options,
@@ -104,6 +112,11 @@ class FriendServiceClient extends $grpc.Client {
           '/grpc.friend.FriendService/GetFriendPage',
           ($0.FriendPageRequest value) => value.writeToBuffer(),
           $0.FriendPageResponse.fromBuffer);
+  static final _$getFriendProfile =
+      $grpc.ClientMethod<$0.FriendProfileRequest, $0.FriendProfileResponse>(
+          '/grpc.friend.FriendService/GetFriendProfile',
+          ($0.FriendProfileRequest value) => value.writeToBuffer(),
+          $0.FriendProfileResponse.fromBuffer);
   static final _$searchFriends =
       $grpc.ClientMethod<$0.SearchFriendsRequest, $0.SearchFriendsResponse>(
           '/grpc.friend.FriendService/SearchFriends',
@@ -155,6 +168,15 @@ abstract class FriendServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $0.FriendPageRequest.fromBuffer(value),
         ($0.FriendPageResponse value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.FriendProfileRequest, $0.FriendProfileResponse>(
+            'GetFriendProfile',
+            getFriendProfile_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.FriendProfileRequest.fromBuffer(value),
+            ($0.FriendProfileResponse value) => value.writeToBuffer()));
     $addMethod(
         $grpc.ServiceMethod<$0.SearchFriendsRequest, $0.SearchFriendsResponse>(
             'SearchFriends',
@@ -223,6 +245,15 @@ abstract class FriendServiceBase extends $grpc.Service {
 
   $async.Future<$0.FriendPageResponse> getFriendPage(
       $grpc.ServiceCall call, $0.FriendPageRequest request);
+
+  $async.Future<$0.FriendProfileResponse> getFriendProfile_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.FriendProfileRequest> $request) async {
+    return getFriendProfile($call, await $request);
+  }
+
+  $async.Future<$0.FriendProfileResponse> getFriendProfile(
+      $grpc.ServiceCall call, $0.FriendProfileRequest request);
 
   $async.Future<$0.SearchFriendsResponse> searchFriends_Pre(
       $grpc.ServiceCall $call,

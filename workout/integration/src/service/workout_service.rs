@@ -5,12 +5,10 @@ use crate::proto::workout::workout_request::Identifier;
 use crate::proto::workout::workout_service_server::WorkoutService;
 use crate::proto::workout::{
     AssignedWorkoutListRequest, Workout, WorkoutExercisesRequest, WorkoutListRequest,
-    WorkoutRequest, WorkoutResponse,
+    WorkoutRequest, WorkoutResponse, WorkoutExercisesResponse,
 };
-use business::commons::authorization::{ensure_owns_as, ActingOwner};
 use business::domain::exercise::Exercise;
 use business::gateway::business_profile_gateway::BusinessProfileGateway;
-use business::use_cases::exercise_use_case::ExerciseUseCase;
 use business::use_cases::workout_use_case::WorkoutUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
@@ -240,27 +238,41 @@ impl WorkoutService for GrpcWorkoutService {
         let actor = require_actor(&request)?;
         let active_profile = require_active_profile(&request);
         let payload = request.into_inner();
-        validate_uuid(&payload.workout_uuid, "workout_uuid")?;
-        let workout_result =WorkoutUseCase::get_by_uuid(&self.conn, payload.workout_uuid.clone()).await;
-
-        let workout = workout_result.map_err(business_status)?;
-        let acting = ActingOwner::new(&actor, active_profile.as_ref());
-        ensure_owns_as(workout.owner_id, &workout.owner_uuid, &acting).map_err(business_status)?;
+        // By uuid, or by the numeric id when no uuid is given, as the two REST routes do.
+        let workout = if !payload.workout_uuid.is_empty() {
+            validate_uuid(&payload.workout_uuid, "workout_uuid")?;
+            WorkoutUseCase::get_by_uuid(&self.conn, payload.workout_uuid).await
+        } else if payload.workout_id > 0 {
+            WorkoutUseCase::get(&self.conn, payload.workout_id).await
+        } else {
+            return Err(Status::invalid_argument("either workout_uuid or workout_id must be informed"));
+        }
+        .map_err(business_status)?;
 
         let domain_exercises: Vec<Exercise> = ExerciseMapper::domain_vec(payload.exercises);
-        let result = ExerciseUseCase::add_all_to_workout(
-            &self.conn,
-            workout.id.unwrap(),
-            domain_exercises,
-            &actor,
-            active_profile.as_ref(),
-        )
-        .await;
-        result.map_err(business_status)?;
+        WorkoutUseCase::add_exercises_as(&self.conn, &workout, domain_exercises, &actor, active_profile.as_ref())
+            .await
+            .map_err(|error| business_status(error.into_business()))?;
         // The full composition, not just the exercises added by this call.
-        let workout = WorkoutUseCase::get_by_uuid(&self.conn, payload.workout_uuid)
+        let workout = WorkoutUseCase::get(&self.conn, workout.id.unwrap_or_default())
             .await
             .map_err(business_status)?;
         Ok(Response::new(WorkoutMapper::response(workout)))
+    }
+
+    async fn get_workout_exercises(&self, request: Request<WorkoutRequest>) -> Result<Response<WorkoutExercisesResponse>, Status> {
+        let acting = require_acting_owner(&request)?;
+        let workout_id = match request.into_inner().identifier {
+            Some(Identifier::Id(id)) => id,
+            Some(Identifier::Uuid(uuid)) => {
+                validate_uuid(&uuid, "uuid")?;
+                WorkoutUseCase::get_by_uuid(&self.conn, uuid).await.map_err(business_status)?.id.unwrap_or_default()
+            }
+            None => return Err(Status::invalid_argument("Identifier is required")),
+        };
+        let exercises = WorkoutUseCase::readable_exercises(&self.conn, workout_id, &acting)
+            .await
+            .map_err(business_status)?;
+        Ok(Response::new(WorkoutExercisesResponse { exercises: ExerciseMapper::response_vec(exercises) }))
     }
 }

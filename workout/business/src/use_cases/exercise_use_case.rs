@@ -159,7 +159,9 @@ impl ExerciseUseCase {
 
         if let Some(id) = exercise.id {
             let existing = Self::get(db, id).await?;
-            ensure_owns_as(existing.owner_id, &existing.owner_uuid, &acting)?;
+            if let Err(denied) = ensure_owns_as(existing.owner_id, &existing.owner_uuid, &acting) {
+                return Err(deny_or_hide(db, denied, &existing.visibility, existing.owner_id, &existing.owner_uuid, &acting, "Exercise").await);
+            }
         }
 
         // Matches the varchar(255) column (migration m20260129_000008); Postgres
@@ -328,7 +330,9 @@ impl ExerciseUseCase {
         log::info!("Deleting exercise for exercise_id: {}", exercise_id);
 
         let existing = Self::get(db, exercise_id).await?;
-        ensure_can_access_as(existing.owner_id, &existing.owner_uuid, acting)?;
+        if let Err(denied) = ensure_can_access_as(existing.owner_id, &existing.owner_uuid, acting) {
+            return Err(deny_or_hide(db, denied, &existing.visibility, existing.owner_id, &existing.owner_uuid, acting, "Exercise").await);
+        }
 
         let delete_result = ExerciseGateway::delete_by_id(db, exercise_id)
             .await
@@ -351,7 +355,9 @@ impl ExerciseUseCase {
         log::info!("Deleting exercise for uuid: {}", uuid);
 
         let existing = Self::get_by_uuid(db, uuid.clone()).await?;
-        ensure_can_access_as(existing.owner_id, &existing.owner_uuid, acting)?;
+        if let Err(denied) = ensure_can_access_as(existing.owner_id, &existing.owner_uuid, acting) {
+            return Err(deny_or_hide(db, denied, &existing.visibility, existing.owner_id, &existing.owner_uuid, acting, "Exercise").await);
+        }
 
         let delete_result = ExerciseGateway::delete_by_uuid(db, uuid.clone())
             .await
@@ -578,4 +584,23 @@ pub(crate) async fn audience_allows(
             });
     }
     Ok(false)
+}
+
+/// A change was refused because the caller does not own the resource. Someone who can read it is told so
+/// (`denied`, `403`); someone who cannot is told it does not exist (`404`), so a mutation cannot be used to
+/// find out which ids exist (C-010 owner decision 2026-10-07). An error while checking the audience hides it
+/// too.
+pub(crate) async fn deny_or_hide(
+    db: &DbConn,
+    denied: BusinessError,
+    visibility: &Visibility,
+    owner_id: i32,
+    owner_uuid: &str,
+    acting: &ActingOwner,
+    what: &str,
+) -> BusinessError {
+    match audience_allows(db, visibility, owner_id, owner_uuid, acting).await {
+        Ok(true) => denied,
+        _ => BusinessError::not_found(format!("{what} not found")),
+    }
 }

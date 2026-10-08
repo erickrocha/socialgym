@@ -8,7 +8,7 @@ import 'package:socialgym_mobile/models/business_profile.dart';
 
 import '../models/auth_response.dart';
 import '../models/person.dart';
-import '../services/business_profile_rest_service.dart';
+import '../services/grpc/grpc_auth_service.dart';
 import '../services/person_service.dart';
 import '../services/base_service.dart';
 import '../services/grpc/grpc_business_profile_service.dart';
@@ -425,9 +425,8 @@ class PersonProvider extends ChangeNotifier {
       if (selectedProfile.uuid == null || selectedProfile.uuid!.isEmpty) {
         throw Exception('Business profile has no uuid');
       }
-      final newAuth = await BusinessProfileRestService.activate(
+      final newAuth = await GrpcAuthService.activateBusinessProfile(
         businessProfileUuid: selectedProfile.uuid!,
-        token: token,
       );
       if (onTokenIssued != null) {
         await onTokenIssued(newAuth);
@@ -464,7 +463,7 @@ class PersonProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final newAuth = await BusinessProfileRestService.deactivate(token: token);
+      final newAuth = await GrpcAuthService.deactivateBusinessProfile();
       if (onTokenIssued != null) {
         await onTokenIssued(newAuth);
       }

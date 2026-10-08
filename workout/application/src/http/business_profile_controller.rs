@@ -22,15 +22,14 @@ pub async fn get_profile_by_id(
     Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<BusinessProfileJson>> {
-    BusinessProfileUseCase::get_by_id(&state.conn, id)
+    let profile = BusinessProfileUseCase::get_by_id(&state.conn, id)
         .await
-        .map(|profile| profile.for_viewer(Some(&current_user)))
-        .map(BusinessProfileMapper::json)
-        .map(Json)
         .ok_or(ExceptionResponse::NotFound(
             locale,
             ErrorKey::BusinessProfileNotFound,
-        ))
+        ))?;
+    let profile = BusinessProfileUseCase::present(&state.conn, profile, Some(&current_user)).await;
+    Ok(Json(BusinessProfileMapper::json(profile)))
 }
 
 pub async fn get_profile_by_uuid(
@@ -39,15 +38,14 @@ pub async fn get_profile_by_uuid(
     Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<BusinessProfileJson>> {
-    BusinessProfileUseCase::get_by_uuid(&state.conn, uuid)
+    let profile = BusinessProfileUseCase::get_by_uuid(&state.conn, uuid)
         .await
-        .map(|profile| profile.for_viewer(Some(&current_user)))
-        .map(BusinessProfileMapper::json)
-        .map(Json)
         .ok_or(ExceptionResponse::NotFound(
             locale,
             ErrorKey::BusinessProfileNotFound,
-        ))
+        ))?;
+    let profile = BusinessProfileUseCase::present(&state.conn, profile, Some(&current_user)).await;
+    Ok(Json(BusinessProfileMapper::json(profile)))
 }
 
 pub async fn get_profiles_by_owner_id(
@@ -61,10 +59,7 @@ pub async fn get_profiles_by_owner_id(
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
         })?;
-    let profiles = profiles
-        .into_iter()
-        .map(|profile| profile.for_viewer(Some(&current_user)))
-        .collect();
+    let profiles = BusinessProfileUseCase::present_all(&state.conn, profiles, Some(&current_user)).await;
     Ok(Json(BusinessProfileMapper::json_vec(profiles)))
 }
 
@@ -79,10 +74,7 @@ pub async fn get_profiles_by_owner_uuid(
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
         })?;
-    let profiles = profiles
-        .into_iter()
-        .map(|profile| profile.for_viewer(Some(&current_user)))
-        .collect();
+    let profiles = BusinessProfileUseCase::present_all(&state.conn, profiles, Some(&current_user)).await;
     Ok(Json(BusinessProfileMapper::json_vec(profiles)))
 }
 
@@ -243,9 +235,14 @@ pub async fn get_by_owner_id(
 )]
 pub async fn get_active(
     state: State<AppState>,
-    Extension(active_business_profile): Extension<BusinessProfile>,
+    active_business_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<BusinessProfileJson>> {
+    // Without an Active Business Profile in the token there is nothing to show: a client error, not the
+    // `500` a missing request extension used to give.
+    let Some(Extension(active_business_profile)) = active_business_profile else {
+        return Err(ExceptionResponse::BadRequest(locale, ErrorKey::BusinessProfileNotFound));
+    };
     let business_profile_id = active_business_profile.id.unwrap();
 
     let result = BusinessProfileUseCase::get_by_id(&state.conn, business_profile_id).await;
@@ -320,10 +317,7 @@ pub async fn discover(
     .map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
     })?;
-    let profiles = profiles
-        .into_iter()
-        .map(|profile| profile.for_viewer(Some(&current_user)))
-        .collect();
+    let profiles = BusinessProfileUseCase::present_all(&state.conn, profiles, Some(&current_user)).await;
 
     Ok(Json(BusinessProfileMapper::json_vec(profiles)))
 }

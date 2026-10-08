@@ -123,6 +123,7 @@ service_impl! { FriendService {
         deny_friend_request(FriendRequestRequest) -> Friend;
         cancel_friend_request(FriendRequestRequest) -> Friend;
         remove_friend(FriendRequestRequest) -> RemoveFriendResponse;
+        get_friend_profile(FriendProfileRequest) -> FriendProfileResponse;
 }
 
 service_impl! { BusinessProfileService {
@@ -138,6 +139,10 @@ service_impl! { BusinessProfileService {
         get_business_profile_by_owner_id(BusinessProfileRequestOwnerId) -> BusinessProfilesResponse;
         add_business_profile(BusinessProfile) -> BusinessProfile;
         update_business_profile(BusinessProfile) -> BusinessProfile;
+        get_active_business_profile(GetActiveBusinessProfileRequest) -> BusinessProfile;
+        discover_business_profiles(DiscoverBusinessProfilesRequest) -> BusinessProfilesResponse;
+        delete_business_profile(DeleteBusinessProfileRequest) -> DeleteBusinessProfileResponse;
+        get_business_profile_image_upload_url(BusinessProfileImageUploadRequest) -> BusinessProfileImageUploadResponse;
         add_business_profile_address(business::proto::proto::business_profile_address::BusinessProfileAddress) -> business::proto::proto::business_profile_address::BusinessProfileAddress;
         update_business_profile_address(business::proto::proto::business_profile_address::BusinessProfileAddress) -> business::proto::proto::business_profile_address::BusinessProfileAddress;
         remove_business_profile_address(RemoveBusinessProfileAddressRequest) -> RemoveBusinessProfileAddressResponse;

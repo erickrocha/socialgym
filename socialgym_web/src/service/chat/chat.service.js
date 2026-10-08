@@ -56,7 +56,7 @@ export const uploadChatImages = async (files = []) => {
     const uploaded = [];
     for (const file of files) {
         if (!file.type?.startsWith('image/')) continue;
-        const { data } = await axios.get('/api/media/upload', {
+        const { data } = await axios.get('/workout/api/media/upload', {
             params: { mediaType: 'Image', format: file.type, album: 'chat' },
         });
         await uploadFileToS3(file, data.url);

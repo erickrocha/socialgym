@@ -10,8 +10,8 @@ use crate::commons::entity_mapper::EntityMapper;
 pub struct ProfileGateway{}
 
 impl ProfileGateway {
-	pub async fn persist(
-		db: &DbConn,
+	pub async fn persist<C: ConnectionTrait>(
+		db: &C,
 		entity: Profile,
 	) -> Result<ActiveModel, DbErr> {
 		let active_model = ProfileEntityMapper::build_active_model(entity);

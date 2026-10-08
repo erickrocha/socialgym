@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package grpc.media;
+
+// Upload links for post media (C-010): the gRPC twin of the REST /media/upload route. The file itself
+// never travels over gRPC; the client sends it over HTTPS to the returned pre-signed link.
+service MediaService {
+  rpc GetPostMediaUploadUrl (MediaUploadRequest) returns (MediaUploadResponse);
+}
+
+message MediaUploadRequest {
+  string album = 1;    // required, for example avatar, cover or gallery
+  string format = 2;   // full content type; optional, defaults to image/jpeg
+}
+
+message MediaUploadResponse {
+  string url = 1;
+  string object_key = 2;
+  int32 person_id = 3;
+}

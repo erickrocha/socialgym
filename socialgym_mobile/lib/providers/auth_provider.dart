@@ -7,8 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/account_deletion_status.dart';
 import '../models/auth_response.dart';
 import '../models/sign_up_request.dart';
-import '../services/account_deletion_service.dart';
-import '../services/auth_service.dart';
+import '../services/grpc/grpc_account_service.dart';
+import '../services/grpc/grpc_auth_service.dart';
 import '../services/base_service.dart';
 import '../services/grpc/grpc_business_profile_service.dart';
 import '../services/grpc/grpc_channel_factory.dart';
@@ -70,7 +70,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _auth = await AuthService.signIn(email: email, password: password);
+      _auth = await GrpcAuthService.signIn(email: email, password: password);
       await _saveToStorage(_auth!);
       unawaited(PushRegistrationService.bindAuthenticatedUser(_auth!));
       _loading = false;
@@ -95,7 +95,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _auth = await AuthService.signUp(request);
+      _auth = await GrpcAuthService.signUp(request);
       await _saveToStorage(_auth!);
       unawaited(PushRegistrationService.bindAuthenticatedUser(_auth!));
       _loading = false;
@@ -163,10 +163,7 @@ class AuthProvider extends ChangeNotifier {
     if (_auth == null) return null;
     _error = null;
     try {
-      final status = await AccountDeletionService.requestDeletion(
-        immediate: immediate,
-        token: _auth!.accessToken,
-      );
+      final status = await GrpcAccountService.requestDeletion(immediate: immediate);
       return status;
     } on AppException catch (e) {
       _error = e.message;
@@ -185,7 +182,7 @@ class AuthProvider extends ChangeNotifier {
     if (_auth == null) return false;
     _error = null;
     try {
-      await AccountDeletionService.cancelDeletion(token: _auth!.accessToken);
+      await GrpcAccountService.cancelDeletion();
       _auth = _auth!.withoutPendingAccountDeletion();
       await _saveToStorage(_auth!);
       notifyListeners();

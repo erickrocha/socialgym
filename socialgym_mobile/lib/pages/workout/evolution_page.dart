@@ -15,8 +15,8 @@ import '../../config/nav_section.dart';
 import '../../widgets/main_layout.dart';
 import '../../widgets/evolution/vitruvian_body_card.dart';
 import 'evolution_checkin_form_dialog.dart';
-import '../../services/consent_service.dart';
-import '../../services/legal_document_service.dart';
+import '../../services/grpc/grpc_consent_service.dart';
+import '../../services/grpc/grpc_legal_document_service.dart';
 
 // ---------------------------------------------------------------------------
 // Filter period enum
@@ -55,7 +55,7 @@ class _EvolutionPageState extends State<EvolutionPage> {
   Future<void> _initialize() async {
     bool active;
     try {
-      active = await ConsentService.hasActive('health_data');
+      active = await GrpcConsentService.hasActive('health_data');
     } catch (_) {
       // Don't hang on the spinner if the consent check itself fails — fall
       // through and let the normal load path surface any real error.
@@ -71,7 +71,7 @@ class _EvolutionPageState extends State<EvolutionPage> {
 
   Future<void> _acceptHealthConsent() async {
     try {
-      final legal = await LegalDocumentService.get('health_data');
+      final legal = await GrpcLegalDocumentService.get('health_data');
       if (!mounted) return;
       final confirmed = await showDialog<bool>(
         context: context,
@@ -94,7 +94,7 @@ class _EvolutionPageState extends State<EvolutionPage> {
         ),
       );
       if (confirmed != true) return;
-      await ConsentService.accept('health_data');
+      await GrpcConsentService.accept('health_data');
       if (!mounted) return;
       setState(() => _healthConsent = true);
       _load();

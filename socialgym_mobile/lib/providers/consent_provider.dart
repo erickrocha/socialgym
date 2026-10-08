@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../models/pending_consent.dart';
-import '../services/consent_service.dart';
+import '../services/grpc/grpc_consent_service.dart';
 
 /// Drives the app-wide "pending legal consents" gate.
 ///
 /// The backend rejects almost every request with `403 CONSENT_REQUIRED` when
 /// the signed-in person has not accepted the current version of `terms`,
 /// `privacy` (enforced on every request) or `health_data` (evolution
-/// check-in creation). A Dio interceptor calls [trigger] on that response;
+/// check-in creation). `BaseService.onConsentRequired` calls [trigger] when a gRPC call is refused that way;
 /// [blocking] then drives an overlay that lets the person re-accept.
 class ConsentProvider extends ChangeNotifier {
   bool _blocking = false;
@@ -22,8 +22,8 @@ class ConsentProvider extends ChangeNotifier {
   String? get error => _error;
   List<PendingConsent> get outstanding => List.unmodifiable(_outstanding);
 
-  /// Called by the Dio interceptor when a request fails with
-  /// `403 CONSENT_REQUIRED`. Debounced: does nothing while already showing
+  /// Called through `BaseService.onConsentRequired` when a call fails with a
+  /// missing terms or privacy consent. Debounced: does nothing while already showing
   /// the gate or a check is in flight.
   Future<void> trigger() async {
     if (_blocking || _loading) return;
@@ -39,7 +39,7 @@ class ConsentProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      _outstanding = await ConsentService.pending();
+      _outstanding = await GrpcConsentService.pending();
       _blocking = _outstanding.isNotEmpty;
     } catch (e) {
       // Keep the gate up on failure — it is safer to make the person retry
@@ -57,8 +57,8 @@ class ConsentProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      await ConsentService.accept(document);
-      _outstanding = await ConsentService.pending();
+      await GrpcConsentService.accept(document);
+      _outstanding = await GrpcConsentService.pending();
       _blocking = _outstanding.isNotEmpty;
     } catch (e) {
       _error = e.toString();

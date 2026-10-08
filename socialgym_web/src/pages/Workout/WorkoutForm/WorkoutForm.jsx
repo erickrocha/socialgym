@@ -43,6 +43,7 @@ const WorkoutForm = ({workout, person, onCancel, onConfirm}) => {
         const payload = updateObject(data,{
             muscleGroup: muscleGroups.join("|"),
             ownerId: person.id,
+            ownerUuid: person.uuid,
         })
         dispatch(handler.addWorkout(payload))
         onConfirm();

@@ -134,3 +134,12 @@ final $typed_data.Uint8List settingDescriptor = $convert.base64Decode(
     'X3Bvc2l0aW9uGAggASgJUhNjb250ZXh0TWVudVBvc2l0aW9uEhsKCWhvbWVfcGFnZRgJIAEoCV'
     'IIaG9tZVBhZ2USHQoKY3JlYXRlZF9hdBgKIAEoCVIJY3JlYXRlZEF0Eh0KCnVwZGF0ZWRfYXQY'
     'CyABKAlSCXVwZGF0ZWRBdBIfCgt3ZWlnaHRfdW5pdBgMIAEoCVIKd2VpZ2h0VW5pdA==');
+
+@$core.Deprecated('Use getMySettingsRequestDescriptor instead')
+const GetMySettingsRequest$json = {
+  '1': 'GetMySettingsRequest',
+};
+
+/// Descriptor for `GetMySettingsRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getMySettingsRequestDescriptor =
+    $convert.base64Decode('ChRHZXRNeVNldHRpbmdzUmVxdWVzdA==');

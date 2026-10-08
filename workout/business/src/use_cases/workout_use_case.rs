@@ -3,7 +3,7 @@ use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::uuid_to_string;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::BusinessProfile;
-use crate::domain::enums::InviteStatus;
+use crate::domain::enums::{InviteStatus, Visibility};
 use crate::domain::exercise::ExerciseEntityMapper;
 use crate::domain::workout::{Workout, WorkoutEntityMapper};
 use crate::gateway::exercise_gateway::ExerciseGateway;
@@ -15,6 +15,22 @@ use crate::domain::user::User;
 use crate::use_cases::exercise_use_case::{audience_allows, ExerciseUseCase};
 use crate::use_cases::team_member_use_case::TeamMemberUseCase;
 use sea_orm::DbConn;
+
+/// Why composing exercises into a workout was refused: the workout (missing, or not the caller's) or the
+/// exercises themselves (missing, unreadable, invalid).
+#[derive(Debug)]
+pub enum AddExercisesError {
+    Workout(BusinessError),
+    Exercises(BusinessError),
+}
+
+impl AddExercisesError {
+    pub fn into_business(self) -> BusinessError {
+        match self {
+            Self::Workout(error) | Self::Exercises(error) => error,
+        }
+    }
+}
 
 pub struct WorkoutUseCase {}
 
@@ -113,11 +129,14 @@ impl WorkoutUseCase {
             },
             Some(id) => {
                 let existing = Self::find_entity_by_id(db, id).await?;
-                ensure_owns_as(
+                Self::ensure_changeable(
+                    db,
                     existing.owner_id,
                     &existing.owner_uuid.to_string(),
+                    &Visibility::from_string(&existing.visibility),
                     &ActingOwner::new(actor, active_profile),
-                )?;
+                )
+                .await?;
                 if InviteStatus::from_string(&existing.status) != InviteStatus::Accepted {
                     return Err(BusinessError::validation(
                         "Cannot edit a workout whose assignment is not accepted",
@@ -181,6 +200,82 @@ impl WorkoutUseCase {
         let mut workout = WorkoutEntityMapper::from_model(model);
         Self::fill_exercise(db, &mut workout).await?;
         Ok(workout)
+    }
+
+    /// Changing a workout is for the acting identity that owns it. Anyone else who can read it is told
+    /// they may not (`403`); anyone who cannot read it is told it does not exist (`404`), so a mutation
+    /// cannot be used to find out which ids exist (C-010 owner decision 2026-10-07).
+    async fn ensure_changeable(
+        db: &DbConn,
+        owner_id: i32,
+        owner_uuid: &str,
+        visibility: &Visibility,
+        acting: &ActingOwner,
+    ) -> Result<(), BusinessError> {
+        let Err(denied) = ensure_owns_as(owner_id, owner_uuid, acting) else {
+            return Ok(());
+        };
+        Self::hide_from_non_readers(db, denied, owner_id, owner_uuid, visibility, acting).await
+    }
+
+    /// As `ensure_changeable`, for deleting (which also lets the caller's own Person through while acting
+    /// as a Business Profile).
+    async fn ensure_deletable(
+        db: &DbConn,
+        owner_id: i32,
+        owner_uuid: &str,
+        visibility: &Visibility,
+        acting: &ActingOwner,
+    ) -> Result<(), BusinessError> {
+        let Err(denied) = ensure_can_access_as(owner_id, owner_uuid, acting) else {
+            return Ok(());
+        };
+        Self::hide_from_non_readers(db, denied, owner_id, owner_uuid, visibility, acting).await
+    }
+
+    async fn hide_from_non_readers(
+        db: &DbConn,
+        denied: BusinessError,
+        owner_id: i32,
+        owner_uuid: &str,
+        visibility: &Visibility,
+        acting: &ActingOwner,
+    ) -> Result<(), BusinessError> {
+        Err(crate::use_cases::exercise_use_case::deny_or_hide(db, denied, visibility, owner_id, owner_uuid, acting, "Workout").await)
+    }
+
+    /// The exercises of a workout the caller may read, without those the caller may not read.
+    pub async fn readable_exercises(
+        db: &DbConn,
+        workout_id: i32,
+        acting: &ActingOwner,
+    ) -> Result<Vec<crate::domain::exercise::Exercise>, BusinessError> {
+        let workout = Self::get(db, workout_id).await?;
+        Self::ensure_readable(db, &workout, acting).await?;
+        let exercises = ExerciseUseCase::find_all_by_workout_id(db, workout_id).await?;
+        ExerciseUseCase::retain_readable(db, exercises, acting).await
+    }
+
+    /// Composes `exercises` into `workout` for the acting identity that owns it; one rule for every form
+    /// (by numeric id or by uuid) over REST and gRPC. The error says which step refused, because REST words
+    /// the two differently.
+    pub async fn add_exercises_as(
+        db: &DbConn,
+        workout: &Workout,
+        exercises: Vec<crate::domain::exercise::Exercise>,
+        user: &User,
+        active_profile: Option<&BusinessProfile>,
+    ) -> Result<Vec<crate::domain::exercise::Exercise>, AddExercisesError> {
+        let acting = ActingOwner::new(user, active_profile);
+        Self::ensure_changeable(db, workout.owner_id, &workout.owner_uuid, &workout.visibility, &acting)
+            .await
+            .map_err(AddExercisesError::Workout)?;
+        let id = workout
+            .id
+            .ok_or_else(|| AddExercisesError::Workout(BusinessError::not_found("Workout not found")))?;
+        ExerciseUseCase::add_all_to_workout(db, id, exercises, user, active_profile)
+            .await
+            .map_err(AddExercisesError::Exercises)
     }
 
     pub async fn get_by_uuid(db: &DbConn, uuid: String) -> Result<Workout, BusinessError> {
@@ -405,7 +500,7 @@ impl WorkoutUseCase {
     ) -> Result<(), BusinessError> {
         log::info!("[WorkoutUseCase::delete_by_id] Executing for id={}", id);
         let existing = Self::find_entity_by_id(db, id).await?;
-        ensure_can_access_as(existing.owner_id, &existing.owner_uuid.to_string(), acting)?;
+        Self::ensure_deletable(db, existing.owner_id, &existing.owner_uuid.to_string(), &Visibility::from_string(&existing.visibility), acting).await?;
         let result = WorkoutGateway::delete_by_id(db, id).await;
         match result {
             Err(_) => {
@@ -429,7 +524,7 @@ impl WorkoutUseCase {
             uuid
         );
         let existing = Self::find_entity_by_uuid(db, uuid.clone()).await?;
-        ensure_can_access_as(existing.owner_id, &existing.owner_uuid.to_string(), acting)?;
+        Self::ensure_deletable(db, existing.owner_id, &existing.owner_uuid.to_string(), &Visibility::from_string(&existing.visibility), acting).await?;
         let result = WorkoutGateway::delete_by_uuid(db, uuid.clone()).await;
         match result {
             Err(_) => {

@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppHeader, Button, TextField, Spinner } from '../../commons/gui';
 import { ExerciseModal } from '../../commons/components/ExerciseModal';
 import { fetchExercises, createExercise, updateExercise, deleteExercise } from '../../redux/reducers/exercise/exercise.actions';
+import { EXERCISE_CATEGORIES } from '../../commons/library/exerciseCategories';
 import './Exercises.scss';
 
 export const Exercises = () => {
@@ -22,10 +23,16 @@ export const Exercises = () => {
     }, [dispatch]);
 
     const handleCreateOrUpdate = async (exerciseData) => {
+        // The API takes the owner from the access token; the body still names it.
+        const owner = {
+            ownerId: person?.id ?? 0,
+            ownerUuid: person?.uuid ?? '',
+            ownerName: [person?.firstname, person?.surname].filter(Boolean).join(' '),
+        };
         if (editingExercise) {
-            await dispatch(updateExercise({ id: editingExercise.id, data: exerciseData }));
+            await dispatch(updateExercise({ id: editingExercise.id, data: { ...editingExercise, ...owner, ...exerciseData } }));
         } else {
-            await dispatch(createExercise(exerciseData));
+            await dispatch(createExercise({ ...owner, ...exerciseData }));
         }
         setIsModalOpen(false);
         setEditingExercise(null);
@@ -39,13 +46,7 @@ export const Exercises = () => {
 
     const categories = [
         { key: 'ALL', label: t('exercises.categories.all', 'Todos') },
-        { key: 'Chest', label: t('exercises.categories.chest', 'Peito') },
-        { key: 'Back', label: t('exercises.categories.back', 'Costas') },
-        { key: 'Legs', label: t('exercises.categories.legs', 'Pernas') },
-        { key: 'Shoulders', label: t('exercises.categories.shoulders', 'Ombros') },
-        { key: 'Arms', label: t('exercises.categories.arms', 'Braços') },
-        { key: 'Core', label: t('exercises.categories.core', 'Abdômen') },
-        { key: 'Cardio', label: t('exercises.categories.cardio', 'Cardio') },
+        ...EXERCISE_CATEGORIES.map((c) => ({ key: c.value, label: t(`exercises.categories.${c.key}`, c.label) })),
     ];
 
     const filteredExercises = exercises.filter(ex => {

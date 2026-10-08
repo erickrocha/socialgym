@@ -139,6 +139,8 @@ services:
       # Shared across workout-app, integration-app and timeline-app — must match or JWTs fail with 401.
       - ACCESS_TOKEN_SECRET=${AUTH_ACCESS_TOKEN_SECRET}
       - REFRESH_TOKEN_SECRET=${AUTH_REFRESH_TOKEN_SECRET}
+      # The internal gRPC methods (push preference, team roster) accept only this shared secret.
+      - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:?INTERNAL_SERVICE_SECRET must be set}
     volumes:
       - ../certs/server.crt:/etc/grpc/certs/server.crt:ro
       - ../certs/server.key:/etc/grpc/certs/server.key:ro # O integration app needs the TLS key to serve gRPC securely

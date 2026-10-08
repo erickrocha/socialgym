@@ -123,9 +123,17 @@ pub async fn business_profile_image_upload(
     state: State<AppState>,
     Path(image_type): Path<String>,
     Query(params): Query<HashMap<String, String>>,
-    Extension(active_business_profile): Extension<BusinessProfile>,
+    active_business_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<S3Json>> {
+    // The logo and the cover belong to the Active Business Profile of the token: without one there is
+    // nothing to upload for.
+    let Some(Extension(active_business_profile)) = active_business_profile else {
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::BusinessProfilePreSignedUrlNotGenerated,
+        ));
+    };
     let business_profile_id = active_business_profile.id;
     let business_profile_uuid = active_business_profile.uuid.clone().unwrap();
     let format = params

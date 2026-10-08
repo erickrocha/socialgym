@@ -1,6 +1,8 @@
 use crate::commons::legal_documents;
 use crate::domain::business_error::BusinessError;
+use crate::domain::user::User;
 use crate::gateway::consent_gateway::ConsentGateway;
+use crate::use_cases::token_revocation::TokenRevocation;
 use chrono::Utc;
 use entity::consent_entity;
 use sea_orm::DbConn;
@@ -38,6 +40,34 @@ impl ConsentUseCase {
         ConsentGateway::accept(db, person_id, document, version, ip)
             .await
             .map_err(|e| BusinessError::infrastructure(e.to_string()))
+    }
+
+    /// Accepts a document for the caller when the request says so; a request that does not accept is
+    /// refused as a missing consent, the same on every transport.
+    pub async fn accept_confirmed(
+        db: &DbConn,
+        person_id: i32,
+        document: &str,
+        version: &str,
+        accepted: bool,
+        ip: &str,
+    ) -> Result<consent_entity::Model, BusinessError> {
+        if !accepted {
+            return Err(BusinessError::validation("Consent must be accepted"));
+        }
+        Self::accept(db, person_id, document, version, ip).await
+    }
+
+    /// Revokes the caller's consent; revoking Terms or Privacy also ends every session of the person,
+    /// since the mandatory consent is gone.
+    pub async fn revoke_for_user(db: &DbConn, user: &User, document: &str) -> Result<(), BusinessError> {
+        Self::revoke(db, user.person_id, document).await?;
+        if matches!(document, legal_documents::TERMS | legal_documents::PRIVACY) {
+            if let Some(user_id) = user.id {
+                TokenRevocation::revoke_all_for_user(db, user_id).await;
+            }
+        }
+        Ok(())
     }
 
     pub async fn list(

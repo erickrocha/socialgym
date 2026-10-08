@@ -32,6 +32,9 @@ class GrpcExerciseService {
   /// Drops the cached client. Call after the underlying channel has been
   /// shut down (e.g. on sign-out) so the next call rebuilds against a
   /// fresh channel instead of reusing one that is closing/closed.
+  /// Replaces the client (tests point it at a fake server).
+  static void useClient($exercise.ExerciseServiceClient? client) => _client = client;
+
   static Future<void> shutdown() async {
     _client = null;
   }
@@ -44,6 +47,17 @@ class GrpcExerciseService {
       return ExerciseMapper().fromProto(response);
     } on grpc.GrpcError catch (e) {
       throw BaseService.handleGrpcError(e, 'Failed to load exercise');
+    }
+  }
+
+  static Future<void> deleteExercise({required int id}) async {
+    try {
+      await _ensureClient().deleteExercise(
+        $exercise.ExerciseRequest()..id = id,
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to delete exercise');
     }
   }
 

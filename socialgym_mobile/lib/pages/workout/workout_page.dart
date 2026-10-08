@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:socialgym_mobile/services/exercise_service.dart';
+import 'package:socialgym_mobile/services/grpc/grpc_exercise_service.dart';
 
 import '../../config/app_colors.dart';
 import '../../l10n/app_localizations.dart';
@@ -138,11 +138,8 @@ class _WorkoutPageState extends State<WorkoutPage> {
   Future<void> _deleteExercise(Exercise exercise, int index) async {
     if (exercise.id == null) return;
 
-    final authProvider = context.read<AuthProvider>();
-    final token = authProvider.auth?.accessToken ?? '';
-
     try {
-      await ExerciseService.deleteExercise(exercise.id!, token);
+      await GrpcExerciseService.deleteExercise(id: exercise.id!);
       _fetchWorkouts();
     } catch (e) {
       if (mounted) {

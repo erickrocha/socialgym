@@ -27,6 +27,18 @@ pub struct Person {
     pub business_profiles: Vec<BusinessProfile>,
 }
 
+impl Person {
+    /// The profile as an accepted friend sees it: the friend's weight and height are health data and stay
+    /// with their owner (C-010, W18), the rest of `person_info` is social and stays.
+    pub fn without_health_details(mut self) -> Self {
+        if let Some(info) = self.person_info.as_mut() {
+            info.weight = None;
+            info.height = None;
+        }
+        self
+    }
+}
+
 pub struct PersonEntityMapper {}
 
 impl EntityMapper<Person, PersonEntity, ActiveModel> for PersonEntityMapper {

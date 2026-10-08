@@ -39,4 +39,21 @@ pub mod settings {
 pub mod resource {
     tonic::include_proto!("grpc.resource");
 }
-
+pub mod auth {
+    tonic::include_proto!("grpc.auth");
+}
+pub mod consent {
+    tonic::include_proto!("grpc.consent");
+}
+pub mod account {
+    tonic::include_proto!("grpc.account");
+}
+pub mod media {
+    tonic::include_proto!("grpc.media");
+}
+pub mod legal {
+    tonic::include_proto!("grpc.legal");
+}
+pub mod address {
+    tonic::include_proto!("grpc.address");
+}

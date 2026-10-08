@@ -30,7 +30,7 @@ export const addExercise = createAsyncThunk(
     'workout/addExercise',
     async (exercise, {rejectWithValue}) => {
         try {
-            const {data} = await axios.post('/api/exercises', exercise);
+            const {data} = await axios.post('/workout/api/exercises', exercise);
             return data;
         } catch (error) {
             return rejectWithValue(error.response.data);
@@ -42,7 +42,7 @@ export const addExercises = createAsyncThunk(
     'workout/addExercises',
     async (payload, {rejectWithValue}) => {
         try {
-            const {data} = await axios.post(`/api/workouts/${payload.workoutId}/exercises`, payload.exercises);
+            const {data} = await axios.post(`/workout/api/workouts/${payload.workoutId}/exercises`, payload.exercises);
             return { workoutId: payload.workoutId, exercises: data };
         } catch (error) {
             return rejectWithValue(error.response.data);

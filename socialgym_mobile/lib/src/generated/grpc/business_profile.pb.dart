@@ -546,6 +546,424 @@ class RemoveBusinessProfileAddressResponse extends $pb.GeneratedMessage {
   void clearSuccess() => $_clearField(1);
 }
 
+class BusinessProfileImageUploadRequest extends $pb.GeneratedMessage {
+  factory BusinessProfileImageUploadRequest({
+    $core.String? imageType,
+    $core.String? format,
+  }) {
+    final result = create();
+    if (imageType != null) result.imageType = imageType;
+    if (format != null) result.format = format;
+    return result;
+  }
+
+  BusinessProfileImageUploadRequest._();
+
+  factory BusinessProfileImageUploadRequest.fromBuffer(
+          $core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory BusinessProfileImageUploadRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'BusinessProfileImageUploadRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'grpc.business_profile'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'imageType')
+    ..aOS(2, _omitFieldNames ? '' : 'format')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BusinessProfileImageUploadRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BusinessProfileImageUploadRequest copyWith(
+          void Function(BusinessProfileImageUploadRequest) updates) =>
+      super.copyWith((message) =>
+              updates(message as BusinessProfileImageUploadRequest))
+          as BusinessProfileImageUploadRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static BusinessProfileImageUploadRequest create() =>
+      BusinessProfileImageUploadRequest._();
+  @$core.override
+  BusinessProfileImageUploadRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static BusinessProfileImageUploadRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<BusinessProfileImageUploadRequest>(
+          create);
+  static BusinessProfileImageUploadRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get imageType => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set imageType($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasImageType() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearImageType() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get format => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set format($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasFormat() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearFormat() => $_clearField(2);
+}
+
+class BusinessProfileImageUploadResponse extends $pb.GeneratedMessage {
+  factory BusinessProfileImageUploadResponse({
+    $core.String? url,
+    $core.String? objectKey,
+    $core.int? businessProfileId,
+  }) {
+    final result = create();
+    if (url != null) result.url = url;
+    if (objectKey != null) result.objectKey = objectKey;
+    if (businessProfileId != null) result.businessProfileId = businessProfileId;
+    return result;
+  }
+
+  BusinessProfileImageUploadResponse._();
+
+  factory BusinessProfileImageUploadResponse.fromBuffer(
+          $core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory BusinessProfileImageUploadResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'BusinessProfileImageUploadResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'grpc.business_profile'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'url')
+    ..aOS(2, _omitFieldNames ? '' : 'objectKey')
+    ..aI(3, _omitFieldNames ? '' : 'businessProfileId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BusinessProfileImageUploadResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BusinessProfileImageUploadResponse copyWith(
+          void Function(BusinessProfileImageUploadResponse) updates) =>
+      super.copyWith((message) =>
+              updates(message as BusinessProfileImageUploadResponse))
+          as BusinessProfileImageUploadResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static BusinessProfileImageUploadResponse create() =>
+      BusinessProfileImageUploadResponse._();
+  @$core.override
+  BusinessProfileImageUploadResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static BusinessProfileImageUploadResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<BusinessProfileImageUploadResponse>(
+          create);
+  static BusinessProfileImageUploadResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get url => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set url($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUrl() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUrl() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get objectKey => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set objectKey($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasObjectKey() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearObjectKey() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get businessProfileId => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set businessProfileId($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasBusinessProfileId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearBusinessProfileId() => $_clearField(3);
+}
+
+class GetActiveBusinessProfileRequest extends $pb.GeneratedMessage {
+  factory GetActiveBusinessProfileRequest() => create();
+
+  GetActiveBusinessProfileRequest._();
+
+  factory GetActiveBusinessProfileRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetActiveBusinessProfileRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetActiveBusinessProfileRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'grpc.business_profile'),
+      createEmptyInstance: create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetActiveBusinessProfileRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetActiveBusinessProfileRequest copyWith(
+          void Function(GetActiveBusinessProfileRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetActiveBusinessProfileRequest))
+          as GetActiveBusinessProfileRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetActiveBusinessProfileRequest create() =>
+      GetActiveBusinessProfileRequest._();
+  @$core.override
+  GetActiveBusinessProfileRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetActiveBusinessProfileRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetActiveBusinessProfileRequest>(
+          create);
+  static GetActiveBusinessProfileRequest? _defaultInstance;
+}
+
+class DiscoverBusinessProfilesRequest extends $pb.GeneratedMessage {
+  factory DiscoverBusinessProfilesRequest({
+    $core.String? query,
+    $core.String? businessType,
+    $core.double? latitude,
+    $core.double? longitude,
+    $core.double? radiusKm,
+    $core.int? limit,
+  }) {
+    final result = create();
+    if (query != null) result.query = query;
+    if (businessType != null) result.businessType = businessType;
+    if (latitude != null) result.latitude = latitude;
+    if (longitude != null) result.longitude = longitude;
+    if (radiusKm != null) result.radiusKm = radiusKm;
+    if (limit != null) result.limit = limit;
+    return result;
+  }
+
+  DiscoverBusinessProfilesRequest._();
+
+  factory DiscoverBusinessProfilesRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DiscoverBusinessProfilesRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DiscoverBusinessProfilesRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'grpc.business_profile'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'query')
+    ..aOS(2, _omitFieldNames ? '' : 'businessType')
+    ..aD(3, _omitFieldNames ? '' : 'latitude')
+    ..aD(4, _omitFieldNames ? '' : 'longitude')
+    ..aD(5, _omitFieldNames ? '' : 'radiusKm')
+    ..aI(6, _omitFieldNames ? '' : 'limit')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DiscoverBusinessProfilesRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DiscoverBusinessProfilesRequest copyWith(
+          void Function(DiscoverBusinessProfilesRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as DiscoverBusinessProfilesRequest))
+          as DiscoverBusinessProfilesRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DiscoverBusinessProfilesRequest create() =>
+      DiscoverBusinessProfilesRequest._();
+  @$core.override
+  DiscoverBusinessProfilesRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DiscoverBusinessProfilesRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DiscoverBusinessProfilesRequest>(
+          create);
+  static DiscoverBusinessProfilesRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get query => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set query($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasQuery() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearQuery() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get businessType => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set businessType($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasBusinessType() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBusinessType() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.double get latitude => $_getN(2);
+  @$pb.TagNumber(3)
+  set latitude($core.double value) => $_setDouble(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasLatitude() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearLatitude() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.double get longitude => $_getN(3);
+  @$pb.TagNumber(4)
+  set longitude($core.double value) => $_setDouble(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasLongitude() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearLongitude() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.double get radiusKm => $_getN(4);
+  @$pb.TagNumber(5)
+  set radiusKm($core.double value) => $_setDouble(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasRadiusKm() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearRadiusKm() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.int get limit => $_getIZ(5);
+  @$pb.TagNumber(6)
+  set limit($core.int value) => $_setSignedInt32(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasLimit() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearLimit() => $_clearField(6);
+}
+
+class DeleteBusinessProfileRequest extends $pb.GeneratedMessage {
+  factory DeleteBusinessProfileRequest({
+    $core.int? id,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  DeleteBusinessProfileRequest._();
+
+  factory DeleteBusinessProfileRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeleteBusinessProfileRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteBusinessProfileRequest',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'grpc.business_profile'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteBusinessProfileRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteBusinessProfileRequest copyWith(
+          void Function(DeleteBusinessProfileRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as DeleteBusinessProfileRequest))
+          as DeleteBusinessProfileRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteBusinessProfileRequest create() =>
+      DeleteBusinessProfileRequest._();
+  @$core.override
+  DeleteBusinessProfileRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeleteBusinessProfileRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteBusinessProfileRequest>(create);
+  static DeleteBusinessProfileRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
+class DeleteBusinessProfileResponse extends $pb.GeneratedMessage {
+  factory DeleteBusinessProfileResponse() => create();
+
+  DeleteBusinessProfileResponse._();
+
+  factory DeleteBusinessProfileResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeleteBusinessProfileResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteBusinessProfileResponse',
+      package: const $pb.PackageName(
+          _omitMessageNames ? '' : 'grpc.business_profile'),
+      createEmptyInstance: create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteBusinessProfileResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteBusinessProfileResponse copyWith(
+          void Function(DeleteBusinessProfileResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as DeleteBusinessProfileResponse))
+          as DeleteBusinessProfileResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteBusinessProfileResponse create() =>
+      DeleteBusinessProfileResponse._();
+  @$core.override
+  DeleteBusinessProfileResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeleteBusinessProfileResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteBusinessProfileResponse>(create);
+  static DeleteBusinessProfileResponse? _defaultInstance;
+}
+
 const $core.bool _omitFieldNames =
     $core.bool.fromEnvironment('protobuf.omit_field_names');
 const $core.bool _omitMessageNames =

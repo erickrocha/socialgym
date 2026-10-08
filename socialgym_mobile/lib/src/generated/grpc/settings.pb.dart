@@ -497,6 +497,44 @@ class Setting extends $pb.GeneratedMessage {
   void clearWeightUnit() => $_clearField(12);
 }
 
+class GetMySettingsRequest extends $pb.GeneratedMessage {
+  factory GetMySettingsRequest() => create();
+
+  GetMySettingsRequest._();
+
+  factory GetMySettingsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetMySettingsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetMySettingsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.settings'),
+      createEmptyInstance: create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetMySettingsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetMySettingsRequest copyWith(void Function(GetMySettingsRequest) updates) =>
+      super.copyWith((message) => updates(message as GetMySettingsRequest))
+          as GetMySettingsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetMySettingsRequest create() => GetMySettingsRequest._();
+  @$core.override
+  GetMySettingsRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetMySettingsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetMySettingsRequest>(create);
+  static GetMySettingsRequest? _defaultInstance;
+}
+
 const $core.bool _omitFieldNames =
     $core.bool.fromEnvironment('protobuf.omit_field_names');
 const $core.bool _omitMessageNames =

@@ -6,7 +6,8 @@ import '../../l10n/app_localizations.dart';
 import '../../models/pending_consent.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/consent_provider.dart';
-import '../../services/legal_document_service.dart';
+import '../../models/legal_document.dart';
+import '../../services/grpc/grpc_legal_document_service.dart';
 
 /// Full-screen, non-dismissible gate shown whenever the backend reports a
 /// missing / out-of-date legal consent. The person must accept the current
@@ -111,7 +112,7 @@ class _ConsentCardState extends State<_ConsentCard> {
 
   Future<void> _load() async {
     try {
-      final doc = await LegalDocumentService.get(widget.consent.document);
+      final doc = await GrpcLegalDocumentService.get(widget.consent.document);
       if (mounted) setState(() => _doc = doc);
     } catch (_) {
       if (mounted) setState(() => _failed = true);

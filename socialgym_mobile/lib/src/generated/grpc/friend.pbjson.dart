@@ -256,3 +256,36 @@ const SearchFriendsResponse$json = {
 final $typed_data.Uint8List searchFriendsResponseDescriptor = $convert.base64Decode(
     'ChVTZWFyY2hGcmllbmRzUmVzcG9uc2USKwoGcGVvcGxlGAEgAygLMhMuZ3JwYy5wZXJzb24uUG'
     'Vyc29uUgZwZW9wbGU=');
+
+@$core.Deprecated('Use friendProfileRequestDescriptor instead')
+const FriendProfileRequest$json = {
+  '1': 'FriendProfileRequest',
+  '2': [
+    {'1': 'friend_id', '3': 1, '4': 1, '5': 5, '10': 'friendId'},
+  ],
+};
+
+/// Descriptor for `FriendProfileRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List friendProfileRequestDescriptor =
+    $convert.base64Decode(
+        'ChRGcmllbmRQcm9maWxlUmVxdWVzdBIbCglmcmllbmRfaWQYASABKAVSCGZyaWVuZElk');
+
+@$core.Deprecated('Use friendProfileResponseDescriptor instead')
+const FriendProfileResponse$json = {
+  '1': 'FriendProfileResponse',
+  '2': [
+    {
+      '1': 'person',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.grpc.person.Person',
+      '10': 'person'
+    },
+  ],
+};
+
+/// Descriptor for `FriendProfileResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List friendProfileResponseDescriptor = $convert.base64Decode(
+    'ChVGcmllbmRQcm9maWxlUmVzcG9uc2USKwoGcGVyc29uGAEgASgLMhMuZ3JwYy5wZXJzb24uUG'
+    'Vyc29uUgZwZXJzb24=');

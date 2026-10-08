@@ -330,10 +330,12 @@ class WorkoutExercisesRequest extends $pb.GeneratedMessage {
   factory WorkoutExercisesRequest({
     $core.String? workoutUuid,
     $core.Iterable<$2.Exercise>? exercises,
+    $core.int? workoutId,
   }) {
     final result = create();
     if (workoutUuid != null) result.workoutUuid = workoutUuid;
     if (exercises != null) result.exercises.addAll(exercises);
+    if (workoutId != null) result.workoutId = workoutId;
     return result;
   }
 
@@ -353,6 +355,7 @@ class WorkoutExercisesRequest extends $pb.GeneratedMessage {
     ..aOS(1, _omitFieldNames ? '' : 'workoutUuid')
     ..pPM<$2.Exercise>(2, _omitFieldNames ? '' : 'exercises',
         subBuilder: $2.Exercise.create)
+    ..aI(3, _omitFieldNames ? '' : 'workoutId')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -386,6 +389,66 @@ class WorkoutExercisesRequest extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(2)
   $pb.PbList<$2.Exercise> get exercises => $_getList(1);
+
+  /// The numeric-id form of the REST route; used when workout_uuid is empty.
+  @$pb.TagNumber(3)
+  $core.int get workoutId => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set workoutId($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasWorkoutId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearWorkoutId() => $_clearField(3);
+}
+
+class WorkoutExercisesResponse extends $pb.GeneratedMessage {
+  factory WorkoutExercisesResponse({
+    $core.Iterable<$2.Exercise>? exercises,
+  }) {
+    final result = create();
+    if (exercises != null) result.exercises.addAll(exercises);
+    return result;
+  }
+
+  WorkoutExercisesResponse._();
+
+  factory WorkoutExercisesResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory WorkoutExercisesResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'WorkoutExercisesResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.workout'),
+      createEmptyInstance: create)
+    ..pPM<$2.Exercise>(1, _omitFieldNames ? '' : 'exercises',
+        subBuilder: $2.Exercise.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WorkoutExercisesResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WorkoutExercisesResponse copyWith(
+          void Function(WorkoutExercisesResponse) updates) =>
+      super.copyWith((message) => updates(message as WorkoutExercisesResponse))
+          as WorkoutExercisesResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static WorkoutExercisesResponse create() => WorkoutExercisesResponse._();
+  @$core.override
+  WorkoutExercisesResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static WorkoutExercisesResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<WorkoutExercisesResponse>(create);
+  static WorkoutExercisesResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$2.Exercise> get exercises => $_getList(0);
 }
 
 enum WorkoutListRequest_Identifier { ownerId, ownerUuid, notSet }

@@ -8,7 +8,6 @@ import '../../config/nav_section.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/business_profile.dart';
 import '../../models/business_profile_address.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/business_profile_provider.dart';
 import '../../providers/person_provider.dart';
 import '../../widgets/address/address_form_fields.dart';
@@ -91,7 +90,6 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
   }
 
   Future<void> _pickImage(ImageSource source, {required bool isLogo}) async {
-    final token = context.read<AuthProvider>().auth?.accessToken ?? '';
     final provider = context.read<BusinessProfileProvider>();
     final picked = await ImagePicker().pickImage(
       source: source,
@@ -102,8 +100,8 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
     if (picked == null) return;
 
     final success = isLogo
-        ? await provider.uploadLogo(token, picked)
-        : await provider.uploadCover(token, picked);
+        ? await provider.uploadLogo(picked)
+        : await provider.uploadCover(picked);
     if (!mounted) return;
     if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(

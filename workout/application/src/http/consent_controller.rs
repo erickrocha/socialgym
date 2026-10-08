@@ -5,22 +5,14 @@ use crate::AppState;
 use axum::extract::{Path, State};
 use axum::http::HeaderMap;
 use axum::{Extension, Json};
-use business::commons::legal_documents::{PRIVACY, TERMS};
 use business::domain::business_error::BusinessErrorKind;
 use business::domain::user::User;
 use business::use_cases::consent_use_case::ConsentUseCase;
-use business::use_cases::token_revocation::TokenRevocation;
+use business::use_cases::sign_up_use_case::acceptance_ip;
 
 fn request_ip(headers: &HeaderMap) -> String {
-    headers
-        .get("x-real-ip")
-        .or_else(|| headers.get("x-forwarded-for"))
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.split(',').next())
-        .map(str::trim)
-        .filter(|v| !v.is_empty() && v.len() <= 45)
-        .unwrap_or("unknown")
-        .to_string()
+    let header = |name: &str| headers.get(name).and_then(|v| v.to_str().ok());
+    acceptance_ip(header("x-real-ip"), header("x-forwarded-for"))
 }
 
 pub async fn list(
@@ -54,17 +46,12 @@ pub async fn accept(
     headers: HeaderMap,
     Json(payload): Json<AcceptConsentJson>,
 ) -> HttpResponse<Json<ConsentJson>> {
-    if !payload.accepted {
-        return Err(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::ConsentRequired,
-        ));
-    }
-    ConsentUseCase::accept(
+    ConsentUseCase::accept_confirmed(
         &state.conn,
         current_user.person_id,
         &payload.document,
         &payload.version,
+        payload.accepted,
         &request_ip(&headers),
     )
     .await
@@ -85,15 +72,10 @@ pub async fn revoke(
     Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<()>> {
-    ConsentUseCase::revoke(&state.conn, current_user.person_id, &document)
+    ConsentUseCase::revoke_for_user(&state.conn, &current_user, &document)
         .await
         .map_err(|e| {
             ExceptionResponse::from_business(e, locale, ErrorKey::ConsentOperationFailed)
         })?;
-    if matches!(document.as_str(), TERMS | PRIVACY) {
-        if let Some(user_id) = current_user.id {
-            TokenRevocation::revoke_all_for_user(&state.conn, user_id).await;
-        }
-    }
     Ok(Json(()))
 }

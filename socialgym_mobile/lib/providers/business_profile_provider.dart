@@ -137,7 +137,7 @@ class BusinessProfileProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> uploadLogo(String token, XFile file) async {
+  Future<bool> uploadLogo(XFile file) async {
     final businessProfileId = _current?.id;
     if (businessProfileId == null) {
       _error = 'Business profile not loaded.';
@@ -148,7 +148,7 @@ class BusinessProfileProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      await UploadService.uploadBusinessProfileLogo(token, businessProfileId, file);
+      await UploadService.uploadBusinessProfileLogo(file);
       final loadSuccess = await load(id: businessProfileId);
       _updating = false;
       notifyListeners();
@@ -161,7 +161,7 @@ class BusinessProfileProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> uploadCover(String token, XFile file) async {
+  Future<bool> uploadCover(XFile file) async {
     final businessProfileId = _current?.id;
     if (businessProfileId == null) {
       _error = 'Business profile not loaded.';
@@ -172,7 +172,7 @@ class BusinessProfileProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      await UploadService.uploadBusinessProfileCover(token, file);
+      await UploadService.uploadBusinessProfileCover(file);
       final loadSuccess = await load(id: businessProfileId);
       _updating = false;
       notifyListeners();

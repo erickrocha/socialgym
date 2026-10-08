@@ -37,6 +37,9 @@ service WorkoutService {
   rpc UpdateWorkout(Workout) returns (Workout);
   rpc DeleteWorkout(WorkoutRequest) returns (google.protobuf.Empty);
   rpc AddExercisesToWorkout(WorkoutExercisesRequest) returns (Workout);
+  // The exercises of a workout the caller may read, without those the caller may not read
+  // (REST GET /workouts/{workout_id}/exercises).
+  rpc GetWorkoutExercises(WorkoutRequest) returns (WorkoutExercisesResponse);
   // Team-member assignment lifecycle. Accept/Reject are for the assigned
   // person; Cancel is for the assigning business profile.
   rpc AcceptWorkout(WorkoutRequest) returns (Workout);
@@ -57,6 +60,12 @@ message WorkoutRequest {
 message WorkoutExercisesRequest {
   string workout_uuid = 1;
   repeated grpc.exercise.Exercise exercises = 2;
+  // The numeric-id form of the REST route; used when workout_uuid is empty.
+  int32 workout_id = 3;
+}
+
+message WorkoutExercisesResponse {
+  repeated grpc.exercise.Exercise exercises = 1;
 }
 
 message WorkoutListRequest {

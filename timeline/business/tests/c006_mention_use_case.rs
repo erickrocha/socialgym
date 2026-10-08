@@ -29,6 +29,7 @@ impl FriendService for Friends {
     async fn deny_friend_request(&self, _: Request<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
     async fn cancel_friend_request(&self, _: Request<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
     async fn remove_friend(&self, _: Request<FriendRequestRequest>) -> Result<Response<RemoveFriendResponse>, Status> { Err(Status::unimplemented("")) }
+    async fn get_friend_profile(&self, _: Request<FriendProfileRequest>) -> Result<Response<FriendProfileResponse>, Status> { Err(Status::unimplemented("")) }
 }
 
 fn mention(uuid: &str) -> Mention {

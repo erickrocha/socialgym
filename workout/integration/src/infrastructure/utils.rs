@@ -1,5 +1,6 @@
 
 use business::commons::authorization::ActingOwner;
+use business::commons::i18n::{ErrorKey, Locale, translate};
 use business::commons::functions::parse_uuid;
 use business::domain::business_error::{BusinessError, BusinessErrorKind};
 use business::domain::business_profile::BusinessProfile;
@@ -42,6 +43,28 @@ pub(crate) fn business_status(error: BusinessError) -> Status {
         // A failing dependency (database, queue, object store) is retryable; REST answers 500 for it.
         BusinessErrorKind::Infrastructure => Status::unavailable(error.message),
     }
+}
+
+/// The locale the caller asked for in the `accept-language` metadata (English when absent).
+pub(crate) fn locale_of<T>(request: &Request<T>) -> Locale {
+    Locale::from_accept_language(request.metadata().get("accept-language").and_then(|value| value.to_str().ok()))
+}
+
+/// A status whose message is the REST error text in the caller's locale and whose `error-key` trailer is
+/// the stable REST `errorKey`, so a client tells the cases apart without parsing the text.
+pub(crate) fn localized_status(code: tonic::Code, key: ErrorKey, locale: Locale) -> Status {
+    let mut status = Status::new(code, translate(locale, key));
+    if let Ok(value) = key.as_str().parse() {
+        status.metadata_mut().insert("error-key", value);
+    }
+    status
+}
+
+/// The status of a business failure with the message the REST form shows for `key`, in the caller's
+/// locale; the code follows the kind of the error (the same table as `business_status`).
+pub(crate) fn localized_business_status(error: BusinessError, key: ErrorKey, locale: Locale) -> Status {
+    let code = business_status(error).code();
+    localized_status(code, key, locale)
 }
 
 /// A caller that exceeded the per-IP limit (REST answers 429).

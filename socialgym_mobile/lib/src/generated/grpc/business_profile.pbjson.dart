@@ -133,3 +133,134 @@ final $typed_data.Uint8List removeBusinessProfileAddressResponseDescriptor =
     $convert.base64Decode(
         'CiRSZW1vdmVCdXNpbmVzc1Byb2ZpbGVBZGRyZXNzUmVzcG9uc2USGAoHc3VjY2VzcxgBIAEoCF'
         'IHc3VjY2Vzcw==');
+
+@$core.Deprecated('Use businessProfileImageUploadRequestDescriptor instead')
+const BusinessProfileImageUploadRequest$json = {
+  '1': 'BusinessProfileImageUploadRequest',
+  '2': [
+    {'1': 'image_type', '3': 1, '4': 1, '5': 9, '10': 'imageType'},
+    {'1': 'format', '3': 2, '4': 1, '5': 9, '10': 'format'},
+  ],
+};
+
+/// Descriptor for `BusinessProfileImageUploadRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List businessProfileImageUploadRequestDescriptor =
+    $convert.base64Decode(
+        'CiFCdXNpbmVzc1Byb2ZpbGVJbWFnZVVwbG9hZFJlcXVlc3QSHQoKaW1hZ2VfdHlwZRgBIAEoCV'
+        'IJaW1hZ2VUeXBlEhYKBmZvcm1hdBgCIAEoCVIGZm9ybWF0');
+
+@$core.Deprecated('Use businessProfileImageUploadResponseDescriptor instead')
+const BusinessProfileImageUploadResponse$json = {
+  '1': 'BusinessProfileImageUploadResponse',
+  '2': [
+    {'1': 'url', '3': 1, '4': 1, '5': 9, '10': 'url'},
+    {'1': 'object_key', '3': 2, '4': 1, '5': 9, '10': 'objectKey'},
+    {
+      '1': 'business_profile_id',
+      '3': 3,
+      '4': 1,
+      '5': 5,
+      '10': 'businessProfileId'
+    },
+  ],
+};
+
+/// Descriptor for `BusinessProfileImageUploadResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List businessProfileImageUploadResponseDescriptor =
+    $convert.base64Decode(
+        'CiJCdXNpbmVzc1Byb2ZpbGVJbWFnZVVwbG9hZFJlc3BvbnNlEhAKA3VybBgBIAEoCVIDdXJsEh'
+        '0KCm9iamVjdF9rZXkYAiABKAlSCW9iamVjdEtleRIuChNidXNpbmVzc19wcm9maWxlX2lkGAMg'
+        'ASgFUhFidXNpbmVzc1Byb2ZpbGVJZA==');
+
+@$core.Deprecated('Use getActiveBusinessProfileRequestDescriptor instead')
+const GetActiveBusinessProfileRequest$json = {
+  '1': 'GetActiveBusinessProfileRequest',
+};
+
+/// Descriptor for `GetActiveBusinessProfileRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getActiveBusinessProfileRequestDescriptor =
+    $convert.base64Decode('Ch9HZXRBY3RpdmVCdXNpbmVzc1Byb2ZpbGVSZXF1ZXN0');
+
+@$core.Deprecated('Use discoverBusinessProfilesRequestDescriptor instead')
+const DiscoverBusinessProfilesRequest$json = {
+  '1': 'DiscoverBusinessProfilesRequest',
+  '2': [
+    {'1': 'query', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'query', '17': true},
+    {
+      '1': 'business_type',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '9': 1,
+      '10': 'businessType',
+      '17': true
+    },
+    {
+      '1': 'latitude',
+      '3': 3,
+      '4': 1,
+      '5': 1,
+      '9': 2,
+      '10': 'latitude',
+      '17': true
+    },
+    {
+      '1': 'longitude',
+      '3': 4,
+      '4': 1,
+      '5': 1,
+      '9': 3,
+      '10': 'longitude',
+      '17': true
+    },
+    {
+      '1': 'radius_km',
+      '3': 5,
+      '4': 1,
+      '5': 1,
+      '9': 4,
+      '10': 'radiusKm',
+      '17': true
+    },
+    {'1': 'limit', '3': 6, '4': 1, '5': 5, '9': 5, '10': 'limit', '17': true},
+  ],
+  '8': [
+    {'1': '_query'},
+    {'1': '_business_type'},
+    {'1': '_latitude'},
+    {'1': '_longitude'},
+    {'1': '_radius_km'},
+    {'1': '_limit'},
+  ],
+};
+
+/// Descriptor for `DiscoverBusinessProfilesRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List discoverBusinessProfilesRequestDescriptor = $convert.base64Decode(
+    'Ch9EaXNjb3ZlckJ1c2luZXNzUHJvZmlsZXNSZXF1ZXN0EhkKBXF1ZXJ5GAEgASgJSABSBXF1ZX'
+    'J5iAEBEigKDWJ1c2luZXNzX3R5cGUYAiABKAlIAVIMYnVzaW5lc3NUeXBliAEBEh8KCGxhdGl0'
+    'dWRlGAMgASgBSAJSCGxhdGl0dWRliAEBEiEKCWxvbmdpdHVkZRgEIAEoAUgDUglsb25naXR1ZG'
+    'WIAQESIAoJcmFkaXVzX2ttGAUgASgBSARSCHJhZGl1c0ttiAEBEhkKBWxpbWl0GAYgASgFSAVS'
+    'BWxpbWl0iAEBQggKBl9xdWVyeUIQCg5fYnVzaW5lc3NfdHlwZUILCglfbGF0aXR1ZGVCDAoKX2'
+    'xvbmdpdHVkZUIMCgpfcmFkaXVzX2ttQggKBl9saW1pdA==');
+
+@$core.Deprecated('Use deleteBusinessProfileRequestDescriptor instead')
+const DeleteBusinessProfileRequest$json = {
+  '1': 'DeleteBusinessProfileRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 5, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `DeleteBusinessProfileRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteBusinessProfileRequestDescriptor =
+    $convert.base64Decode(
+        'ChxEZWxldGVCdXNpbmVzc1Byb2ZpbGVSZXF1ZXN0Eg4KAmlkGAEgASgFUgJpZA==');
+
+@$core.Deprecated('Use deleteBusinessProfileResponseDescriptor instead')
+const DeleteBusinessProfileResponse$json = {
+  '1': 'DeleteBusinessProfileResponse',
+};
+
+/// Descriptor for `DeleteBusinessProfileResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteBusinessProfileResponseDescriptor =
+    $convert.base64Decode('Ch1EZWxldGVCdXNpbmVzc1Byb2ZpbGVSZXNwb25zZQ==');

@@ -7,9 +7,8 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/address_candidate.dart';
 import '../../models/country.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/resource_provider.dart';
-import '../../services/address_search_service.dart';
+import '../../services/grpc/grpc_address_search_service.dart';
 import '../../utils/location_utils.dart';
 
 /// Plain result of the address form, read by the embedding page on save.
@@ -135,9 +134,8 @@ class _AddressFormFieldsState extends State<AddressFormFields> {
     _searchDebounce = Timer(const Duration(milliseconds: 400), () async {
       setState(() => _searchingAddress = true);
       try {
-        final results = await AddressSearchService.search(
+        final results = await GrpcAddressSearchService.search(
           text: text.trim(),
-          token: context.read<AuthProvider>().auth!.accessToken,
           latitude: _capturedPosition?.latitude,
           longitude: _capturedPosition?.longitude,
         );

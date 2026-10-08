@@ -28,6 +28,14 @@ service BusinessProfileService {
   rpc AddBusinessProfileAddress(grpc.business_profile_address.BusinessProfileAddress) returns (grpc.business_profile_address.BusinessProfileAddress);
   rpc UpdateBusinessProfileAddress(grpc.business_profile_address.BusinessProfileAddress) returns (grpc.business_profile_address.BusinessProfileAddress);
   rpc RemoveBusinessProfileAddress(RemoveBusinessProfileAddressRequest) returns (RemoveBusinessProfileAddressResponse);
+  // A short-lived pre-signed link to upload the logo or cover of the caller's Active Business Profile.
+  // The Active Business Profile of the token (REST GET /business-profiles/active).
+  rpc GetActiveBusinessProfile(GetActiveBusinessProfileRequest) returns (BusinessProfile);
+  // Combined name, type and location search (REST GET /business-profiles/discover).
+  rpc DiscoverBusinessProfiles(DiscoverBusinessProfilesRequest) returns (BusinessProfilesResponse);
+  // Deletes a profile the caller owns, with its addresses, memberships and profile mapping.
+  rpc DeleteBusinessProfile(DeleteBusinessProfileRequest) returns (DeleteBusinessProfileResponse);
+  rpc GetBusinessProfileImageUploadUrl(BusinessProfileImageUploadRequest) returns (BusinessProfileImageUploadResponse);
 }
 
 message BusinessProfileRequestId {
@@ -52,3 +60,31 @@ message RemoveBusinessProfileAddressRequest {
 message RemoveBusinessProfileAddressResponse {
   bool success = 1;
 }
+
+message BusinessProfileImageUploadRequest {
+  string image_type = 1;   // logo or cover
+  string format = 2;       // optional, defaults to jpg
+}
+
+message BusinessProfileImageUploadResponse {
+  string url = 1;
+  string object_key = 2;
+  int32 business_profile_id = 3;
+}
+
+message GetActiveBusinessProfileRequest {}
+
+message DiscoverBusinessProfilesRequest {
+  optional string query = 1;          // matched literally against the business and social name
+  optional string business_type = 2;  // Professional or Company
+  optional double latitude = 3;
+  optional double longitude = 4;
+  optional double radius_km = 5;      // default 200, capped at 500
+  optional int32 limit = 6;           // default 50, capped at 100
+}
+
+message DeleteBusinessProfileRequest {
+  int32 id = 1;
+}
+
+message DeleteBusinessProfileResponse {}

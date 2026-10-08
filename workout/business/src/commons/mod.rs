@@ -4,6 +4,7 @@ pub mod authorization;
 pub mod db_pool;
 pub mod entity_mapper;
 pub mod functions;
+pub mod i18n;
 pub mod gateway;
 pub mod legal_documents;
 pub mod password_policy;

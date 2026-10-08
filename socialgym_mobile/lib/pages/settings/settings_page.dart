@@ -13,7 +13,8 @@ import '../../providers/locale_provider.dart';
 import '../../providers/person_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/main_layout.dart';
-import '../../services/data_export_service.dart';
+import '../../models/data_export_job.dart';
+import '../../services/grpc/grpc_account_service.dart';
 import '../../services/push_registration_service.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -52,7 +53,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _refreshExports() async {
     try {
-      final jobs = await DataExportService.list();
+      final jobs = await GrpcAccountService.listDataExports();
       if (mounted) setState(() => _exports = jobs);
     } catch (_) {}
   }
@@ -60,7 +61,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _requestExport() async {
     setState(() => _exportBusy = true);
     try {
-      final job = await DataExportService.create();
+      final job = await GrpcAccountService.createDataExport();
       if (!mounted) return;
       setState(() => _exports = [job, ..._exports]);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -85,7 +86,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _copyDownloadLink(String id) async {
     try {
-      final url = await DataExportService.downloadUrl(id);
+      final url = await GrpcAccountService.dataExportDownloadUrl(id);
       await Clipboard.setData(ClipboardData(text: url));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -8,11 +8,13 @@ use business::use_cases::person_use_case::PersonUseCase;
 
 use crate::proto::friend::friend_service_server::FriendService;
 use crate::proto::friend::{
-	Friend, FriendPageRequest, FriendPageResponse, FriendRequestRequest, FriendsRequest,
+	Friend, FriendPageRequest, FriendPageResponse, FriendProfileRequest, FriendProfileResponse, FriendRequestRequest, FriendsRequest,
 	FriendsResponse, RemoveFriendResponse, SearchFriendsRequest, SearchFriendsResponse,
 };
 use crate::proto::person::Person as ProtoPerson;
 use crate::infrastructure::mapper::{Mapper, FriendMapper, PersonMapper};
+use crate::infrastructure::utils::{locale_of, localized_business_status, localized_status, require_actor};
+use business::commons::i18n::ErrorKey;
 
 pub struct GrpcFriendService {
 	conn: Arc<DatabaseConnection>,
@@ -96,6 +98,24 @@ impl FriendService for GrpcFriendService {
 		let grpc_friends = FriendMapper::response_vec(friends);
 
 		Ok(Response::new(FriendsResponse { friends: grpc_friends }))
+	}
+
+	async fn get_friend_profile(
+		&self,
+		request: Request<FriendProfileRequest>,
+	) -> Result<Response<FriendProfileResponse>, Status> {
+		let locale = locale_of(&request);
+		let actor = require_actor(&request)?;
+		let friend_id = request.into_inner().friend_id;
+		// As REST: an accepted friendship first (the caller's own id, a pending or missing friendship are
+		// refused there), then the profile.
+		FriendUseCase::ensure_accepted_friend(&self.conn, actor.person_id, friend_id)
+			.await
+			.map_err(|error| localized_business_status(error, ErrorKey::FriendNotFound, locale))?;
+		let person = PersonUseCase::get(&self.conn, friend_id)
+			.await
+			.map_err(|_| localized_status(tonic::Code::NotFound, ErrorKey::FriendNotFound, locale))?;
+		Ok(Response::new(FriendProfileResponse { person: Some(PersonMapper::response(person.without_health_details())) }))
 	}
 
 	async fn get_friend_page(

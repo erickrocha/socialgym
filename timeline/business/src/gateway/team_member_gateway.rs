@@ -41,9 +41,21 @@ impl TeamMemberGateway {
         &self,
         business_profile_uuid: &str,
     ) -> Result<TeamRoster, BusinessError> {
+        // The roster is an internal call of this service, not an act of the caller: it carries the shared
+        // secret and never the caller's token (C-010).
+        let secret = std::env::var("INTERNAL_SERVICE_SECRET")
+            .ok()
+            .filter(|value| !value.is_empty())
+            .and_then(|value| tonic::metadata::MetadataValue::try_from(value).ok())
+            .ok_or_else(|| BusinessError::infrastructure("INTERNAL_SERVICE_SECRET is not configured"))?;
         let channel = GrpcConfig::create_channel(&self.endpoint).await?;
-        let mut client =
-            TeamMemberServiceClient::with_interceptor(channel, GrpcConfig::auth_interceptor);
+        let mut client = TeamMemberServiceClient::with_interceptor(
+            channel,
+            move |mut request: tonic::Request<()>| -> Result<_, tonic::Status> {
+                request.metadata_mut().insert("x-internal-secret", secret.clone());
+                Ok(request)
+            },
+        );
 
         let response = client
             .get_team_roster(TeamRosterRequest {

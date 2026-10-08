@@ -1,52 +1,26 @@
-import 'package:dio/dio.dart';
 import 'package:grpc/grpc.dart' as grpc;
 
 abstract class BaseService {
-  /// Extract error message from Dio response
-  static String extractErrorFromDio(dynamic response, String fallback) {
-    try {
-      if (response is Map<String, dynamic>) {
-        return response['message'] ?? fallback;
-      }
-      return fallback;
-    } catch (_) {
-      return fallback;
-    }
-  }
-
-  /// Convert Dio exception to AppException
-  static AppException handleDioError(DioException error, String fallback) {
-    int statusCode = error.response?.statusCode ?? 0;
-    String message = fallback;
-    String? errorKey;
-
-    // Try to extract message from response body
-    if (error.response?.data is Map<String, dynamic>) {
-      final data = error.response!.data as Map<String, dynamic>;
-      message = data['message'] ?? error.message ?? fallback;
-      errorKey = data['errorKey'] as String?;
-    } else if (error.message != null) {
-      message = error.message!;
-    }
-
-    return AppException(
-      statusCode: statusCode,
-      message: message,
-      errorKey: errorKey,
-    );
-  }
+  /// Invoked whenever a call is refused because a required legal consent (terms, privacy or
+  /// health_data) is missing or out of date. Wired up once in `main.dart` to route the user to the
+  /// pending-consents gate.
+  static void Function()? onConsentRequired;
 
   /// Convert gRPC error to AppException
   static AppException handleGrpcError(grpc.GrpcError error, String fallback) {
     final message = error.message ?? fallback;
+    final consentRequired = error.code == grpc.StatusCode.permissionDenied && message.contains('consent is required');
+    // The gate lists the terms and privacy documents; `health_data` is asked for where it is needed
+    // (the evolution page), so it does not pop the gate.
+    if (consentRequired && (message.startsWith('terms ') || message.startsWith('privacy '))) {
+      onConsentRequired?.call();
+    }
     return AppException(
       statusCode: _grpcStatusToHttpStatus(error.code),
       message: message,
       // The timeline answers a missing legal consent as PERMISSION_DENIED with
       // "<document> consent is required"; REST carried it as the CONSENT_REQUIRED error key.
-      errorKey: error.code == grpc.StatusCode.permissionDenied && message.contains('consent is required')
-          ? 'CONSENT_REQUIRED'
-          : null,
+      errorKey: consentRequired ? 'CONSENT_REQUIRED' : null,
     );
   }
 

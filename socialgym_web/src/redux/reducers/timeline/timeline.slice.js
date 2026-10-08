@@ -97,11 +97,9 @@ const timelineSlice = createSlice({
             .addCase(commentOnPost.fulfilled, (state, { payload }) => {
                 state.posts = state.posts.map((post) => {
                     if (post.id !== payload.postId) return post;
-                    const comments = Array.isArray(post.comments) ? post.comments : [];
-                    return {
-                        ...post,
-                        comments: [...comments, payload.createdComment],
-                    };
+                    // The API answers with the post as it is now, comments included.
+                    const comments = Array.isArray(payload.createdComment?.comments) ? payload.createdComment.comments : post.comments;
+                    return { ...post, comments };
                 });
             })
             .addCase(commentOnPost.rejected, (state, { payload }) => {

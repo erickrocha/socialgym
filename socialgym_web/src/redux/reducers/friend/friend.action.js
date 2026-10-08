@@ -17,7 +17,7 @@ export const sendFriendRequest = createAsyncThunk(
     'friend/sendFriendRequest',
     async (receiverId, {rejectWithValue}) => {
         try {
-            const {data} = await axios.put(`/workout/api/friend/request/${receiverId}`);
+            const {data} = await axios.put(`/workout/api/friends/request/${receiverId}`);
             return data;
         } catch (error) {
             return rejectWithValue(error.response.data);
@@ -29,7 +29,7 @@ export const acceptFriendRequest = createAsyncThunk(
     'friend/acceptFriendRequest',
     async (receiverId, {rejectWithValue}) => {
         try {
-            const {data} = await axios.put(`/api/friend/accept/${receiverId}`);
+            const {data} = await axios.put(`/workout/api/friends/accept/${receiverId}`);
             return data;
         } catch (error) {
             return rejectWithValue(error.response.data);
@@ -41,7 +41,7 @@ export const denyFriendRequest = createAsyncThunk(
     'friend/denyFriendRequest',
     async (receiverId, {rejectWithValue}) => {
         try {
-            const {data} = await axios.put(`/api/friend/deny/${receiverId}`);
+            const {data} = await axios.put(`/workout/api/friends/deny/${receiverId}`);
             return data;
         } catch (error) {
             return rejectWithValue(error.response.data);

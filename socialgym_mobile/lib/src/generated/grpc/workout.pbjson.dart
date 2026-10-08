@@ -99,6 +99,7 @@ const WorkoutExercisesRequest$json = {
       '6': '.grpc.exercise.Exercise',
       '10': 'exercises'
     },
+    {'1': 'workout_id', '3': 3, '4': 1, '5': 5, '10': 'workoutId'},
   ],
 };
 
@@ -106,7 +107,28 @@ const WorkoutExercisesRequest$json = {
 final $typed_data.Uint8List workoutExercisesRequestDescriptor = $convert.base64Decode(
     'ChdXb3Jrb3V0RXhlcmNpc2VzUmVxdWVzdBIhCgx3b3Jrb3V0X3V1aWQYASABKAlSC3dvcmtvdX'
     'RVdWlkEjUKCWV4ZXJjaXNlcxgCIAMoCzIXLmdycGMuZXhlcmNpc2UuRXhlcmNpc2VSCWV4ZXJj'
-    'aXNlcw==');
+    'aXNlcxIdCgp3b3Jrb3V0X2lkGAMgASgFUgl3b3Jrb3V0SWQ=');
+
+@$core.Deprecated('Use workoutExercisesResponseDescriptor instead')
+const WorkoutExercisesResponse$json = {
+  '1': 'WorkoutExercisesResponse',
+  '2': [
+    {
+      '1': 'exercises',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.grpc.exercise.Exercise',
+      '10': 'exercises'
+    },
+  ],
+};
+
+/// Descriptor for `WorkoutExercisesResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List workoutExercisesResponseDescriptor =
+    $convert.base64Decode(
+        'ChhXb3Jrb3V0RXhlcmNpc2VzUmVzcG9uc2USNQoJZXhlcmNpc2VzGAEgAygLMhcuZ3JwYy5leG'
+        'VyY2lzZS5FeGVyY2lzZVIJZXhlcmNpc2Vz');
 
 @$core.Deprecated('Use workoutListRequestDescriptor instead')
 const WorkoutListRequest$json = {

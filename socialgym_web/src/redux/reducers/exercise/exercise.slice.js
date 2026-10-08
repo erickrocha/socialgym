@@ -38,7 +38,7 @@ const exerciseSlice = createSlice({
             .addCase(fetchExercises.fulfilled, (state, { payload }) => {
                 state.loading = false;
                 state.exercises = Array.isArray(payload) ? payload : (payload.content || []);
-                state.totalCount = payload.total_count || state.exercises.length;
+                state.totalCount = payload.totalCount ?? payload.total_count ?? state.exercises.length;
             })
             .addCase(fetchExercises.rejected, (state, { payload }) => {
                 state.loading = false;

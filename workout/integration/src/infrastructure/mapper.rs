@@ -12,6 +12,7 @@ use business::domain::{
 use chrono::NaiveDateTime;
 use business::domain::enums::{Difficulty, InviteStatus, Position, ProfileType, WeightUnit};
 use crate::proto;
+use business::domain::access_token::AccessToken as DomainAccessToken;
 
 // ---------------------------------------------------------------------------
 // Trait
@@ -45,6 +46,9 @@ pub trait Mapper<D, RESPONSE> {
 // ---------------------------------------------------------------------------
 
 pub struct UserMapper;
+pub struct AccessTokenMapper;
+pub struct ConsentMapper;
+pub struct DataExportMapper;
 pub struct PersonInfoMapper;
 pub struct PersonAddressMapper;
 pub struct PersonMapper;
@@ -560,3 +564,63 @@ impl Mapper<DomainTeamMember, proto::team_member::TeamMember> for TeamMemberMapp
 #[cfg(test)]
 #[path = "../tests/mapper_unit_test.rs"]
 mod tests;
+
+// ---------------------------------------------------------------------------
+// Access token (AuthService)
+// ---------------------------------------------------------------------------
+
+impl AccessTokenMapper {
+    pub fn response(t: DomainAccessToken) -> proto::auth::AccessToken {
+        proto::auth::AccessToken {
+            access_token: t.access_token,
+            token_type: t.token_type,
+            expire_in: t.expire_in,
+            refresh_token: t.refresh_token,
+            username: t.username,
+            uuid: t.uuid,
+            name: t.name,
+            person_id: t.person_id,
+            person_uuid: t.person_uuid,
+            person_object_key: t.person_object_key,
+            active_business_profile_id: t.active_business_profile_id,
+            active_business_profile_uuid: t.active_business_profile_uuid,
+            pending_account_deletion: t.pending_account_deletion.map(|p| proto::auth::PendingAccountDeletion {
+                requested_at: p.requested_at.to_string(),
+                scheduled_at: p.scheduled_at.to_string(),
+            }),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Consent and data export (ConsentService, AccountService)
+// ---------------------------------------------------------------------------
+
+impl Mapper<business::domain::records::ConsentRecord, proto::consent::Consent> for ConsentMapper {
+    fn response(t: business::domain::records::ConsentRecord) -> proto::consent::Consent {
+        proto::consent::Consent {
+            id: t.id,
+            document: t.document,
+            version: t.version,
+            accepted_at: t.accepted_at.to_rfc3339(),
+            revoked_at: t.revoked_at.map(|at| at.to_rfc3339()),
+        }
+    }
+
+    fn domain(_: proto::consent::Consent) -> business::domain::records::ConsentRecord {
+        unimplemented!("a consent is created by accepting a document, never from a message")
+    }
+}
+
+impl DataExportMapper {
+    pub fn response(t: business::domain::records::DataExportRecord) -> proto::account::DataExport {
+        proto::account::DataExport {
+            id: t.uuid.to_string(),
+            status: t.status,
+            error: t.error,
+            created_at: t.created_at.to_rfc3339(),
+            updated_at: t.updated_at.to_rfc3339(),
+            expires_at: t.expires_at.map(|at| at.to_rfc3339()),
+        }
+    }
+}

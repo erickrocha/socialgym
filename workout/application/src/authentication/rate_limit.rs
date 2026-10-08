@@ -55,3 +55,26 @@ pub fn auth_limiter() -> RateLimiter {
         .get_or_init(|| RateLimiter::new(20, Duration::from_secs(60)))
         .clone()
 }
+
+/// `/refresh` is reachable with a refresh token only, so a guessing script gets the same allowance as the
+/// sign-in routes (C-010 owner decision 2026-10-07), counted apart from them.
+pub fn refresh_limiter() -> RateLimiter {
+    static LIMITER: OnceLock<RateLimiter> = OnceLock::new();
+    LIMITER
+        .get_or_init(|| RateLimiter::new(20, Duration::from_secs(60)))
+        .clone()
+}
+
+/// The legal documents are public static text a client reads a few at a time (sign-up shows two or three),
+/// so the allowance is wider than for credentials; it still stops a script from hammering the route.
+pub fn legal_limiter() -> RateLimiter {
+    static LIMITER: OnceLock<RateLimiter> = OnceLock::new();
+    LIMITER
+        .get_or_init(|| RateLimiter::new(60, Duration::from_secs(60)))
+        .clone()
+}
+
+
+#[cfg(test)]
+#[path = "../tests/rate_limit_unit_test.rs"]
+mod tests;

@@ -24,7 +24,8 @@ impl AddressSearchUseCase {
 			_ => None,
 		};
 
-		log::info!("Searching address for text '{}'", text);
+		// The typed text is part of a person's address: it is not logged.
+		log::info!("Searching address");
 		GooglePlacesGateway::search_text(text, bias).await
 	}
 }

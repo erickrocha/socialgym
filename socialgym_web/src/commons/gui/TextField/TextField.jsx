@@ -2,6 +2,7 @@ import React from "react";
 import clsx from "clsx";
 import PropTypes from "prop-types";
 import "./TextField.scss";
+import { registeredProps } from "../../library/formField";
 
 const TextField = ({
     id,
@@ -31,8 +32,7 @@ const TextField = ({
             placeholder={placeholder}
             defaultValue={defaultValue}
             value={value}
-            {...(register ? register(name || id, { required }) : {})}
-            onChange={onChange}
+            {...registeredProps(register, name || id, required, onChange)}
             aria-label={label || placeholder}
             aria-describedby={ariaDescribedby}
             aria-required={required}

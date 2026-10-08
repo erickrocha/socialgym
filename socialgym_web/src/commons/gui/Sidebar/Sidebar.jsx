@@ -27,7 +27,8 @@ const Sidebar = ({ person, isCollapsed = false, onToggle }) => {
     ...(!isBusinessProfileActive ? [{ id: 'evolution', label: t('sidebar.menu.evolution'), icon: '📈', action: () => navigate('/evolution') }] : []),
     { id: 'friends', label: t('sidebar.menu.friends'), icon: '👥', action: () => navigate('/friends') },
     { id: 'chat', label: t('sidebar.menu.messages'), icon: '💬', action: () => navigate('/chat') },
-    ...(person?.hasBusinessProfiles ? [{ id: 'business', label: t('sidebar.menu.business'), icon: '💼', action: () => navigate('/business') }] : []),
+    // The REST person lists its business profiles; only the gRPC one carries a ready-made flag.
+    ...((person?.hasBusinessProfiles || person?.businessProfiles?.length > 0) ? [{ id: 'business', label: t('sidebar.menu.business'), icon: '💼', action: () => navigate('/business') }] : []),
     { id: 'settings', label: t('sidebar.menu.settings'), icon: '⚙️', action: () => navigate('/settings') },
   ];
 

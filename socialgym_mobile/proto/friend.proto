@@ -6,6 +6,8 @@ import "person.proto";
 service FriendService {
   rpc GetFriends (FriendsRequest) returns (FriendsResponse);
   rpc GetFriendPage (FriendPageRequest) returns (FriendPageResponse);
+  // A friend's profile, only with an accepted friendship (REST GET /friends/{friend_id}).
+  rpc GetFriendProfile (FriendProfileRequest) returns (FriendProfileResponse);
   rpc SearchFriends (SearchFriendsRequest) returns (SearchFriendsResponse);
   // Mutations mirror the REST endpoints under /workout/api/friends. The caller
   // (sender / accepter / canceller / remover) is always taken from the auth
@@ -73,4 +75,12 @@ message SearchFriendsRequest {
 
 message SearchFriendsResponse {
   repeated person.Person people = 1;
+}
+
+message FriendProfileRequest {
+  int32 friend_id = 1;
+}
+
+message FriendProfileResponse {
+  grpc.person.Person person = 1;
 }

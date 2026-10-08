@@ -44,9 +44,9 @@ const friendSlice = createSlice({
                 })
             })
             .addCase(sendFriendRequest.fulfilled, (state, {payload}) => {
+                // The answer is the friendship record, not a person: the page reloads the lists.
                 return updateObject(state, {
                     loading: false,
-                    sentRequests: [...state.sentRequests, payload]
                 })
             })
             .addCase(sendFriendRequest.rejected, (state, {payload}) => (
@@ -62,9 +62,9 @@ const friendSlice = createSlice({
                 })
             })
             .addCase(acceptFriendRequest.fulfilled, (state, {payload}) => {
+                // The answer is the friendship record, not a person: the page reloads the lists.
                 return updateObject(state, {
                     loading: false,
-                    friends: [...state.friends, payload]
                 })
             })
             .addCase(acceptFriendRequest.rejected, (state, {payload}) => (

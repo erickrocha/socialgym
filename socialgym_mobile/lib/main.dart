@@ -37,7 +37,7 @@ import 'providers/workout_invite_provider.dart';
 import 'providers/workout_provider.dart';
 import 'providers/workout_session_provider.dart';
 import 'services/grpc/grpc_channel_factory.dart';
-import 'utils/dio_client.dart';
+import 'services/base_service.dart';
 import 'pages/business_profile/add_profile_page.dart';
 import 'pages/business_profile/business_profile_page.dart';
 import 'pages/business_profile/business_profile_sign_up_page.dart';
@@ -182,12 +182,12 @@ class _ConsentGateState extends State<ConsentGate> {
   void initState() {
     super.initState();
     final provider = context.read<ConsentProvider>();
-    DioClient.onConsentRequired = provider.trigger;
+    BaseService.onConsentRequired = provider.trigger;
   }
 
   @override
   void dispose() {
-    DioClient.onConsentRequired = null;
+    BaseService.onConsentRequired = null;
     super.dispose();
   }
 

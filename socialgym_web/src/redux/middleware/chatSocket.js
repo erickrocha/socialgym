@@ -172,7 +172,8 @@ export const chatSocketMiddleware = (store) => {
                 disconnect();
                 break;
             case SOCKET_SEND_MESSAGE: {
-                const ok = send({ type: 'send', ...action.payload });
+                // The server needs a client-side id on every send frame (it makes a retry idempotent).
+                const ok = send({ type: 'send', clientMessageId: crypto.randomUUID(), ...action.payload });
                 if (!ok) {
                     // Fall back to REST when the socket is down.
                     import('../reducers/chat/chat.actions').then(({ sendMessage }) => {

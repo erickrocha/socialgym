@@ -223,7 +223,10 @@ impl BusinessProfileUseCase {
         let optional_object_key = match image_type {
             ImageType::Avatar => business_profile_model.logo,
             ImageType::Cover => business_profile_model.cover_image,
-        };
+        }
+        // A profile created by the mobile app stores empty strings for the image keys; an empty key is
+        // no key, and signing it would fail.
+        .filter(|key| !key.is_empty());
         let s3_result = match optional_object_key {
             Some(key) => ImageStorageUseCase::update_presigned_url(id, key, format).await,
             None => ImageStorageUseCase::generate_presigned_url("business_profile".to_string(),id,uuid.as_str(),image_type.to_string().as_str(),format.as_str()).await
@@ -263,6 +266,39 @@ impl BusinessProfileUseCase {
         }
     }
 
+    /// The profile as `viewer` may see it (REST and gRPC call this on every read): the owner and the
+    /// accepted team members get everything; anyone else gets no `tax_id`, no owner ids and only the
+    /// locality, administrative area and country of each address. When the membership cannot be read
+    /// the viewer is treated as an outsider.
+    pub async fn present(db: &DbConn, profile: BusinessProfile, viewer: Option<&User>) -> BusinessProfile {
+        let Some(user) = viewer else {
+            return profile.for_viewer(None).without_private_details();
+        };
+        let is_owner = user.person_id == profile.owner_id && user.person_uuid == profile.owner_uuid;
+        let is_member = match profile.id {
+            Some(profile_id) if !is_owner => {
+                crate::use_cases::team_member_use_case::TeamMemberUseCase::ensure_accepted_member(db, profile_id, user.person_id)
+                    .await
+                    .is_ok()
+            }
+            _ => false,
+        };
+        let profile = profile.for_viewer(viewer);
+        if is_owner || is_member {
+            profile
+        } else {
+            profile.without_private_details()
+        }
+    }
+
+    pub async fn present_all(db: &DbConn, profiles: Vec<BusinessProfile>, viewer: Option<&User>) -> Vec<BusinessProfile> {
+        let mut shown = Vec::with_capacity(profiles.len());
+        for profile in profiles {
+            shown.push(Self::present(db, profile, viewer).await);
+        }
+        shown
+    }
+
     /// Create a business profile owned by `actor`. A client-supplied owner id is
     /// ignored: ownership is always the authenticated person.
     pub async fn add(
@@ -273,7 +309,11 @@ impl BusinessProfileUseCase {
         log::info!("Adding new business profile for owner_id: {}", actor.person_id);
         domain.owner_id = actor.person_id;
         domain.owner_uuid = actor.person_uuid.clone();
-        let added_profile = BusinessProfileGateway::persist(db, domain)
+        // The profile and its entry in the owner's profile list are one change: both or neither.
+        let txn = db.begin().await.map_err(|e| {
+            BusinessError::infrastructure(format!("Failed to start the create transaction: {}", e))
+        })?;
+        let added_profile = BusinessProfileGateway::persist(&txn, domain)
             .await
             .map_err(|e| {
                 log::error!("Error adding business profile: {:?}", e);
@@ -281,9 +321,12 @@ impl BusinessProfileUseCase {
             })?;
         let entity = BusinessProfileEntityMapper::from_active_model(added_profile);
         let profile = Profile::new(entity.owner_id,entity.owner_uuid.clone(),entity.id.unwrap(),entity.uuid.clone().unwrap());
-        ProfileGateway::persist(db, profile).await.map_err(|e| {
+        ProfileGateway::persist(&txn, profile).await.map_err(|e| {
             log::error!("Error adding profile: {:?}", e);
             BusinessError::new(format!("Error adding profile: {:?}", e))
+        })?;
+        txn.commit().await.map_err(|e| {
+            BusinessError::infrastructure(format!("Failed to commit the create transaction: {}", e))
         })?;
         Ok(entity)
     }

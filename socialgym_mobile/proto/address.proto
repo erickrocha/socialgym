@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package grpc.address;
+
+// Address autocomplete (C-010): the gRPC twin of the REST /address/search route, backed by the places
+// provider. Needs an access token; the typed text is never logged.
+service AddressSearchService {
+  rpc SearchAddress (SearchAddressRequest) returns (SearchAddressResponse);
+}
+
+message SearchAddressRequest {
+  string text = 1;
+  optional double latitude = 2;    // bias the results around this point when both are given
+  optional double longitude = 3;
+}
+
+message SearchAddressResponse {
+  repeated AddressCandidate candidates = 1;
+}
+
+message AddressCandidate {
+  string place_id = 1;
+  string formatted_address = 2;
+  string address_line_1 = 3;
+  optional string address_line_2 = 4;
+  string locality = 5;
+  string administrative_area = 6;
+  string administrative_area_code = 7;
+  optional string postal_code = 8;
+  string country_code = 9;
+  double latitude = 10;
+  double longitude = 11;
+}

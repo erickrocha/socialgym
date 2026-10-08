@@ -7,6 +7,8 @@ use std::sync::OnceLock;
 const GOOGLE_MAPS_API_KEY: &str = "GOOGLE_MAPS_API_KEY";
 const GOOGLE_MAPS_ENABLED: &str = "GOOGLE_MAPS_ENABLED";
 const SEARCH_TEXT_URL: &str = "https://places.googleapis.com/v1/places:searchText";
+/// Overrides the endpoint (acceptance tests point it at a local stand-in; unset in production).
+const SEARCH_TEXT_URL_OVERRIDE: &str = "GOOGLE_PLACES_SEARCH_URL";
 const FIELD_MASK: &str = "places.id,places.formattedAddress,places.location,places.addressComponents";
 const BIAS_RADIUS_METERS: f64 = 20000.0;
 const PAGE_SIZE: i32 = 5;
@@ -144,7 +146,7 @@ impl GooglePlacesGateway {
 		};
 
 		let response = http_client()
-			.post(SEARCH_TEXT_URL)
+			.post(env::var(SEARCH_TEXT_URL_OVERRIDE).unwrap_or_else(|_| SEARCH_TEXT_URL.to_string()))
 			.header("X-Goog-Api-Key", api_key)
 			.header("X-Goog-FieldMask", FIELD_MASK)
 			.json(&request_body)

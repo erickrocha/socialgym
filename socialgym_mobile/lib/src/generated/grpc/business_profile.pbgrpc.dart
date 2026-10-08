@@ -89,6 +89,42 @@ class BusinessProfileServiceClient extends $grpc.Client {
         options: options);
   }
 
+  /// A short-lived pre-signed link to upload the logo or cover of the caller's Active Business Profile.
+  /// The Active Business Profile of the token (REST GET /business-profiles/active).
+  $grpc.ResponseFuture<$0.BusinessProfile> getActiveBusinessProfile(
+    $0.GetActiveBusinessProfileRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$getActiveBusinessProfile, request,
+        options: options);
+  }
+
+  /// Combined name, type and location search (REST GET /business-profiles/discover).
+  $grpc.ResponseFuture<$0.BusinessProfilesResponse> discoverBusinessProfiles(
+    $0.DiscoverBusinessProfilesRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$discoverBusinessProfiles, request,
+        options: options);
+  }
+
+  /// Deletes a profile the caller owns, with its addresses, memberships and profile mapping.
+  $grpc.ResponseFuture<$0.DeleteBusinessProfileResponse> deleteBusinessProfile(
+    $0.DeleteBusinessProfileRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$deleteBusinessProfile, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.BusinessProfileImageUploadResponse>
+      getBusinessProfileImageUploadUrl(
+    $0.BusinessProfileImageUploadRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$getBusinessProfileImageUploadUrl, request,
+        options: options);
+  }
+
   // method descriptors
 
   static final _$getBusinessProfileById = $grpc.ClientMethod<
@@ -127,6 +163,27 @@ class BusinessProfileServiceClient extends $grpc.Client {
       '/grpc.business_profile.BusinessProfileService/RemoveBusinessProfileAddress',
       ($0.RemoveBusinessProfileAddressRequest value) => value.writeToBuffer(),
       $0.RemoveBusinessProfileAddressResponse.fromBuffer);
+  static final _$getActiveBusinessProfile = $grpc.ClientMethod<
+          $0.GetActiveBusinessProfileRequest, $0.BusinessProfile>(
+      '/grpc.business_profile.BusinessProfileService/GetActiveBusinessProfile',
+      ($0.GetActiveBusinessProfileRequest value) => value.writeToBuffer(),
+      $0.BusinessProfile.fromBuffer);
+  static final _$discoverBusinessProfiles = $grpc.ClientMethod<
+          $0.DiscoverBusinessProfilesRequest, $0.BusinessProfilesResponse>(
+      '/grpc.business_profile.BusinessProfileService/DiscoverBusinessProfiles',
+      ($0.DiscoverBusinessProfilesRequest value) => value.writeToBuffer(),
+      $0.BusinessProfilesResponse.fromBuffer);
+  static final _$deleteBusinessProfile = $grpc.ClientMethod<
+          $0.DeleteBusinessProfileRequest, $0.DeleteBusinessProfileResponse>(
+      '/grpc.business_profile.BusinessProfileService/DeleteBusinessProfile',
+      ($0.DeleteBusinessProfileRequest value) => value.writeToBuffer(),
+      $0.DeleteBusinessProfileResponse.fromBuffer);
+  static final _$getBusinessProfileImageUploadUrl = $grpc.ClientMethod<
+          $0.BusinessProfileImageUploadRequest,
+          $0.BusinessProfileImageUploadResponse>(
+      '/grpc.business_profile.BusinessProfileService/GetBusinessProfileImageUploadUrl',
+      ($0.BusinessProfileImageUploadRequest value) => value.writeToBuffer(),
+      $0.BusinessProfileImageUploadResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('grpc.business_profile.BusinessProfileService')
@@ -193,6 +250,43 @@ abstract class BusinessProfileServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.RemoveBusinessProfileAddressRequest.fromBuffer(value),
         ($0.RemoveBusinessProfileAddressResponse value) =>
+            value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.GetActiveBusinessProfileRequest,
+            $0.BusinessProfile>(
+        'GetActiveBusinessProfile',
+        getActiveBusinessProfile_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.GetActiveBusinessProfileRequest.fromBuffer(value),
+        ($0.BusinessProfile value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.DiscoverBusinessProfilesRequest,
+            $0.BusinessProfilesResponse>(
+        'DiscoverBusinessProfiles',
+        discoverBusinessProfiles_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.DiscoverBusinessProfilesRequest.fromBuffer(value),
+        ($0.BusinessProfilesResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.DeleteBusinessProfileRequest,
+            $0.DeleteBusinessProfileResponse>(
+        'DeleteBusinessProfile',
+        deleteBusinessProfile_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.DeleteBusinessProfileRequest.fromBuffer(value),
+        ($0.DeleteBusinessProfileResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.BusinessProfileImageUploadRequest,
+            $0.BusinessProfileImageUploadResponse>(
+        'GetBusinessProfileImageUploadUrl',
+        getBusinessProfileImageUploadUrl_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.BusinessProfileImageUploadRequest.fromBuffer(value),
+        ($0.BusinessProfileImageUploadResponse value) =>
             value.writeToBuffer()));
   }
 
@@ -261,4 +355,41 @@ abstract class BusinessProfileServiceBase extends $grpc.Service {
   $async.Future<$0.RemoveBusinessProfileAddressResponse>
       removeBusinessProfileAddress($grpc.ServiceCall call,
           $0.RemoveBusinessProfileAddressRequest request);
+
+  $async.Future<$0.BusinessProfile> getActiveBusinessProfile_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.GetActiveBusinessProfileRequest> $request) async {
+    return getActiveBusinessProfile($call, await $request);
+  }
+
+  $async.Future<$0.BusinessProfile> getActiveBusinessProfile(
+      $grpc.ServiceCall call, $0.GetActiveBusinessProfileRequest request);
+
+  $async.Future<$0.BusinessProfilesResponse> discoverBusinessProfiles_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.DiscoverBusinessProfilesRequest> $request) async {
+    return discoverBusinessProfiles($call, await $request);
+  }
+
+  $async.Future<$0.BusinessProfilesResponse> discoverBusinessProfiles(
+      $grpc.ServiceCall call, $0.DiscoverBusinessProfilesRequest request);
+
+  $async.Future<$0.DeleteBusinessProfileResponse> deleteBusinessProfile_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.DeleteBusinessProfileRequest> $request) async {
+    return deleteBusinessProfile($call, await $request);
+  }
+
+  $async.Future<$0.DeleteBusinessProfileResponse> deleteBusinessProfile(
+      $grpc.ServiceCall call, $0.DeleteBusinessProfileRequest request);
+
+  $async.Future<$0.BusinessProfileImageUploadResponse>
+      getBusinessProfileImageUploadUrl_Pre($grpc.ServiceCall $call,
+          $async.Future<$0.BusinessProfileImageUploadRequest> $request) async {
+    return getBusinessProfileImageUploadUrl($call, await $request);
+  }
+
+  $async.Future<$0.BusinessProfileImageUploadResponse>
+      getBusinessProfileImageUploadUrl(
+          $grpc.ServiceCall call, $0.BusinessProfileImageUploadRequest request);
 }

@@ -5,6 +5,7 @@ use business::proto::proto::settings::settings_service_server::{
     SettingsService, SettingsServiceServer,
 };
 use business::proto::proto::settings::{
+    GetMySettingsRequest,
     OwnerUuidRequest, PushPreferenceResponse, Setting, SettingIdRequest,
     SettingOwnerIdRequest,
 };
@@ -46,6 +47,20 @@ impl SettingsService for FakeSettingsService {
     async fn get_by_owner_ids(
         &self,
         _: Request<SettingOwnerIdRequest>,
+    ) -> Result<Response<Setting>, Status> {
+        Err(Status::unimplemented("not used by push worker"))
+    }
+
+    async fn get_my_settings(
+        &self,
+        _: Request<GetMySettingsRequest>,
+    ) -> Result<Response<Setting>, Status> {
+        Err(Status::unimplemented("not used by push worker"))
+    }
+
+    async fn update_my_settings(
+        &self,
+        _: Request<Setting>,
     ) -> Result<Response<Setting>, Status> {
         Err(Status::unimplemented("not used by push worker"))
     }
@@ -385,6 +400,14 @@ struct ScriptedSettings;
 
 #[tonic::async_trait]
 impl SettingsService for ScriptedSettings {
+    async fn get_my_settings(&self, _: Request<GetMySettingsRequest>) -> Result<Response<Setting>, Status> {
+        Err(Status::unimplemented("not used by push worker"))
+    }
+
+    async fn update_my_settings(&self, _: Request<Setting>) -> Result<Response<Setting>, Status> {
+        Err(Status::unimplemented("not used by push worker"))
+    }
+
     async fn get_by_id(&self, _: Request<SettingIdRequest>) -> Result<Response<Setting>, Status> { Err(Status::unimplemented("")) }
     async fn persist_settings(&self, _: Request<Setting>) -> Result<Response<Setting>, Status> { Err(Status::unimplemented("")) }
     async fn get_by_uuid(&self, _: Request<SettingIdRequest>) -> Result<Response<Setting>, Status> { Err(Status::unimplemented("")) }

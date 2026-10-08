@@ -65,6 +65,7 @@ fn warn_if_auth_rules_disabled() {
 }
 
 use crate::authentication::authentication_middleware::authentication;
+use crate::authentication::rate_limit::{legal_limiter, rate_limit};
 use crate::http::address_search_controller::search_address;
 use crate::http::image_controller::generate_media_upload_url;
 use crate::http::resource_controller::get_resource;
@@ -309,11 +310,17 @@ async fn start() -> anyhow::Result<()> {
         .merge(welcome_route())
         .route(
             "/legal/documents",
-            get(http::legal_document_controller::list),
+            get(http::legal_document_controller::list).route_layer(middleware::from_fn_with_state(
+                legal_limiter(),
+                rate_limit,
+            )),
         )
         .route(
             "/legal/documents/{document}",
-            get(http::legal_document_controller::get),
+            get(http::legal_document_controller::get).route_layer(middleware::from_fn_with_state(
+                legal_limiter(),
+                rate_limit,
+            )),
         )
         .merge(auth_routes(state.clone()))
         // API routes with authentication - nested organization

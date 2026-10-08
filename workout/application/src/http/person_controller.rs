@@ -242,7 +242,7 @@ pub async fn get_my_friend(
         ));
     }
 
-    Ok(Json(PersonMapper::json(person_entity.unwrap())))
+    Ok(Json(PersonMapper::json(person_entity.unwrap().without_health_details())))
 }
 
 #[utoipa::path(

@@ -112,6 +112,7 @@ impl FriendService for Workout {
     async fn deny_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
     async fn cancel_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
     async fn remove_friend(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<RemoveFriendResponse>, Status> { Err(Status::unimplemented("")) }
+    async fn get_friend_profile(&self, _: GrpcRequest<FriendProfileRequest>) -> Result<Response<FriendProfileResponse>, Status> { Err(Status::unimplemented("")) }
 }
 
 /// The cast has no Business Profiles: every lookup is NOT_FOUND, like workout's real answer.
@@ -132,5 +133,9 @@ impl BusinessProfileService for Workout {
     async fn add_business_profile_address(&self, _: GrpcRequest<BusinessProfileAddress>) -> Result<Response<BusinessProfileAddress>, Status> { Err(Status::unimplemented("")) }
     async fn update_business_profile_address(&self, _: GrpcRequest<BusinessProfileAddress>) -> Result<Response<BusinessProfileAddress>, Status> { Err(Status::unimplemented("")) }
     async fn remove_business_profile_address(&self, _: GrpcRequest<RemoveBusinessProfileAddressRequest>) -> Result<Response<RemoveBusinessProfileAddressResponse>, Status> { Err(Status::unimplemented("")) }
+    async fn get_active_business_profile(&self, _: GrpcRequest<GetActiveBusinessProfileRequest>) -> Result<Response<BusinessProfile>, Status> { Err(Status::unimplemented("")) }
+    async fn discover_business_profiles(&self, _: GrpcRequest<DiscoverBusinessProfilesRequest>) -> Result<Response<BusinessProfilesResponse>, Status> { Err(Status::unimplemented("")) }
+    async fn delete_business_profile(&self, _: GrpcRequest<DeleteBusinessProfileRequest>) -> Result<Response<DeleteBusinessProfileResponse>, Status> { Err(Status::unimplemented("")) }
+    async fn get_business_profile_image_upload_url(&self, _: GrpcRequest<BusinessProfileImageUploadRequest>) -> Result<Response<BusinessProfileImageUploadResponse>, Status> { Err(Status::unimplemented("")) }
 }
 

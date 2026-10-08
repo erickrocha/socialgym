@@ -9,10 +9,12 @@ class ExerciseMapper implements Mapper<Exercise, $exercise.Exercise> {
   @override
   Exercise fromProto($exercise.Exercise proto) {
     return Exercise(
+      id: proto.id == 0 ? null : proto.id,
       name: proto.name,
       ownerId: proto.ownerId,
       ownerUuid: proto.ownerUuid,
       ownerName: proto.ownerName,
+      description: proto.description.isEmpty ? null : proto.description,
       sets: proto.sets,
       category: proto.category,
       repsOrDuration: proto.repsOrDuration,
@@ -31,10 +33,12 @@ class ExerciseMapper implements Mapper<Exercise, $exercise.Exercise> {
   @override
   $exercise.Exercise toProto(Exercise domain) {
     return $exercise.Exercise(
+      id: domain.id ?? 0,
       name: domain.name,
       ownerId: domain.ownerId,
       ownerUuid: domain.ownerUuid,
       ownerName: domain.ownerName,
+      description: domain.description,
       sets: domain.sets,
       category: domain.category,
       repsOrDuration: domain.repsOrDuration,

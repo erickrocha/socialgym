@@ -102,6 +102,20 @@ impl BusinessProfile {
         self
     }
 
+    /// The profile as a person outside its team sees it: no owner ids and, of each address, only the
+    /// locality, administrative area and country (the street-level fields and the postal code are
+    /// kept for the owner and the accepted team members).
+    pub fn without_private_details(mut self) -> Self {
+        self.owner_id = 0;
+        self.owner_uuid = String::new();
+        for address in &mut self.addresses {
+            address.address_line1 = String::new();
+            address.address_line2 = None;
+            address.postal_code = None;
+        }
+        self
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         owner_id: i32,

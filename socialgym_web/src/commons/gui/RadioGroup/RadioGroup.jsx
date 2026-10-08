@@ -2,6 +2,7 @@ import React from "react";
 import clsx from "clsx";
 import PropTypes from "prop-types";
 import "./RadioGroup.scss";
+import { registeredProps } from "../../library/formField";
 
 const RadioGroup = ({
   id,
@@ -28,8 +29,7 @@ const RadioGroup = ({
             name={name || id}
             value={option.value}
             defaultChecked={defaultValue === option.value}
-            {...(register ? register(name || id, { required }) : {})}
-            onChange={onChange}
+            {...registeredProps(register, name || id, required, onChange)}
             aria-label={option.label}
             aria-describedby={ariaDescribedby}
             aria-required={required}

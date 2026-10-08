@@ -8,6 +8,14 @@ import '../../src/generated/grpc/business_profile.pbgrpc.dart' as $bp;
 import '../base_service.dart';
 import 'grpc_channel_factory.dart';
 
+/// Pre-signed S3 upload URL for a business profile image.
+class BusinessProfileImageUploadUrl {
+  final String url;
+  final String objectKey;
+
+  BusinessProfileImageUploadUrl({required this.url, required this.objectKey});
+}
+
 class GrpcBusinessProfileService {
   GrpcBusinessProfileService._();
 
@@ -97,6 +105,22 @@ class GrpcBusinessProfileService {
     }
   }
 
+  /// A pre-signed URL to upload the active-profile's `logo` or `cover` image.
+  static Future<BusinessProfileImageUploadUrl> getBusinessProfileImageUploadUrl({
+    required String imageType,
+    required String format,
+  }) async {
+    try {
+      final response = await _ensureClient().getBusinessProfileImageUploadUrl(
+        $bp.BusinessProfileImageUploadRequest(imageType: imageType, format: format),
+        options: grpc.CallOptions(timeout: ApiConfig.timeout),
+      );
+      return BusinessProfileImageUploadUrl(url: response.url, objectKey: response.objectKey);
+    } on grpc.GrpcError catch (e) {
+      throw BaseService.handleGrpcError(e, 'Failed to get presigned URL');
+    }
+  }
+
   static $bp.BusinessProfileServiceClient _ensureClient() {
     if (_client != null) return _client!;
     final channel = GrpcChannelFactory.channelFor(
@@ -107,6 +131,9 @@ class GrpcBusinessProfileService {
     _client = $bp.BusinessProfileServiceClient(channel, interceptors: GrpcChannelFactory.interceptors);
     return _client!;
   }
+
+  /// Replaces the client (tests point it at a fake server).
+  static void useClient($bp.BusinessProfileServiceClient? client) => _client = client;
 
   static Future<void> shutdown() async {
     _client = null;

@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, TextField, Button, Select, VisibilityDropdown } from '../../gui';
+import { EXERCISE_CATEGORIES } from '../../library/exerciseCategories';
 import './ExerciseModal.scss';
 
 export const ExerciseModal = ({ isOpen, onClose, onSubmit, initialData = null, loading = false }) => {
     const { t } = useTranslation();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [category, setCategory] = useState('Chest');
+    const [category, setCategory] = useState('Force');
     const [sets, setSets] = useState(3);
     const [repsOrDuration, setRepsOrDuration] = useState(10);
     const [visibility, setVisibility] = useState('Public');
@@ -16,14 +17,14 @@ export const ExerciseModal = ({ isOpen, onClose, onSubmit, initialData = null, l
         if (initialData) {
             setName(initialData.name || '');
             setDescription(initialData.description || '');
-            setCategory(initialData.category || 'Chest');
+            setCategory(initialData.category || 'Force');
             setSets(initialData.sets || 3);
             setRepsOrDuration(initialData.reps_or_duration || initialData.repsOrDuration || 10);
             setVisibility(initialData.visibility || 'Public');
         } else {
             setName('');
             setDescription('');
-            setCategory('Chest');
+            setCategory('Force');
             setSets(3);
             setRepsOrDuration(10);
             setVisibility('Public');
@@ -38,21 +39,12 @@ export const ExerciseModal = ({ isOpen, onClose, onSubmit, initialData = null, l
             description,
             category,
             sets: Number(sets),
-            reps_or_duration: Number(repsOrDuration),
+            repsOrDuration: Number(repsOrDuration),
             visibility
         });
     };
 
-    const categories = [
-        { label: t('exercises.categories.chest', 'Peito'), value: 'Chest' },
-        { label: t('exercises.categories.back', 'Costas'), value: 'Back' },
-        { label: t('exercises.categories.legs', 'Pernas'), value: 'Legs' },
-        { label: t('exercises.categories.shoulders', 'Ombros'), value: 'Shoulders' },
-        { label: t('exercises.categories.arms', 'Braços'), value: 'Arms' },
-        { label: t('exercises.categories.core', 'Abdômen'), value: 'Core' },
-        { label: t('exercises.categories.cardio', 'Cardio'), value: 'Cardio' },
-        { label: t('exercises.categories.other', 'Outro'), value: 'Other' },
-    ];
+    const categories = EXERCISE_CATEGORIES.map((c) => ({ value: c.value, label: t(`exercises.categories.${c.key}`, c.label) }));
 
     if (!isOpen) return null;
 

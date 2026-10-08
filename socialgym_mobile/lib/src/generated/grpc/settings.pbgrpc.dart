@@ -68,6 +68,21 @@ class SettingsServiceClient extends $grpc.Client {
         options: options);
   }
 
+  /// The caller's own settings (REST GET and PUT /settings/me): the owner is the person in the token.
+  $grpc.ResponseFuture<$0.Setting> getMySettings(
+    $0.GetMySettingsRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$getMySettings, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Setting> updateMySettings(
+    $0.Setting request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$updateMySettings, request, options: options);
+  }
+
   // method descriptors
 
   static final _$getById = $grpc.ClientMethod<$0.SettingIdRequest, $0.Setting>(
@@ -93,6 +108,15 @@ class SettingsServiceClient extends $grpc.Client {
           '/grpc.settings.SettingsService/GetPushPreferenceByOwnerUuid',
           ($0.OwnerUuidRequest value) => value.writeToBuffer(),
           $0.PushPreferenceResponse.fromBuffer);
+  static final _$getMySettings =
+      $grpc.ClientMethod<$0.GetMySettingsRequest, $0.Setting>(
+          '/grpc.settings.SettingsService/GetMySettings',
+          ($0.GetMySettingsRequest value) => value.writeToBuffer(),
+          $0.Setting.fromBuffer);
+  static final _$updateMySettings = $grpc.ClientMethod<$0.Setting, $0.Setting>(
+      '/grpc.settings.SettingsService/UpdateMySettings',
+      ($0.Setting value) => value.writeToBuffer(),
+      $0.Setting.fromBuffer);
 }
 
 @$pb.GrpcServiceName('grpc.settings.SettingsService')
@@ -138,6 +162,21 @@ abstract class SettingsServiceBase extends $grpc.Service {
             ($core.List<$core.int> value) =>
                 $0.OwnerUuidRequest.fromBuffer(value),
             ($0.PushPreferenceResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.GetMySettingsRequest, $0.Setting>(
+        'GetMySettings',
+        getMySettings_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.GetMySettingsRequest.fromBuffer(value),
+        ($0.Setting value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.Setting, $0.Setting>(
+        'UpdateMySettings',
+        updateMySettings_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $0.Setting.fromBuffer(value),
+        ($0.Setting value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.Setting> getById_Pre($grpc.ServiceCall $call,
@@ -180,4 +219,20 @@ abstract class SettingsServiceBase extends $grpc.Service {
 
   $async.Future<$0.PushPreferenceResponse> getPushPreferenceByOwnerUuid(
       $grpc.ServiceCall call, $0.OwnerUuidRequest request);
+
+  $async.Future<$0.Setting> getMySettings_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.GetMySettingsRequest> $request) async {
+    return getMySettings($call, await $request);
+  }
+
+  $async.Future<$0.Setting> getMySettings(
+      $grpc.ServiceCall call, $0.GetMySettingsRequest request);
+
+  $async.Future<$0.Setting> updateMySettings_Pre(
+      $grpc.ServiceCall $call, $async.Future<$0.Setting> $request) async {
+    return updateMySettings($call, await $request);
+  }
+
+  $async.Future<$0.Setting> updateMySettings(
+      $grpc.ServiceCall call, $0.Setting request);
 }

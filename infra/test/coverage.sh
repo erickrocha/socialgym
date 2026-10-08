@@ -4,6 +4,7 @@
 # Both need the infra/test stack up (./start.sh): timeline uses it fully; workout uses its LocalStack
 # SQS but starts its own PostGIS so the stack's database is not refreshed.
 # Set COVERAGE_IGNORE_RUN_FAIL=1 to still report when some tests fail.
+# Set LCOV_OUT=<file> to also write the line-level report (used to intersect coverage with a diff).
 set -euo pipefail
 
 service="${1:?usage: coverage.sh timeline|workout}"
@@ -42,5 +43,11 @@ extra=()
 [ "${COVERAGE_IGNORE_RUN_FAIL:-0}" = 1 ] && extra+=(--ignore-run-fail)
 
 # ponytail: --test-threads=1 because acceptance tests share one disposable database.
-cargo llvm-cov --workspace --all-features "${extra[@]}" --summary-only \
-  --ignore-filename-regex "$exclude" -- --include-ignored --test-threads=1
+# The tests run once without a report; the reports are made from that run (a report made together with
+# the run drops the data, and the line-level one would come out empty).
+cargo llvm-cov --workspace --all-features --no-report "${extra[@]}" -- --include-ignored --test-threads=1
+cargo llvm-cov report --workspace --summary-only --ignore-filename-regex "$exclude"
+if [ -n "${LCOV_OUT:-}" ]; then
+  cargo llvm-cov report --workspace --lcov --output-path "$LCOV_OUT" --ignore-filename-regex "$exclude"
+  echo "lcov written to $LCOV_OUT"
+fi

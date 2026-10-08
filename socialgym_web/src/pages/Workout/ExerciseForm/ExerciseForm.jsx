@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Button, TextField, VisibilityDropdown } from '../../../commons/gui/index.js';
 import * as handler from '../../../redux/reducers/workout/index.js';
 import './ExerciseForm.scss';
@@ -8,6 +8,7 @@ import './ExerciseForm.scss';
 const ExerciseForm = ({ workoutId, workoutVisibility, onCancel, onConfirm }) => {
     const { t } = useTranslation('common');
     const dispatch = useDispatch();
+    const { person } = useSelector((state) => state.person);
 
     const [exercises, setExercises] = useState([]);
     const [name, setName] = useState('');
@@ -55,13 +56,18 @@ const ExerciseForm = ({ workoutId, workoutVisibility, onCancel, onConfirm }) => 
         if (exercises.length === 0) return;
         const payload = {
             workoutId,
+            // The API names the owner (the access token decides who it really is) and calls the repetitions
+            // `repsOrDuration`.
             exercises: exercises.map( item => ({
                 name: item.name,
                 description: item.description,
+                category: 'Force',
                 sets: item.sets,
-                reps: item.reps,
+                repsOrDuration: item.reps,
                 visibility: item.visibility,
-                workoutId: workoutId,
+                ownerId: person?.id ?? 0,
+                ownerUuid: person?.uuid ?? '',
+                ownerName: [person?.firstname, person?.surname].filter(Boolean).join(' '),
             }))
         };
         dispatch(handler.addExercises(payload));

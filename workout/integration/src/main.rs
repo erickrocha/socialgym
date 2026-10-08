@@ -7,7 +7,37 @@ pub mod auth;
 #[path = "tests/c010_authorization_gaps_test.rs"]
 mod c010_authorization_gaps_test;
 
+#[cfg(test)]
+#[path = "tests/server_support.rs"]
+mod server_support;
+
+#[cfg(test)]
+#[path = "tests/auth_service_test.rs"]
+mod auth_service_test;
+
+#[cfg(test)]
+#[path = "tests/account_consent_service_test.rs"]
+mod account_consent_service_test;
+
+#[cfg(test)]
+#[path = "tests/file_flows_test.rs"]
+mod file_flows_test;
+
+#[cfg(test)]
+#[path = "tests/person_friend_settings_test.rs"]
+mod person_friend_settings_test;
+
+#[cfg(test)]
+#[path = "tests/business_profile_service_test.rs"]
+mod business_profile_service_test;
+
+#[cfg(test)]
+#[path = "tests/workout_public_utility_test.rs"]
+mod workout_public_utility_test;
+
+use business::commons::rate_limit::RateLimiter;
 use std::sync::Arc;
+use std::time::Duration;
 use std::{env, fs};
 use std::path::Path;
 use tonic::transport::{Identity, Server, ServerTlsConfig};
@@ -21,6 +51,18 @@ use crate::proto::resource::resource_service_server::ResourceServiceServer;
 use crate::proto::settings::settings_service_server::SettingsServiceServer;
 use crate::proto::team_member::team_member_service_server::TeamMemberServiceServer;
 use crate::proto::workout::workout_service_server::WorkoutServiceServer;
+use crate::proto::account::account_service_server::AccountServiceServer;
+use crate::proto::address::address_search_service_server::AddressSearchServiceServer;
+use crate::proto::auth::auth_service_server::AuthServiceServer;
+use crate::proto::legal::legal_document_service_server::LegalDocumentServiceServer;
+use crate::proto::consent::consent_service_server::ConsentServiceServer;
+use crate::proto::media::media_service_server::MediaServiceServer;
+use crate::service::account_service::GrpcAccountService;
+use crate::service::address_search_service::GrpcAddressSearchService;
+use crate::service::legal_document_service::GrpcLegalDocumentService;
+use crate::service::auth_service::GrpcAuthService;
+use crate::service::consent_service::GrpcConsentService;
+use crate::service::media_service::GrpcMediaService;
 use crate::service::business_profile_service::GrpcBusinessProfileService;
 use crate::service::exercise_service::GrpcExerciseService;
 use crate::service::friend_service::GrpcFriendService;
@@ -64,6 +106,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let exercise_service = GrpcExerciseService::new(Arc::clone(&conn));
     let team_member_service = GrpcTeamMemberService::new(Arc::clone(&conn));
     let resource_service  = GrpcResourceService::new(Arc::clone(&conn));
+    let auth_service = GrpcAuthService::new(Arc::clone(&conn));
+    let consent_service = GrpcConsentService::new(Arc::clone(&conn));
+    let account_service = GrpcAccountService::new(Arc::clone(&conn));
+    let media_service = GrpcMediaService::new(Arc::clone(&conn));
+    let legal_service = GrpcLegalDocumentService;
+    let address_service = GrpcAddressSearchService;
     let reflection = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
         .build_v1()?;
@@ -78,7 +126,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .identity(identity);
 
     log::info!("Registering the authentication layer to Grpc server");
-    let auth_layer = ServiceBuilder::new().layer(GrpcAuthLayer::new(Arc::clone(&conn)));
+    // Sign-up and sign-in share the REST allowance (20 a minute per address); refresh has its own.
+    let credential_limiter = RateLimiter::new(20, Duration::from_secs(60));
+    let refresh_limiter = RateLimiter::new(20, Duration::from_secs(60));
+    // The legal documents are public static text read a few at a time; a wider allowance than credentials.
+    let legal_limiter = RateLimiter::new(60, Duration::from_secs(60));
+    let auth_layer = ServiceBuilder::new().layer(
+        GrpcAuthLayer::new(Arc::clone(&conn))
+            .public_method("/grpc.auth.AuthService/Signup", credential_limiter.clone())
+            .public_method("/grpc.auth.AuthService/Login", credential_limiter)
+            .public_method("/grpc.auth.AuthService/Refresh", refresh_limiter)
+            .public_method("/grpc.legal.LegalDocumentService/ListLegalDocuments", legal_limiter.clone())
+            .public_method("/grpc.legal.LegalDocumentService/GetLegalDocument", legal_limiter),
+    );
 
     log::info!("gRPC server listening on https://{}", addr);
     Server::builder()
@@ -92,6 +152,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_service(auth_layer.clone().service(ExerciseServiceServer::new(exercise_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
         .add_service(auth_layer.clone().service(TeamMemberServiceServer::new(team_member_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
         .add_service(auth_layer.clone().service(ResourceServiceServer::new(resource_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(AuthServiceServer::new(auth_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(ConsentServiceServer::new(consent_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(AccountServiceServer::new(account_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(MediaServiceServer::new(media_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(LegalDocumentServiceServer::new(legal_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
+        .add_service(auth_layer.clone().service(AddressSearchServiceServer::new(address_service).max_decoding_message_size(MAX_MESSAGE_BYTES).max_encoding_message_size(MAX_MESSAGE_BYTES)))
         .serve(addr)
         .await?;
     log::info!("Server created and services registered");
@@ -115,3 +181,7 @@ fn load_tls_credentials() -> Result<(String,String), Box<dyn std::error::Error>>
 
     Ok((cert, key))
 }
+
+#[cfg(test)]
+#[path = "tests/contract_parity_test.rs"]
+mod contract_parity_test;

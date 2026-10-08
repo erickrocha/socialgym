@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package grpc.auth;
+
+// Authentication and session for the mobile client: the gRPC twin of the REST /signup, /login, /refresh,
+// /logout and /auth/profile/... routes (C-010). Signup, Login and Refresh are reachable without an access
+// token and are limited per IP; every other method needs one. Error messages are localized from the
+// `accept-language` metadata, and the stable REST `errorKey` travels in the `error-key` trailer.
+service AuthService {
+  rpc Signup (SignupRequest) returns (AccessToken);
+  rpc Login (LoginRequest) returns (AccessToken);
+  rpc Refresh (RefreshRequest) returns (AccessToken);
+  rpc Logout (LogoutRequest) returns (LogoutResponse);
+  rpc ActivateBusinessProfile (ActivateBusinessProfileRequest) returns (AccessToken);
+  rpc DeactivateBusinessProfile (DeactivateBusinessProfileRequest) returns (AccessToken);
+}
+
+message SignupRequest {
+  string firstname = 1;
+  string surname = 2;
+  string date_of_birth = 3;   // yyyy-mm-dd
+  string gender = 4;
+  string email = 5;
+  string password = 6;
+  string terms_version = 7;
+  string privacy_version = 8;
+  bool terms_accepted = 9;
+  bool privacy_accepted = 10;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message RefreshRequest {
+  string refresh_token = 1;
+}
+
+message LogoutRequest {
+  string refresh_token = 1;   // the refresh token to revoke with the access token; may be empty
+}
+
+message LogoutResponse {}
+
+message ActivateBusinessProfileRequest {
+  string business_profile_uuid = 1;
+}
+
+message DeactivateBusinessProfileRequest {}
+
+message AccessToken {
+  string access_token = 1;
+  string token_type = 2;
+  int64 expire_in = 3;
+  optional string refresh_token = 4;
+  string username = 5;
+  string uuid = 6;
+  string name = 7;
+  int32 person_id = 8;
+  string person_uuid = 9;
+  string person_object_key = 10;
+  optional int32 active_business_profile_id = 11;
+  optional string active_business_profile_uuid = 12;
+  optional PendingAccountDeletion pending_account_deletion = 13;
+}
+
+// Present only when the account has a deletion request that was not purged yet.
+message PendingAccountDeletion {
+  string requested_at = 1;
+  string scheduled_at = 2;
+}

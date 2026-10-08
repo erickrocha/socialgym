@@ -75,6 +75,15 @@ class WorkoutServiceClient extends $grpc.Client {
     return $createUnaryCall(_$addExercisesToWorkout, request, options: options);
   }
 
+  /// The exercises of a workout the caller may read, without those the caller may not read
+  /// (REST GET /workouts/{workout_id}/exercises).
+  $grpc.ResponseFuture<$0.WorkoutExercisesResponse> getWorkoutExercises(
+    $0.WorkoutRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$getWorkoutExercises, request, options: options);
+  }
+
   /// Team-member assignment lifecycle. Accept/Reject are for the assigned
   /// person; Cancel is for the assigning business profile.
   $grpc.ResponseFuture<$0.Workout> acceptWorkout(
@@ -137,6 +146,11 @@ class WorkoutServiceClient extends $grpc.Client {
           '/grpc.workout.WorkoutService/AddExercisesToWorkout',
           ($0.WorkoutExercisesRequest value) => value.writeToBuffer(),
           $0.Workout.fromBuffer);
+  static final _$getWorkoutExercises =
+      $grpc.ClientMethod<$0.WorkoutRequest, $0.WorkoutExercisesResponse>(
+          '/grpc.workout.WorkoutService/GetWorkoutExercises',
+          ($0.WorkoutRequest value) => value.writeToBuffer(),
+          $0.WorkoutExercisesResponse.fromBuffer);
   static final _$acceptWorkout =
       $grpc.ClientMethod<$0.WorkoutRequest, $0.Workout>(
           '/grpc.workout.WorkoutService/AcceptWorkout',
@@ -208,6 +222,15 @@ abstract class WorkoutServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.WorkoutExercisesRequest.fromBuffer(value),
         ($0.Workout value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.WorkoutRequest, $0.WorkoutExercisesResponse>(
+            'GetWorkoutExercises',
+            getWorkoutExercises_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.WorkoutRequest.fromBuffer(value),
+            ($0.WorkoutExercisesResponse value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$0.WorkoutRequest, $0.Workout>(
         'AcceptWorkout',
         acceptWorkout_Pre,
@@ -288,6 +311,15 @@ abstract class WorkoutServiceBase extends $grpc.Service {
 
   $async.Future<$0.Workout> addExercisesToWorkout(
       $grpc.ServiceCall call, $0.WorkoutExercisesRequest request);
+
+  $async.Future<$0.WorkoutExercisesResponse> getWorkoutExercises_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.WorkoutRequest> $request) async {
+    return getWorkoutExercises($call, await $request);
+  }
+
+  $async.Future<$0.WorkoutExercisesResponse> getWorkoutExercises(
+      $grpc.ServiceCall call, $0.WorkoutRequest request);
 
   $async.Future<$0.Workout> acceptWorkout_Pre($grpc.ServiceCall $call,
       $async.Future<$0.WorkoutRequest> $request) async {

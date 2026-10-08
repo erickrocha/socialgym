@@ -6,7 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/sign_up_request.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/person_provider.dart';
-import '../../services/legal_document_service.dart';
+import '../../services/grpc/grpc_legal_document_service.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -41,7 +41,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   Future<void> _showLegalDocument(String document) async {
     try {
-      final legal = await LegalDocumentService.get(document);
+      final legal = await GrpcLegalDocumentService.get(document);
       if (!mounted) return;
       setState(() {
         if (document == 'terms') _termsVersion = legal.version;

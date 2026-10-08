@@ -27,6 +27,9 @@ pub enum AuthenticationError {
 pub enum ValidateError {
     Invalid,
     Revoked,
+    /// The user or the revocation list could not be read (the database is down): not the caller's fault,
+    /// and never a reason to let a revoked token through.
+    Unavailable,
 }
 
 /// The caller's identity plus enough of its token's claims (`jti`/`exp`) to let
@@ -211,9 +214,9 @@ impl Authentication {
 
         let entity = UserGateway::find_by_email(db, email).await;
 
-        if entity.is_err() {
-            log::info!("User not found");
-            return Err(ValidateError::Invalid);
+        if let Err(error) = &entity {
+            log::error!("Could not load the user while validating a token: {error}");
+            return Err(ValidateError::Unavailable);
         }
 
         let opt_entity = entity.unwrap();
@@ -223,8 +226,12 @@ impl Authentication {
         }
         let user = UserEntityMapper::from_model(opt_entity.unwrap());
 
-        if auth_config::token_revocation_enabled() && Self::is_token_revoked(db, &user, &claims).await {
-            return Err(ValidateError::Revoked);
+        if auth_config::token_revocation_enabled() {
+            match Self::is_token_revoked(db, &user, &claims).await {
+                Ok(true) => return Err(ValidateError::Revoked),
+                Ok(false) => {}
+                Err(()) => return Err(ValidateError::Unavailable),
+            }
         }
 
         Ok(AuthenticatedContext {
@@ -273,7 +280,14 @@ impl Authentication {
             .map(UserEntityMapper::from_model)
             .ok_or_else(|| BusinessError::unauthorized("User not found"))?;
 
-        if auth_config::token_revocation_enabled() && Self::is_token_revoked(db, &user, &claims).await {
+        let revoked = if auth_config::token_revocation_enabled() {
+            Self::is_token_revoked(db, &user, &claims)
+                .await
+                .map_err(|()| BusinessError::infrastructure("Unable to validate refresh token"))?
+        } else {
+            false
+        };
+        if revoked {
             // The presented refresh token was already rotated away: someone is
             // replaying a stolen/old token. Revoke the whole family and force
             // re-login rather than honoring it.
@@ -290,14 +304,17 @@ impl Authentication {
         Ok((user, claims))
     }
 
-    pub(crate) async fn is_token_revoked(db: &DbConn, user: &User, claims: &Claims) -> bool {
+    /// `Err` when the revocation list cannot be read: the caller must not treat that as "not revoked".
+    pub(crate) async fn is_token_revoked(db: &DbConn, user: &User, claims: &Claims) -> Result<bool, ()> {
         if let Some(watermark) = user.token_valid_after {
             if let Some(iat) = DateTime::from_timestamp(claims.iat, 0).map(|dt| dt.naive_utc()) {
                 if iat <= watermark {
-                    return true;
+                    return Ok(true);
                 }
             }
         }
-        TokenRevocationGateway::is_revoked(db, &claims.jti).await.unwrap_or(false)
+        TokenRevocationGateway::is_revoked(db, &claims.jti).await.map_err(|error| {
+            log::error!("Could not read the revocation list: {error}");
+        })
     }
 }

@@ -362,8 +362,9 @@ async fn delete_requires_the_owner_and_reports_a_missing_row_as_not_found() {
         5,
         Uuid::from_u128(5).to_string(),
     );
+    // A different identity cannot read the workout, so it is told the workout does not exist (W4).
     let error = WorkoutUseCase::delete_by_id(&db, 7, &profile).await.unwrap_err();
-    assert_eq!(error.kind, BusinessErrorKind::Forbidden);
+    assert_eq!(error.kind, BusinessErrorKind::NotFound);
 }
 
 #[tokio::test]

@@ -28,7 +28,9 @@ const PersonInfoForm = ({personInfo, onCancel, onConfirm}) => {
     const onSubmit = (data) => {
         const payload = updateObject(personInfo,{
             ...data,
-            weight: data.weight ? displayToKg(Number(data.weight), weightUnit) : data.weight,
+            // An empty field is no value: the API reads a number or null, not an empty string.
+            weight: data.weight ? displayToKg(Number(data.weight), weightUnit) : null,
+            height: data.height ? Number(data.height) : null,
         })
         dispatch(handler.updatePersonInfo(payload));
         onConfirm();

@@ -682,6 +682,118 @@ class SearchFriendsResponse extends $pb.GeneratedMessage {
   $pb.PbList<$1.Person> get people => $_getList(0);
 }
 
+class FriendProfileRequest extends $pb.GeneratedMessage {
+  factory FriendProfileRequest({
+    $core.int? friendId,
+  }) {
+    final result = create();
+    if (friendId != null) result.friendId = friendId;
+    return result;
+  }
+
+  FriendProfileRequest._();
+
+  factory FriendProfileRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory FriendProfileRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FriendProfileRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.friend'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'friendId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FriendProfileRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FriendProfileRequest copyWith(void Function(FriendProfileRequest) updates) =>
+      super.copyWith((message) => updates(message as FriendProfileRequest))
+          as FriendProfileRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static FriendProfileRequest create() => FriendProfileRequest._();
+  @$core.override
+  FriendProfileRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static FriendProfileRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<FriendProfileRequest>(create);
+  static FriendProfileRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get friendId => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set friendId($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasFriendId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearFriendId() => $_clearField(1);
+}
+
+class FriendProfileResponse extends $pb.GeneratedMessage {
+  factory FriendProfileResponse({
+    $1.Person? person,
+  }) {
+    final result = create();
+    if (person != null) result.person = person;
+    return result;
+  }
+
+  FriendProfileResponse._();
+
+  factory FriendProfileResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory FriendProfileResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FriendProfileResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'grpc.friend'),
+      createEmptyInstance: create)
+    ..aOM<$1.Person>(1, _omitFieldNames ? '' : 'person',
+        subBuilder: $1.Person.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FriendProfileResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  FriendProfileResponse copyWith(
+          void Function(FriendProfileResponse) updates) =>
+      super.copyWith((message) => updates(message as FriendProfileResponse))
+          as FriendProfileResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static FriendProfileResponse create() => FriendProfileResponse._();
+  @$core.override
+  FriendProfileResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static FriendProfileResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<FriendProfileResponse>(create);
+  static FriendProfileResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $1.Person get person => $_getN(0);
+  @$pb.TagNumber(1)
+  set person($1.Person value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasPerson() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPerson() => $_clearField(1);
+  @$pb.TagNumber(1)
+  $1.Person ensurePerson() => $_ensure(0);
+}
+
 const $core.bool _omitFieldNames =
     $core.bool.fromEnvironment('protobuf.omit_field_names');
 const $core.bool _omitMessageNames =

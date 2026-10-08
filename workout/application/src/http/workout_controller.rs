@@ -12,9 +12,9 @@ use axum::http::StatusCode;
 use axum::{Extension, Json};
 use business::commons::authorization::ActingOwner;
 use business::domain::business_profile::BusinessProfile;
-use business::domain::exercise::Exercise;
 use business::domain::user::User;
-use business::use_cases::exercise_use_case::ExerciseUseCase;
+use business::domain::business_error::BusinessErrorKind;
+use business::use_cases::workout_use_case::AddExercisesError;
 use business::use_cases::workout_use_case::WorkoutUseCase;
 
 fn workout_error(
@@ -223,19 +223,19 @@ pub async fn add_exercises_by_workout_uuid(
     let workout = WorkoutUseCase::get_by_uuid(&state.conn, uuid.clone())
         .await
         .map_err(|error| workout_error(error, locale))?;
-    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
-    business::commons::authorization::ensure_owns_as(workout.owner_id, &workout.owner_uuid, &acting)
-        .map_err(|error| workout_error(error, locale))?;
-    ExerciseUseCase::add_all_to_workout(
+    WorkoutUseCase::add_exercises_as(
         &state.conn,
-        workout.id.unwrap(),
+        &workout,
         ExerciseMapper::domain_vec(exercises),
         &current_user,
         active_profile.as_deref(),
     )
     .await
-    .map_err(|error| {
-        ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesNotAdded)
+    .map_err(|error| match error {
+        AddExercisesError::Workout(error) => workout_error(error, locale),
+        AddExercisesError::Exercises(error) => {
+            ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesNotAdded)
+        }
     })?;
     // The full composition, not just the exercises added by this call.
     let workout = WorkoutUseCase::get_by_uuid(&state.conn, uuid)
@@ -350,21 +350,19 @@ pub async fn add_exercises(
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutNotFound)
         })?;
-    let acting = ActingOwner::new(&current_user, active_profile.as_deref());
-    business::commons::authorization::ensure_owns_as(workout.owner_id, &workout.owner_uuid, &acting)
-        .map_err(|error| workout_error(error, locale))?;
-
-    let domain_exercises: Vec<Exercise> = ExerciseMapper::domain_vec(exercises);
-    let result = ExerciseUseCase::add_all_to_workout(
+    let added_exercises = WorkoutUseCase::add_exercises_as(
         &state.conn,
-        workout_id,
-        domain_exercises,
+        &workout,
+        ExerciseMapper::domain_vec(exercises),
         &current_user,
         active_profile.as_deref(),
     )
-    .await;
-    let added_exercises = result.map_err(|error| {
-        ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesNotAdded)
+    .await
+    .map_err(|error| match error {
+        AddExercisesError::Workout(error) => workout_error(error, locale),
+        AddExercisesError::Exercises(error) => {
+            ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesNotAdded)
+        }
     })?;
     let payload: Vec<ExerciseJson> = ExerciseMapper::json_vec(added_exercises);
 
@@ -396,19 +394,15 @@ pub async fn get_exercises(
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<ExerciseJson>>> {
     let acting = ActingOwner::new(&current_user, active_profile.as_deref());
-    let workout = WorkoutUseCase::get(&state.conn, workout_id)
+    let exercises = WorkoutUseCase::readable_exercises(&state.conn, workout_id, &acting)
         .await
-        .map_err(|error| workout_error(error, locale))?;
-    WorkoutUseCase::ensure_readable(&state.conn, &workout, &acting)
-        .await
-        .map_err(|error| workout_error(error, locale))?;
-
-    let result = ExerciseUseCase::find_all_by_workout_id(&state.conn, workout_id).await;
-    let exercises = result.map_err(|error| {
-        ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesFetchFailed)
-    })?;
-    let exercises = ExerciseUseCase::retain_readable(&state.conn, exercises, &acting)
-        .await
-        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesFetchFailed))?;
+        .map_err(|error| {
+            let key = if error.kind == BusinessErrorKind::Infrastructure {
+                ErrorKey::ExercisesFetchFailed
+            } else {
+                ErrorKey::WorkoutNotFound
+            };
+            ExceptionResponse::from_business(error, locale, key)
+        })?;
     Ok(Json(ExerciseMapper::json_vec(exercises)))
 }

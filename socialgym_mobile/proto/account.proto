@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package grpc.account;
+
+// The caller's account lifecycle and data exports: the gRPC twin of the REST
+// /people/me/account/... and /people/me/data-exports... routes (C-010). Reachable without current Terms
+// and Privacy consent, so a person who revoked consent can still export their data or delete (or keep)
+// the account. The export file itself is never carried over gRPC: GetDataExportDownloadUrl returns a
+// short-lived pre-signed link.
+service AccountService {
+  rpc RequestAccountDeletion (RequestAccountDeletionRequest) returns (AccountDeletionStatus);
+  rpc CancelAccountDeletion (CancelAccountDeletionRequest) returns (CancelAccountDeletionResponse);
+  rpc CreateDataExport (CreateDataExportRequest) returns (DataExport);
+  rpc ListDataExports (ListDataExportsRequest) returns (ListDataExportsResponse);
+  rpc GetDataExport (GetDataExportRequest) returns (DataExport);
+  rpc GetDataExportDownloadUrl (GetDataExportRequest) returns (DataExportDownload);
+}
+
+message RequestAccountDeletionRequest {
+  bool immediate = 1;   // purge on the next sweep instead of after the grace period
+}
+
+message AccountDeletionStatus {
+  string requested_at = 1;
+  string scheduled_at = 2;
+}
+
+message CancelAccountDeletionRequest {}
+
+message CancelAccountDeletionResponse {}
+
+message CreateDataExportRequest {}
+
+message ListDataExportsRequest {}
+
+message ListDataExportsResponse {
+  repeated DataExport exports = 1;
+}
+
+message GetDataExportRequest {
+  string id = 1;   // the export's UUID
+}
+
+message DataExport {
+  string id = 1;
+  string status = 2;
+  optional string error = 3;
+  string created_at = 4;
+  string updated_at = 5;
+  optional string expires_at = 6;
+}
+
+message DataExportDownload {
+  string url = 1;
+  uint32 expires_in_seconds = 2;
+}

@@ -1,7 +1,7 @@
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::Json;
-use business::commons::legal_documents;
+use business::use_cases::legal_document_use_case::{LegalDocument, LegalDocumentUseCase};
 use serde::Serialize;
 use utoipa::ToSchema;
 
@@ -14,46 +14,16 @@ pub struct LegalDocumentJson {
     pub content: &'static str,
 }
 
-fn document(name: &str) -> Option<LegalDocumentJson> {
-    let (document, title, content) = match name {
-        legal_documents::TERMS => (
-            legal_documents::TERMS,
-            "Termos de Uso",
-            include_str!("../../resources/legal/pt-BR/terms.md"),
-        ),
-        legal_documents::PRIVACY => (
-            legal_documents::PRIVACY,
-            "Política de Privacidade",
-            include_str!("../../resources/legal/pt-BR/privacy.md"),
-        ),
-        legal_documents::HEALTH_DATA => (
-            legal_documents::HEALTH_DATA,
-            "Consentimento para dados de saúde",
-            include_str!("../../resources/legal/pt-BR/health-data.md"),
-        ),
-        _ => return None,
-    };
-    Some(LegalDocumentJson {
-        document,
-        version: legal_documents::current_version(document).unwrap(),
-        title,
-        content,
-    })
+impl From<LegalDocument> for LegalDocumentJson {
+    fn from(value: LegalDocument) -> Self {
+        Self { document: value.document, version: value.version, title: value.title, content: value.content }
+    }
 }
 
 pub async fn list() -> Json<Vec<LegalDocumentJson>> {
-    Json(
-        [
-            legal_documents::TERMS,
-            legal_documents::PRIVACY,
-            legal_documents::HEALTH_DATA,
-        ]
-        .into_iter()
-        .filter_map(document)
-        .collect(),
-    )
+    Json(LegalDocumentUseCase::list().into_iter().map(LegalDocumentJson::from).collect())
 }
 
 pub async fn get(Path(name): Path<String>) -> Result<Json<LegalDocumentJson>, StatusCode> {
-    document(&name).map(Json).ok_or(StatusCode::NOT_FOUND)
+    LegalDocumentUseCase::get(&name).map(|document| Json(LegalDocumentJson::from(document))).ok_or(StatusCode::NOT_FOUND)
 }

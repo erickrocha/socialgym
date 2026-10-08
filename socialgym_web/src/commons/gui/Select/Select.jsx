@@ -2,6 +2,7 @@ import React from "react";
 import clsx from "clsx";
 import PropTypes from "prop-types";
 import "./Select.scss";
+import { registeredProps } from "../../library/formField";
 
 const Select = ({
   id,
@@ -28,8 +29,7 @@ const Select = ({
       id={id || name}
       name={name || id}
       defaultValue={defaultValue || ""}
-      {...(register ? register(name || id, { required }) : {})}
-      onChange={onChange}
+      {...registeredProps(register, name || id, required, onChange)}
       aria-label={ariaLabel || label}
       aria-describedby={ariaDescribedby}
       aria-required={required}

@@ -376,7 +376,6 @@ class _PostComposerPageState extends State<PostComposerPage> {
       final mediaPayload = <Map<String, String>>[];
       for (final item in _mediaItems) {
         final presigned = await UploadService.uploadPostMedia(
-          _token,
           item.file,
           "post",
         );

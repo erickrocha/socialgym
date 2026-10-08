@@ -2,9 +2,8 @@ use business::commons::legal_documents::{PRIVACY, TERMS};
 use business::commons::rate_limit::RateLimiter;
 use business::commons::secret::constant_time_eq;
 use business::domain::business_error::BusinessErrorKind;
-use business::domain::user::User;
 use business::use_cases::consent_use_case::ConsentUseCase;
-use business::use_cases::authentication::{Authentication, ValidateError};
+use business::use_cases::authentication::{AuthenticatedContext, Authentication, ValidateError};
 use hyper::http::HeaderValue;
 use hyper::{http, Request, Response, StatusCode};
 use sea_orm::DatabaseConnection;
@@ -24,7 +23,10 @@ type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send + 'static>>;
 
 /// gRPC methods that only the internal services may call: they carry `x-internal-secret` and never a
 /// user token, so a user token never opens them and the secret never opens a user method.
-const INTERNAL_METHODS: &[&str] = &["/grpc.settings.SettingsService/GetPushPreferenceByOwnerUuid"];
+const INTERNAL_METHODS: &[&str] = &[
+    "/grpc.settings.SettingsService/GetPushPreferenceByOwnerUuid",
+    "/grpc.team_member.TeamMemberService/GetTeamRoster",
+];
 
 /// Methods (or whole services, when the entry ends with `/`) that stay reachable when the caller has no
 /// current Terms and Privacy consent: the consent check itself, consent management, and the account
@@ -127,13 +129,15 @@ where
             match authenticate_request(&mut req, Arc::clone(&conn)).await {
                 // Insert each value under its own type: services look these up as
                 // `User` / `BusinessProfile`, which a tuple extension never matches.
-                Ok((user, business_profile)) => {
+                Ok((auth_context, business_profile)) => {
                     if !is_consent_exempt(req.uri().path()) {
-                        if let Err(response) = require_current_consent(&conn, user.person_id).await {
+                        if let Err(response) = require_current_consent(&conn, auth_context.user.person_id).await {
                             return Ok(response);
                         }
                     }
-                    req.extensions_mut().insert(user);
+                    // `logout` and the profile switch revoke this exact token, so they need its jti and exp.
+                    req.extensions_mut().insert(auth_context.user.clone());
+                    req.extensions_mut().insert(auth_context);
                     if let Some(business_profile) = business_profile {
                         req.extensions_mut().insert(business_profile);
                     }
@@ -188,7 +192,7 @@ fn is_authorized_internal_request(req: &Request<TonicBody>, expected_secret: Opt
         .unwrap_or(false)
 }
 
-async fn authenticate_request(req: &mut Request<TonicBody>,conn: Arc<DatabaseConnection>) -> Result<(User,Option<BusinessProfile>), Response<TonicBody>> {
+async fn authenticate_request(req: &mut Request<TonicBody>,conn: Arc<DatabaseConnection>) -> Result<(AuthenticatedContext,Option<BusinessProfile>), Response<TonicBody>> {
     let auth_header = req.headers().get(http::header::AUTHORIZATION).ok_or_else(|| grpc_unauthenticated_response("missing authorization header"))?;
 
     let auth_str = auth_header.to_str().map_err(|_| grpc_unauthenticated_response("invalid authorization header"))?;
@@ -206,15 +210,16 @@ async fn authenticate_request(req: &mut Request<TonicBody>,conn: Arc<DatabaseCon
     let auth_context = Authentication::validate(&conn, token).await.map_err(|e| match e {
         ValidateError::Revoked => grpc_unauthenticated_response("token has been revoked"),
         ValidateError::Invalid => grpc_unauthenticated_response("invalid or expired token"),
+        ValidateError::Unavailable => grpc_error_response(GRPC_UNAVAILABLE, "authentication temporarily unavailable"),
     })?;
 
     if let Some(business_profile_id) = auth_context.active_business_profile_id {
         let business_profile = BusinessProfileUseCase::get_by_id(&conn, business_profile_id)
             .await
             .ok_or_else(|| grpc_unauthenticated_response("active business profile not found"))?;
-        Ok((auth_context.user, Some(business_profile)))
+        Ok((auth_context, Some(business_profile)))
     }else {
-        Ok((auth_context.user, None))
+        Ok((auth_context, None))
     }
 }
 

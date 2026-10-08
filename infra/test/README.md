@@ -93,3 +93,28 @@ The environment points the friendship test at a dedicated queue,
 `social-notification-events-acceptance.fifo`, so it does not compete with the running Timeline
 service for messages. `./coverage.sh timeline|workout` measures line coverage with the approved
 exclusion list (see `01-project_truth/socialgym/product-decisions.md`).
+
+## Client verification and coverage (C-010)
+
+Run from the monorepo's `sdd-socialgym` root (`scripts/`), each command starts the stack it needs and
+tears it down at the end (`KEEP=1` leaves it up):
+
+| What | Command | Result |
+|---|---|---|
+| Mobile flows on an Android emulator (gRPC only) | `scripts/e2e-android.sh` | PASS or FAIL; checks the gateway log shows no REST call to `workout` or `timeline` |
+| Web flows in a browser (Playwright) | `scripts/e2e-web.sh` | PASS or FAIL; fails on a skipped flow |
+| Contract tests (REST and gRPC side by side, authorization sweeps) | `cd workout && cargo test -p integration --bin integration contract_parity -- --include-ignored --test-threads=1` with the stack up and `source infra/test/timeline-test-env.sh` | each test passes |
+
+Line coverage, with the stack up (`./start.sh`):
+
+| What | Command |
+|---|---|
+| Rust service | `COVERAGE_IGNORE_RUN_FAIL=1 LCOV_OUT=workout.lcov ./coverage.sh workout` (or `timeline`) |
+| Mobile | `cd socialgym_mobile && flutter test --coverage` (writes `coverage/lcov.info`) |
+| Web | `COVERAGE=1 scripts/e2e-web.sh` (Vite instruments `src/`, writes `socialgym_web/coverage/lcov.info`) |
+| Lines a change added | `python3 infra/test/diffcov.py <lcov> <base-commit> <dir> [--lcov-root DIR] [--exclude REGEX]` |
+
+`diffcov.py` intersects an lcov report with `git diff` against the commit the change started from
+(files git does not track yet count in full), so the 90% target can be read for the change as well as
+for the whole service. The mobile report includes generated protobuf code unless excluded
+(`--exclude 'lib/src/generated/'`).

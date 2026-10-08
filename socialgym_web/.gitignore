@@ -24,3 +24,7 @@ playwright-report
 *.njsproj
 *.sln
 *.sw?
+
+# Coverage output (COVERAGE=1 scripts/e2e-web.sh)
+.nyc_output
+coverage

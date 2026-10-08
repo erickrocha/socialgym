@@ -1,6 +1,7 @@
 use crate::proto::settings::settings_service_server::SettingsService;
 use crate::proto::settings::{
     OwnerUuidRequest, PushPreferenceResponse, Setting, SettingIdRequest, SettingOwnerIdRequest,
+    GetMySettingsRequest,
 };
 use business::domain::business_error::BusinessErrorKind;
 use business::domain::enums::{Position, WeightUnit};
@@ -10,7 +11,8 @@ use business::use_cases::setings_use_case::SettingsUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
-use crate::infrastructure::utils::{business_status, require_actor, require_person_id, validate_uuid};
+use crate::infrastructure::utils::{business_status, locale_of, localized_status, require_actor, require_person_id, validate_uuid};
+use business::commons::i18n::ErrorKey;
 use business::commons::authorization::ensure_owns;
 
 pub struct GrpcSettingService {
@@ -150,16 +152,52 @@ impl SettingsService for GrpcSettingService {
     }
 
     async fn get_by_owner_ids(&self,request: Request<SettingOwnerIdRequest>) -> Result<Response<Setting>, Status> {
-        let person_id = require_person_id(&request)?;
+        let actor = require_actor(&request)?;
         let req = request.into_inner();
-        ensure_owns(req.owner_id, person_id).map_err(business_status)?;
         let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
 
+        // By uuid when no id is given, as the two REST routes do: the uuid must be the caller's own.
+        if req.owner_id <= 0 && !req.owner_uuid.is_empty() {
+            validate_uuid(&req.owner_uuid, "owner_uuid")?;
+            if req.owner_uuid != actor.person_uuid {
+                return Err(Status::permission_denied("Not the owner of this resource"));
+            }
+            let settings = use_case
+                .get_by_owner_uuid(req.owner_uuid)
+                .await
+                .map_err(|_| Status::not_found("Settings not found"))?;
+            return Ok(Response::new(Self::domain_to_proto(settings)));
+        }
+
+        ensure_owns(req.owner_id, actor.person_id).map_err(business_status)?;
         let settings = use_case
             .get_by_owner_id(req.owner_id)
             .await
             .map_err(|_| Status::not_found("Settings not found"))?;
         Ok(Response::new(Self::domain_to_proto(settings)))
+    }
+
+    async fn get_my_settings(&self, request: Request<GetMySettingsRequest>) -> Result<Response<Setting>, Status> {
+        let locale = locale_of(&request);
+        let person_id = require_person_id(&request)?;
+        let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
+        use_case
+            .get_by_owner_id(person_id)
+            .await
+            .map(|settings| Response::new(Self::domain_to_proto(settings)))
+            .map_err(|_| localized_status(tonic::Code::NotFound, ErrorKey::SettingsNotFound, locale))
+    }
+
+    async fn update_my_settings(&self, request: Request<Setting>) -> Result<Response<Setting>, Status> {
+        let locale = locale_of(&request);
+        let actor = require_actor(&request)?;
+        let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
+        // The owner is the person in the token: `persist` takes it from the actor, never the message.
+        use_case
+            .persist(Self::proto_to_domain(request.into_inner()), &actor)
+            .await
+            .map(|settings| Response::new(Self::domain_to_proto(settings)))
+            .map_err(|_| localized_status(tonic::Code::InvalidArgument, ErrorKey::SettingsUpdatedFailed, locale))
     }
 }
 

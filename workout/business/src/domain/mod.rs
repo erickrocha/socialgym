@@ -20,3 +20,10 @@ pub mod settings;
 pub mod profile;
 pub mod team_member;
 pub mod revoked_token;
+
+/// Stored rows that use cases hand to the transports as they are (consents, data exports), re-exported
+/// so `integration` does not depend on the `entity` crate.
+pub mod records {
+    pub use entity::consent_entity::Model as ConsentRecord;
+    pub use entity::data_export_entity::Model as DataExportRecord;
+}

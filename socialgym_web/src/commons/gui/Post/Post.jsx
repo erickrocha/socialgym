@@ -116,7 +116,7 @@ const Post = ({ post, userAvatar, userName, onReact, onComment, onReport }) => {
                 <div className="post__comments-section">
                     <div className="post__comments-list">
                         {comments.map((comment) => (
-                            <div key={comment.id} className="post__comment">
+                            <div key={comment.uuid || comment.id} className="post__comment">
                                 <Avatar image={comment.authorAvatarUrl || userAvatar} size="xs" />
                                 <div className="post__comment-content">
                                     <p className="post__comment-author">{comment.authorName || 'User'}</p>

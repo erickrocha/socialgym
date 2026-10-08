@@ -6,8 +6,12 @@ use utoipa::ToSchema;
 pub struct PostJson {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uuid: Option<String>,
+    /// The author is the person in the access token; a client need not send these three.
+    #[serde(default)]
     pub author_id: i32,
+    #[serde(default)]
     pub author_uuid: String,
+    #[serde(default)]
     pub author_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub author_object_key: Option<String>,
@@ -40,7 +44,10 @@ pub struct MediaJson {
 #[serde(rename_all = "camelCase")]
 pub struct ReactionJson {
     pub uuid: Option<String>,
+    /// Set from the access token when a reaction is added; a client need not send them.
+    #[serde(default)]
     pub author_id: String,
+    #[serde(default)]
     pub author_name: String,
     pub reaction_type: String,
 }
@@ -51,8 +58,13 @@ pub struct ReactionJson {
 pub struct CommentJson {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uuid: Option<String>,
+    /// Set from the route when a comment is added; a client need not send it.
+    #[serde(default)]
     pub post_uuid: String,
+    /// Set from the access token when a comment is added; a client need not send it.
+    #[serde(default)]
     pub author_uuid: String,
+    #[serde(default)]
     pub author_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub author_object_key: Option<String>,
@@ -77,3 +89,7 @@ pub struct MentionJson {
     pub name: String,
     pub mentioned_uuid: String,
 }
+
+#[cfg(test)]
+#[path = "../../tests/post_json_unit_test.rs"]
+mod tests;

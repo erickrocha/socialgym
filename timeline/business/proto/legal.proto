@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package grpc.legal;
+
+// The text of the legal documents (terms, privacy, health_data): the gRPC twin of the REST
+// /legal/documents routes (C-010). Public (no access token), limited per address like the REST routes.
+service LegalDocumentService {
+  rpc ListLegalDocuments (ListLegalDocumentsRequest) returns (ListLegalDocumentsResponse);
+  rpc GetLegalDocument (GetLegalDocumentRequest) returns (LegalDocument);
+}
+
+message ListLegalDocumentsRequest {}
+
+message ListLegalDocumentsResponse {
+  repeated LegalDocument documents = 1;
+}
+
+message GetLegalDocumentRequest {
+  string document = 1;   // terms, privacy or health_data
+}
+
+message LegalDocument {
+  string document = 1;
+  string version = 2;
+  string title = 3;
+  string content = 4;
+}

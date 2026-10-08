@@ -249,7 +249,7 @@ impl TeamMemberService for GrpcTeamMemberService {
 		let roster =
 			TeamMemberUseCase::find_roster(&self.conn, payload.business_profile_uuid.trim())
 				.await
-				.map_err(|e| Status::not_found(e.message))?;
+				.map_err(crate::infrastructure::utils::business_status)?;
 
 		Ok(Response::new(TeamRosterResponse {
 			business_profile_id: roster.business_profile_id,
