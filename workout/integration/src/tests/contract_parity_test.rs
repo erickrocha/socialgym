@@ -190,9 +190,7 @@ async fn every_grpc_method_refuses_missing_malformed_and_tampered_credentials() 
 }
 
 /// The same sweep over REST for every inventory row outside the allow-list: a tampered token is `401`.
-/// A missing or malformed `Authorization` header is `403` (`AuthHeaderMissing`) today while gRPC answers
-/// `UNAUTHENTICATED` (design.md W19, owner decision pending); the sweep pins the current REST status so a
-/// decision to align it changes this test on purpose.
+/// A missing or malformed `Authorization` header is `401` too, as gRPC answers `UNAUTHENTICATED` (design.md W19).
 #[tokio::test]
 #[ignore = "requires the infra/test stack"]
 async fn every_rest_route_refuses_missing_and_tampered_credentials() {
@@ -210,8 +208,8 @@ async fn every_rest_route_refuses_missing_and_tampered_credentials() {
         }
         let method = Method::from_bytes(method.as_bytes()).unwrap();
         for (label, header, expected) in [
-            ("none", None, StatusCode::FORBIDDEN),
-            ("malformed", Some("Token abc".to_string()), StatusCode::FORBIDDEN),
+            ("none", None, StatusCode::UNAUTHORIZED),
+            ("malformed", Some("Token abc".to_string()), StatusCode::UNAUTHORIZED),
             ("tampered", Some(format!("Bearer {broken}")), StatusCode::UNAUTHORIZED),
         ] {
             let mut request = client.request(method.clone(), format!("{REST}{}", concrete(route)));

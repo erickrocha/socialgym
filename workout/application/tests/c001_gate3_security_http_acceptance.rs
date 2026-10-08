@@ -160,7 +160,7 @@ async fn tc004_protected_route_rejects_missing_invalid_and_revoked_tokens() {
         )
         .await
         .unwrap();
-    assert_eq!(missing_response.status(), axum::http::StatusCode::FORBIDDEN);
+    assert_eq!(missing_response.status(), axum::http::StatusCode::UNAUTHORIZED);
 
     let invalid_token = {
         let claims = Claims::new(

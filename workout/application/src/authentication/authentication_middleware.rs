@@ -32,9 +32,9 @@ pub async fn authentication(
     let auth_header = match auth_header {
         Some(header) => header
             .to_str()
-            .map_err(|_| ExceptionResponse::Forbidden(locale, ErrorKey::AuthHeaderMissing))?,
+            .map_err(|_| ExceptionResponse::Unauthorized(locale, ErrorKey::AuthHeaderMissing))?,
         None => {
-            return Err(ExceptionResponse::Forbidden(
+            return Err(ExceptionResponse::Unauthorized(
                 locale,
                 ErrorKey::RequiredHeaderValueMissing,
             ))
@@ -46,7 +46,7 @@ pub async fn authentication(
     let (bearer, token) = (header.next(), header.next());
 
     if bearer != Some("Bearer") || token.is_none() {
-        return Err(ExceptionResponse::Forbidden(
+        return Err(ExceptionResponse::Unauthorized(
             locale,
             ErrorKey::InvalidJwtToken,
         ));
