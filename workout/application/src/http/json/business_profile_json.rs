@@ -18,4 +18,3 @@ pub struct BusinessProfileJson {
     pub cover_image: Option<String>,
     pub addresses: Vec<BusinessProfileAddressJson>,
 }
-

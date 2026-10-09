@@ -1,22 +1,24 @@
-use business::commons::chat_hub::ChatHub;
 use crate::AppState;
+use crate::routes::push_device_routes::push_device_routes;
+use axum::Router;
 use axum::body::{Body, to_bytes};
 use axum::http::{Request, StatusCode};
-use axum::Router;
+use business::commons::chat_hub::ChatHub;
 use business::gateway::push_device_gateway::PushDeviceGateway;
 use domain::push_device::PushDevice;
-use crate::routes::push_device_routes::push_device_routes;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use mongodb::{Client, bson::doc};
 use serde_json::json;
-use std::sync::Arc;
 use std::env;
+use std::sync::Arc;
 use tower::ServiceExt;
 
 #[tokio::test]
 #[ignore = "requires a dedicated TEST_MONGO_URL MongoDB database"]
 async fn c006_push_device_http_contract_returns_no_token_and_uses_authenticated_owner() {
-    let _env = crate::infrastructure::push_notification_worker::ENV_LOCK.lock().await;
+    let _env = crate::infrastructure::push_notification_worker::ENV_LOCK
+        .lock()
+        .await;
     let mongo_url = std::env::var("TEST_MONGO_URL")
         .expect("TEST_MONGO_URL must point to the disposable timeline_test database");
     let mongo_client = Client::with_uri_str(mongo_url).await.unwrap();
@@ -96,14 +98,22 @@ async fn c006_push_device_http_contract_returns_no_token_and_uses_authenticated_
         .await
         .unwrap();
     assert_eq!(valid_response.status(), StatusCode::NO_CONTENT);
-    assert!(to_bytes(valid_response.into_body(), 1024).await.unwrap().is_empty());
+    assert!(
+        to_bytes(valid_response.into_body(), 1024)
+            .await
+            .unwrap()
+            .is_empty()
+    );
 
     let registered = PushDeviceGateway::find_all_for_person(&database, owner_uuid)
         .await
         .unwrap();
     assert_eq!(registered.len(), 1);
     assert_eq!(registered[0].device_uuid, device_uuid);
-    assert_eq!(registered[0].registration_token, "c006-tc009-provider-token");
+    assert_eq!(
+        registered[0].registration_token,
+        "c006-tc009-provider-token"
+    );
 
     let invalid_response = app
         .oneshot(

@@ -1,4 +1,5 @@
 use crate::commons::entity_mapper::EntityMapper;
+use crate::commons::functions::parse_uuid;
 use crate::domain::enums::InviteStatus;
 use crate::domain::friend::{Friend, FriendEntityMapper};
 use entity::friends_entity as friends;
@@ -8,7 +9,6 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DbConn, DbErr, DeleteResult,
     EntityTrait, QueryFilter,
 };
-use crate::commons::functions::parse_uuid;
 
 pub struct FriendGateway {}
 
@@ -184,7 +184,10 @@ impl FriendGateway {
 
     /// Bulk-deletes every friendship row involving a person, on either side of
     /// the relationship (account-purge cascade).
-    pub async fn delete_all_involving_person<C: ConnectionTrait>(db: &C, person_id: i32) -> Result<DeleteResult, DbErr> {
+    pub async fn delete_all_involving_person<C: ConnectionTrait>(
+        db: &C,
+        person_id: i32,
+    ) -> Result<DeleteResult, DbErr> {
         FriendsQuery::delete_many()
             .filter(
                 Condition::any()

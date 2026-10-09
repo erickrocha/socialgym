@@ -86,8 +86,8 @@ pub async fn update_exercise(
         &current_user,
         active_profile.as_deref(),
     )
-        .await
-        .map_err(|error| exercise_error(error, locale))?;
+    .await
+    .map_err(|error| exercise_error(error, locale))?;
     Ok(Json(ExerciseMapper::json(exercise)))
 }
 
@@ -132,9 +132,13 @@ pub async fn add_exercise(
     let exercise = ExerciseMapper::domain(payload);
 
     // Add exercise via use case
-    let result =
-        ExerciseUseCase::persist(&state.conn, exercise, &current_user, active_profile.as_deref())
-            .await;
+    let result = ExerciseUseCase::persist(
+        &state.conn,
+        exercise,
+        &current_user,
+        active_profile.as_deref(),
+    )
+    .await;
 
     let created_exercise = result.map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::ExercisesNotAdded)

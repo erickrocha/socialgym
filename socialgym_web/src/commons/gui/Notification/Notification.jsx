@@ -1,5 +1,4 @@
 import {Button} from "../Button/index.jsx";
-import React from "react";
 import {useTranslation} from "react-i18next";
 import './Notification.scss';
 

@@ -4,13 +4,15 @@
 //! PostGIS database (`TEST_DATABASE_URL`) and call the handlers or `GrpcAuthLayer` directly.
 use crate::auth::grpc_auth_layer::GrpcAuthLayer;
 use crate::proto::business_profile::business_profile_service_server::BusinessProfileService;
-use crate::proto::business_profile::{BusinessProfileRequestId, BusinessProfileRequestOwnerId, RemoveBusinessProfileAddressRequest};
+use crate::proto::business_profile::{
+    BusinessProfileRequestId, BusinessProfileRequestOwnerId, RemoveBusinessProfileAddressRequest,
+};
 use crate::proto::exercise::exercise_service_server::ExerciseService;
 use crate::proto::exercise::{Exercise, ExerciseRequest, exercise_request};
 use crate::proto::person::person_service_server::PersonService;
 use crate::proto::person::{RemovePersonAddressRequest, SearchMentionableFriendsRequest};
-use crate::proto::settings::settings_service_server::SettingsService;
 use crate::proto::settings::SettingOwnerIdRequest;
+use crate::proto::settings::settings_service_server::SettingsService;
 use crate::proto::workout::workout_service_server::WorkoutService;
 use crate::proto::workout::{Workout, WorkoutExercisesRequest, WorkoutRequest, workout_request};
 use crate::service::business_profile_service::GrpcBusinessProfileService;
@@ -55,7 +57,8 @@ fn as_person<T>(message: T, id: i32) -> Request<T> {
 /// Alice (1) and Bob (2) are friends; Carol (3) is a stranger; Dave (4) is an accepted team member of
 /// Alice's business profile, which has two addresses; Alice has two person addresses and settings.
 async fn world() -> Arc<DatabaseConnection> {
-    let url = std::env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must point to a disposable PostGIS database");
+    let url = std::env::var("TEST_DATABASE_URL")
+        .expect("TEST_DATABASE_URL must point to a disposable PostGIS database");
     let db = Database::connect(url).await.unwrap();
     Migrator::refresh(&db).await.unwrap();
     db.execute_unprepared(&format!(
@@ -90,7 +93,10 @@ async fn world() -> Arc<DatabaseConnection> {
 
 async fn count(db: &DatabaseConnection, table: &str, id: i32) -> i64 {
     let row = db
-        .query_one_raw(Statement::from_string(DbBackend::Postgres, format!("SELECT count(*) AS n FROM {table} WHERE id = {id}")))
+        .query_one_raw(Statement::from_string(
+            DbBackend::Postgres,
+            format!("SELECT count(*) AS n FROM {table} WHERE id = {id}"),
+        ))
         .await
         .unwrap()
         .unwrap();
@@ -105,16 +111,32 @@ async fn count(db: &DatabaseConnection, table: &str, id: i32) -> i64 {
 async fn w1_mentionable_friends_are_searchable_only_by_their_owner() {
     let service = GrpcPersonService::new(world().await);
     let search = |caller: Option<i32>| {
-        let message = SearchMentionableFriendsRequest { person_id: 1, query: "Bob".into(), limit: 10 };
+        let message = SearchMentionableFriendsRequest {
+            person_id: 1,
+            query: "Bob".into(),
+            limit: 10,
+        };
         let request = match caller {
             Some(id) => as_person(message, id),
             None => Request::new(message),
         };
         service.search_mentionable_friends(request)
     };
-    assert_eq!(search(Some(1)).await.unwrap().into_inner().people.len(), 1, "Alice finds her own friend");
-    assert_eq!(search(Some(3)).await.unwrap_err().code(), Code::PermissionDenied, "a stranger must not list Alice's friends");
-    assert_eq!(search(None).await.unwrap_err().code(), Code::Unauthenticated, "no actor, no answer");
+    assert_eq!(
+        search(Some(1)).await.unwrap().into_inner().people.len(),
+        1,
+        "Alice finds her own friend"
+    );
+    assert_eq!(
+        search(Some(3)).await.unwrap_err().code(),
+        Code::PermissionDenied,
+        "a stranger must not list Alice's friends"
+    );
+    assert_eq!(
+        search(None).await.unwrap_err().code(),
+        Code::Unauthenticated,
+        "no actor, no answer"
+    );
 }
 
 /// W3 (fixed in task 7): removing a business-profile address by `uuid` removes that address.
@@ -123,10 +145,24 @@ async fn w1_mentionable_friends_are_searchable_only_by_their_owner() {
 async fn w3_a_business_profile_address_is_removed_by_uuid() {
     let db = world().await;
     let service = GrpcBusinessProfileService::new(db.clone());
-    let request = RemoveBusinessProfileAddressRequest { id: 0, uuid: "20000000-0000-0000-0000-0000000000a2".into() };
-    service.remove_business_profile_address(as_person(request, 1)).await.expect("remove by uuid");
-    assert_eq!(count(&db, "business_profile_address", 2).await, 0, "the named address is gone");
-    assert_eq!(count(&db, "business_profile_address", 1).await, 1, "the other address stays");
+    let request = RemoveBusinessProfileAddressRequest {
+        id: 0,
+        uuid: "20000000-0000-0000-0000-0000000000a2".into(),
+    };
+    service
+        .remove_business_profile_address(as_person(request, 1))
+        .await
+        .expect("remove by uuid");
+    assert_eq!(
+        count(&db, "business_profile_address", 2).await,
+        0,
+        "the named address is gone"
+    );
+    assert_eq!(
+        count(&db, "business_profile_address", 1).await,
+        1,
+        "the other address stays"
+    );
 }
 
 /// W13 (fixed in task 6): removing a person address by `uuid` removes that address (the REST route does).
@@ -135,10 +171,24 @@ async fn w3_a_business_profile_address_is_removed_by_uuid() {
 async fn w13_a_person_address_is_removed_by_uuid() {
     let db = world().await;
     let service = GrpcPersonService::new(db.clone());
-    let request = RemovePersonAddressRequest { id: 0, uuid: "70000000-0000-0000-0000-0000000000a2".into() };
-    service.remove_person_address(as_person(request, 1)).await.expect("remove by uuid");
-    assert_eq!(count(&db, "person_address", 2).await, 0, "the named address is gone");
-    assert_eq!(count(&db, "person_address", 1).await, 1, "the other address stays");
+    let request = RemovePersonAddressRequest {
+        id: 0,
+        uuid: "70000000-0000-0000-0000-0000000000a2".into(),
+    };
+    service
+        .remove_person_address(as_person(request, 1))
+        .await
+        .expect("remove by uuid");
+    assert_eq!(
+        count(&db, "person_address", 2).await,
+        0,
+        "the named address is gone"
+    );
+    assert_eq!(
+        count(&db, "person_address", 1).await,
+        1,
+        "the other address stays"
+    );
 }
 
 /// W14 (fixed in task 6): the settings read by owner uuid that REST serves (`/settings/owner/uuid/{uuid}`).
@@ -146,11 +196,28 @@ async fn w13_a_person_address_is_removed_by_uuid() {
 #[ignore = "requires a disposable TEST_DATABASE_URL"]
 async fn w14_settings_are_readable_by_the_owner_uuid() {
     let service = GrpcSettingService::new(world().await);
-    let own = SettingOwnerIdRequest { owner_id: 0, owner_uuid: ALICE.into() };
-    let found = service.get_by_owner_ids(as_person(own, 1)).await.expect("own settings by uuid").into_inner();
+    let own = SettingOwnerIdRequest {
+        owner_id: 0,
+        owner_uuid: ALICE.into(),
+    };
+    let found = service
+        .get_by_owner_ids(as_person(own, 1))
+        .await
+        .expect("own settings by uuid")
+        .into_inner();
     assert_eq!(found.owner_uuid, ALICE);
-    let foreign = SettingOwnerIdRequest { owner_id: 0, owner_uuid: ALICE.into() };
-    assert_eq!(service.get_by_owner_ids(as_person(foreign, 3)).await.unwrap_err().code(), Code::PermissionDenied);
+    let foreign = SettingOwnerIdRequest {
+        owner_id: 0,
+        owner_uuid: ALICE.into(),
+    };
+    assert_eq!(
+        service
+            .get_by_owner_ids(as_person(foreign, 3))
+            .await
+            .unwrap_err()
+            .code(),
+        Code::PermissionDenied
+    );
 }
 
 /// W5 (fixed in task 7): the street-level address fields and the owner ids reach only the owner and the
@@ -160,39 +227,91 @@ async fn w14_settings_are_readable_by_the_owner_uuid() {
 async fn w5_business_profile_street_addresses_and_owner_ids_are_restricted() {
     let service = GrpcBusinessProfileService::new(world().await);
     let by_uuid = |caller: i32| {
-        let request = BusinessProfileRequestId { id: 0, uuid: PROFILE.into() };
+        let request = BusinessProfileRequestId {
+            id: 0,
+            uuid: PROFILE.into(),
+        };
         service.get_business_profile_by_id(as_person(request, caller))
     };
     for member in [1, 4] {
         let profile = by_uuid(member).await.unwrap().into_inner();
-        assert_eq!(profile.addresses.len(), 2, "person {member} sees the addresses");
-        assert!(profile.addresses.iter().all(|a| !a.address_line_1.is_empty()), "person {member} sees the street");
+        assert_eq!(
+            profile.addresses.len(),
+            2,
+            "person {member} sees the addresses"
+        );
+        assert!(
+            profile
+                .addresses
+                .iter()
+                .all(|a| !a.address_line_1.is_empty()),
+            "person {member} sees the street"
+        );
         assert_eq!(profile.owner_uuid, ALICE, "person {member} sees the owner");
     }
     for outsider in [2, 3] {
         let profile = by_uuid(outsider).await.unwrap().into_inner();
-        assert_eq!(profile.addresses.len(), 2, "person {outsider} still sees where the profile is");
+        assert_eq!(
+            profile.addresses.len(),
+            2,
+            "person {outsider} still sees where the profile is"
+        );
         for address in &profile.addresses {
-            assert!(address.address_line_1.is_empty() && address.address_line_2.is_empty() && address.postal_code.is_empty(), "person {outsider} must not see the street: {address:?}");
-            assert_eq!((address.locality.as_str(), address.administrative_area.as_str(), address.country_code.as_str()), ("Sao Paulo", "SP", "BR"));
+            assert!(
+                address.address_line_1.is_empty()
+                    && address.address_line_2.is_empty()
+                    && address.postal_code.is_empty(),
+                "person {outsider} must not see the street: {address:?}"
+            );
+            assert_eq!(
+                (
+                    address.locality.as_str(),
+                    address.administrative_area.as_str(),
+                    address.country_code.as_str()
+                ),
+                ("Sao Paulo", "SP", "BR")
+            );
         }
-        assert!(profile.owner_uuid.is_empty() && profile.owner_id == 0, "person {outsider} must not see the owner ids");
+        assert!(
+            profile.owner_uuid.is_empty() && profile.owner_id == 0,
+            "person {outsider} must not see the owner ids"
+        );
         assert_eq!(profile.business_name, "Alice Gym", "the public fields stay");
     }
-    let by_owner = BusinessProfileRequestOwnerId { owner_id: 1, owner_uuid: String::new() };
-    let listed = service.get_business_profile_by_owner_id(as_person(by_owner, 3)).await.unwrap().into_inner();
+    let by_owner = BusinessProfileRequestOwnerId {
+        owner_id: 1,
+        owner_uuid: String::new(),
+    };
+    let listed = service
+        .get_business_profile_by_owner_id(as_person(by_owner, 3))
+        .await
+        .unwrap()
+        .into_inner();
     assert!(
-        listed.business_profiles.iter().all(|p| p.owner_uuid.is_empty() && p.addresses.iter().all(|a| a.address_line_1.is_empty())),
+        listed
+            .business_profiles
+            .iter()
+            .all(|p| p.owner_uuid.is_empty()
+                && p.addresses.iter().all(|a| a.address_line_1.is_empty())),
         "the owner listing hides them too"
     );
 }
 
 fn private_exercise() -> Exercise {
-    Exercise { name: "Squat".into(), category: "Strength".into(), sets: 3, reps_or_duration: 10, visibility: "Private".into(), ..Default::default() }
+    Exercise {
+        name: "Squat".into(),
+        category: "Strength".into(),
+        sets: 3,
+        reps_or_duration: 10,
+        visibility: "Private".into(),
+        ..Default::default()
+    }
 }
 
 fn exercise_id(id: i32) -> ExerciseRequest {
-    ExerciseRequest { identifier: Some(exercise_request::Identifier::Id(id)) }
+    ExerciseRequest {
+        identifier: Some(exercise_request::Identifier::Id(id)),
+    }
 }
 
 /// The status of a call that must fail.
@@ -201,7 +320,9 @@ fn status<T>(result: Result<tonic::Response<T>, tonic::Status>) -> Code {
 }
 
 fn workout_id(id: i32) -> WorkoutRequest {
-    WorkoutRequest { identifier: Some(workout_request::Identifier::Id(id)) }
+    WorkoutRequest {
+        identifier: Some(workout_request::Identifier::Id(id)),
+    }
 }
 
 /// W4 (task 9): a mutation on a resource the caller cannot read is `NOT_FOUND`; a reader who is not the
@@ -213,19 +334,104 @@ async fn w4_mutating_an_unreadable_workout_or_exercise_is_not_found() {
     let exercises = GrpcExerciseService::new(db.clone());
     let workouts = GrpcWorkoutService::new(db);
 
-    let private = exercises.add_exercise(as_person(private_exercise(), 1)).await.unwrap().into_inner();
-    let public = exercises.add_exercise(as_person(Exercise { visibility: "Public".into(), name: "Row".into(), ..private_exercise() }, 1)).await.unwrap().into_inner();
+    let private = exercises
+        .add_exercise(as_person(private_exercise(), 1))
+        .await
+        .unwrap()
+        .into_inner();
+    let public = exercises
+        .add_exercise(as_person(
+            Exercise {
+                visibility: "Public".into(),
+                name: "Row".into(),
+                ..private_exercise()
+            },
+            1,
+        ))
+        .await
+        .unwrap()
+        .into_inner();
 
-    assert_eq!(status(exercises.delete_exercise(as_person(exercise_id(private.id), 3)).await), Code::NotFound, "private exercise, stranger deletes");
-    assert_eq!(status(exercises.update_exercise(as_person(Exercise { name: "x".into(), ..private.clone() }, 3)).await), Code::NotFound, "private exercise, stranger updates");
-    assert_eq!(status(exercises.delete_exercise(as_person(exercise_id(public.id), 3)).await), Code::PermissionDenied, "a reader who is not the owner keeps 403");
+    assert_eq!(
+        status(
+            exercises
+                .delete_exercise(as_person(exercise_id(private.id), 3))
+                .await
+        ),
+        Code::NotFound,
+        "private exercise, stranger deletes"
+    );
+    assert_eq!(
+        status(
+            exercises
+                .update_exercise(as_person(
+                    Exercise {
+                        name: "x".into(),
+                        ..private.clone()
+                    },
+                    3
+                ))
+                .await
+        ),
+        Code::NotFound,
+        "private exercise, stranger updates"
+    );
+    assert_eq!(
+        status(
+            exercises
+                .delete_exercise(as_person(exercise_id(public.id), 3))
+                .await
+        ),
+        Code::PermissionDenied,
+        "a reader who is not the owner keeps 403"
+    );
 
-    let workout = Workout { name: "Push".into(), visibility: "Private".into(), difficulty: "Easy".into(), muscle_group: "Chest".into(), ..Default::default() };
-    let created = workouts.add_workout(as_person(workout, 1)).await.unwrap().into_inner();
-    assert_eq!(status(workouts.delete_workout(as_person(workout_id(created.id), 3)).await), Code::NotFound, "private workout, stranger deletes");
-    assert_eq!(status(workouts.update_workout(as_person(Workout { name: "x".into(), ..created.clone() }, 3)).await), Code::NotFound, "private workout, stranger updates");
-    let add = WorkoutExercisesRequest { workout_uuid: created.uuid.clone(), exercises: vec![private.clone()], workout_id: 0 };
-    assert_eq!(status(workouts.add_exercises_to_workout(as_person(add, 3)).await), Code::NotFound, "private workout, stranger adds exercises");
+    let workout = Workout {
+        name: "Push".into(),
+        visibility: "Private".into(),
+        difficulty: "Easy".into(),
+        muscle_group: "Chest".into(),
+        ..Default::default()
+    };
+    let created = workouts
+        .add_workout(as_person(workout, 1))
+        .await
+        .unwrap()
+        .into_inner();
+    assert_eq!(
+        status(
+            workouts
+                .delete_workout(as_person(workout_id(created.id), 3))
+                .await
+        ),
+        Code::NotFound,
+        "private workout, stranger deletes"
+    );
+    assert_eq!(
+        status(
+            workouts
+                .update_workout(as_person(
+                    Workout {
+                        name: "x".into(),
+                        ..created.clone()
+                    },
+                    3
+                ))
+                .await
+        ),
+        Code::NotFound,
+        "private workout, stranger updates"
+    );
+    let add = WorkoutExercisesRequest {
+        workout_uuid: created.uuid.clone(),
+        exercises: vec![private.clone()],
+        workout_id: 0,
+    };
+    assert_eq!(
+        status(workouts.add_exercises_to_workout(as_person(add, 3)).await),
+        Code::NotFound,
+        "private workout, stranger adds exercises"
+    );
 }
 
 // ---------------------------------------------------------------- authentication layer gaps
@@ -242,11 +448,20 @@ fn token_for(person_id: i32, email: &str) -> String {
         None,
         None,
     );
-    encode(&Header::new(Algorithm::HS512), &claims, &EncodingKey::from_secret(SECRET.as_bytes())).unwrap()
+    encode(
+        &Header::new(Algorithm::HS512),
+        &claims,
+        &EncodingKey::from_secret(SECRET.as_bytes()),
+    )
+    .unwrap()
 }
 
 /// The `grpc-status` the layer answers for a call, or `None` when it let the call through to the service.
-async fn through_layer(db: Arc<DatabaseConnection>, path: &str, headers: &[(&str, String)]) -> Option<String> {
+async fn through_layer(
+    db: Arc<DatabaseConnection>,
+    path: &str,
+    headers: &[(&str, String)],
+) -> Option<String> {
     let inner = tower::service_fn(|_request: hyper::Request<TonicBody>| async {
         Ok::<_, std::convert::Infallible>(hyper::Response::new(TonicBody::empty()))
     });
@@ -255,8 +470,15 @@ async fn through_layer(db: Arc<DatabaseConnection>, path: &str, headers: &[(&str
     for (name, value) in headers {
         builder = builder.header(*name, value.as_str());
     }
-    let response = service.oneshot(builder.body(TonicBody::empty()).unwrap()).await.unwrap();
-    response.headers().get("grpc-status").and_then(|v| v.to_str().ok()).map(str::to_string)
+    let response = service
+        .oneshot(builder.body(TonicBody::empty()).unwrap())
+        .await
+        .unwrap();
+    response
+        .headers()
+        .get("grpc-status")
+        .and_then(|v| v.to_str().ok())
+        .map(str::to_string)
 }
 
 /// W11 (fixed in task 2): an ordinary RPC from a person without current Terms and Privacy consent is
@@ -269,10 +491,22 @@ async fn w11_grpc_enforces_current_terms_and_privacy_consent() {
         std::env::set_var("AUTH_RULES_ENABLED", "false");
     }
     let db = world().await;
-    let bearer = vec![("authorization", format!("Bearer {}", token_for(1, "person1@example.test")))];
+    let bearer = vec![(
+        "authorization",
+        format!("Bearer {}", token_for(1, "person1@example.test")),
+    )];
     // Alice has accepted nothing: no consent rows exist.
-    let ordinary = through_layer(db.clone(), "/grpc.workout.WorkoutService/GetWorkoutsByOwner", &bearer).await;
-    assert_eq!(ordinary.as_deref(), Some("7"), "PERMISSION_DENIED without current consent");
+    let ordinary = through_layer(
+        db.clone(),
+        "/grpc.workout.WorkoutService/GetWorkoutsByOwner",
+        &bearer,
+    )
+    .await;
+    assert_eq!(
+        ordinary.as_deref(),
+        Some("7"),
+        "PERMISSION_DENIED without current consent"
+    );
     let check = through_layer(db, "/grpc.person.PersonService/HasActiveConsent", &bearer).await;
     assert_eq!(check, None, "the consent check itself must stay reachable");
 }
@@ -288,23 +522,46 @@ async fn w2_the_team_roster_accepts_only_the_internal_secret() {
     }
     let db = world().await;
     let path = "/grpc.team_member.TeamMemberService/GetTeamRoster";
-    let user = vec![("authorization", format!("Bearer {}", token_for(1, "person1@example.test")))];
-    assert_eq!(through_layer(db.clone(), path, &user).await.as_deref(), Some("16"), "a user token must not open the roster");
+    let user = vec![(
+        "authorization",
+        format!("Bearer {}", token_for(1, "person1@example.test")),
+    )];
+    assert_eq!(
+        through_layer(db.clone(), path, &user).await.as_deref(),
+        Some("16"),
+        "a user token must not open the roster"
+    );
     let wrong = vec![("x-internal-secret", "wrong".to_string())];
-    assert_eq!(through_layer(db.clone(), path, &wrong).await.as_deref(), Some("16"), "a wrong secret is refused");
+    assert_eq!(
+        through_layer(db.clone(), path, &wrong).await.as_deref(),
+        Some("16"),
+        "a wrong secret is refused"
+    );
     let internal = vec![("x-internal-secret", "c010-internal-secret".to_string())];
-    assert_eq!(through_layer(db.clone(), path, &internal).await, None, "the secret opens it");
+    assert_eq!(
+        through_layer(db.clone(), path, &internal).await,
+        None,
+        "the secret opens it"
+    );
 
     // What the secret opens is the roster of the profile: its owner and its Accepted members.
-    use crate::proto::team_member::team_member_service_server::TeamMemberService;
     use crate::proto::team_member::TeamRosterRequest;
+    use crate::proto::team_member::team_member_service_server::TeamMemberService;
     use crate::service::team_member_service::GrpcTeamMemberService;
     let roster = GrpcTeamMemberService::new(db)
-        .get_team_roster(Request::new(TeamRosterRequest { business_profile_uuid: PROFILE.into() }))
+        .get_team_roster(Request::new(TeamRosterRequest {
+            business_profile_uuid: PROFILE.into(),
+        }))
         .await
         .expect("roster")
         .into_inner();
-    assert_eq!((roster.owner_person_uuid.as_str(), roster.accepted_member_person_uuids.as_slice()), (ALICE, [DAVE.to_string()].as_slice()));
+    assert_eq!(
+        (
+            roster.owner_person_uuid.as_str(),
+            roster.accepted_member_person_uuids.as_slice()
+        ),
+        (ALICE, [DAVE.to_string()].as_slice())
+    );
 }
 
 /// W22: `GetResource` returned the settings of whichever owner id or uuid the request named; it serves the
@@ -312,20 +569,56 @@ async fn w2_the_team_roster_accepts_only_the_internal_secret() {
 #[tokio::test]
 #[ignore = "requires a disposable TEST_DATABASE_URL"]
 async fn w22_the_resource_lookup_serves_only_the_callers_own_settings() {
+    use crate::proto::resource::ResourceRequest;
     use crate::proto::resource::resource_request::Identifier;
     use crate::proto::resource::resource_service_server::ResourceService;
-    use crate::proto::resource::ResourceRequest;
     use crate::service::resource_service::GrpcResourceService;
     let service = GrpcResourceService::new(world().await);
-    let lookup = |identifier, id| as_person(ResourceRequest { identifier: Some(identifier) }, id);
+    let lookup = |identifier, id| {
+        as_person(
+            ResourceRequest {
+                identifier: Some(identifier),
+            },
+            id,
+        )
+    };
 
-    let own = service.get_resource(lookup(Identifier::UserId(1), 1)).await.expect("own settings by id").into_inner();
+    let own = service
+        .get_resource(lookup(Identifier::UserId(1), 1))
+        .await
+        .expect("own settings by id")
+        .into_inner();
     assert_eq!(own.setting.map(|s| s.owner_id), Some(1));
-    assert!(service.get_resource(lookup(Identifier::OwnerUuid(ALICE.into()), 1)).await.is_ok(), "own settings by uuid");
-    let other_id = service.get_resource(lookup(Identifier::UserId(1), 3)).await.unwrap_err();
-    assert_eq!(other_id.code(), Code::PermissionDenied, "another person's id");
-    let other_uuid = service.get_resource(lookup(Identifier::OwnerUuid(ALICE.into()), 3)).await.unwrap_err();
-    assert_eq!(other_uuid.code(), Code::PermissionDenied, "another person's uuid");
-    let anonymous = service.get_resource(Request::new(ResourceRequest { identifier: Some(Identifier::UserId(1)) })).await.unwrap_err();
+    assert!(
+        service
+            .get_resource(lookup(Identifier::OwnerUuid(ALICE.into()), 1))
+            .await
+            .is_ok(),
+        "own settings by uuid"
+    );
+    let other_id = service
+        .get_resource(lookup(Identifier::UserId(1), 3))
+        .await
+        .unwrap_err();
+    assert_eq!(
+        other_id.code(),
+        Code::PermissionDenied,
+        "another person's id"
+    );
+    let other_uuid = service
+        .get_resource(lookup(Identifier::OwnerUuid(ALICE.into()), 3))
+        .await
+        .unwrap_err();
+    assert_eq!(
+        other_uuid.code(),
+        Code::PermissionDenied,
+        "another person's uuid"
+    );
+    let anonymous = service
+        .get_resource(Request::new(ResourceRequest {
+            identifier: Some(Identifier::UserId(1)),
+        }))
+        .await
+        .unwrap_err();
     assert_eq!(anonymous.code(), Code::Unauthenticated);
 }

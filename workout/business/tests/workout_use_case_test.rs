@@ -131,7 +131,9 @@ async fn private_workout_is_readable_only_by_its_owner() {
     let db = empty_db();
     let private = workout_owned_by(1, Visibility::Private);
 
-    assert!(WorkoutUseCase::ensure_readable(&db, &private, &acting(1)).await.is_ok());
+    assert!(WorkoutUseCase::ensure_readable(&db, &private, &acting(1))
+        .await
+        .is_ok());
     // Reported as not found, so it cannot be told apart from a missing workout.
     assert_eq!(
         WorkoutUseCase::ensure_readable(&db, &private, &acting(2))
@@ -147,10 +149,14 @@ async fn private_workout_is_readable_only_by_its_owner() {
         5,
         Uuid::from_u128(5).to_string(),
     );
-    assert!(WorkoutUseCase::ensure_readable(&db, &private, &profile).await.is_err());
+    assert!(WorkoutUseCase::ensure_readable(&db, &private, &profile)
+        .await
+        .is_err());
 
     let public = workout_owned_by(1, Visibility::Public);
-    assert!(WorkoutUseCase::ensure_readable(&db, &public, &acting(2)).await.is_ok());
+    assert!(WorkoutUseCase::ensure_readable(&db, &public, &acting(2))
+        .await
+        .is_ok());
 }
 
 #[tokio::test]
@@ -169,7 +175,10 @@ async fn readable_by_hides_private_workouts_and_private_composed_exercises() {
         .unwrap();
     assert_eq!(seen.len(), 1);
     assert_eq!(seen[0].exercises.len(), 1);
-    assert!(matches!(seen[0].exercises[0].visibility, Visibility::Public));
+    assert!(matches!(
+        seen[0].exercises[0].visibility,
+        Visibility::Public
+    ));
 
     // The owner sees everything.
     let own = WorkoutUseCase::readable_by(&db, vec![public, private], &acting(1))
@@ -342,14 +351,18 @@ async fn delete_requires_the_owner_and_reports_a_missing_row_as_not_found() {
         .append_query_results(vec![vec![owned()]])
         .append_exec_results(vec![deleted(1)])
         .into_connection();
-    assert!(WorkoutUseCase::delete_by_id(&db, 7, &acting(1)).await.is_ok());
+    assert!(WorkoutUseCase::delete_by_id(&db, 7, &acting(1))
+        .await
+        .is_ok());
 
     // The row vanished between the lookup and the delete.
     let db = MockDatabase::new(DatabaseBackend::Postgres)
         .append_query_results(vec![vec![owned()]])
         .append_exec_results(vec![deleted(0)])
         .into_connection();
-    let error = WorkoutUseCase::delete_by_id(&db, 7, &acting(1)).await.unwrap_err();
+    let error = WorkoutUseCase::delete_by_id(&db, 7, &acting(1))
+        .await
+        .unwrap_err();
     assert_eq!(error.kind, BusinessErrorKind::NotFound);
 
     // A different identity, even with the same numeric id, is not the owner.
@@ -363,7 +376,9 @@ async fn delete_requires_the_owner_and_reports_a_missing_row_as_not_found() {
         Uuid::from_u128(5).to_string(),
     );
     // A different identity cannot read the workout, so it is told the workout does not exist (W4).
-    let error = WorkoutUseCase::delete_by_id(&db, 7, &profile).await.unwrap_err();
+    let error = WorkoutUseCase::delete_by_id(&db, 7, &profile)
+        .await
+        .unwrap_err();
     assert_eq!(error.kind, BusinessErrorKind::NotFound);
 }
 
@@ -382,9 +397,21 @@ async fn an_active_profile_keeps_access_to_its_own_persons_records_and_its_own()
     let profiles_private = workout_owned_by(9, Visibility::Private);
     let someone_elses_private = workout_owned_by(2, Visibility::Private);
 
-    assert!(WorkoutUseCase::ensure_readable(&db, &persons_private, &acting).await.is_ok());
-    assert!(WorkoutUseCase::ensure_readable(&db, &profiles_private, &acting).await.is_ok());
-    assert!(WorkoutUseCase::ensure_readable(&db, &someone_elses_private, &acting).await.is_err());
+    assert!(
+        WorkoutUseCase::ensure_readable(&db, &persons_private, &acting)
+            .await
+            .is_ok()
+    );
+    assert!(
+        WorkoutUseCase::ensure_readable(&db, &profiles_private, &acting)
+            .await
+            .is_ok()
+    );
+    assert!(
+        WorkoutUseCase::ensure_readable(&db, &someone_elses_private, &acting)
+            .await
+            .is_err()
+    );
 
     // Listing the Person's workouts while acting as the profile still returns them all.
     let listed = WorkoutUseCase::readable_by(

@@ -3,7 +3,6 @@ import {Button, TextField, Divider} from "../../../commons/gui/index.js";
 import {useTranslation} from "react-i18next";
 import {useDispatch, useSelector} from "react-redux";
 import * as handler from "../../../redux/reducers/person/index.js";
-import React from "react";
 import './PersonInfoForm.scss';
 import {updateObject} from "../../../commons/library/utility.js";
 import {displayToKg, kgToDisplay, resolveWeightUnit, weightUnitLabel} from "../../../commons/library/weightUnit.js";
@@ -11,7 +10,7 @@ import {displayToKg, kgToDisplay, resolveWeightUnit, weightUnitLabel} from "../.
 const PersonInfoForm = ({personInfo, onCancel, onConfirm}) => {
     const {t, i18n} = useTranslation('common');
     const weightUnit = useSelector((state) => resolveWeightUnit(state.settings.settings.weightUnit, i18n.language));
-    const {register, handleSubmit, watch, formState: {errors}} = useForm({
+    const {register, handleSubmit} = useForm({
         defaultValues: {
             biography: personInfo?.biography || '',
             relationship: personInfo?.relationship || '',

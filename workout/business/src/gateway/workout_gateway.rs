@@ -39,7 +39,10 @@ impl WorkoutGateway {
             .await
     }
 
-    pub async fn find_by_uuid(db: &DbConn, uuid: String) -> Result<Option<workout::WorkoutEntity>, DbErr> {
+    pub async fn find_by_uuid(
+        db: &DbConn,
+        uuid: String,
+    ) -> Result<Option<workout::WorkoutEntity>, DbErr> {
         let uuid = parse_uuid(&uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         WorkoutQuery::find()
             .filter(workout::Column::Uuid.eq(uuid))
@@ -47,7 +50,10 @@ impl WorkoutGateway {
             .await
     }
 
-    pub async fn find_by_owner_id(db: &DbConn, id: i32) -> Result<Vec<workout::WorkoutEntity>, DbErr> {
+    pub async fn find_by_owner_id(
+        db: &DbConn,
+        id: i32,
+    ) -> Result<Vec<workout::WorkoutEntity>, DbErr> {
         WorkoutQuery::find()
             .filter(workout::Column::OwnerId.eq(id))
             .all(db)
@@ -66,7 +72,10 @@ impl WorkoutGateway {
             .await
     }
 
-    pub async fn find_by_owner_uuid(db: &DbConn, uuid: String) -> Result<Vec<workout::WorkoutEntity>, DbErr> {
+    pub async fn find_by_owner_uuid(
+        db: &DbConn,
+        uuid: String,
+    ) -> Result<Vec<workout::WorkoutEntity>, DbErr> {
         let uuid = parse_uuid(&uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         WorkoutQuery::find()
             .filter(workout::Column::OwnerUuid.eq(uuid))
@@ -88,7 +97,10 @@ impl WorkoutGateway {
 
     /// Bulk-deletes every workout owned by a person (account-purge cascade).
     /// `workout_exercise` rows cascade automatically once their workout is gone.
-    pub async fn delete_all_by_owner_id<C: ConnectionTrait>(db: &C, owner_id: i32) -> Result<DeleteResult, DbErr> {
+    pub async fn delete_all_by_owner_id<C: ConnectionTrait>(
+        db: &C,
+        owner_id: i32,
+    ) -> Result<DeleteResult, DbErr> {
         Entity::delete_many()
             .filter(workout::Column::OwnerId.eq(owner_id))
             .exec(db)

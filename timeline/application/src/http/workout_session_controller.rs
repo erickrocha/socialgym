@@ -1,15 +1,16 @@
+use crate::AppState;
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
 use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::error_response_json::{
-    BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,NotFoundErrorJson
+    BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, NotFoundErrorJson,
+    UnauthorizedErrorJson,
 };
 use crate::http::json::workout_session_json::WorkoutSessionJson;
-use business::commons::data_tools::opt_naive_to_bson_datetime;
 use crate::infrastructure::mapper::{Mapper, WorkoutMapper};
-use crate::AppState;
-use axum::extract::{Extension, Path, Query,State};
-use axum::http::StatusCode;
 use axum::Json;
+use axum::extract::{Extension, Path, Query, State};
+use axum::http::StatusCode;
+use business::commons::data_tools::opt_naive_to_bson_datetime;
 use business::use_cases::workout_use_case::WorkoutSessionUseCase;
 use chrono::{Duration, Utc};
 use domain::user::User;
@@ -46,7 +47,10 @@ pub async fn create_workout_session(
 ) -> HttpResponse<(StatusCode, Json<WorkoutSessionJson>)> {
     // The mapper needs every date and exercise owner name: reject instead of panicking.
     if !WorkoutMapper::is_complete(&payload) {
-        return Err(ExceptionResponse::BadRequest(locale, ErrorKey::WorkoutAddFailed));
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::WorkoutAddFailed,
+        ));
     }
     // Ids are server-generated: a client-supplied id could overwrite someone else's session.
     payload.uuid = None;
@@ -94,9 +98,7 @@ pub async fn get_workout_session(
         &current_user.person_uuid,
     )
     .await
-    .map_err(|error| {
-        ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutNotFound)
-    })?;
+    .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutNotFound))?;
 
     Ok(Json(WorkoutMapper::json(workout)))
 }
@@ -120,7 +122,11 @@ pub async fn get_workout_session(
         ("api_key" = [])
     )
 )]
-pub async fn get_workout_sessions(state: State<AppState>,Query(params): Query<WorkoutFilterParams>,Extension(current_user): Extension<User>) -> HttpResponse<Json<Vec<WorkoutSessionJson>>> {
+pub async fn get_workout_sessions(
+    state: State<AppState>,
+    Query(params): Query<WorkoutFilterParams>,
+    Extension(current_user): Extension<User>,
+) -> HttpResponse<Json<Vec<WorkoutSessionJson>>> {
     let person_uuid = current_user.person_uuid.clone();
 
     let end = params.end_date.unwrap_or_else(|| Utc::now().naive_utc());
@@ -129,7 +135,13 @@ pub async fn get_workout_sessions(state: State<AppState>,Query(params): Query<Wo
     let start_bson = opt_naive_to_bson_datetime(start).unwrap();
     let end_bson = opt_naive_to_bson_datetime(end).unwrap();
 
-    let response = WorkoutSessionUseCase::find_all_by_person(&state.database, person_uuid, start_bson, end_bson).await;
+    let response = WorkoutSessionUseCase::find_all_by_person(
+        &state.database,
+        person_uuid,
+        start_bson,
+        end_bson,
+    )
+    .await;
 
     Ok(Json(WorkoutMapper::json_vec(response)))
 }

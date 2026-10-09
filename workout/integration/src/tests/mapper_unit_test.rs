@@ -16,7 +16,11 @@ fn domain_friend(id: Option<i32>, uuid: Option<&str>, status: InviteStatus) -> D
 
 #[test]
 fn friend_response_carries_ids_and_status() {
-    let response = FriendMapper::response(domain_friend(Some(5), Some("f-uuid"), InviteStatus::Accepted));
+    let response = FriendMapper::response(domain_friend(
+        Some(5),
+        Some("f-uuid"),
+        InviteStatus::Accepted,
+    ));
 
     assert_eq!(response.id, 5);
     assert_eq!(response.uuid, "f-uuid");
@@ -26,7 +30,8 @@ fn friend_response_carries_ids_and_status() {
 
 #[test]
 fn friend_response_defaults_a_missing_id_to_zero() {
-    let response = FriendMapper::response(domain_friend(None, Some("f-uuid"), InviteStatus::Pending));
+    let response =
+        FriendMapper::response(domain_friend(None, Some("f-uuid"), InviteStatus::Pending));
 
     assert_eq!(response.id, 0);
 }
@@ -104,7 +109,10 @@ fn team_member_response_and_domain_handle_absent_ids() {
     assert!(matches!(back.status, InviteStatus::Pending));
 }
 
-fn domain_settings(weight_unit: Option<WeightUnit>, created_at: Option<NaiveDateTime>) -> DomainSettings {
+fn domain_settings(
+    weight_unit: Option<WeightUnit>,
+    created_at: Option<NaiveDateTime>,
+) -> DomainSettings {
     DomainSettings {
         id: Some(1),
         uuid: Some("s-uuid".to_string()),
@@ -123,9 +131,11 @@ fn domain_settings(weight_unit: Option<WeightUnit>, created_at: Option<NaiveDate
 
 #[test]
 fn settings_round_trip_preserves_weight_unit_and_timestamps() {
-    let created = NaiveDateTime::parse_from_str("2026-10-05 12:30:45.123", "%Y-%m-%d %H:%M:%S%.f").unwrap();
+    let created =
+        NaiveDateTime::parse_from_str("2026-10-05 12:30:45.123", "%Y-%m-%d %H:%M:%S%.f").unwrap();
 
-    let response = SettingsMapper::response(domain_settings(Some(WeightUnit::Pounds), Some(created)));
+    let response =
+        SettingsMapper::response(domain_settings(Some(WeightUnit::Pounds), Some(created)));
     assert_eq!(response.owner_id, 3);
     assert_eq!(response.weight_unit, WeightUnit::Pounds.to_string());
     assert_eq!(response.updated_at, "");
@@ -159,12 +169,27 @@ fn settings_with_zero_id_map_to_no_id() {
 #[test]
 fn response_and_domain_helpers_map_collections_and_options() {
     let countries = vec![
-        DomainCountry { id: Some(1), ddi: "1".into(), name: "A".into(), acronym: "A".into(), currency: "X".into() },
-        DomainCountry { id: Some(2), ddi: "2".into(), name: "B".into(), acronym: "B".into(), currency: "Y".into() },
+        DomainCountry {
+            id: Some(1),
+            ddi: "1".into(),
+            name: "A".into(),
+            acronym: "A".into(),
+            currency: "X".into(),
+        },
+        DomainCountry {
+            id: Some(2),
+            ddi: "2".into(),
+            name: "B".into(),
+            acronym: "B".into(),
+            currency: "Y".into(),
+        },
     ];
 
     let responses = CountryMapper::response_vec(countries);
-    assert_eq!(responses.iter().map(|c| c.id).collect::<Vec<_>>(), vec![1, 2]);
+    assert_eq!(
+        responses.iter().map(|c| c.id).collect::<Vec<_>>(),
+        vec![1, 2]
+    );
     assert_eq!(CountryMapper::domain_vec(responses.clone()).len(), 2);
     assert!(CountryMapper::response_option(None).is_none());
     assert!(CountryMapper::domain_option(responses.into_iter().next()).is_some());

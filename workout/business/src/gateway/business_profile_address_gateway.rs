@@ -42,7 +42,11 @@ impl BusinessProfileAddressGateway {
                          ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
                          $3
                      )"#,
-                [longitude.into(), latitude.into(), (radius_km * 1_000.0).into()],
+                [
+                    longitude.into(),
+                    latitude.into(),
+                    (radius_km * 1_000.0).into(),
+                ],
             ))
             .all(db)
             .await

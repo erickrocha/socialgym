@@ -56,14 +56,38 @@ pub fn router(server: Server, database: Arc<Database>, chat_hub: ChatHub) -> Rou
     let mut server = server;
     server
         .add_service(secured!(HealthServiceServer, GrpcHealthService))
-        .add_service(secured!(PostServiceServer, GrpcPostService::new(database.clone())))
-        .add_service(secured!(FeedServiceServer, GrpcFeedService::new(database.clone())))
-        .add_service(secured!(NotificationServiceServer, GrpcNotificationService::new(database.clone())))
-        .add_service(secured!(EvolutionCheckInServiceServer, GrpcEvolutionCheckInService::new(database.clone())))
-        .add_service(secured!(PushDeviceServiceServer, GrpcPushDeviceService::new(database.clone())))
-        .add_service(secured!(ChatServiceServer, GrpcChatService::new(database.clone(), chat_hub)))
-        .add_service(secured!(ContentReportServiceServer, GrpcContentReportService::new(database.clone())))
-        .add_service(secured!(WorkoutSessionServiceServer, GrpcWorkoutSessionService::new(database.clone())))
+        .add_service(secured!(
+            PostServiceServer,
+            GrpcPostService::new(database.clone())
+        ))
+        .add_service(secured!(
+            FeedServiceServer,
+            GrpcFeedService::new(database.clone())
+        ))
+        .add_service(secured!(
+            NotificationServiceServer,
+            GrpcNotificationService::new(database.clone())
+        ))
+        .add_service(secured!(
+            EvolutionCheckInServiceServer,
+            GrpcEvolutionCheckInService::new(database.clone())
+        ))
+        .add_service(secured!(
+            PushDeviceServiceServer,
+            GrpcPushDeviceService::new(database.clone())
+        ))
+        .add_service(secured!(
+            ChatServiceServer,
+            GrpcChatService::new(database.clone(), chat_hub)
+        ))
+        .add_service(secured!(
+            ContentReportServiceServer,
+            GrpcContentReportService::new(database.clone())
+        ))
+        .add_service(secured!(
+            WorkoutSessionServiceServer,
+            GrpcWorkoutSessionService::new(database.clone())
+        ))
         // Service-to-service: the shared secret, never a user token.
         .add_service(InterceptedService::new(
             InternalServiceServer::new(GrpcInternalService::new(database))
@@ -91,10 +115,14 @@ pub async fn serve(database: Arc<Database>, chat_hub: ChatHub) -> anyhow::Result
     let mut server = Server::builder()
         .http2_keepalive_interval(Some(std::time::Duration::from_secs(30)))
         .http2_keepalive_timeout(Some(std::time::Duration::from_secs(10)));
-    if std::env::var("TIMELINE_GRPC_TLS").map(|v| v != "false").unwrap_or(true) {
+    if std::env::var("TIMELINE_GRPC_TLS")
+        .map(|v| v != "false")
+        .unwrap_or(true)
+    {
         let cert = std::fs::read_to_string(std::env::var("TLS_CERT_PATH")?)?;
         let key = std::fs::read_to_string(std::env::var("TLS_KEY_PATH")?)?;
-        server = server.tls_config(ServerTlsConfig::new().identity(Identity::from_pem(cert, key)))?;
+        server =
+            server.tls_config(ServerTlsConfig::new().identity(Identity::from_pem(cert, key)))?;
     } else {
         log::warn!("timeline gRPC is serving without TLS (TIMELINE_GRPC_TLS=false)");
     }

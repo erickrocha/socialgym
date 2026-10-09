@@ -1,26 +1,27 @@
 use domain::business_error::BusinessError;
 use std::collections::HashSet;
 
-
-
-
-use crate::proto::proto::friend::{Friend, FriendsRequest};
 use crate::commons::grpc_config::GrpcConfig;
 use crate::proto::proto::friend::friend_service_client::FriendServiceClient;
+use crate::proto::proto::friend::{Friend, FriendsRequest};
 
-pub struct FriendGateway{
-    endpoint: String
+pub struct FriendGateway {
+    endpoint: String,
 }
 
 impl FriendGateway {
-
     pub fn new(endpoint: String) -> Self {
-        Self{endpoint}
+        Self { endpoint }
     }
-    pub async fn find_friend_uuids(&self,person_id: i32,person_uuid: &str) -> Result<Vec<String>, BusinessError> {
+    pub async fn find_friend_uuids(
+        &self,
+        person_id: i32,
+        person_uuid: &str,
+    ) -> Result<Vec<String>, BusinessError> {
         let channel = GrpcConfig::create_channel(&self.endpoint).await?;
 
-        let mut client = FriendServiceClient::with_interceptor(channel, GrpcConfig::auth_interceptor);
+        let mut client =
+            FriendServiceClient::with_interceptor(channel, GrpcConfig::auth_interceptor);
         let response = client
             .get_friends(FriendsRequest {
                 id: person_id,
@@ -73,4 +74,3 @@ fn friend_uuids_from_response(current_person_uuid: &str, friends: Vec<Friend>) -
 #[cfg(test)]
 #[path = "../tests/friend_gateway_unit_test.rs"]
 mod tests;
-

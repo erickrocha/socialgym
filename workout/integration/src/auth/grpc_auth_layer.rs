@@ -2,10 +2,12 @@ use business::commons::legal_documents::{PRIVACY, TERMS};
 use business::commons::rate_limit::RateLimiter;
 use business::commons::secret::constant_time_eq;
 use business::domain::business_error::BusinessErrorKind;
-use business::use_cases::consent_use_case::ConsentUseCase;
+use business::domain::business_profile::BusinessProfile;
 use business::use_cases::authentication::{AuthenticatedContext, Authentication, ValidateError};
+use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
+use business::use_cases::consent_use_case::ConsentUseCase;
 use hyper::http::HeaderValue;
-use hyper::{http, Request, Response, StatusCode};
+use hyper::{Request, Response, StatusCode, http};
 use sea_orm::DatabaseConnection;
 use std::future::Future;
 use std::net::IpAddr;
@@ -15,8 +17,6 @@ use std::task::{Context, Poll};
 use tonic::body::Body as TonicBody;
 use tonic::server::NamedService;
 use tower::{Layer, Service};
-use business::domain::business_profile::BusinessProfile;
-use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
 
 // Type alias for simpler signatures
 type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send + 'static>>;
@@ -52,7 +52,10 @@ pub struct GrpcAuthLayer {
 
 impl GrpcAuthLayer {
     pub fn new(conn: Arc<DatabaseConnection>) -> Self {
-        Self { conn, public: Arc::new(Vec::new()) }
+        Self {
+            conn,
+            public: Arc::new(Vec::new()),
+        }
     }
 
     /// Allows `path` (for example `/grpc.auth.AuthService/Login`) without an access token, limited per IP
@@ -111,7 +114,10 @@ where
         Box::pin(async move {
             if let Some(method) = public.iter().find(|method| method.path == req.uri().path()) {
                 if !method.limiter.check(client_ip(&req)) {
-                    return Ok(grpc_error_response(GRPC_RESOURCE_EXHAUSTED, "too many requests"));
+                    return Ok(grpc_error_response(
+                        GRPC_RESOURCE_EXHAUSTED,
+                        "too many requests",
+                    ));
                 }
                 return inner.call(req).await;
             }
@@ -130,10 +136,11 @@ where
                 // Insert each value under its own type: services look these up as
                 // `User` / `BusinessProfile`, which a tuple extension never matches.
                 Ok((auth_context, business_profile)) => {
-                    if !is_consent_exempt(req.uri().path()) {
-                        if let Err(response) = require_current_consent(&conn, auth_context.user.person_id).await {
-                            return Ok(response);
-                        }
+                    if !is_consent_exempt(req.uri().path())
+                        && let Err(response) =
+                            require_current_consent(&conn, auth_context.user.person_id).await
+                    {
+                        return Ok(response);
                     }
                     // `logout` and the profile switch revoke this exact token, so they need its jti and exp.
                     req.extensions_mut().insert(auth_context.user.clone());
@@ -160,17 +167,29 @@ fn client_ip(req: &Request<TonicBody>) -> IpAddr {
 }
 
 fn is_consent_exempt(path: &str) -> bool {
-    CONSENT_EXEMPT.iter().any(|exempt| if exempt.ends_with('/') { path.starts_with(exempt) } else { path == *exempt })
+    CONSENT_EXEMPT.iter().any(|exempt| {
+        if exempt.ends_with('/') {
+            path.starts_with(exempt)
+        } else {
+            path == *exempt
+        }
+    })
 }
 
 /// Terms and Privacy must be current for an ordinary call, as the REST middleware requires.
-async fn require_current_consent(conn: &DatabaseConnection, person_id: i32) -> Result<(), Response<TonicBody>> {
+async fn require_current_consent(
+    conn: &DatabaseConnection,
+    person_id: i32,
+) -> Result<(), Response<TonicBody>> {
     for document in [TERMS, PRIVACY] {
         if let Err(error) = ConsentUseCase::require_current(conn, person_id, document).await {
             return Err(if error.kind == BusinessErrorKind::Infrastructure {
                 grpc_error_response(GRPC_UNAVAILABLE, "consent check temporarily unavailable")
             } else {
-                grpc_error_response(GRPC_PERMISSION_DENIED, &format!("{document} consent is required"))
+                grpc_error_response(
+                    GRPC_PERMISSION_DENIED,
+                    &format!("{document} consent is required"),
+                )
             });
         }
     }
@@ -192,10 +211,18 @@ fn is_authorized_internal_request(req: &Request<TonicBody>, expected_secret: Opt
         .unwrap_or(false)
 }
 
-async fn authenticate_request(req: &mut Request<TonicBody>,conn: Arc<DatabaseConnection>) -> Result<(AuthenticatedContext,Option<BusinessProfile>), Response<TonicBody>> {
-    let auth_header = req.headers().get(http::header::AUTHORIZATION).ok_or_else(|| grpc_unauthenticated_response("missing authorization header"))?;
+async fn authenticate_request(
+    req: &mut Request<TonicBody>,
+    conn: Arc<DatabaseConnection>,
+) -> Result<(AuthenticatedContext, Option<BusinessProfile>), Response<TonicBody>> {
+    let auth_header = req
+        .headers()
+        .get(http::header::AUTHORIZATION)
+        .ok_or_else(|| grpc_unauthenticated_response("missing authorization header"))?;
 
-    let auth_str = auth_header.to_str().map_err(|_| grpc_unauthenticated_response("invalid authorization header"))?;
+    let auth_str = auth_header
+        .to_str()
+        .map_err(|_| grpc_unauthenticated_response("invalid authorization header"))?;
 
     let mut parts = auth_str.split_whitespace();
     let bearer = parts.next();
@@ -207,18 +234,22 @@ async fn authenticate_request(req: &mut Request<TonicBody>,conn: Arc<DatabaseCon
 
     let token = token.unwrap().to_string();
 
-    let auth_context = Authentication::validate(&conn, token).await.map_err(|e| match e {
-        ValidateError::Revoked => grpc_unauthenticated_response("token has been revoked"),
-        ValidateError::Invalid => grpc_unauthenticated_response("invalid or expired token"),
-        ValidateError::Unavailable => grpc_error_response(GRPC_UNAVAILABLE, "authentication temporarily unavailable"),
-    })?;
+    let auth_context = Authentication::validate(&conn, token)
+        .await
+        .map_err(|e| match e {
+            ValidateError::Revoked => grpc_unauthenticated_response("token has been revoked"),
+            ValidateError::Invalid => grpc_unauthenticated_response("invalid or expired token"),
+            ValidateError::Unavailable => {
+                grpc_error_response(GRPC_UNAVAILABLE, "authentication temporarily unavailable")
+            }
+        })?;
 
     if let Some(business_profile_id) = auth_context.active_business_profile_id {
         let business_profile = BusinessProfileUseCase::get_by_id(&conn, business_profile_id)
             .await
             .ok_or_else(|| grpc_unauthenticated_response("active business profile not found"))?;
         Ok((auth_context, Some(business_profile)))
-    }else {
+    } else {
         Ok((auth_context, None))
     }
 }

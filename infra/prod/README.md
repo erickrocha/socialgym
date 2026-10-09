@@ -129,11 +129,10 @@ unpublished. Don't use this overlay for a real deployment.
 
 ## Known limitations
 
-- `integration-app` runs as root in its container — it's the one service
-  that needs to read `server.key` (mode 600) at startup, same as nginx
-  itself already necessarily does. Not treated as an oversight; loosening
-  the key's file permissions just to run this one service rootless would be
-  a worse trade.
+- `integration-app` and `timeline-app` run as `CERT_KEY_UID:CERT_KEY_GID` (default
+  1000:1000, the owner of `server.key`, mode 600) instead of root, so they can
+  read the key without loosening its permissions. Set both in `.env` if the key
+  is owned by someone else. Not verified under a real `infra/prod` start yet.
 - The TLS cert is self-signed with an ngrok hostname baked into its SAN —
   fine for tunneling, not suitable for a public deployment with untrusted
   clients.

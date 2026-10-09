@@ -49,11 +49,18 @@ pub async fn get_team_members(
     state: State<AppState>,
     req: Request,
 ) -> HttpResponse<Json<TeamMemberPageJson>> {
-    let locale = req.extensions().get::<Locale>().copied().unwrap_or(Locale::En);
+    let locale = req
+        .extensions()
+        .get::<Locale>()
+        .copied()
+        .unwrap_or(Locale::En);
     let current_user = req
         .extensions()
         .get::<User>()
-        .ok_or(ExceptionResponse::Unauthorized(locale, ErrorKey::AuthHeaderMissing))?;
+        .ok_or(ExceptionResponse::Unauthorized(
+            locale,
+            ErrorKey::AuthHeaderMissing,
+        ))?;
     let active_profile = req.extensions().get::<BusinessProfile>();
 
     // With an active business profile the caller is the team owner and sees its people; without
@@ -99,7 +106,10 @@ pub async fn get_team_members(
         sent_requests: PersonMapper::json_vec(sent_requests),
         // These are other people's businesses: the tax id is for the owner only.
         teams: BusinessProfileMapper::json_vec(
-            teams.into_iter().map(|p| p.for_viewer(Some(current_user))).collect(),
+            teams
+                .into_iter()
+                .map(|p| p.for_viewer(Some(current_user)))
+                .collect(),
         ),
         received_requests: BusinessProfileMapper::json_vec(
             received_requests

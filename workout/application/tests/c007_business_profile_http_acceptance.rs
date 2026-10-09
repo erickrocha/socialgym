@@ -303,8 +303,14 @@ async fn business_profile_reads_hide_tax_id_and_discovery_matches_text_literally
         conn: Arc::new(database),
     };
     let app = axum::Router::new()
-        .nest("/workout/api/business-profiles", business_profile_routes(state.clone()))
-        .nest("/workout/api/team-members", team_member_routes(state.clone()))
+        .nest(
+            "/workout/api/business-profiles",
+            business_profile_routes(state.clone()),
+        )
+        .nest(
+            "/workout/api/team-members",
+            team_member_routes(state.clone()),
+        )
         .with_state(state);
     let owner = access_token(
         "owner-71@example.test",
@@ -331,7 +337,10 @@ async fn business_profile_reads_hide_tax_id_and_discovery_matches_text_literally
             let bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
                 .await
                 .unwrap();
-            (status, serde_json::from_slice::<serde_json::Value>(&bytes).unwrap_or_default())
+            (
+                status,
+                serde_json::from_slice::<serde_json::Value>(&bytes).unwrap_or_default(),
+            )
         }
     };
 
@@ -347,13 +356,20 @@ async fn business_profile_reads_hide_tax_id_and_discovery_matches_text_literally
     // Owner listings and discovery redact it for other people too.
     let (_, body) = get("/workout/api/business-profiles/owner/id/1", &other).await;
     assert_eq!(body[0]["taxId"], "");
-    let (_, body) = get("/workout/api/business-profiles/discover?query=Discoverable", &other).await;
+    let (_, body) = get(
+        "/workout/api/business-profiles/discover?query=Discoverable",
+        &other,
+    )
+    .await;
     assert_eq!(body[0]["taxId"], "");
 
     // An invited person sees the inviting business, but not its tax id.
     let (status, body) = get("/workout/api/team-members", &other).await;
     assert_eq!(status, axum::http::StatusCode::OK);
-    assert_eq!(body["receivedRequests"][0]["businessName"], "Discoverable Gym");
+    assert_eq!(
+        body["receivedRequests"][0]["businessName"],
+        "Discoverable Gym"
+    );
     assert_eq!(body["receivedRequests"][0]["taxId"], "");
 
     // `%` and `_` are literal characters, not wildcards.

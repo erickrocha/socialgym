@@ -16,13 +16,19 @@ fn online_among_reports_only_connected_people() {
 
     // Last connection closing takes the person offline.
     hub.unregister("person-a", conn);
-    assert_eq!(hub.online_among(&["person-a".to_string()]), Vec::<String>::new());
+    assert_eq!(
+        hub.online_among(&["person-a".to_string()]),
+        Vec::<String>::new()
+    );
 
     // A second device keeps them online until every connection is gone.
     let (first, _rx1) = hub.register("person-d");
     let (_second, _rx2) = hub.register("person-d");
     hub.unregister("person-d", first);
-    assert_eq!(hub.online_among(&["person-d".to_string()]), vec!["person-d".to_string()]);
+    assert_eq!(
+        hub.online_among(&["person-d".to_string()]),
+        vec!["person-d".to_string()]
+    );
 }
 
 #[test]
@@ -36,5 +42,8 @@ fn publish_reaches_every_connection_of_a_recipient_and_only_them() {
 
     assert!(matches!(first.try_recv(), Ok(ChatEvent::Pong)));
     assert!(matches!(second.try_recv(), Ok(ChatEvent::Pong)));
-    assert!(other.try_recv().is_err(), "a person who is not a recipient gets nothing");
+    assert!(
+        other.try_recv().is_err(),
+        "a person who is not a recipient gets nothing"
+    );
 }

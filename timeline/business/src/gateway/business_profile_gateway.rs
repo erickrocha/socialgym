@@ -14,14 +14,19 @@ impl BusinessProfileGateway {
         let mut client =
             BusinessProfileServiceClient::with_interceptor(channel, GrpcConfig::auth_interceptor);
         match client
-            .get_business_profile_by_id(BusinessProfileRequestId { id: 0, uuid: uuid.to_string() })
+            .get_business_profile_by_id(BusinessProfileRequestId {
+                id: 0,
+                uuid: uuid.to_string(),
+            })
             .await
         {
             Ok(_) => Ok(true),
             Err(status) if status.code() == tonic::Code::NotFound => Ok(false),
             Err(status) => {
                 log::error!("Business profile lookup failed: {}", status.code());
-                Err(BusinessError::infrastructure("Business profile lookup failed"))
+                Err(BusinessError::infrastructure(
+                    "Business profile lookup failed",
+                ))
             }
         }
     }

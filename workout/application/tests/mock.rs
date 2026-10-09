@@ -1,10 +1,5 @@
-
-
 #[tokio::test]
-async fn main() {
-
-
-}
+async fn main() {}
 
 #[cfg(test)]
 mod tests {

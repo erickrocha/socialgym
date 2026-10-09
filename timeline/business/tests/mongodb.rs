@@ -1,20 +1,20 @@
 mod support;
 
-use business::gateway::post_gateway::PostGateway;
 use business::gateway::evolution_check_in_gateway::EvolutionCheckInGateway;
 use business::gateway::mention_notification_gateway::MentionNotificationGateway;
+use business::gateway::post_gateway::PostGateway;
 use business::gateway::push_device_gateway::PushDeviceGateway;
 use business::repositories::repository::Repository;
-use business::use_cases::post_use_case::PostUseCase;
 use business::use_cases::mention_notification_use_case::MentionNotificationUseCase;
+use business::use_cases::post_use_case::PostUseCase;
 use domain::business_error::BusinessErrorKind;
 use domain::comment::Comment;
 use domain::enums::ReactionType;
 use domain::enums::Visibility;
 use domain::evolution_check_in::EvolutionCheckIn;
 use domain::in_app_notification::InAppNotification;
-use domain::mention_notification_event::MentionNotificationEvent;
 use domain::mention::Mention;
+use domain::mention_notification_event::MentionNotificationEvent;
 use domain::post::Post;
 use domain::reaction::Reaction;
 use domain::user::User;
@@ -158,28 +158,26 @@ async fn c006_notification_pipeline_acceptance() {
         .persist_in_app_notification(notification)
         .await
         .unwrap();
-    gateway.mark_processed("c006-event:recipient").await.unwrap();
+    gateway
+        .mark_processed("c006-event:recipient")
+        .await
+        .unwrap();
 
-    let unread = MentionNotificationUseCase::list_notifications(
-        &database,
-        "recipient-c006",
-        true,
-        50,
-    )
-    .await
-    .unwrap();
+    let unread =
+        MentionNotificationUseCase::list_notifications(&database, "recipient-c006", true, 50)
+            .await
+            .unwrap();
     assert_eq!(unread.len(), 1);
     assert!(!unread[0].read);
 
     assert!(
-        MentionNotificationUseCase::mark_as_read(
+        !MentionNotificationUseCase::mark_as_read(
             &database,
             "other-recipient",
             "c006-event:recipient",
         )
         .await
         .unwrap()
-        == false
     );
     assert!(
         MentionNotificationUseCase::mark_as_read(
@@ -191,15 +189,10 @@ async fn c006_notification_pipeline_acceptance() {
         .unwrap()
     );
     assert!(
-        MentionNotificationUseCase::list_notifications(
-            &database,
-            "recipient-c006",
-            true,
-            50,
-        )
-        .await
-        .unwrap()
-        .is_empty()
+        MentionNotificationUseCase::list_notifications(&database, "recipient-c006", true, 50,)
+            .await
+            .unwrap()
+            .is_empty()
     );
 
     gateway
@@ -234,7 +227,11 @@ async fn c006_push_device_transfer_rotation_acceptance() {
         .create_index(
             mongodb::IndexModel::builder()
                 .keys(doc! { "registrationToken": 1 })
-                .options(mongodb::options::IndexOptions::builder().unique(true).build())
+                .options(
+                    mongodb::options::IndexOptions::builder()
+                        .unique(true)
+                        .build(),
+                )
                 .build(),
         )
         .await
@@ -243,7 +240,11 @@ async fn c006_push_device_transfer_rotation_acceptance() {
         .create_index(
             mongodb::IndexModel::builder()
                 .keys(doc! { "deviceUuid": 1 })
-                .options(mongodb::options::IndexOptions::builder().unique(true).build())
+                .options(
+                    mongodb::options::IndexOptions::builder()
+                        .unique(true)
+                        .build(),
+                )
                 .build(),
         )
         .await
@@ -335,20 +336,19 @@ async fn c006_friendship_notification_persistence_is_idempotent() {
         .await
         .unwrap();
 
-    let unread = MentionNotificationUseCase::list_notifications(
-        &database,
-        "c006-recipient",
-        true,
-        50,
-    )
-    .await
-    .unwrap();
+    let unread =
+        MentionNotificationUseCase::list_notifications(&database, "c006-recipient", true, 50)
+            .await
+            .unwrap();
     let matching: Vec<_> = unread
         .into_iter()
         .filter(|notification| notification.uuid == "c006-friendship-event")
         .collect();
     assert_eq!(matching.len(), 1);
-    assert_eq!(matching[0].target_type.as_deref(), Some("friendship_request"));
+    assert_eq!(
+        matching[0].target_type.as_deref(),
+        Some("friendship_request")
+    );
     assert_eq!(matching[0].target_uuid.as_deref(), Some("c006-friendship"));
     assert_eq!(matching[0].push_status.as_deref(), Some("Pending"));
 }
@@ -387,7 +387,10 @@ async fn c006_social_interaction_producers_acceptance() {
         Vec::new(),
         Vec::new(),
     );
-    PostGateway::new(&database).persist(owner_post).await.unwrap();
+    PostGateway::new(&database)
+        .persist(owner_post)
+        .await
+        .unwrap();
 
     let actor = User::new(
         "Actor".to_string(),
@@ -413,14 +416,10 @@ async fn c006_social_interaction_producers_acceptance() {
         .await
         .unwrap();
 
-    let owner_notifications = MentionNotificationUseCase::list_notifications(
-        &database,
-        "c006-tc007-owner",
-        false,
-        50,
-    )
-    .await
-    .unwrap();
+    let owner_notifications =
+        MentionNotificationUseCase::list_notifications(&database, "c006-tc007-owner", false, 50)
+            .await
+            .unwrap();
     assert_eq!(owner_notifications.len(), 1);
     assert_eq!(owner_notifications[0].notification_type, "Comment");
     assert_eq!(owner_notifications[0].actor_person_uuid, "c006-tc007-actor");
@@ -452,14 +451,10 @@ async fn c006_social_interaction_producers_acceptance() {
     .await
     .unwrap();
 
-    let owner_notifications = MentionNotificationUseCase::list_notifications(
-        &database,
-        "c006-tc007-owner",
-        false,
-        50,
-    )
-    .await
-    .unwrap();
+    let owner_notifications =
+        MentionNotificationUseCase::list_notifications(&database, "c006-tc007-owner", false, 50)
+            .await
+            .unwrap();
     assert_eq!(owner_notifications.len(), 2);
     assert_eq!(
         owner_notifications
@@ -482,7 +477,10 @@ async fn c006_social_interaction_producers_acceptance() {
         Vec::new(),
         Vec::new(),
     );
-    PostGateway::new(&database).persist(self_post).await.unwrap();
+    PostGateway::new(&database)
+        .persist(self_post)
+        .await
+        .unwrap();
     let self_comment = Comment::new(
         "c006-tc007-self-comment".to_string(),
         post_ids[1].to_string(),
@@ -494,14 +492,9 @@ async fn c006_social_interaction_producers_acceptance() {
         None,
         Vec::new(),
     );
-    PostUseCase::add_comment(
-        &database,
-        &actor,
-        post_ids[1].to_string(),
-        self_comment,
-    )
-    .await
-    .unwrap();
+    PostUseCase::add_comment(&database, &actor, post_ids[1].to_string(), self_comment)
+        .await
+        .unwrap();
     PostUseCase::add_reaction(
         &database,
         &actor,
@@ -515,15 +508,12 @@ async fn c006_social_interaction_producers_acceptance() {
     )
     .await
     .unwrap();
-    assert!(MentionNotificationUseCase::list_notifications(
-        &database,
-        &actor.person_uuid,
-        false,
-        50,
-    )
-    .await
-    .unwrap()
-    .is_empty());
+    assert!(
+        MentionNotificationUseCase::list_notifications(&database, &actor.person_uuid, false, 50,)
+            .await
+            .unwrap()
+            .is_empty()
+    );
 
     database
         .collection::<Post>("posts")
@@ -612,18 +602,16 @@ async fn c006_eligible_comment_mentions_prefer_mention_for_the_post_owner() {
         &jsonwebtoken::EncodingKey::from_secret(secret.as_bytes()),
     )
     .unwrap();
-    let accepted_friends = business::commons::token_context::with_forwarded_token(
-        Some(token.clone()),
-        async {
+    let accepted_friends =
+        business::commons::token_context::with_forwarded_token(Some(token.clone()), async {
             business::gateway::friend_gateway::FriendGateway::new(
                 business::commons::grpc_config::GrpcConfig::build_endpoint(),
             )
             .find_friend_uuids(actor.person_id, &actor.person_uuid)
             .await
             .unwrap()
-        },
-    )
-    .await;
+        })
+        .await;
     assert_eq!(
         accepted_friends,
         vec!["00000000-0000-0000-0000-000000000062".to_string()]
@@ -691,7 +679,10 @@ async fn c006_eligible_comment_mentions_prefer_mention_for_the_post_owner() {
         .collect();
     assert_eq!(owner_mentions.len(), 1);
     assert_eq!(owner_mentions[0].notification_type, "Mention");
-    assert_eq!(owner_mentions[0].comment_uuid.as_deref(), Some(comment_uuid));
+    assert_eq!(
+        owner_mentions[0].comment_uuid.as_deref(),
+        Some(comment_uuid)
+    );
 
     database
         .collection::<Post>("posts")
@@ -771,8 +762,18 @@ async fn c006_push_claim_is_exclusive_and_recovers_expired_lease() {
         .await
         .unwrap();
 
-    assert!(gateway.claim_push_notification("c006-push-lease").await.unwrap());
-    assert!(!gateway.claim_push_notification("c006-push-lease").await.unwrap());
+    assert!(
+        gateway
+            .claim_push_notification("c006-push-lease")
+            .await
+            .unwrap()
+    );
+    assert!(
+        !gateway
+            .claim_push_notification("c006-push-lease")
+            .await
+            .unwrap()
+    );
     collection
         .update_one(
             doc! { "_id": "c006-push-lease" },
@@ -782,7 +783,12 @@ async fn c006_push_claim_is_exclusive_and_recovers_expired_lease() {
         )
         .await
         .unwrap();
-    assert!(gateway.claim_push_notification("c006-push-lease").await.unwrap());
+    assert!(
+        gateway
+            .claim_push_notification("c006-push-lease")
+            .await
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -908,7 +914,11 @@ async fn c005_post_comment_reaction_feed_acceptance() {
     let forbidden = PostUseCase::delete_owned(&database, "c005-post".to_string(), 0, "other-actor")
         .await
         .unwrap_err();
-    assert_eq!(forbidden.kind, BusinessErrorKind::NotFound, "a stranger cannot tell the post exists");
+    assert_eq!(
+        forbidden.kind,
+        BusinessErrorKind::NotFound,
+        "a stranger cannot tell the post exists"
+    );
     assert!(posts.find_by_id("c005-post".to_string()).await.is_some());
 
     let without_reaction = posts
@@ -942,7 +952,11 @@ async fn c006_concurrent_push_registrations_leave_one_document_per_token_and_dev
             .create_index(
                 mongodb::IndexModel::builder()
                     .keys(doc! { field: 1 })
-                    .options(mongodb::options::IndexOptions::builder().unique(true).build())
+                    .options(
+                        mongodb::options::IndexOptions::builder()
+                            .unique(true)
+                            .build(),
+                    )
                     .build(),
             )
             .await
@@ -951,13 +965,44 @@ async fn c006_concurrent_push_registrations_leave_one_document_per_token_and_dev
 
     // Regression: a device that already holds a token registers one owned by another device.
     // The stale token must be dropped before the document moves (unique deviceUuid).
-    PushDeviceGateway::register(&database, "c006-move-a", "c006-move-owner-a", "android", "c006-move-token-a").await.unwrap();
-    PushDeviceGateway::register(&database, "c006-move-b", "c006-move-owner-b", "android", "c006-move-token-b").await.unwrap();
-    PushDeviceGateway::register(&database, "c006-move-b", "c006-move-owner-b", "android", "c006-move-token-a").await.unwrap();
-    let moved = PushDeviceGateway::find_all_for_person(&database, "c006-move-owner-b").await.unwrap();
+    PushDeviceGateway::register(
+        &database,
+        "c006-move-a",
+        "c006-move-owner-a",
+        "android",
+        "c006-move-token-a",
+    )
+    .await
+    .unwrap();
+    PushDeviceGateway::register(
+        &database,
+        "c006-move-b",
+        "c006-move-owner-b",
+        "android",
+        "c006-move-token-b",
+    )
+    .await
+    .unwrap();
+    PushDeviceGateway::register(
+        &database,
+        "c006-move-b",
+        "c006-move-owner-b",
+        "android",
+        "c006-move-token-a",
+    )
+    .await
+    .unwrap();
+    let moved = PushDeviceGateway::find_all_for_person(&database, "c006-move-owner-b")
+        .await
+        .unwrap();
     assert_eq!(moved.len(), 1);
     assert_eq!(moved[0].registration_token, "c006-move-token-a");
-    assert!(PushDeviceGateway::find_all_for_person(&database, "c006-move-owner-a").await.unwrap().is_empty());
+    assert!(
+        PushDeviceGateway::find_all_for_person(&database, "c006-move-owner-a")
+            .await
+            .unwrap()
+            .is_empty()
+    );
 
     // Many installations racing to claim one token, repeated so the duplicate-key
     // recovery paths run regardless of scheduling.
@@ -978,27 +1023,61 @@ async fn c006_concurrent_push_registrations_leave_one_document_per_token_and_dev
             }
         }))
         .await;
-        assert!(results.iter().all(|r| r.is_ok()), "round {round}: {results:?}");
-        assert_eq!(collection.count_documents(doc! { "registrationToken": &token }).await.unwrap(), 1);
+        assert!(
+            results.iter().all(|r| r.is_ok()),
+            "round {round}: {results:?}"
+        );
+        assert_eq!(
+            collection
+                .count_documents(doc! { "registrationToken": &token })
+                .await
+                .unwrap(),
+            1
+        );
     }
 
     // Installations that already hold a token all rotate to the same new one: the update
     // collides on the unique token index and must fall back to transferring it.
     for i in 0..12 {
-        PushDeviceGateway::register(&database, &format!("c006-rotate-device-{i}"), &format!("c006-rotate-owner-{i}"), "ios", &format!("c006-old-token-{i}"))
-            .await
-            .unwrap();
+        PushDeviceGateway::register(
+            &database,
+            &format!("c006-rotate-device-{i}"),
+            &format!("c006-rotate-owner-{i}"),
+            "ios",
+            &format!("c006-old-token-{i}"),
+        )
+        .await
+        .unwrap();
     }
     let results = futures::future::join_all((0..12).map(|i| {
         let database = database.clone();
         async move {
-            PushDeviceGateway::register(&database, &format!("c006-rotate-device-{i}"), &format!("c006-rotate-owner-{i}"), "ios", "c006-shared-new-token").await
+            PushDeviceGateway::register(
+                &database,
+                &format!("c006-rotate-device-{i}"),
+                &format!("c006-rotate-owner-{i}"),
+                "ios",
+                "c006-shared-new-token",
+            )
+            .await
         }
     }))
     .await;
     assert!(results.iter().all(|r| r.is_ok()), "{results:?}");
-    assert_eq!(collection.count_documents(doc! { "registrationToken": "c006-shared-new-token" }).await.unwrap(), 1);
-    assert_eq!(collection.count_documents(doc! { "registrationToken": { "$regex": "^c006-old-token" } }).await.unwrap() <= 11, true);
+    assert_eq!(
+        collection
+            .count_documents(doc! { "registrationToken": "c006-shared-new-token" })
+            .await
+            .unwrap(),
+        1
+    );
+    assert!(
+        collection
+            .count_documents(doc! { "registrationToken": { "$regex": "^c006-old-token" } })
+            .await
+            .unwrap()
+            <= 11
+    );
 
     collection.delete_many(doc! {}).await.unwrap();
     collection.drop_indexes().await.unwrap();

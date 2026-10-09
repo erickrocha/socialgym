@@ -1,6 +1,6 @@
+pub mod business_profile_gateway;
 pub mod consent_gateway;
 pub mod content_report_gateway;
-pub mod business_profile_gateway;
 pub mod conversation_gateway;
 pub mod evolution_check_in_gateway;
 pub mod friend_gateway;

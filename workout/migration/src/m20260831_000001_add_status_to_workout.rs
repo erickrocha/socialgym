@@ -26,11 +26,7 @@ impl MigrationTrait for Migration {
                             .integer()
                             .null(),
                     )
-                    .add_column(
-                        ColumnDef::new(Workout::AssignedByProfileUuid)
-                            .uuid()
-                            .null(),
-                    )
+                    .add_column(ColumnDef::new(Workout::AssignedByProfileUuid).uuid().null())
                     .to_owned(),
             )
             .await?;

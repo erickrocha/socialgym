@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useParams, useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
@@ -22,7 +22,7 @@ const BusinessProfile = () => {
     const [activeSection, setActiveSection] = useState('about');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [coverImage, setCoverImage] = useState(null);
-    const [mimeType, setMimeType] = useState(null);
+    const [, setMimeType] = useState(null);
 
     useEffect(() => {
         if (id) {

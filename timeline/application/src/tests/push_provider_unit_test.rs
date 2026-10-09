@@ -1,8 +1,10 @@
-use super::{FcmMessage, FcmNotification, FcmRequest, PushProvider, PushProviderMode, PushSendError};
+use super::{
+    FcmMessage, FcmNotification, FcmRequest, PushProvider, PushProviderMode, PushSendError,
+};
+use axum::Router;
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::routing::post;
-use axum::Router;
 use domain::in_app_notification::InAppNotification;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -70,10 +72,7 @@ fn provider_statuses_distinguish_transient_invalid_token_and_configuration() {
         Err(PushSendError::Configuration(_))
     ));
     assert!(matches!(
-        PushProvider::classify_provider_result(
-            reqwest::StatusCode::BAD_REQUEST,
-            "invalid payload"
-        ),
+        PushProvider::classify_provider_result(reqwest::StatusCode::BAD_REQUEST, "invalid payload"),
         Err(PushSendError::Configuration(_))
     ));
 }
@@ -92,7 +91,10 @@ async fn stub_server() -> (String, Arc<AtomicUsize>) {
                 counter.fetch_add(1, Ordering::SeqCst);
                 async move {
                     match code {
-                        200 => (StatusCode::OK, r#"{"access_token":"stub-token","expires_in":3600}"#.to_string()),
+                        200 => (
+                            StatusCode::OK,
+                            r#"{"access_token":"stub-token","expires_in":3600}"#.to_string(),
+                        ),
                         201 => (StatusCode::OK, "not json".to_string()),
                         other => (StatusCode::from_u16(other).unwrap(), String::new()),
                     }
@@ -122,16 +124,24 @@ fn firebase(token_uri: &str, key: &str) -> PushProvider {
 
 fn notification() -> InAppNotification {
     InAppNotification::from_social_interaction(
-        "n1".into(), "Comment".into(), "r".into(), "a".into(), "Actor".into(),
-        "post-1".into(), None, "text".into(),
+        "n1".into(),
+        "Comment".into(),
+        "r".into(),
+        "a".into(),
+        "Actor".into(),
+        "post-1".into(),
+        None,
+        "text".into(),
     )
 }
 
 async fn unreachable_database() -> mongodb::Database {
-    mongodb::Client::with_uri_str("mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=150&connectTimeoutMS=150")
-        .await
-        .unwrap()
-        .database("unreachable")
+    mongodb::Client::with_uri_str(
+        "mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=150&connectTimeoutMS=150",
+    )
+    .await
+    .unwrap()
+    .database("unreachable")
 }
 
 #[test]
@@ -140,11 +150,28 @@ fn settings_reject_unknown_mode_and_incomplete_firebase_accounts() {
         Err(PushSendError::Configuration(m)) => m,
         _ => panic!("expected a configuration error"),
     };
-    assert!(config(PushProvider::from_settings("smoke-signal", None, None)).contains("firebase or fake"));
+    assert!(
+        config(PushProvider::from_settings("smoke-signal", None, None))
+            .contains("firebase or fake")
+    );
     assert!(config(PushProvider::from_settings("firebase", None, None)).contains("not configured"));
-    assert!(config(PushProvider::from_settings("firebase", None, Some("{".into()))).contains("invalid"));
+    assert!(
+        config(PushProvider::from_settings(
+            "firebase",
+            None,
+            Some("{".into())
+        ))
+        .contains("invalid")
+    );
     let incomplete = r#"{"project_id":"p","client_email":"","private_key":"k","token_uri":"u"}"#;
-    assert!(config(PushProvider::from_settings("firebase", None, Some(incomplete.into()))).contains("incomplete"));
+    assert!(
+        config(PushProvider::from_settings(
+            "firebase",
+            None,
+            Some(incomplete.into())
+        ))
+        .contains("incomplete")
+    );
     assert!(PushProvider::from_settings("fake", Some(String::new()), None).is_ok());
     assert!(PushProvider::from_settings("fake", Some("http://x".into()), None).is_ok());
 }
@@ -154,7 +181,8 @@ async fn fake_endpoint_maps_provider_responses_to_send_outcomes() {
     let (base, _) = stub_server().await;
     let db = unreachable_database().await;
     let send = |code: u16| {
-        let provider = PushProvider::from_settings("fake", Some(format!("{base}/fcm/{code}")), None).unwrap();
+        let provider =
+            PushProvider::from_settings("fake", Some(format!("{base}/fcm/{code}")), None).unwrap();
         let db = db.clone();
         async move { provider.send(&db, "device-token", &notification()).await }
     };
@@ -163,8 +191,13 @@ async fn fake_endpoint_maps_provider_responses_to_send_outcomes() {
     assert_eq!(send(404).await, Err(PushSendError::InvalidToken));
     assert!(matches!(send(429).await, Err(PushSendError::Transient(_))));
     assert!(matches!(send(503).await, Err(PushSendError::Transient(_))));
-    assert!(matches!(send(401).await, Err(PushSendError::Configuration(m)) if m.contains("authorization")));
-    assert!(matches!(send(400).await, Err(PushSendError::Configuration(_))));
+    assert!(
+        matches!(send(401).await, Err(PushSendError::Configuration(m)) if m.contains("authorization"))
+    );
+    assert!(matches!(
+        send(400).await,
+        Err(PushSendError::Configuration(_))
+    ));
 
     // A fake provider without an endpoint records to the database; an outage is transient.
     let recording = PushProvider::from_settings("fake", None, None).unwrap();
@@ -173,34 +206,62 @@ async fn fake_endpoint_maps_provider_responses_to_send_outcomes() {
         Err(PushSendError::Transient(m)) if m.contains("record failed")
     ));
     // Nothing listens on the port: the transport error is transient.
-    let dead = PushProvider::from_settings("fake", Some("http://127.0.0.1:1/".into()), None).unwrap();
-    assert!(matches!(dead.send(&db, "t", &notification()).await, Err(PushSendError::Transient(_))));
+    let dead =
+        PushProvider::from_settings("fake", Some("http://127.0.0.1:1/".into()), None).unwrap();
+    assert!(matches!(
+        dead.send(&db, "t", &notification()).await,
+        Err(PushSendError::Transient(_))
+    ));
 }
 
 #[tokio::test]
 async fn firebase_access_token_is_fetched_cached_and_failures_are_classified() {
     let (base, token_calls) = stub_server().await;
     let ok = firebase(&format!("{base}/token/200"), TEST_KEY);
-    let PushProviderMode::Firebase { account } = &ok.mode else { unreachable!() };
+    let PushProviderMode::Firebase { account } = &ok.mode else {
+        unreachable!()
+    };
     assert_eq!(ok.access_token(account).await.unwrap(), "stub-token");
     assert_eq!(ok.access_token(account).await.unwrap(), "stub-token");
-    assert_eq!(token_calls.load(Ordering::SeqCst), 1, "second call is served from the cache");
+    assert_eq!(
+        token_calls.load(Ordering::SeqCst),
+        1,
+        "second call is served from the cache"
+    );
 
     let expect = |uri: String, key: &'static str| {
         let provider = firebase(&uri, key);
         async move {
-            let PushProviderMode::Firebase { account } = &provider.mode else { unreachable!() };
+            let PushProviderMode::Firebase { account } = &provider.mode else {
+                unreachable!()
+            };
             provider.access_token(account).await.unwrap_err()
         }
     };
-    assert!(matches!(expect(format!("{base}/token/401"), TEST_KEY).await, PushSendError::Configuration(_)));
-    assert!(matches!(expect(format!("{base}/token/500"), TEST_KEY).await, PushSendError::Transient(_)));
-    assert!(matches!(expect(format!("{base}/token/201"), TEST_KEY).await, PushSendError::Configuration(m) if m.contains("invalid")));
-    assert!(matches!(expect("http://127.0.0.1:1/".into(), TEST_KEY).await, PushSendError::Transient(_)));
-    assert!(matches!(expect(format!("{base}/token/200"), "not a pem").await, PushSendError::Configuration(m) if m.contains("private key")));
+    assert!(matches!(
+        expect(format!("{base}/token/401"), TEST_KEY).await,
+        PushSendError::Configuration(_)
+    ));
+    assert!(matches!(
+        expect(format!("{base}/token/500"), TEST_KEY).await,
+        PushSendError::Transient(_)
+    ));
+    assert!(
+        matches!(expect(format!("{base}/token/201"), TEST_KEY).await, PushSendError::Configuration(m) if m.contains("invalid"))
+    );
+    assert!(matches!(
+        expect("http://127.0.0.1:1/".into(), TEST_KEY).await,
+        PushSendError::Transient(_)
+    ));
+    assert!(
+        matches!(expect(format!("{base}/token/200"), "not a pem").await, PushSendError::Configuration(m) if m.contains("private key"))
+    );
 
     // send() stops at the failed token exchange and never reaches FCM.
     let denied = firebase(&format!("{base}/token/401"), TEST_KEY);
     let db = unreachable_database().await;
-    assert!(matches!(denied.send(&db, "t", &notification()).await, Err(PushSendError::Configuration(_))));
+    assert!(matches!(
+        denied.send(&db, "t", &notification()).await,
+        Err(PushSendError::Configuration(_))
+    ));
 }

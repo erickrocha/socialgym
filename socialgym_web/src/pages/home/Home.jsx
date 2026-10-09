@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {AppHeader, Sidebar,Toast,Spinner} from '../../commons/gui/index.js';
 import Feed from '../../commons/gui/Feed/Feed';
@@ -20,7 +20,7 @@ const Home = () => {
 
     useEffect(() => {
         dispatch(handler.getMe())
-    }, [])
+    }, [dispatch])
 
     const defaultAvatar = person?.gender === 'male' ? defaultAvatarMale : defaultAvatarFemale;
     const avatarImage = person?.avatar ? `data:image/jpeg;base64,${person?.avatar}` : defaultAvatar;

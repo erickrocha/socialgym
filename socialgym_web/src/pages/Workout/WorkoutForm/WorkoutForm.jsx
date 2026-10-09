@@ -2,7 +2,7 @@ import {Button, CheckBoxGroup, TextField, VisibilityDropdown} from "../../../com
 import {useTranslation} from "react-i18next";
 import {Controller, useForm} from "react-hook-form";
 import './WorkoutForm.scss';
-import React, {useState} from "react";
+import {useState} from "react";
 import {updateObject} from "../../../commons/library/utility.js";
 import {useDispatch} from "react-redux";
 import * as handler from "../../../redux/reducers/workout/index.js";

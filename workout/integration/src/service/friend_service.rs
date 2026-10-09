@@ -1,290 +1,307 @@
-use std::sync::Arc;
-use sea_orm::DatabaseConnection;
-use tonic::{Request, Response, Status};
 use business::domain::business_error::{BusinessError, BusinessErrorKind};
 use business::domain::user::User;
 use business::use_cases::friend_use_case::FriendUseCase;
 use business::use_cases::person_use_case::PersonUseCase;
+use sea_orm::DatabaseConnection;
+use std::sync::Arc;
+use tonic::{Request, Response, Status};
 
+use crate::infrastructure::mapper::{FriendMapper, Mapper, PersonMapper};
+use crate::infrastructure::utils::{
+    locale_of, localized_business_status, localized_status, require_actor,
+};
 use crate::proto::friend::friend_service_server::FriendService;
 use crate::proto::friend::{
-	Friend, FriendPageRequest, FriendPageResponse, FriendProfileRequest, FriendProfileResponse, FriendRequestRequest, FriendsRequest,
-	FriendsResponse, RemoveFriendResponse, SearchFriendsRequest, SearchFriendsResponse,
+    Friend, FriendPageRequest, FriendPageResponse, FriendProfileRequest, FriendProfileResponse,
+    FriendRequestRequest, FriendsRequest, FriendsResponse, RemoveFriendResponse,
+    SearchFriendsRequest, SearchFriendsResponse,
 };
 use crate::proto::person::Person as ProtoPerson;
-use crate::infrastructure::mapper::{Mapper, FriendMapper, PersonMapper};
-use crate::infrastructure::utils::{locale_of, localized_business_status, localized_status, require_actor};
 use business::commons::i18n::ErrorKey;
 
 pub struct GrpcFriendService {
-	conn: Arc<DatabaseConnection>,
+    conn: Arc<DatabaseConnection>,
 }
 
 impl GrpcFriendService {
-	pub fn new(conn: Arc<DatabaseConnection>) -> Self {
-		Self { conn }
-	}
+    pub fn new(conn: Arc<DatabaseConnection>) -> Self {
+        Self { conn }
+    }
 
-	/// Resolve the authenticated caller's `person_id` from the request
-	/// extensions populated by `GrpcAuthLayer` — the gRPC equivalent of the
-	/// REST controller's `current_user.person_id`.
-	fn caller_person_id<T>(request: &Request<T>) -> Result<i32, Status> {
-		request
-			.extensions()
-			.get::<User>()
-			.map(|user| user.person_id)
-			.filter(|id| *id > 0)
-			.ok_or_else(|| Status::unauthenticated("authenticated user missing"))
-	}
+    /// Resolve the authenticated caller's `person_id` from the request
+    /// extensions populated by `GrpcAuthLayer` — the gRPC equivalent of the
+    /// REST controller's `current_user.person_id`.
+    fn caller_person_id<T>(request: &Request<T>) -> Result<i32, Status> {
+        request
+            .extensions()
+            .get::<User>()
+            .map(|user| user.person_id)
+            .filter(|id| *id > 0)
+            .ok_or_else(|| Status::unauthenticated("authenticated user missing"))
+    }
 
-	fn attach_friendship_uuids(people: &mut [ProtoPerson], links: Vec<(i32, String)>) {
-		for (person_id, friendship_uuid) in links {
-			if let Some(person) = people.iter_mut().find(|person| person.id == person_id) {
-				person.friendship_uuid = friendship_uuid;
-			}
-		}
-	}
+    fn attach_friendship_uuids(people: &mut [ProtoPerson], links: Vec<(i32, String)>) {
+        for (person_id, friendship_uuid) in links {
+            if let Some(person) = people.iter_mut().find(|person| person.id == person_id) {
+                person.friendship_uuid = friendship_uuid;
+            }
+        }
+    }
 }
 
 /// Translate a `BusinessError` into the closest gRPC status so clients get the
 /// same signal REST callers get from `ExceptionResponse::from_business`.
 fn to_status(error: BusinessError) -> Status {
-	match error.kind {
-		BusinessErrorKind::Validation => Status::invalid_argument(error.message),
-		BusinessErrorKind::Unauthorized => Status::unauthenticated(error.message),
-		BusinessErrorKind::Forbidden => Status::permission_denied(error.message),
-		BusinessErrorKind::NotFound => Status::not_found(error.message),
-		BusinessErrorKind::Conflict => Status::already_exists(error.message),
-		BusinessErrorKind::Locked => Status::failed_precondition(error.message),
-		BusinessErrorKind::Infrastructure => Status::internal(error.message),
-	}
+    match error.kind {
+        BusinessErrorKind::Validation => Status::invalid_argument(error.message),
+        BusinessErrorKind::Unauthorized => Status::unauthenticated(error.message),
+        BusinessErrorKind::Forbidden => Status::permission_denied(error.message),
+        BusinessErrorKind::NotFound => Status::not_found(error.message),
+        BusinessErrorKind::Conflict => Status::already_exists(error.message),
+        BusinessErrorKind::Locked => Status::failed_precondition(error.message),
+        BusinessErrorKind::Infrastructure => Status::internal(error.message),
+    }
 }
 
 #[tonic::async_trait]
 impl FriendService for GrpcFriendService {
-	async fn get_friends(
-		&self,
-		request: Request<FriendsRequest>,
-	) -> Result<Response<FriendsResponse>, Status> {
-		let caller_id = Self::caller_person_id(&request)?;
-		let caller_uuid = request.extensions().get::<User>().map(|u| u.person_uuid.clone());
-		let payload = request.into_inner();
+    async fn get_friends(
+        &self,
+        request: Request<FriendsRequest>,
+    ) -> Result<Response<FriendsResponse>, Status> {
+        let caller_id = Self::caller_person_id(&request)?;
+        let caller_uuid = request
+            .extensions()
+            .get::<User>()
+            .map(|u| u.person_uuid.clone());
+        let payload = request.into_inner();
 
-		if payload.id <= 0 && payload.uuid.is_empty() {
-			return Err(Status::invalid_argument("either id or uuid must be informed"));
-		}
-		if payload.id > 0 {
-			business::commons::authorization::ensure_owns(payload.id, caller_id)
-				.map_err(to_status)?;
-		}
+        if payload.id <= 0 && payload.uuid.is_empty() {
+            return Err(Status::invalid_argument(
+                "either id or uuid must be informed",
+            ));
+        }
+        if payload.id > 0 {
+            business::commons::authorization::ensure_owns(payload.id, caller_id)
+                .map_err(to_status)?;
+        }
 
-		let person_id = if payload.id > 0 {
-			payload.id
-		} else {
-			// Owner check before lookup (as REST): a foreign UUID is denied whether or not it exists.
-			if caller_uuid.as_deref() != Some(payload.uuid.as_str()) {
-				return Err(Status::permission_denied("Not the owner of this resource"));
-			}
-			let person = PersonUseCase::find_by_uuid(&self.conn, payload.uuid)
-				.await
-				.map_err(to_status)?;
-			person.id.ok_or_else(|| Status::internal("person id missing"))?
-		};
+        let person_id = if payload.id > 0 {
+            payload.id
+        } else {
+            // Owner check before lookup (as REST): a foreign UUID is denied whether or not it exists.
+            if caller_uuid.as_deref() != Some(payload.uuid.as_str()) {
+                return Err(Status::permission_denied("Not the owner of this resource"));
+            }
+            let person = PersonUseCase::find_by_uuid(&self.conn, payload.uuid)
+                .await
+                .map_err(to_status)?;
+            person
+                .id
+                .ok_or_else(|| Status::internal("person id missing"))?
+        };
 
-		let friends = FriendUseCase::find_all_friend(&self.conn, person_id)
-			.await
-			.map_err(|e| Status::internal(e.message))?;
+        let friends = FriendUseCase::find_all_friend(&self.conn, person_id)
+            .await
+            .map_err(|e| Status::internal(e.message))?;
 
-		let grpc_friends = FriendMapper::response_vec(friends);
+        let grpc_friends = FriendMapper::response_vec(friends);
 
-		Ok(Response::new(FriendsResponse { friends: grpc_friends }))
-	}
+        Ok(Response::new(FriendsResponse {
+            friends: grpc_friends,
+        }))
+    }
 
-	async fn get_friend_profile(
-		&self,
-		request: Request<FriendProfileRequest>,
-	) -> Result<Response<FriendProfileResponse>, Status> {
-		let locale = locale_of(&request);
-		let actor = require_actor(&request)?;
-		let friend_id = request.into_inner().friend_id;
-		// As REST: an accepted friendship first (the caller's own id, a pending or missing friendship are
-		// refused there), then the profile.
-		FriendUseCase::ensure_accepted_friend(&self.conn, actor.person_id, friend_id)
-			.await
-			.map_err(|error| localized_business_status(error, ErrorKey::FriendNotFound, locale))?;
-		let person = PersonUseCase::get(&self.conn, friend_id)
-			.await
-			.map_err(|_| localized_status(tonic::Code::NotFound, ErrorKey::FriendNotFound, locale))?;
-		Ok(Response::new(FriendProfileResponse { person: Some(PersonMapper::response(person.without_health_details())) }))
-	}
+    async fn get_friend_profile(
+        &self,
+        request: Request<FriendProfileRequest>,
+    ) -> Result<Response<FriendProfileResponse>, Status> {
+        let locale = locale_of(&request);
+        let actor = require_actor(&request)?;
+        let friend_id = request.into_inner().friend_id;
+        // As REST: an accepted friendship first (the caller's own id, a pending or missing friendship are
+        // refused there), then the profile.
+        FriendUseCase::ensure_accepted_friend(&self.conn, actor.person_id, friend_id)
+            .await
+            .map_err(|error| localized_business_status(error, ErrorKey::FriendNotFound, locale))?;
+        let person = PersonUseCase::get(&self.conn, friend_id)
+            .await
+            .map_err(|_| {
+                localized_status(tonic::Code::NotFound, ErrorKey::FriendNotFound, locale)
+            })?;
+        Ok(Response::new(FriendProfileResponse {
+            person: Some(PersonMapper::response(person.without_health_details())),
+        }))
+    }
 
-	async fn get_friend_page(
-		&self,
-		request: Request<FriendPageRequest>,
-	) -> Result<Response<FriendPageResponse>, Status> {
-		let caller_id = Self::caller_person_id(&request)?;
-		// `person_id` in the body is an optional override; normally the caller's
-		// token identifies them, mirroring REST's `GET /workout/api/friends`.
-		let person_id = if request.get_ref().person_id > 0 {
-			business::commons::authorization::ensure_owns(request.get_ref().person_id, caller_id)
-				.map_err(to_status)?;
-			request.get_ref().person_id
-		} else {
-			caller_id
-		};
-		let payload = request.into_inner();
-		let radius_km = payload.radius_km.unwrap_or(200.0);
+    async fn get_friend_page(
+        &self,
+        request: Request<FriendPageRequest>,
+    ) -> Result<Response<FriendPageResponse>, Status> {
+        let caller_id = Self::caller_person_id(&request)?;
+        // `person_id` in the body is an optional override; normally the caller's
+        // token identifies them, mirroring REST's `GET /workout/api/friends`.
+        let person_id = if request.get_ref().person_id > 0 {
+            business::commons::authorization::ensure_owns(request.get_ref().person_id, caller_id)
+                .map_err(to_status)?;
+            request.get_ref().person_id
+        } else {
+            caller_id
+        };
+        let payload = request.into_inner();
+        let radius_km = payload.radius_km.unwrap_or(200.0);
 
-		let suggestions = PersonUseCase::get_suggestions(
-			&self.conn,
-			person_id,
-			radius_km,
-			payload.latitude,
-			payload.longitude,
-		)
-		.await;
-		let friends = PersonUseCase::get_all_friends(&self.conn, person_id).await;
-		let receive_requests =
-			PersonUseCase::get_all_received_requests(&self.conn, person_id).await;
-		let sent_requests = PersonUseCase::get_all_sent_requests(&self.conn, person_id).await;
+        let suggestions = PersonUseCase::get_suggestions(
+            &self.conn,
+            person_id,
+            radius_km,
+            payload.latitude,
+            payload.longitude,
+        )
+        .await;
+        let friends = PersonUseCase::get_all_friends(&self.conn, person_id).await;
+        let receive_requests =
+            PersonUseCase::get_all_received_requests(&self.conn, person_id).await;
+        let sent_requests = PersonUseCase::get_all_sent_requests(&self.conn, person_id).await;
 
-		let mut friend_people = PersonMapper::response_vec(friends);
-		let mut receive_request_people = PersonMapper::response_vec(receive_requests);
-		let mut sent_request_people = PersonMapper::response_vec(sent_requests);
-		let accepted_links = FriendUseCase::find_all_friend(&self.conn, person_id)
-			.await
-			.map_err(to_status)?
-			.into_iter()
-			.filter_map(|friend| Some((friend.friend_id, friend.uuid?)))
-			.collect();
-		let received_links = FriendUseCase::find_pending_friendship_links(&self.conn, person_id, true)
-			.await
-			.map_err(to_status)?;
-		let sent_links = FriendUseCase::find_pending_friendship_links(&self.conn, person_id, false)
-			.await
-			.map_err(to_status)?;
-		Self::attach_friendship_uuids(&mut friend_people, accepted_links);
-		Self::attach_friendship_uuids(&mut receive_request_people, received_links);
-		Self::attach_friendship_uuids(&mut sent_request_people, sent_links);
+        let mut friend_people = PersonMapper::response_vec(friends);
+        let mut receive_request_people = PersonMapper::response_vec(receive_requests);
+        let mut sent_request_people = PersonMapper::response_vec(sent_requests);
+        let accepted_links = FriendUseCase::find_all_friend(&self.conn, person_id)
+            .await
+            .map_err(to_status)?
+            .into_iter()
+            .filter_map(|friend| Some((friend.friend_id, friend.uuid?)))
+            .collect();
+        let received_links =
+            FriendUseCase::find_pending_friendship_links(&self.conn, person_id, true)
+                .await
+                .map_err(to_status)?;
+        let sent_links = FriendUseCase::find_pending_friendship_links(&self.conn, person_id, false)
+            .await
+            .map_err(to_status)?;
+        Self::attach_friendship_uuids(&mut friend_people, accepted_links);
+        Self::attach_friendship_uuids(&mut receive_request_people, received_links);
+        Self::attach_friendship_uuids(&mut sent_request_people, sent_links);
 
-		Ok(Response::new(FriendPageResponse {
-			suggestions: PersonMapper::response_vec(suggestions),
-			friends: friend_people,
-			receive_requests: receive_request_people,
-			sent_requests: sent_request_people,
-		}))
-	}
+        Ok(Response::new(FriendPageResponse {
+            suggestions: PersonMapper::response_vec(suggestions),
+            friends: friend_people,
+            receive_requests: receive_request_people,
+            sent_requests: sent_request_people,
+        }))
+    }
 
-	async fn send_friend_request(
-		&self,
-		request: Request<FriendRequestRequest>,
-	) -> Result<Response<Friend>, Status> {
-		let sender_id = Self::caller_person_id(&request)?;
-		let target_id = request.into_inner().person_id;
-		if target_id <= 0 {
-			return Err(Status::invalid_argument("person_id must be informed"));
-		}
+    async fn send_friend_request(
+        &self,
+        request: Request<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        let sender_id = Self::caller_person_id(&request)?;
+        let target_id = request.into_inner().person_id;
+        if target_id <= 0 {
+            return Err(Status::invalid_argument("person_id must be informed"));
+        }
 
-		let friend = FriendUseCase::send_friend_request(&self.conn, sender_id, target_id)
-			.await
-			.map_err(to_status)?;
+        let friend = FriendUseCase::send_friend_request(&self.conn, sender_id, target_id)
+            .await
+            .map_err(to_status)?;
 
-		Ok(Response::new(FriendMapper::response(friend)))
-	}
+        Ok(Response::new(FriendMapper::response(friend)))
+    }
 
-	async fn accept_friend_request(
-		&self,
-		request: Request<FriendRequestRequest>,
-	) -> Result<Response<Friend>, Status> {
-		let person_id = Self::caller_person_id(&request)?;
-		let sender_id = request.into_inner().person_id;
-		if sender_id <= 0 {
-			return Err(Status::invalid_argument("person_id must be informed"));
-		}
+    async fn accept_friend_request(
+        &self,
+        request: Request<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        let person_id = Self::caller_person_id(&request)?;
+        let sender_id = request.into_inner().person_id;
+        if sender_id <= 0 {
+            return Err(Status::invalid_argument("person_id must be informed"));
+        }
 
-		let friend = FriendUseCase::accept_friend_request(&self.conn, person_id, sender_id)
-			.await
-			.map_err(to_status)?;
+        let friend = FriendUseCase::accept_friend_request(&self.conn, person_id, sender_id)
+            .await
+            .map_err(to_status)?;
 
-		Ok(Response::new(FriendMapper::response(friend)))
-	}
+        Ok(Response::new(FriendMapper::response(friend)))
+    }
 
-	async fn deny_friend_request(
-		&self,
-		request: Request<FriendRequestRequest>,
-	) -> Result<Response<Friend>, Status> {
-		let person_id = Self::caller_person_id(&request)?;
-		let sender_id = request.into_inner().person_id;
-		if sender_id <= 0 {
-			return Err(Status::invalid_argument("person_id must be informed"));
-		}
+    async fn deny_friend_request(
+        &self,
+        request: Request<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        let person_id = Self::caller_person_id(&request)?;
+        let sender_id = request.into_inner().person_id;
+        if sender_id <= 0 {
+            return Err(Status::invalid_argument("person_id must be informed"));
+        }
 
-		let friend = FriendUseCase::deny_friend_request(&self.conn, person_id, sender_id)
-			.await
-			.map_err(to_status)?;
+        let friend = FriendUseCase::deny_friend_request(&self.conn, person_id, sender_id)
+            .await
+            .map_err(to_status)?;
 
-		Ok(Response::new(FriendMapper::response(friend)))
-	}
+        Ok(Response::new(FriendMapper::response(friend)))
+    }
 
-	async fn cancel_friend_request(
-		&self,
-		request: Request<FriendRequestRequest>,
-	) -> Result<Response<Friend>, Status> {
-		let person_id = Self::caller_person_id(&request)?;
-		let receiver_id = request.into_inner().person_id;
-		if receiver_id <= 0 {
-			return Err(Status::invalid_argument("person_id must be informed"));
-		}
+    async fn cancel_friend_request(
+        &self,
+        request: Request<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        let person_id = Self::caller_person_id(&request)?;
+        let receiver_id = request.into_inner().person_id;
+        if receiver_id <= 0 {
+            return Err(Status::invalid_argument("person_id must be informed"));
+        }
 
-		let friend = FriendUseCase::cancel_friend_request(&self.conn, person_id, receiver_id)
-			.await
-			.map_err(to_status)?;
+        let friend = FriendUseCase::cancel_friend_request(&self.conn, person_id, receiver_id)
+            .await
+            .map_err(to_status)?;
 
-		Ok(Response::new(FriendMapper::response(friend)))
-	}
+        Ok(Response::new(FriendMapper::response(friend)))
+    }
 
-	async fn remove_friend(
-		&self,
-		request: Request<FriendRequestRequest>,
-	) -> Result<Response<RemoveFriendResponse>, Status> {
-		let person_id = Self::caller_person_id(&request)?;
-		let friend_id = request.into_inner().person_id;
-		if friend_id <= 0 {
-			return Err(Status::invalid_argument("person_id must be informed"));
-		}
+    async fn remove_friend(
+        &self,
+        request: Request<FriendRequestRequest>,
+    ) -> Result<Response<RemoveFriendResponse>, Status> {
+        let person_id = Self::caller_person_id(&request)?;
+        let friend_id = request.into_inner().person_id;
+        if friend_id <= 0 {
+            return Err(Status::invalid_argument("person_id must be informed"));
+        }
 
-		FriendUseCase::remove_friend(&self.conn, person_id, friend_id)
-			.await
-			.map_err(to_status)?;
+        FriendUseCase::remove_friend(&self.conn, person_id, friend_id)
+            .await
+            .map_err(to_status)?;
 
-		Ok(Response::new(RemoveFriendResponse { success: true }))
-	}
+        Ok(Response::new(RemoveFriendResponse { success: true }))
+    }
 
-	async fn search_friends(
-		&self,
-		request: Request<SearchFriendsRequest>,
-	) -> Result<Response<SearchFriendsResponse>, Status> {
-		let person_id = Self::caller_person_id(&request)?;
-		let payload = request.into_inner();
-		let query = {
-			let trimmed = payload.query.trim();
-			(!trimmed.is_empty()).then(|| trimmed.to_string())
-		};
-		let limit = if payload.limit > 0 { payload.limit } else { 50 };
+    async fn search_friends(
+        &self,
+        request: Request<SearchFriendsRequest>,
+    ) -> Result<Response<SearchFriendsResponse>, Status> {
+        let person_id = Self::caller_person_id(&request)?;
+        let payload = request.into_inner();
+        let query = {
+            let trimmed = payload.query.trim();
+            (!trimmed.is_empty()).then(|| trimmed.to_string())
+        };
+        let limit = if payload.limit > 0 { payload.limit } else { 50 };
 
-		let people = PersonUseCase::find_friends(
-			&self.conn,
-			person_id,
-			query,
-			payload.latitude,
-			payload.longitude,
-			payload.radius_km,
-			limit,
-		)
-		.await;
+        let people = PersonUseCase::find_friends(
+            &self.conn,
+            person_id,
+            query,
+            payload.latitude,
+            payload.longitude,
+            payload.radius_km,
+            limit,
+        )
+        .await;
 
-		Ok(Response::new(SearchFriendsResponse {
-			people: PersonMapper::response_vec(people),
-		}))
-	}
+        Ok(Response::new(SearchFriendsResponse {
+            people: PersonMapper::response_vec(people),
+        }))
+    }
 }

@@ -1,7 +1,7 @@
 use domain::business_error::BusinessError;
 use domain::message::Message;
 use futures::stream::TryStreamExt;
-use mongodb::bson::{doc, DateTime};
+use mongodb::bson::{DateTime, doc};
 use mongodb::{Collection, Database};
 
 const COLLECTION_NAME: &str = "messages";
@@ -107,9 +107,7 @@ impl MessageGateway {
             .delete_many(doc! { "senderPersonUuid": person_uuid })
             .await
             .map(|_| ())
-            .map_err(|e| {
-                BusinessError::infrastructure(format!("Failed to delete messages: {e}"))
-            })
+            .map_err(|e| BusinessError::infrastructure(format!("Failed to delete messages: {e}")))
     }
 
     /// Account-deletion cascade: everything left in conversations being removed.
@@ -124,8 +122,6 @@ impl MessageGateway {
             .delete_many(doc! { "conversationUuid": { "$in": conversation_uuids } })
             .await
             .map(|_| ())
-            .map_err(|e| {
-                BusinessError::infrastructure(format!("Failed to delete messages: {e}"))
-            })
+            .map_err(|e| BusinessError::infrastructure(format!("Failed to delete messages: {e}")))
     }
 }

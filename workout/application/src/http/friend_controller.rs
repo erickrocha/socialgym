@@ -51,7 +51,10 @@ pub async fn get_friend_relationships_by_uuid(
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<FriendJson>>> {
     if uuid != current_user.person_uuid {
-        return Err(ExceptionResponse::Forbidden(locale, ErrorKey::FriendNotFound));
+        return Err(ExceptionResponse::Forbidden(
+            locale,
+            ErrorKey::FriendNotFound,
+        ));
     }
     let person = PersonUseCase::find_by_uuid(&state.conn, uuid)
         .await
@@ -91,11 +94,18 @@ pub async fn get_friends(
     Query(params): Query<HashMap<String, String>>,
     req: Request,
 ) -> HttpResponse<Json<FriendPageJson>> {
-    let locale = req.extensions().get::<Locale>().copied().unwrap_or(Locale::En);
+    let locale = req
+        .extensions()
+        .get::<Locale>()
+        .copied()
+        .unwrap_or(Locale::En);
     let current_user = req
         .extensions()
         .get::<User>()
-        .ok_or(ExceptionResponse::Unauthorized(locale, ErrorKey::AuthHeaderMissing))?;
+        .ok_or(ExceptionResponse::Unauthorized(
+            locale,
+            ErrorKey::AuthHeaderMissing,
+        ))?;
     let person_id = current_user.person_id;
 
     let km = params
@@ -211,7 +221,9 @@ pub async fn get_friend(
 ) -> HttpResponse<Json<PersonJson>> {
     FriendUseCase::ensure_accepted_friend(&state.conn, current_user.person_id, friend_id)
         .await
-        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::FriendNotFound))?;
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::FriendNotFound)
+        })?;
     let friend_entity = PersonUseCase::get(&state.conn, friend_id).await;
 
     if friend_entity.is_err() {

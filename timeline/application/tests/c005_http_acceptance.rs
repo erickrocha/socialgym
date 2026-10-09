@@ -1,8 +1,8 @@
 use application::{AppState, routes::feed_routes::feed_route, routes::post_routes::post_routes};
 use axum::{Router, body::Body, http::Request};
-use business::proto::proto::person::person_service_server::{PersonService, PersonServiceServer};
 use business::proto::proto::friend::friend_service_server::{FriendService, FriendServiceServer};
 use business::proto::proto::friend::*;
+use business::proto::proto::person::person_service_server::{PersonService, PersonServiceServer};
 use business::proto::proto::person::*;
 use domain::access_token::Claims;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
@@ -50,21 +50,72 @@ consent_stub! {
 /// The owner and the other person are friends, so each can read the other's posts.
 #[tonic::async_trait]
 impl FriendService for ConsentStub {
-    async fn get_friends(&self, request: GrpcRequest<FriendsRequest>) -> Result<Response<FriendsResponse>, Status> {
+    async fn get_friends(
+        &self,
+        request: GrpcRequest<FriendsRequest>,
+    ) -> Result<Response<FriendsResponse>, Status> {
         let me = request.into_inner().uuid;
-        let other = if me == "c005-owner" { "c005-other" } else { "c005-owner" };
+        let other = if me == "c005-owner" {
+            "c005-other"
+        } else {
+            "c005-owner"
+        };
         Ok(Response::new(FriendsResponse {
-            friends: vec![Friend { person_uuid: me, friend_uuid: other.into(), ..Default::default() }],
+            friends: vec![Friend {
+                person_uuid: me,
+                friend_uuid: other.into(),
+                ..Default::default()
+            }],
         }))
     }
-    async fn get_friend_page(&self, _: GrpcRequest<FriendPageRequest>) -> Result<Response<FriendPageResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn search_friends(&self, _: GrpcRequest<SearchFriendsRequest>) -> Result<Response<SearchFriendsResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn send_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn accept_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn deny_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn cancel_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn remove_friend(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<RemoveFriendResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn get_friend_profile(&self, _: GrpcRequest<FriendProfileRequest>) -> Result<Response<FriendProfileResponse>, Status> { Err(Status::unimplemented("")) }
+    async fn get_friend_page(
+        &self,
+        _: GrpcRequest<FriendPageRequest>,
+    ) -> Result<Response<FriendPageResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn search_friends(
+        &self,
+        _: GrpcRequest<SearchFriendsRequest>,
+    ) -> Result<Response<SearchFriendsResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn send_friend_request(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn accept_friend_request(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn deny_friend_request(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn cancel_friend_request(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn remove_friend(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<RemoveFriendResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn get_friend_profile(
+        &self,
+        _: GrpcRequest<FriendProfileRequest>,
+    ) -> Result<Response<FriendProfileResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
 }
 
 fn token(email: &str, person_id: i32, person_uuid: &str) -> String {
@@ -87,7 +138,13 @@ fn token(email: &str, person_id: i32, person_uuid: &str) -> String {
     .unwrap()
 }
 
-async fn call(app: &Router, method: &str, uri: &str, tok: &str, body: Option<Value>) -> (u16, Value) {
+async fn call(
+    app: &Router,
+    method: &str,
+    uri: &str,
+    tok: &str,
+    body: Option<Value>,
+) -> (u16, Value) {
     let mut req = Request::builder()
         .method(method)
         .uri(uri)
@@ -101,17 +158,32 @@ async fn call(app: &Router, method: &str, uri: &str, tok: &str, body: Option<Val
     };
     let res = app.clone().oneshot(req.body(body).unwrap()).await.unwrap();
     let status = res.status().as_u16();
-    let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
-    (status, serde_json::from_slice(&bytes).unwrap_or(Value::Null))
+    let bytes = axum::body::to_bytes(res.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    (
+        status,
+        serde_json::from_slice(&bytes).unwrap_or(Value::Null),
+    )
 }
 
 #[tokio::test]
 #[ignore = "requires a disposable TEST_MONGO_URL targeting the timeline_test database"]
 async fn c005_timeline_routes_enforce_identity_and_return_stable_outcomes() {
     let mongo_url = std::env::var("TEST_MONGO_URL").expect("TEST_MONGO_URL must be set");
-    assert!(mongo_url.contains("/timeline_test"), "refusing to run against a non-test database");
-    let database = Client::with_uri_str(mongo_url).await.unwrap().database("timeline_test");
-    database.collection::<Value>("posts").delete_many(doc! {}).await.unwrap();
+    assert!(
+        mongo_url.contains("/timeline_test"),
+        "refusing to run against a non-test database"
+    );
+    let database = Client::with_uri_str(mongo_url)
+        .await
+        .unwrap()
+        .database("timeline_test");
+    database
+        .collection::<Value>("posts")
+        .delete_many(doc! {})
+        .await
+        .unwrap();
 
     // Plaintext gRPC consent stub on an ephemeral port.
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -154,33 +226,85 @@ async fn c005_timeline_routes_enforce_identity_and_return_stable_outcomes() {
     let id = post["uuid"].as_str().unwrap().to_string();
 
     // Validation -> 400 (media without third-party consent).
-    let (status, _) = call(&app, "POST", "/posts", &owner, Some(json!({
-        "authorId": 5001, "authorUuid": "c005-owner", "authorName": "x", "content": "m",
-        "media": [{"url": "u", "mediaType": "IMAGE", "objectKey": "k"}]
-    }))).await;
+    let (status, _) = call(
+        &app,
+        "POST",
+        "/posts",
+        &owner,
+        Some(json!({
+            "authorId": 5001, "authorUuid": "c005-owner", "authorName": "x", "content": "m",
+            "media": [{"url": "u", "mediaType": "IMAGE", "objectKey": "k"}]
+        })),
+    )
+    .await;
     assert_eq!(status, 400);
 
     // Feed for the owner includes the post.
     let (status, feed) = call(&app, "GET", "/feed?page=0", &owner, None).await;
     assert_eq!(status, 200);
-    assert!(feed.as_array().unwrap().iter().any(|p| p["uuid"] == id.as_str()));
+    assert!(
+        feed.as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p["uuid"] == id.as_str())
+    );
 
     // Comment and reaction -> 201; missing post -> 404.
-    let (status, p) = call(&app, "POST", &format!("/posts/{id}/comments"), &other, Some(json!({
-        "postUuid": "ignored", "authorUuid": "x", "authorName": "x", "content": "nice"
-    }))).await;
+    let (status, p) = call(
+        &app,
+        "POST",
+        &format!("/posts/{id}/comments"),
+        &other,
+        Some(json!({
+            "postUuid": "ignored", "authorUuid": "x", "authorName": "x", "content": "nice"
+        })),
+    )
+    .await;
     assert_eq!(status, 201, "{p}");
     assert_eq!(p["comments"][0]["postUuid"], id.as_str());
-    let (status, _) = call(&app, "POST", &format!("/posts/{id}/reactions"), &other, Some(json!({
-        "authorId": "x", "authorName": "x", "reactionType": "LIKE"
-    }))).await;
+    let (status, _) = call(
+        &app,
+        "POST",
+        &format!("/posts/{id}/reactions"),
+        &other,
+        Some(json!({
+            "authorId": "x", "authorName": "x", "reactionType": "LIKE"
+        })),
+    )
+    .await;
     assert_eq!(status, 201);
-    assert_eq!(call(&app, "POST", "/posts/missing-post/comments", &other, Some(json!({
-        "postUuid": "m", "authorUuid": "x", "authorName": "x", "content": "c"
-    }))).await.0, 404);
+    assert_eq!(
+        call(
+            &app,
+            "POST",
+            "/posts/missing-post/comments",
+            &other,
+            Some(json!({
+                "postUuid": "m", "authorUuid": "x", "authorName": "x", "content": "c"
+            }))
+        )
+        .await
+        .0,
+        404
+    );
 
     // Non-owner delete -> 403; missing -> 404; owner delete -> 204.
-    assert_eq!(call(&app, "DELETE", &format!("/posts/{id}"), &other, None).await.0, 403);
-    assert_eq!(call(&app, "DELETE", "/posts/missing-post", &owner, None).await.0, 404);
-    assert_eq!(call(&app, "DELETE", &format!("/posts/{id}"), &owner, None).await.0, 204);
+    assert_eq!(
+        call(&app, "DELETE", &format!("/posts/{id}"), &other, None)
+            .await
+            .0,
+        403
+    );
+    assert_eq!(
+        call(&app, "DELETE", "/posts/missing-post", &owner, None)
+            .await
+            .0,
+        404
+    );
+    assert_eq!(
+        call(&app, "DELETE", &format!("/posts/{id}"), &owner, None)
+            .await
+            .0,
+        204
+    );
 }

@@ -4,8 +4,8 @@ pub mod authorization;
 pub mod db_pool;
 pub mod entity_mapper;
 pub mod functions;
-pub mod i18n;
 pub mod gateway;
+pub mod i18n;
 pub mod legal_documents;
 pub mod password_policy;
 pub mod rate_limit;
@@ -17,5 +17,7 @@ pub mod secret;
 #[cfg(test)]
 pub(crate) fn lock_env() -> std::sync::MutexGuard<'static, ()> {
     static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-    ENV_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    ENV_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }

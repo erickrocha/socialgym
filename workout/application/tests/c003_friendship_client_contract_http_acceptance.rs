@@ -217,10 +217,7 @@ async fn friendship_rest_client_contract_smoke() {
         ))
         .await
         .unwrap();
-    assert_eq!(
-        duplicate_request.status(),
-        axum::http::StatusCode::CONFLICT
-    );
+    assert_eq!(duplicate_request.status(), axum::http::StatusCode::CONFLICT);
 
     // 5. Not found: the bystander tries to accept/cancel a friend request
     //    that does not involve them at all.

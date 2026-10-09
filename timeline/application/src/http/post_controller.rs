@@ -70,11 +70,14 @@ pub async fn delete_post(
     Extension(locale): Extension<Locale>,
     Extension(current_user): Extension<User>,
 ) -> HttpResponse<StatusCode> {
-    PostUseCase::delete_owned(&state.database, post_id, current_user.person_id, &current_user.person_uuid)
-        .await
-        .map_err(|error| {
-            ExceptionResponse::from_business(error, locale, ErrorKey::PostDeleteFailed)
-        })?;
+    PostUseCase::delete_owned(
+        &state.database,
+        post_id,
+        current_user.person_id,
+        &current_user.person_uuid,
+    )
+    .await
+    .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::PostDeleteFailed))?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -140,8 +143,9 @@ pub async fn add_reaction(
     Extension(current_user): Extension<User>,
     Json(payload): Json<ReactionJson>,
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
-    PostUseCase::parse_reaction_type(&payload.reaction_type)
-        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::ReactionAddFailed))?;
+    PostUseCase::parse_reaction_type(&payload.reaction_type).map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::ReactionAddFailed)
+    })?;
     let reaction = ReactionMapper::domain(payload);
     PostUseCase::add_reaction(&state.database, &current_user, post_id, reaction)
         .await
@@ -174,10 +178,15 @@ pub async fn remove_reaction(
     Extension(locale): Extension<Locale>,
     Extension(current_user): Extension<User>,
 ) -> HttpResponse<(StatusCode, Json<PostJson>)> {
-    PostUseCase::remove_reaction(&state.database, post_id, current_user.person_id, current_user.person_uuid)
-        .await
-        .map(|p| (StatusCode::OK, Json(PostMapper::json(p))))
-        .map_err(|error| {
-            ExceptionResponse::from_business(error, locale, ErrorKey::ReactionRemoveFailed)
-        })
+    PostUseCase::remove_reaction(
+        &state.database,
+        post_id,
+        current_user.person_id,
+        current_user.person_uuid,
+    )
+    .await
+    .map(|p| (StatusCode::OK, Json(PostMapper::json(p))))
+    .map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::ReactionRemoveFailed)
+    })
 }

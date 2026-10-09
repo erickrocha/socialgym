@@ -1,4 +1,4 @@
-use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
 
 use domain::access_token::Claims;
 use domain::business_error::BusinessError;
@@ -19,9 +19,13 @@ impl Authentication {
     /// chat stream ends when it passes.
     pub fn access_token_expiry(token: &str) -> Option<i64> {
         let key = env::var("ACCESS_TOKEN_SECRET").ok()?;
-        decode::<Claims>(token, &DecodingKey::from_secret(key.as_bytes()), &Validation::new(Algorithm::HS512))
-            .ok()
-            .map(|data| data.claims.exp)
+        decode::<Claims>(
+            token,
+            &DecodingKey::from_secret(key.as_bytes()),
+            &Validation::new(Algorithm::HS512),
+        )
+        .ok()
+        .map(|data| data.claims.exp)
     }
 
     pub fn validate_access_token(token: &str) -> Result<User, BusinessError> {

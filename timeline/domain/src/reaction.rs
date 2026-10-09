@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Reaction {
-
     #[serde(rename = "_id")]
     pub uuid: String,
     pub author_id: String,
@@ -13,7 +12,12 @@ pub struct Reaction {
 }
 
 impl Reaction {
-    pub fn new(uuid: String, author_id: String, author_name: String, reaction_type: ReactionType) -> Self {
+    pub fn new(
+        uuid: String,
+        author_id: String,
+        author_name: String,
+        reaction_type: ReactionType,
+    ) -> Self {
         Self {
             uuid,
             author_id,
@@ -21,5 +25,4 @@ impl Reaction {
             reaction_type,
         }
     }
-
 }

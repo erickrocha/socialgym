@@ -112,6 +112,7 @@ impl InAppNotification {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_social_interaction(
         uuid: String,
         notification_type: String,

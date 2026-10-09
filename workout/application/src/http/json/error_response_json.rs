@@ -49,4 +49,3 @@ pub struct InternalServerErrorJson {
     #[schema(example = "Unexpected server error")]
     pub message: String,
 }
-

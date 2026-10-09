@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, TextField, Button, Select, VisibilityDropdown } from '../../gui';
+import { Modal, TextField, Button, VisibilityDropdown } from '../../gui';
 import { EXERCISE_CATEGORIES } from '../../library/exerciseCategories';
 import './ExerciseModal.scss';
 

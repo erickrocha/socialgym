@@ -2,7 +2,9 @@ use crate::commons::legal_documents;
 use crate::domain::access_token::AccessToken;
 use crate::domain::person::Person;
 use crate::use_cases::authentication::Authentication;
-use crate::use_cases::registration_use_case::{RegistrationError, RegistrationRequest, RegistrationUseCase};
+use crate::use_cases::registration_use_case::{
+    RegistrationError, RegistrationRequest, RegistrationUseCase,
+};
 use chrono::NaiveDate;
 use sea_orm::DbConn;
 
@@ -59,7 +61,11 @@ pub fn acceptance_ip(real_ip: Option<&str>, forwarded_for: Option<&str>) -> Stri
 pub struct SignUpUseCase;
 
 impl SignUpUseCase {
-    pub async fn execute(db: &DbConn, request: SignUpRequest, today: NaiveDate) -> Result<AccessToken, SignUpError> {
+    pub async fn execute(
+        db: &DbConn,
+        request: SignUpRequest,
+        today: NaiveDate,
+    ) -> Result<AccessToken, SignUpError> {
         if !is_at_least_eighteen(request.date_of_birth, today) {
             return Err(SignUpError::Underage);
         }
@@ -71,7 +77,12 @@ impl SignUpUseCase {
             return Err(SignUpError::ConsentRequired);
         }
         let ip = acceptance_ip(request.real_ip.as_deref(), request.forwarded_for.as_deref());
-        let person = Person::new(request.firstname, request.surname, request.date_of_birth, request.gender);
+        let person = Person::new(
+            request.firstname,
+            request.surname,
+            request.date_of_birth,
+            request.gender,
+        );
         let password = request.password.clone();
         let user = RegistrationUseCase::execute(
             db,

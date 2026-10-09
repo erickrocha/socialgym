@@ -16,4 +16,3 @@ pub struct BusinessProfileAddressJson {
     pub latitude: Option<f64>,
     pub longitude: Option<f64>,
 }
-

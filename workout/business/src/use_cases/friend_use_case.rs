@@ -80,7 +80,9 @@ impl FriendUseCase {
                         sender_id,
                         receiver_id
                     );
-                    Err(BusinessError::conflict("You are already friends".to_string()))
+                    Err(BusinessError::conflict(
+                        "You are already friends".to_string(),
+                    ))
                 }
                 InviteStatus::Rejected | InviteStatus::Cancelled => {
                     log::info!(
@@ -133,7 +135,9 @@ impl FriendUseCase {
             InviteStatus::Pending,
         );
         let txn = db.begin().await.map_err(|error| {
-            BusinessError::new(format!("Error starting friend request transaction: {error}"))
+            BusinessError::new(format!(
+                "Error starting friend request transaction: {error}"
+            ))
         })?;
         let result = FriendGateway::persist(&txn, friend_request)
             .await
@@ -189,7 +193,9 @@ impl FriendUseCase {
                 person_id,
                 friend_id
             );
-            return Err(BusinessError::not_found("Friend request not found".to_string()));
+            return Err(BusinessError::not_found(
+                "Friend request not found".to_string(),
+            ));
         }
         let mut friend_request = friend_request.unwrap();
         let current_status = InviteStatus::from_string(&friend_request.status);
@@ -346,27 +352,22 @@ impl FriendUseCase {
         } else {
             friends::Column::PersonId
         };
-        FriendGateway::find_all_by_column_and_status(
-            db,
-            column,
-            person_id,
-            InviteStatus::Pending,
-        )
-        .await
-        .map(|requests| {
-            requests
-                .into_iter()
-                .map(|request| {
-                    let person_id = if received {
-                        request.person_id
-                    } else {
-                        request.friend_id
-                    };
-                    (person_id, request.uuid.to_string())
-                })
-                .collect()
-        })
-        .map_err(|error| BusinessError::infrastructure(error.to_string()))
+        FriendGateway::find_all_by_column_and_status(db, column, person_id, InviteStatus::Pending)
+            .await
+            .map(|requests| {
+                requests
+                    .into_iter()
+                    .map(|request| {
+                        let person_id = if received {
+                            request.person_id
+                        } else {
+                            request.friend_id
+                        };
+                        (person_id, request.uuid.to_string())
+                    })
+                    .collect()
+            })
+            .map_err(|error| BusinessError::infrastructure(error.to_string()))
     }
 
     pub async fn ensure_accepted_friend(
@@ -398,7 +399,10 @@ impl FriendUseCase {
         }
     }
 
-    fn normalize_accepted_friendships(records: Vec<friends::FriendsEntity>, person_id: i32) -> Vec<Friend> {
+    fn normalize_accepted_friendships(
+        records: Vec<friends::FriendsEntity>,
+        person_id: i32,
+    ) -> Vec<Friend> {
         let mut friend_list: Vec<Friend> = records
             .into_iter()
             .filter_map(|f| {

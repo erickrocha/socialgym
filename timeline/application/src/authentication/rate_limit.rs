@@ -37,7 +37,10 @@ pub async fn rate_limit(
             .get::<Locale>()
             .copied()
             .unwrap_or(Locale::En);
-        return Err(ExceptionResponse::TooManyRequests(locale, ErrorKey::RateLimited));
+        return Err(ExceptionResponse::TooManyRequests(
+            locale,
+            ErrorKey::RateLimited,
+        ));
     }
 
     Ok(next.run(req).await)

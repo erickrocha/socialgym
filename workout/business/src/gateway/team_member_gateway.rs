@@ -20,7 +20,10 @@ impl TeamMemberGateway {
         active_model.save(db).await
     }
 
-    pub async fn update(db: &DbConn, team_member: TeamMember) -> Result<team_member::TeamMemberEntity, DbErr> {
+    pub async fn update(
+        db: &DbConn,
+        team_member: TeamMember,
+    ) -> Result<team_member::TeamMemberEntity, DbErr> {
         let active_model = TeamMemberMapper::build_active_model(team_member);
         active_model.update(db).await
     }
@@ -77,7 +80,10 @@ impl TeamMemberGateway {
 
     /// Bulk-deletes every membership row for a person — covers memberships at
     /// *other* people's businesses, not just their own (account-purge cascade).
-    pub async fn delete_all_by_person_id<C: ConnectionTrait>(db: &C, person_id: i32) -> Result<DeleteResult, DbErr> {
+    pub async fn delete_all_by_person_id<C: ConnectionTrait>(
+        db: &C,
+        person_id: i32,
+    ) -> Result<DeleteResult, DbErr> {
         TeamMemberQuery::delete_many()
             .filter(Column::PersonId.eq(person_id))
             .exec(db)

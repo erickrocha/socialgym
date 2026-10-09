@@ -1,6 +1,6 @@
 import {updateObject} from "../../../commons/library/utility";
 import {createSlice} from "@reduxjs/toolkit";
-import {getMe, updatePerson, updatePersonInfo,uploadCoverImage} from "./person.actions.js";
+import {getMe, updatePerson, updatePersonInfo} from "./person.actions.js";
 
 
 const initialState = {

@@ -43,8 +43,9 @@ pub async fn get_settings_by_id(
     let result = use_case.get_by_id(id).await;
     match result {
         Ok(settings) => {
-            ensure_owns(settings.person_id, current_user.person_id)
-                .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::SettingsNotFound))?;
+            ensure_owns(settings.person_id, current_user.person_id).map_err(|error| {
+                ExceptionResponse::from_business(error, locale, ErrorKey::SettingsNotFound)
+            })?;
             let json = SettingsMapper::json(settings);
             Ok(Json(json))
         }
@@ -90,8 +91,9 @@ pub async fn get_settings_by_uuid(
     let result = use_case.get_by_uuid(uuid.clone()).await;
     match result {
         Ok(settings) => {
-            ensure_owns(settings.person_id, current_user.person_id)
-                .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::SettingsNotFound))?;
+            ensure_owns(settings.person_id, current_user.person_id).map_err(|error| {
+                ExceptionResponse::from_business(error, locale, ErrorKey::SettingsNotFound)
+            })?;
             let json = SettingsMapper::json(settings);
             Ok(Json(json))
         }
@@ -237,7 +239,10 @@ pub async fn get_settings_by_owner_uuid(
     Path(uuid): Path<String>,
 ) -> HttpResponse<Json<SettingsJson>> {
     if uuid != current_user.person_uuid {
-        return Err(ExceptionResponse::Forbidden(locale, ErrorKey::SettingsNotFound));
+        return Err(ExceptionResponse::Forbidden(
+            locale,
+            ErrorKey::SettingsNotFound,
+        ));
     }
     let use_case = SettingsUseCase::new(SettingsGateway::new((*state.conn).clone()));
     let settings = use_case.get_by_owner_uuid(uuid).await.map_err(|error| {

@@ -1,7 +1,7 @@
-use crate::commons::i18n::{translate, ErrorKey, Locale};
+use crate::commons::i18n::{ErrorKey, Locale, translate};
 use crate::http::json::error_response_json::ErrorResponseJson;
-use axum::response::IntoResponse;
 use axum::Json;
+use axum::response::IntoResponse;
 use domain::business_error::{BusinessError, BusinessErrorKind};
 
 pub type HttpResponse<T> = Result<T, ExceptionResponse>;
@@ -12,7 +12,7 @@ pub enum ExceptionResponse {
     Forbidden(Locale, ErrorKey),
     BadRequest(Locale, ErrorKey),
     InternalServerError(Locale, ErrorKey),
-    NotFound(Locale,ErrorKey),
+    NotFound(Locale, ErrorKey),
     Conflict(Locale, ErrorKey),
     Locked(Locale, ErrorKey),
     TooManyRequests(Locale, ErrorKey),
@@ -43,14 +43,28 @@ impl ExceptionResponse {
 impl IntoResponse for ExceptionResponse {
     fn into_response(self) -> axum::http::Response<axum::body::Body> {
         let (status, locale, key) = match self {
-            ExceptionResponse::Unauthorized(locale, key) => (axum::http::StatusCode::UNAUTHORIZED, locale, key),
-            ExceptionResponse::Forbidden(locale, key) => (axum::http::StatusCode::FORBIDDEN, locale, key),
-            ExceptionResponse::BadRequest(locale, key) => (axum::http::StatusCode::BAD_REQUEST, locale, key),
-            ExceptionResponse::InternalServerError(locale, key) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, locale, key),
-            ExceptionResponse::NotFound(locale, key) => (axum::http::StatusCode::NOT_FOUND, locale, key),
-            ExceptionResponse::Conflict(locale, key) => (axum::http::StatusCode::CONFLICT, locale, key),
+            ExceptionResponse::Unauthorized(locale, key) => {
+                (axum::http::StatusCode::UNAUTHORIZED, locale, key)
+            }
+            ExceptionResponse::Forbidden(locale, key) => {
+                (axum::http::StatusCode::FORBIDDEN, locale, key)
+            }
+            ExceptionResponse::BadRequest(locale, key) => {
+                (axum::http::StatusCode::BAD_REQUEST, locale, key)
+            }
+            ExceptionResponse::InternalServerError(locale, key) => {
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, locale, key)
+            }
+            ExceptionResponse::NotFound(locale, key) => {
+                (axum::http::StatusCode::NOT_FOUND, locale, key)
+            }
+            ExceptionResponse::Conflict(locale, key) => {
+                (axum::http::StatusCode::CONFLICT, locale, key)
+            }
             ExceptionResponse::Locked(locale, key) => (axum::http::StatusCode::LOCKED, locale, key),
-            ExceptionResponse::TooManyRequests(locale, key) => (axum::http::StatusCode::TOO_MANY_REQUESTS, locale, key),
+            ExceptionResponse::TooManyRequests(locale, key) => {
+                (axum::http::StatusCode::TOO_MANY_REQUESTS, locale, key)
+            }
         };
 
         let payload = ErrorResponseJson::new(key.as_str().to_string(), translate(locale, key));

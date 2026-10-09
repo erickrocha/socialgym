@@ -30,7 +30,10 @@ use uuid::Uuid;
 
 /// The text REST puts in JSON for a date.
 pub fn date_to_text(date: NaiveDateTime) -> String {
-    serde_json::to_value(date).ok().and_then(|v| v.as_str().map(str::to_owned)).unwrap_or_default()
+    serde_json::to_value(date)
+        .ok()
+        .and_then(|v| v.as_str().map(str::to_owned))
+        .unwrap_or_default()
 }
 
 #[allow(clippy::result_large_err)]
@@ -62,11 +65,17 @@ pub struct MentionMapper {}
 
 impl MentionMapper {
     pub fn domain(m: pb::Mention) -> Mention {
-        Mention { name: m.name, mentioned_uuid: m.mentioned_uuid }
+        Mention {
+            name: m.name,
+            mentioned_uuid: m.mentioned_uuid,
+        }
     }
 
     pub fn proto(m: Mention) -> pb::Mention {
-        pb::Mention { name: m.name, mentioned_uuid: m.mentioned_uuid }
+        pb::Mention {
+            name: m.name,
+            mentioned_uuid: m.mentioned_uuid,
+        }
     }
 }
 
@@ -83,7 +92,12 @@ impl MediaMapper {
     }
 
     pub fn proto(m: Media) -> pb::Media {
-        pb::Media { uuid: Some(m.uuid), url: m.url, media_type: m.media_type.to_string(), object_key: m.object_key }
+        pb::Media {
+            uuid: Some(m.uuid),
+            url: m.url,
+            media_type: m.media_type.to_string(),
+            object_key: m.object_key,
+        }
     }
 }
 
@@ -114,7 +128,11 @@ impl CommentMapper {
             None,
             request.content,
             request.parent_uuid,
-            request.mentions.into_iter().map(MentionMapper::domain).collect(),
+            request
+                .mentions
+                .into_iter()
+                .map(MentionMapper::domain)
+                .collect(),
         )
     }
 
@@ -148,7 +166,11 @@ impl PostMapper {
             None,
             request.content,
             request.media.into_iter().map(MediaMapper::domain).collect(),
-            request.mentions.into_iter().map(MentionMapper::domain).collect(),
+            request
+                .mentions
+                .into_iter()
+                .map(MentionMapper::domain)
+                .collect(),
         )
     }
 
@@ -203,7 +225,10 @@ pub struct EvolutionCheckInMapper {}
 
 impl EvolutionCheckInMapper {
     #[allow(clippy::result_large_err)]
-    pub fn domain(request: pb::AddEvolutionCheckInRequest, person_uuid: &str) -> Result<EvolutionCheckIn, Status> {
+    pub fn domain(
+        request: pb::AddEvolutionCheckInRequest,
+        person_uuid: &str,
+    ) -> Result<EvolutionCheckIn, Status> {
         Ok(EvolutionCheckIn::new(
             Uuid::new_v4().to_string(),
             person_uuid.to_owned(),
@@ -211,7 +236,13 @@ impl EvolutionCheckInMapper {
             request.note,
             Visibility::from_string(&request.visibility),
             request.composition.map(|c| {
-                BodyComposition::new(id_or_new(c.uuid), c.weight, c.body_fat_pct, c.muscle_mass_pct, c.visceral_fat)
+                BodyComposition::new(
+                    id_or_new(c.uuid),
+                    c.weight,
+                    c.body_fat_pct,
+                    c.muscle_mass_pct,
+                    c.visceral_fat,
+                )
             }),
             request.circumferences.map(|c| {
                 Circumferences::new(
@@ -264,11 +295,19 @@ pub struct MessageMapper {}
 
 impl MessageMapper {
     pub fn media_domain(m: pb::MessageMedia) -> MessageMedia {
-        MessageMedia { media_type: m.media_type, object_key: m.object_key, url: String::new() }
+        MessageMedia {
+            media_type: m.media_type,
+            object_key: m.object_key,
+            url: String::new(),
+        }
     }
 
     fn media_proto(m: MessageMedia) -> pb::MessageMedia {
-        pb::MessageMedia { media_type: m.media_type, object_key: m.object_key, url: m.url }
+        pb::MessageMedia {
+            media_type: m.media_type,
+            object_key: m.object_key,
+            url: m.url,
+        }
     }
 
     pub fn proto(m: Message) -> pb::Message {
@@ -303,7 +342,10 @@ impl ConversationMapper {
     }
 
     pub fn proto(view: ConversationView) -> pb::Conversation {
-        let ConversationView { conversation, unread } = view;
+        let ConversationView {
+            conversation,
+            unread,
+        } = view;
         let Conversation {
             uuid,
             conversation_type,
@@ -349,24 +391,36 @@ impl ChatFrameMapper {
     pub fn server_frame(event: ChatEvent) -> pb::ServerFrame {
         use pb::server_frame::Event;
         let event = match event {
-            ChatEvent::MessageNew { conversation_uuid, conversation_type, message } => {
-                Event::MessageNew(pb::MessageNewEvent {
-                    conversation_uuid,
-                    conversation_type,
-                    message: Some(MessageMapper::proto(message)),
-                })
-            }
+            ChatEvent::MessageNew {
+                conversation_uuid,
+                conversation_type,
+                message,
+            } => Event::MessageNew(pb::MessageNewEvent {
+                conversation_uuid,
+                conversation_type,
+                message: Some(MessageMapper::proto(message)),
+            }),
             ChatEvent::ConversationUpdated { conversation } => {
                 Event::ConversationUpdated(pb::ConversationUpdatedEvent {
                     conversation: Some(ConversationMapper::proto(conversation)),
                 })
             }
-            ChatEvent::MessageRead { conversation_uuid, person_uuid, last_read_message_uuid } => {
-                Event::MessageRead(pb::MessageReadEvent { conversation_uuid, person_uuid, last_read_message_uuid })
-            }
-            ChatEvent::Typing { conversation_uuid, person_uuid } => {
-                Event::Typing(pb::TypingEvent { conversation_uuid, person_uuid })
-            }
+            ChatEvent::MessageRead {
+                conversation_uuid,
+                person_uuid,
+                last_read_message_uuid,
+            } => Event::MessageRead(pb::MessageReadEvent {
+                conversation_uuid,
+                person_uuid,
+                last_read_message_uuid,
+            }),
+            ChatEvent::Typing {
+                conversation_uuid,
+                person_uuid,
+            } => Event::Typing(pb::TypingEvent {
+                conversation_uuid,
+                person_uuid,
+            }),
             ChatEvent::Pong => Event::Pong(pb::PongEvent {}),
             ChatEvent::Error { message } => Event::Error(pb::ErrorEvent { message }),
         };
@@ -380,13 +434,20 @@ impl ChatFrameMapper {
             Frame::Send(f) => ClientFrame::Send {
                 conversation_uuid: f.conversation_uuid,
                 body: f.body,
-                media: f.media.into_iter().map(MessageMapper::media_domain).collect(),
+                media: f
+                    .media
+                    .into_iter()
+                    .map(MessageMapper::media_domain)
+                    .collect(),
                 client_message_id: f.client_message_id,
             },
-            Frame::Read(f) => {
-                ClientFrame::Read { conversation_uuid: f.conversation_uuid, last_read_message_uuid: f.last_read_message_uuid }
-            }
-            Frame::Typing(f) => ClientFrame::Typing { conversation_uuid: f.conversation_uuid },
+            Frame::Read(f) => ClientFrame::Read {
+                conversation_uuid: f.conversation_uuid,
+                last_read_message_uuid: f.last_read_message_uuid,
+            },
+            Frame::Typing(f) => ClientFrame::Typing {
+                conversation_uuid: f.conversation_uuid,
+            },
             Frame::Ping(_) => ClientFrame::Ping,
         })
     }
@@ -436,15 +497,20 @@ impl WorkoutSessionMapper {
     /// (`INVALID_ARGUMENT` otherwise); the client's session id and person are ignored.
     #[allow(clippy::result_large_err)]
     pub fn domain(s: pb::WorkoutSession) -> Result<WorkoutSession, Status> {
-        let incomplete = || Status::invalid_argument("session dates and set owner names are required");
+        let incomplete =
+            || Status::invalid_argument("session dates and set owner names are required");
         let started_at = optional_text_to_date(s.started_at.as_deref())?;
         let completed_at = optional_text_to_date(s.completed_at.as_deref())?;
         let mut exercises = Vec::with_capacity(s.executed_sets.len());
         let mut sets_complete = true;
         for e in s.executed_sets {
-            let (set_start, set_end) =
-                (optional_text_to_date(e.started_at.as_deref())?, optional_text_to_date(e.completed_at.as_deref())?);
-            let (Some(set_start), Some(set_end), Some(owner_name)) = (set_start, set_end, e.owner_name) else {
+            let (set_start, set_end) = (
+                optional_text_to_date(e.started_at.as_deref())?,
+                optional_text_to_date(e.completed_at.as_deref())?,
+            );
+            let (Some(set_start), Some(set_end), Some(owner_name)) =
+                (set_start, set_end, e.owner_name)
+            else {
                 sets_complete = false;
                 continue;
             };
@@ -453,8 +519,12 @@ impl WorkoutSessionMapper {
                 exercise_name: e.exercise_name,
                 owner_id: e.owner_id,
                 owner_name,
-                category: e.category.map_or(Category::Force, |c| Category::from_string(&c)),
-                visibility: e.visibility.map_or(Visibility::Public, |v| Visibility::from_string(&v)),
+                category: e
+                    .category
+                    .map_or(Category::Force, |c| Category::from_string(&c)),
+                visibility: e
+                    .visibility
+                    .map_or(Visibility::Public, |v| Visibility::from_string(&v)),
                 set_number: e.set_number,
                 reps_or_duration: e.reps_or_duration,
                 weight: e.weight,
@@ -462,7 +532,9 @@ impl WorkoutSessionMapper {
                 completed_at: opt_naive_to_bson_datetime(set_end),
             });
         }
-        let (Some(started_at), Some(completed_at), true) = (started_at, completed_at, sets_complete) else {
+        let (Some(started_at), Some(completed_at), true) =
+            (started_at, completed_at, sets_complete)
+        else {
             return Err(incomplete());
         };
         Ok(WorkoutSession {

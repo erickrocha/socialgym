@@ -44,9 +44,11 @@ type Sink = mpsc::UnboundedSender<ChatEvent>;
 /// This only fans out within a single `timeline` process. Running more than one
 /// instance needs a shared bus (Mongo change streams / Redis pub-sub) feeding
 /// each node's hub.
+type Subscribers = HashMap<String, Vec<(u64, Sink)>>;
+
 #[derive(Clone)]
 pub struct ChatHub {
-    inner: Arc<Mutex<HashMap<String, Vec<(u64, Sink)>>>>,
+    inner: Arc<Mutex<Subscribers>>,
     next_id: Arc<AtomicU64>,
 }
 
@@ -71,7 +73,10 @@ impl ChatHub {
         let (tx, rx) = mpsc::unbounded_channel();
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let mut guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
-        guard.entry(person_uuid.to_string()).or_default().push((id, tx));
+        guard
+            .entry(person_uuid.to_string())
+            .or_default()
+            .push((id, tx));
         (id, rx)
     }
 

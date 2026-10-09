@@ -142,7 +142,10 @@ async fn update_keeps_the_stored_uuid_and_image_keys() {
     let writes = format!("{:?}", db.into_transaction_log());
     assert!(writes.contains(&stored_uuid.to_string()), "{writes}");
     assert!(!writes.contains(&payload_uuid.to_string()), "{writes}");
-    assert!(!writes.contains("signed-logo") && !writes.contains("signed-cover"), "{writes}");
+    assert!(
+        !writes.contains("signed-logo") && !writes.contains("signed-cover"),
+        "{writes}"
+    );
 }
 
 #[test]
@@ -158,7 +161,13 @@ fn only_the_owner_sees_the_tax_id() {
             None,
         )
     };
-    let owner = User::new(None, "o@example.com".to_string(), "h".to_string(), 1, owner_uuid.clone());
+    let owner = User::new(
+        None,
+        "o@example.com".to_string(),
+        "h".to_string(),
+        1,
+        owner_uuid.clone(),
+    );
     let stranger = User::new(
         None,
         "s@example.com".to_string(),

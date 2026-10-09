@@ -287,20 +287,33 @@ async fn validate_reports_an_unreadable_database_as_unavailable_not_invalid_or_o
     let _guard = AUTH_ENV_LOCK.lock().await;
     clear_auth_toggle_env();
     env::set_var("ACCESS_TOKEN_SECRET", "test_secret_unavailable");
-    let token = Authentication::generate_access_token(&domain_user(), &domain_person(), None, false);
+    let token =
+        Authentication::generate_access_token(&domain_user(), &domain_person(), None, false);
 
     let user_lookup_fails = MockDatabase::new(DatabaseBackend::Postgres)
         .append_query_errors(vec![sea_orm::DbErr::Custom("connection refused".into())])
         .into_connection();
     let result = Authentication::validate(&user_lookup_fails, token.access_token.clone()).await;
-    assert!(matches!(result, Err(ValidateError::Unavailable)), "{result:?}");
+    assert!(
+        matches!(result, Err(ValidateError::Unavailable)),
+        "{result:?}"
+    );
 
     let revocation_lookup_fails = MockDatabase::new(DatabaseBackend::Postgres)
-        .append_query_results(vec![vec![user_entity("test@example.com", "hashed", 0, None, None)]])
+        .append_query_results(vec![vec![user_entity(
+            "test@example.com",
+            "hashed",
+            0,
+            None,
+            None,
+        )]])
         .append_query_errors(vec![sea_orm::DbErr::Custom("connection reset".into())])
         .into_connection();
     let result = Authentication::validate(&revocation_lookup_fails, token.access_token).await;
-    assert!(matches!(result, Err(ValidateError::Unavailable)), "{result:?}");
+    assert!(
+        matches!(result, Err(ValidateError::Unavailable)),
+        "{result:?}"
+    );
 }
 
 #[tokio::test]

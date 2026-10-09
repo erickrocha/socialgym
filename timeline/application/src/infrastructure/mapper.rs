@@ -482,8 +482,7 @@ impl ConversationMapper {
             business_profile_name,
             // `hydrate_conversation_logo` already replaced the object key with a
             // signed URL (or left it as `None`).
-            business_profile_logo_url: business_profile_logo_object_key
-                .filter(|s| !s.is_empty()),
+            business_profile_logo_url: business_profile_logo_object_key.filter(|s| !s.is_empty()),
             participant_person_uuids,
             participants: participants
                 .into_iter()
@@ -573,22 +572,36 @@ impl ServerEventMapper {
     /// The WebSocket form of an event the hub fans out.
     pub fn json(event: ChatEvent) -> ServerEventJson {
         match event {
-            ChatEvent::MessageNew { conversation_uuid, conversation_type, message } => {
-                ServerEventJson::MessageNew {
-                    conversation_uuid,
-                    conversation_type,
-                    message: MessageMapper::json(message),
+            ChatEvent::MessageNew {
+                conversation_uuid,
+                conversation_type,
+                message,
+            } => ServerEventJson::MessageNew {
+                conversation_uuid,
+                conversation_type,
+                message: MessageMapper::json(message),
+            },
+            ChatEvent::ConversationUpdated { conversation } => {
+                ServerEventJson::ConversationUpdated {
+                    conversation: ConversationMapper::view(conversation),
                 }
             }
-            ChatEvent::ConversationUpdated { conversation } => {
-                ServerEventJson::ConversationUpdated { conversation: ConversationMapper::view(conversation) }
-            }
-            ChatEvent::MessageRead { conversation_uuid, person_uuid, last_read_message_uuid } => {
-                ServerEventJson::MessageRead { conversation_uuid, person_uuid, last_read_message_uuid }
-            }
-            ChatEvent::Typing { conversation_uuid, person_uuid } => {
-                ServerEventJson::Typing { conversation_uuid, person_uuid }
-            }
+            ChatEvent::MessageRead {
+                conversation_uuid,
+                person_uuid,
+                last_read_message_uuid,
+            } => ServerEventJson::MessageRead {
+                conversation_uuid,
+                person_uuid,
+                last_read_message_uuid,
+            },
+            ChatEvent::Typing {
+                conversation_uuid,
+                person_uuid,
+            } => ServerEventJson::Typing {
+                conversation_uuid,
+                person_uuid,
+            },
             ChatEvent::Pong => ServerEventJson::Pong,
             ChatEvent::Error { message } => ServerEventJson::Error { message },
         }
@@ -601,16 +614,30 @@ impl ClientFrameMapper {
     /// What a frame the WebSocket client sent asks the chat use cases to do.
     pub fn domain(frame: ClientFrameJson) -> ClientFrame {
         match frame {
-            ClientFrameJson::Send { conversation_uuid, body, media, client_message_id } => ClientFrame::Send {
+            ClientFrameJson::Send {
                 conversation_uuid,
                 body,
-                media: media.into_iter().map(MessageMapper::to_domain_media).collect(),
+                media,
+                client_message_id,
+            } => ClientFrame::Send {
+                conversation_uuid,
+                body,
+                media: media
+                    .into_iter()
+                    .map(MessageMapper::to_domain_media)
+                    .collect(),
                 client_message_id,
             },
-            ClientFrameJson::Read { conversation_uuid, last_read_message_uuid } => {
-                ClientFrame::Read { conversation_uuid, last_read_message_uuid }
+            ClientFrameJson::Read {
+                conversation_uuid,
+                last_read_message_uuid,
+            } => ClientFrame::Read {
+                conversation_uuid,
+                last_read_message_uuid,
+            },
+            ClientFrameJson::Typing { conversation_uuid } => {
+                ClientFrame::Typing { conversation_uuid }
             }
-            ClientFrameJson::Typing { conversation_uuid } => ClientFrame::Typing { conversation_uuid },
             ClientFrameJson::Ping => ClientFrame::Ping,
         }
     }

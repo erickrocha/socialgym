@@ -8,7 +8,10 @@ pub struct GrpcHealthService;
 
 #[tonic::async_trait]
 impl HealthService for GrpcHealthService {
-    async fn check(&self, request: Request<HealthRequest>) -> Result<Response<HealthResponse>, Status> {
+    async fn check(
+        &self,
+        request: Request<HealthRequest>,
+    ) -> Result<Response<HealthResponse>, Status> {
         let (user, _) = caller(&request)?;
         Ok(Response::new(HealthResponse {
             status: "ok".into(),

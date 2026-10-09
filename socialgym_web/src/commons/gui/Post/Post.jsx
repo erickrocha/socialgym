@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Avatar from '../Avatar/Avatar';
 import './Post.scss';
 
-const Post = ({ post, userAvatar, userName, onReact, onComment, onReport }) => {
+const Post = ({ post, userAvatar, onReact, onComment, onReport }) => {
     const { t } = useTranslation('common');
     const [showComments, setShowComments] = useState(false);
     const [commentText, setCommentText] = useState('');

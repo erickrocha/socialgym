@@ -57,7 +57,10 @@ impl PersonGateway {
             .unwrap_or_else(|_| Vec::new())
     }
 
-    pub async fn find_all_by_uuid_in(db: &DbConn, ids: Vec<String>) -> Result<Vec<PersonEntity>, DbErr> {
+    pub async fn find_all_by_uuid_in(
+        db: &DbConn,
+        ids: Vec<String>,
+    ) -> Result<Vec<PersonEntity>, DbErr> {
         let ids = parse_uuids(&ids).map_err(|e| DbErr::Type(e.to_string()))?;
         PersonQuery::find()
             .filter(person::Column::Uuid.is_in(ids))
@@ -95,8 +98,8 @@ impl PersonGateway {
         exclude_person_uuid: String,
         limit: u64,
     ) -> Result<Vec<String>, DbErr> {
-        let exclude_person_uuid = parse_uuid(&exclude_person_uuid)
-            .map_err(|e| DbErr::Type(e.to_string()))?;
+        let exclude_person_uuid =
+            parse_uuid(&exclude_person_uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         let search_pattern = format!("%{}%", query);
         let people = PersonQuery::find()
             .filter(
@@ -107,12 +110,8 @@ impl PersonGateway {
             .filter(person::Column::Uuid.ne(exclude_person_uuid))
             .limit(limit)
             .all(db)
-            .await
-            ?;
-        Ok(people
-            .into_iter()
-            .map(|p| p.uuid.to_string())
-            .collect())
+            .await?;
+        Ok(people.into_iter().map(|p| p.uuid.to_string()).collect())
     }
 
     pub async fn search_by_query_with_email(
@@ -147,8 +146,8 @@ impl PersonGateway {
         exclude_person_uuid: String,
         limit: u64,
     ) -> Result<Vec<String>, DbErr> {
-        let exclude_person_uuid = parse_uuid(&exclude_person_uuid)
-            .map_err(|e| DbErr::Type(e.to_string()))?;
+        let exclude_person_uuid =
+            parse_uuid(&exclude_person_uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         let search_pattern = format!("%{}%", query);
 
         let users: Vec<user::UserEntity> = UserQuery::find()
@@ -209,7 +208,10 @@ impl PersonGateway {
         let search_pattern = format!("%{}%", query);
 
         PersonQuery::find()
-            .join(JoinType::LeftJoin, entity::person_entity::Relation::User.def())
+            .join(
+                JoinType::LeftJoin,
+                entity::person_entity::Relation::User.def(),
+            )
             .filter(person::Column::Id.is_in(friend_ids))
             .filter(
                 Condition::any()

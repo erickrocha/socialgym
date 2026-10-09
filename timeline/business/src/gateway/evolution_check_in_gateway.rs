@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use domain::business_error::BusinessError;
 use domain::evolution_check_in::EvolutionCheckIn;
 use futures::TryStreamExt;
-use mongodb::bson::{doc, DateTime};
+use mongodb::bson::{DateTime, doc};
 use mongodb::{Collection, Cursor, Database};
 
 const COLLECTION_NAME: &str = "evolutions";

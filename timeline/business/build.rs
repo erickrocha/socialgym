@@ -1,4 +1,3 @@
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let protoc = protoc_bin_vendored::protoc_bin_path()?;
     // SAFETY: build scripts are single-threaded during initialization here and need
@@ -33,4 +32,3 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-

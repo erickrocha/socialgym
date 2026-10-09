@@ -21,34 +21,62 @@ impl GrpcContentReportService {
 
 #[tonic::async_trait]
 impl ContentReportService for GrpcContentReportService {
-    async fn create_report(&self, request: Request<CreateReportRequest>) -> Result<Response<ContentReport>, Status> {
+    async fn create_report(
+        &self,
+        request: Request<CreateReportRequest>,
+    ) -> Result<Response<ContentReport>, Status> {
         let (db, body) = (self.database.clone(), request.get_ref().clone());
         with_caller(&request, |user| async move {
-            let report = ContentReportUseCase::create(&db, &user, body.target_type, body.target_id, body.post_id, body.reason, body.details)
-                .await
-                .map_err(|e| business_status(&e))?;
+            let report = ContentReportUseCase::create(
+                &db,
+                &user,
+                body.target_type,
+                body.target_id,
+                body.post_id,
+                body.reason,
+                body.details,
+            )
+            .await
+            .map_err(|e| business_status(&e))?;
             Ok(Response::new(ContentReportMapper::proto(report)))
         })
         .await
     }
 
-    async fn list_reports(&self, request: Request<ListReportsRequest>) -> Result<Response<ListReportsResponse>, Status> {
+    async fn list_reports(
+        &self,
+        request: Request<ListReportsRequest>,
+    ) -> Result<Response<ListReportsResponse>, Status> {
         let (db, status) = (self.database.clone(), request.get_ref().status.clone());
         with_caller(&request, |_| async move {
-            let reports = ContentReportUseCase::list(&db, status.as_deref()).await.map_err(|e| business_status(&e))?;
+            let reports = ContentReportUseCase::list(&db, status.as_deref())
+                .await
+                .map_err(|e| business_status(&e))?;
             Ok(Response::new(ListReportsResponse {
-                reports: reports.into_iter().map(ContentReportMapper::proto).collect(),
+                reports: reports
+                    .into_iter()
+                    .map(ContentReportMapper::proto)
+                    .collect(),
             }))
         })
         .await
     }
 
-    async fn decide_report(&self, request: Request<DecideReportRequest>) -> Result<Response<ContentReport>, Status> {
+    async fn decide_report(
+        &self,
+        request: Request<DecideReportRequest>,
+    ) -> Result<Response<ContentReport>, Status> {
         let (db, body) = (self.database.clone(), request.get_ref().clone());
         with_caller(&request, |user| async move {
-            let report = ContentReportUseCase::decide(&db, &body.report_id, &user.person_uuid, &body.decision, &body.reason)
-                .await
-                .map_err(|e| business_status(&e))?;
+            let report = ContentReportUseCase::decide(
+                &db,
+                &body.report_id,
+                &user.person_uuid,
+                &body.decision,
+                &body.reason,
+            )
+            .await
+            .map_err(|e| business_status(&e))?;
             Ok(Response::new(ContentReportMapper::proto(report)))
         })
         .await

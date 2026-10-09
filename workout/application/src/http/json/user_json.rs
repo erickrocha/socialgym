@@ -6,7 +6,7 @@ use utoipa::ToSchema;
 pub struct UserJson {
     pub id: Option<i32>,
     pub uuid: Option<String>,
-    pub name:Option<String>,
+    pub name: Option<String>,
     pub email: String,
     pub password: String,
     pub enabled: bool,

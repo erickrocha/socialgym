@@ -1,5 +1,4 @@
 use crate::http::welcome_controller::welcome;
-use business::commons::chat_hub::ChatHub;
 use crate::routes::chat_routes::chat_routes;
 use crate::routes::content_report_routes::{moderation_routes, report_routes};
 use crate::routes::evolution_checkin_routes::evolution_checkin_routes;
@@ -12,6 +11,7 @@ use axum::{
     Router,
     http::{HeaderName, Method, header},
 };
+use business::commons::chat_hub::ChatHub;
 use mongodb::Database;
 use std::env;
 use std::sync::Arc;

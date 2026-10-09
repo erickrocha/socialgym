@@ -4,7 +4,6 @@ use utoipa::ToSchema;
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationJson {
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uuid: Option<String>,
     pub notification_type: String,
@@ -32,4 +31,3 @@ pub struct NotificationJson {
 pub struct MarkNotificationReadJson {
     pub read: bool,
 }
-

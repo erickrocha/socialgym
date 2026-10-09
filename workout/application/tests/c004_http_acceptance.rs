@@ -1,6 +1,6 @@
-use application::{AppState, routes::workout_routes::workout_routes};
+use application::{routes::workout_routes::workout_routes, AppState};
 use business::domain::access_token::Claims;
-use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
+use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use migration::{Migrator, MigratorTrait};
 use sea_orm::{ConnectionTrait, Database};
 use std::env;

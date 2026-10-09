@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Avatar from '../Avatar/Avatar';
 import Button from '../Button/Button';
 import './PostCreator.scss';
 
-const PostCreator = ({ userAvatar, userName, onPostCreate, loading = false }) => {
+const PostCreator = ({ userAvatar, onPostCreate, loading = false }) => {
     const { t } = useTranslation('common');
     const [isExpanded, setIsExpanded] = useState(false);
     const [postContent, setPostContent] = useState('');

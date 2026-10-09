@@ -131,7 +131,9 @@ async fn delete_allows_owner() {
         }])
         .into_connection();
 
-    ExerciseUseCase::delete_by_id(&db, 1, &acting(1)).await.unwrap();
+    ExerciseUseCase::delete_by_id(&db, 1, &acting(1))
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
@@ -140,7 +142,9 @@ async fn delete_forbids_non_owner() {
         .append_query_results(vec![vec![exercise_entity(1, "Public")]])
         .into_connection();
 
-    let error = ExerciseUseCase::delete_by_id(&db, 1, &acting(2)).await.unwrap_err();
+    let error = ExerciseUseCase::delete_by_id(&db, 1, &acting(2))
+        .await
+        .unwrap_err();
 
     assert_eq!(error.kind, BusinessErrorKind::Forbidden);
 }
@@ -158,7 +162,9 @@ async fn delete_forbids_a_profile_whose_id_equals_the_owner_person_id() {
         Uuid::from_u128(5).to_string(),
     );
 
-    let error = ExerciseUseCase::delete_by_id(&db, 1, &profile).await.unwrap_err();
+    let error = ExerciseUseCase::delete_by_id(&db, 1, &profile)
+        .await
+        .unwrap_err();
 
     assert_eq!(error.kind, BusinessErrorKind::Forbidden);
 }
@@ -189,7 +195,9 @@ async fn private_exercise_is_only_readable_by_owner() {
     let db = empty_db();
     let mut exercise = ExerciseEntityMapper::from_model(exercise_entity(1, "Private"));
 
-    assert!(ExerciseUseCase::ensure_readable(&db, &exercise, &acting(1)).await.is_ok());
+    assert!(ExerciseUseCase::ensure_readable(&db, &exercise, &acting(1))
+        .await
+        .is_ok());
     // Reported as not found, so it cannot be told apart from a missing exercise.
     assert_eq!(
         ExerciseUseCase::ensure_readable(&db, &exercise, &acting(2))
@@ -205,10 +213,14 @@ async fn private_exercise_is_only_readable_by_owner() {
         5,
         Uuid::from_u128(5).to_string(),
     );
-    assert!(ExerciseUseCase::ensure_readable(&db, &exercise, &profile).await.is_err());
+    assert!(ExerciseUseCase::ensure_readable(&db, &exercise, &profile)
+        .await
+        .is_err());
 
     exercise.visibility = Visibility::Public;
-    assert!(ExerciseUseCase::ensure_readable(&db, &exercise, &acting(2)).await.is_ok());
+    assert!(ExerciseUseCase::ensure_readable(&db, &exercise, &acting(2))
+        .await
+        .is_ok());
 }
 
 #[tokio::test]
@@ -218,7 +230,11 @@ async fn friends_exercise_is_readable_by_an_accepted_friend_only() {
     let friend_db = MockDatabase::new(DatabaseBackend::Postgres)
         .append_query_results(vec![vec![friendship()]])
         .into_connection();
-    assert!(ExerciseUseCase::ensure_readable(&friend_db, &exercise, &acting(2)).await.is_ok());
+    assert!(
+        ExerciseUseCase::ensure_readable(&friend_db, &exercise, &acting(2))
+            .await
+            .is_ok()
+    );
 
     let stranger_db = MockDatabase::new(DatabaseBackend::Postgres)
         .append_query_results(vec![Vec::<entity::friends_entity::FriendsEntity>::new()])

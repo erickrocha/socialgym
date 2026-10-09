@@ -19,7 +19,9 @@ impl SqsGateway {
             .message_deduplication_id(deduplication_id)
             .send()
             .await
-            .map_err(|error| BusinessError::new(format!("Failed to publish SQS message: {error}")))?;
+            .map_err(|error| {
+                BusinessError::new(format!("Failed to publish SQS message: {error}"))
+            })?;
         Ok(())
     }
 
@@ -38,9 +40,7 @@ impl SqsGateway {
             .wait_time_seconds(wait_time_seconds)
             .send()
             .await
-            .map_err(|e| {
-                BusinessError::new(format!("Failed to receive SQS messages: {e:?}"))
-            })?;
+            .map_err(|e| BusinessError::new(format!("Failed to receive SQS messages: {e:?}")))?;
 
         Ok(output.messages.unwrap_or_default())
     }
@@ -57,10 +57,7 @@ impl SqsGateway {
             .receipt_handle(receipt_handle)
             .send()
             .await
-            .map_err(|e| {
-                BusinessError::new(format!("Failed to delete SQS message: {e:?}"))
-            })?;
+            .map_err(|e| BusinessError::new(format!("Failed to delete SQS message: {e:?}")))?;
         Ok(())
     }
 }
-

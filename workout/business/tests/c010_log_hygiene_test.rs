@@ -23,7 +23,10 @@ impl Log for Capture {
         // Only this service's own lines: the SQL driver's mock connection traces its fixture rows, which
         // are test data, not something the use case wrote.
         if record.target().starts_with("business") {
-            LINES.lock().unwrap().push(format!("{} {}", record.level(), record.args()));
+            LINES
+                .lock()
+                .unwrap()
+                .push(format!("{} {}", record.level(), record.args()));
         }
     }
     fn flush(&self) {}
@@ -57,7 +60,10 @@ async fn adding_a_user_writes_no_password_hash_or_email_to_the_logs() {
     let _ = log::set_logger(&CAPTURE);
     log::set_max_level(LevelFilter::Trace);
     let db = MockDatabase::new(DatabaseBackend::Postgres)
-        .append_exec_results(vec![MockExecResult { last_insert_id: 1, rows_affected: 1 }])
+        .append_exec_results(vec![MockExecResult {
+            last_insert_id: 1,
+            rows_affected: 1,
+        }])
         .append_query_results(vec![vec![stored("log.person@example.test")]])
         .into_connection();
     let user = User::new(
@@ -73,10 +79,22 @@ async fn adding_a_user_writes_no_password_hash_or_email_to_the_logs() {
     let lines = LINES.lock().unwrap();
     let leaked: Vec<&String> = lines
         .iter()
-        .filter(|line| line.contains("Str0ng!Passw0rd-for-logs") || line.contains("$2b$") || line.contains("log.person@example.test"))
+        .filter(|line| {
+            line.contains("Str0ng!Passw0rd-for-logs")
+                || line.contains("$2b$")
+                || line.contains("log.person@example.test")
+        })
         .collect();
-    assert!(leaked.is_empty(), "credentials reached the logs: {leaked:?}");
-    assert!(lines.iter().all(|line| !line.starts_with(&Level::Error.to_string()) || !line.contains("password")), "no error line names a password either");
+    assert!(
+        leaked.is_empty(),
+        "credentials reached the logs: {leaked:?}"
+    );
+    assert!(
+        lines
+            .iter()
+            .all(|line| !line.starts_with(&Level::Error.to_string()) || !line.contains("password")),
+        "no error line names a password either"
+    );
 }
 
 #[tokio::test]
@@ -90,23 +108,34 @@ async fn a_pre_signed_upload_link_is_not_written_to_the_logs() {
         std::env::set_var("AWS_SECRET_ACCESS_KEY", "test");
     }
 
-    let storage = business::use_cases::image_storage_use_case::ImageStorageUseCase::generate_presigned_url(
-        "person".to_string(),
-        7,
-        "00000000-0000-0000-0000-0000000000c7",
-        "gallery",
-        "image/png",
-    )
-    .await
-    .expect("link");
-    assert!(storage.url.contains("c010-link-bucket"), "the link itself is returned to the caller");
+    let storage =
+        business::use_cases::image_storage_use_case::ImageStorageUseCase::generate_presigned_url(
+            "person".to_string(),
+            7,
+            "00000000-0000-0000-0000-0000000000c7",
+            "gallery",
+            "image/png",
+        )
+        .await
+        .expect("link");
+    assert!(
+        storage.url.contains("c010-link-bucket"),
+        "the link itself is returned to the caller"
+    );
 
     let lines = LINES.lock().unwrap();
     let leaked: Vec<&String> = lines
         .iter()
-        .filter(|line| line.contains("c010-link-bucket") || line.contains("X-Amz-Signature") || line.contains("0000000000c7"))
+        .filter(|line| {
+            line.contains("c010-link-bucket")
+                || line.contains("X-Amz-Signature")
+                || line.contains("0000000000c7")
+        })
         .collect();
-    assert!(leaked.is_empty(), "the pre-signed link reached the logs: {leaked:?}");
+    assert!(
+        leaked.is_empty(),
+        "the pre-signed link reached the logs: {leaked:?}"
+    );
 }
 
 /// TC-006 step 4: the sign-up, sign-in, token validation, data export and logout flows, run against a real
@@ -150,9 +179,15 @@ async fn the_sign_up_sign_in_and_export_flows_write_no_credential_token_or_email
     )
     .await
     .expect("sign-up");
-    let signed_in = Authentication::execute(&db, email.to_string(), password.to_string()).await.expect("sign-in");
-    Authentication::validate(&db, signed_in.access_token.clone()).await.expect("validate");
-    DataExportUseCase::create(&db, signed_in.person_id).await.expect("export");
+    let signed_in = Authentication::execute(&db, email.to_string(), password.to_string())
+        .await
+        .expect("sign-in");
+    Authentication::validate(&db, signed_in.access_token.clone())
+        .await
+        .expect("validate");
+    DataExportUseCase::create(&db, signed_in.person_id)
+        .await
+        .expect("export");
 
     let secrets = [
         email.to_string(),
@@ -165,7 +200,16 @@ async fn the_sign_up_sign_in_and_export_flows_write_no_credential_token_or_email
         "203.0.113.9".to_string(),
     ];
     let lines = LINES.lock().unwrap();
-    assert!(!lines.is_empty(), "the flows do log; the check is not vacuous");
-    let leaked: Vec<&String> = lines.iter().filter(|line| secrets.iter().any(|secret| line.contains(secret.as_str()))).collect();
-    assert!(leaked.is_empty(), "something private reached the logs: {leaked:?}");
+    assert!(
+        !lines.is_empty(),
+        "the flows do log; the check is not vacuous"
+    );
+    let leaked: Vec<&String> = lines
+        .iter()
+        .filter(|line| secrets.iter().any(|secret| line.contains(secret.as_str())))
+        .collect();
+    assert!(
+        leaked.is_empty(),
+        "something private reached the logs: {leaked:?}"
+    );
 }

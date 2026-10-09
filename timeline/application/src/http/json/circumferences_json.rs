@@ -4,7 +4,6 @@ use utoipa::ToSchema;
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CircumferencesJson {
-
     pub uuid: Option<String>,
     #[serde(default)]
     pub neck: f64,
@@ -25,7 +24,6 @@ pub struct CircumferencesJson {
     #[serde(default)]
     pub thigh_left: f64,
 }
-
 
 impl CircumferencesJson {
     #[allow(clippy::too_many_arguments)]

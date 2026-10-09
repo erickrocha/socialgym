@@ -42,7 +42,12 @@ pub async fn sign_up(
     headers: HeaderMap,
     Json(payload): Json<SignUpJson>,
 ) -> HttpResponse<Json<AccessTokenJson>> {
-    let header = |name: &str| headers.get(name).and_then(|value| value.to_str().ok()).map(str::to_string);
+    let header = |name: &str| {
+        headers
+            .get(name)
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_string)
+    };
     let result = SignUpUseCase::execute(
         &state.conn,
         SignUpRequest {
@@ -65,11 +70,26 @@ pub async fn sign_up(
     .await;
     match result {
         Ok(token) => Ok(Json(AccessTokenMapper::json(token))),
-        Err(SignUpError::Underage) => Err(ExceptionResponse::BadRequest(locale, ErrorKey::UnderageRegistration)),
-        Err(SignUpError::ConsentRequired) => Err(ExceptionResponse::BadRequest(locale, ErrorKey::ConsentRequired)),
-        Err(SignUpError::WeakPassword) => Err(ExceptionResponse::BadRequest(locale, ErrorKey::WeakPassword)),
-        Err(SignUpError::Failed) => Err(ExceptionResponse::BadRequest(locale, ErrorKey::SignUpUserFailed)),
-        Err(SignUpError::Unauthorized) => Err(ExceptionResponse::Unauthorized(locale, ErrorKey::UnknowAuthError)),
+        Err(SignUpError::Underage) => Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::UnderageRegistration,
+        )),
+        Err(SignUpError::ConsentRequired) => Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::ConsentRequired,
+        )),
+        Err(SignUpError::WeakPassword) => Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::WeakPassword,
+        )),
+        Err(SignUpError::Failed) => Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::SignUpUserFailed,
+        )),
+        Err(SignUpError::Unauthorized) => Err(ExceptionResponse::Unauthorized(
+            locale,
+            ErrorKey::UnknowAuthError,
+        )),
     }
 }
 

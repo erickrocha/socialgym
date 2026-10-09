@@ -1,20 +1,21 @@
 use crate::http::json::access_token_json::{AccessTokenJson, PendingAccountDeletionJson};
+use crate::http::json::address_candidate_json::AddressCandidateJson;
 use crate::http::json::business_profile_address_json::BusinessProfileAddressJson;
 use crate::http::json::business_profile_json::BusinessProfileJson;
 use crate::http::json::country_json::CountryJson;
-use crate::http::json::address_candidate_json::AddressCandidateJson;
 use crate::http::json::exercise_json::ExerciseJson;
 use crate::http::json::person_address_json::PersonAddressJson;
 use crate::http::json::person_info_json::PersonInfoJson;
 use crate::http::json::person_json::PersonJson;
+use crate::http::json::settings_json::SettingsJson;
 use crate::http::json::team_member_json::TeamMemberJson;
 use crate::http::json::user_json::UserJson;
 use crate::http::json::workout_json::WorkoutJson;
 use business::domain::access_token::AccessToken;
+use business::domain::address_candidate::AddressCandidate;
 use business::domain::business_profile::BusinessProfile;
 use business::domain::business_profile_address::BusinessProfileAddress;
 use business::domain::country::Country;
-use business::domain::address_candidate::AddressCandidate;
 use business::domain::enums::{Difficulty, InviteStatus, Position, ProfileType, WeightUnit};
 use business::domain::exercise::{Category, Exercise};
 use business::domain::person::Person;
@@ -24,7 +25,6 @@ use business::domain::settings::Settings;
 use business::domain::team_member::TeamMember;
 use business::domain::user::User;
 use business::domain::workout::{Visibility, Workout};
-use crate::http::json::settings_json::SettingsJson;
 
 pub trait Mapper<T, U> {
     fn json(t: T) -> U;
@@ -34,7 +34,7 @@ pub trait Mapper<T, U> {
     fn json_opt(t: Option<T>) -> Option<U> {
         t.map(Self::json)
     }
-    
+
     fn domain_vec(u: Vec<U>) -> Vec<T> {
         u.into_iter().map(Self::domain).collect()
     }
@@ -42,8 +42,6 @@ pub trait Mapper<T, U> {
     fn json_vec(u: Vec<T>) -> Vec<U> {
         u.into_iter().map(Self::json).collect()
     }
-
-
 }
 
 pub struct AccessTokenMapper {}
@@ -428,7 +426,7 @@ impl Mapper<Country, CountryJson> for CountryMapper {
         }
     }
 
-    fn domain(u: CountryJson) -> Country  {
+    fn domain(u: CountryJson) -> Country {
         Country {
             id: u.id,
             ddi: u.ddi.unwrap(),
@@ -477,7 +475,7 @@ impl Mapper<AddressCandidate, AddressCandidateJson> for AddressCandidateMapper {
 
 pub struct SettingsMapper {}
 
-impl Mapper<Settings,SettingsJson> for SettingsMapper {
+impl Mapper<Settings, SettingsJson> for SettingsMapper {
     fn json(t: Settings) -> SettingsJson {
         SettingsJson {
             id: t.id,

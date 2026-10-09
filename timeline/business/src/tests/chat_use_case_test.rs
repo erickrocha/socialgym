@@ -101,12 +101,21 @@ fn unread_flag_covers_sender_and_read_timestamp_cases() {
         })
     };
 
-    assert!(unread_for_participant(&participant, &preview("other", 1000)));
+    assert!(unread_for_participant(
+        &participant,
+        &preview("other", 1000)
+    ));
     assert!(!unread_for_participant(&participant, &preview("me", 1000)));
     participant.last_read_at = Some(DateTime::from_millis(2000));
-    assert!(!unread_for_participant(&participant, &preview("other", 1000)));
+    assert!(!unread_for_participant(
+        &participant,
+        &preview("other", 1000)
+    ));
     participant.last_read_at = Some(DateTime::from_millis(500));
-    assert!(unread_for_participant(&participant, &preview("other", 1000)));
+    assert!(unread_for_participant(
+        &participant,
+        &preview("other", 1000)
+    ));
 }
 
 #[test]
@@ -118,23 +127,55 @@ fn resolves_other_direct_participant_for_both_member_orders_and_unknown_caller()
         "b".to_string(),
         "a".to_string(),
     );
-    assert_eq!(other_direct_participant(&conversation, "a"), Some("b".to_string()));
-    assert_eq!(other_direct_participant(&conversation, "b"), Some("a".to_string()));
-    assert_eq!(other_direct_participant(&conversation, "z"), Some("a".to_string()));
+    assert_eq!(
+        other_direct_participant(&conversation, "a"),
+        Some("b".to_string())
+    );
+    assert_eq!(
+        other_direct_participant(&conversation, "b"),
+        Some("a".to_string())
+    );
+    assert_eq!(
+        other_direct_participant(&conversation, "z"),
+        Some("a".to_string())
+    );
 }
 
 #[test]
 fn only_profile_owner_can_send_as_the_matching_business_profile() {
-    assert!(resolve_send_as_business(Some("bp-1"), Some("bp-1"), "owner", "owner"));
-    assert!(!resolve_send_as_business(None, Some("bp-1"), "owner", "owner"));
-    assert!(!resolve_send_as_business(Some("bp-1"), Some("bp-1"), "member", "owner"));
-    assert!(!resolve_send_as_business(Some("bp-2"), Some("bp-1"), "owner", "owner"));
+    assert!(resolve_send_as_business(
+        Some("bp-1"),
+        Some("bp-1"),
+        "owner",
+        "owner"
+    ));
+    assert!(!resolve_send_as_business(
+        None,
+        Some("bp-1"),
+        "owner",
+        "owner"
+    ));
+    assert!(!resolve_send_as_business(
+        Some("bp-1"),
+        Some("bp-1"),
+        "member",
+        "owner"
+    ));
+    assert!(!resolve_send_as_business(
+        Some("bp-2"),
+        Some("bp-1"),
+        "owner",
+        "owner"
+    ));
 }
 
 #[test]
 fn business_direct_member_resolution_enforces_team_membership() {
     let team = roster("owner", &["m1", "m2"]);
-    assert_eq!(resolve_business_direct_member(&team, "owner", Some("m1")).unwrap(), "m1");
+    assert_eq!(
+        resolve_business_direct_member(&team, "owner", Some("m1")).unwrap(),
+        "m1"
+    );
     assert_eq!(
         resolve_business_direct_member(&team, "owner", Some("stranger"))
             .unwrap_err()
@@ -142,12 +183,19 @@ fn business_direct_member_resolution_enforces_team_membership() {
         BusinessErrorKind::Forbidden
     );
     assert_eq!(
-        resolve_business_direct_member(&team, "owner", None).unwrap_err().kind,
+        resolve_business_direct_member(&team, "owner", None)
+            .unwrap_err()
+            .kind,
         BusinessErrorKind::Validation
     );
-    assert_eq!(resolve_business_direct_member(&team, "m2", None).unwrap(), "m2");
     assert_eq!(
-        resolve_business_direct_member(&team, "who", None).unwrap_err().kind,
+        resolve_business_direct_member(&team, "m2", None).unwrap(),
+        "m2"
+    );
+    assert_eq!(
+        resolve_business_direct_member(&team, "who", None)
+            .unwrap_err()
+            .kind,
         BusinessErrorKind::Forbidden
     );
 }

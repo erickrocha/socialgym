@@ -48,8 +48,12 @@ where
 {
     let (user, BearerToken(token)) = caller(request)?;
     with_forwarded_token(Some(token), async move {
-        ConsentGateway::require("terms").await.map_err(|e| business_status(&e))?;
-        ConsentGateway::require("privacy").await.map_err(|e| business_status(&e))?;
+        ConsentGateway::require("terms")
+            .await
+            .map_err(|e| business_status(&e))?;
+        ConsentGateway::require("privacy")
+            .await
+            .map_err(|e| business_status(&e))?;
         work(user).await
     })
     .await

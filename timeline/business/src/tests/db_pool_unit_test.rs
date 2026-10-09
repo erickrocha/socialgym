@@ -9,10 +9,22 @@ async fn connect_needs_both_names_and_caps_the_pool() {
         std::env::remove_var("DATABASE_URL");
         std::env::remove_var("DATABASE_NAME");
     }
-    assert!(connect().await.unwrap_err().to_string().contains("DATABASE_URL"));
+    assert!(
+        connect()
+            .await
+            .unwrap_err()
+            .to_string()
+            .contains("DATABASE_URL")
+    );
 
     unsafe { std::env::set_var("DATABASE_URL", "mongodb://localhost:1/x") };
-    assert!(connect().await.unwrap_err().to_string().contains("DATABASE_NAME"));
+    assert!(
+        connect()
+            .await
+            .unwrap_err()
+            .to_string()
+            .contains("DATABASE_NAME")
+    );
 
     unsafe {
         std::env::set_var("DATABASE_NAME", "unit");

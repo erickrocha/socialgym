@@ -1,6 +1,6 @@
-use chrono::NaiveDateTime;
 use crate::http::json::body_composition_json::BodyCompositionJson;
 use crate::http::json::circumferences_json::CircumferencesJson;
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 #[allow(unused_imports)]
 use serde_json::json;
@@ -33,7 +33,6 @@ use utoipa::ToSchema;
     }
 }))]
 pub struct EvolutionCheckInJson {
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uuid: Option<String>,
     pub person_uuid: String,
@@ -50,7 +49,6 @@ pub struct EvolutionCheckInJson {
 }
 
 impl EvolutionCheckInJson {
-
     pub fn new(
         uuid: Option<String>,
         person_uuid: String,

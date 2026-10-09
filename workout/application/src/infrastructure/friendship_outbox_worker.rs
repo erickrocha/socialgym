@@ -45,7 +45,8 @@ mod tests {
 
     #[tokio::test]
     #[ignore = "requires a dedicated TEST_DATABASE_URL PostgreSQL/PostGIS database and the LocalStack test queue"]
-    async fn c006_outbox_worker_publishes_pending_events_and_survives_disabled_config_and_outages() {
+    async fn c006_outbox_worker_publishes_pending_events_and_survives_disabled_config_and_outages()
+    {
         let url = std::env::var("TEST_DATABASE_URL")
             .expect("TEST_DATABASE_URL must point to a disposable PostgreSQL/PostGIS database");
         let queue_url = std::env::var(QUEUE_URL_ENV)
@@ -69,7 +70,9 @@ mod tests {
             recipient_person_uuid: uuid::Uuid::new_v4().to_string(),
             occurred_at: chrono::Utc::now(),
         };
-        FriendshipOutboxGateway::persist(&*db, event.clone()).await.unwrap();
+        FriendshipOutboxGateway::persist(&*db, event.clone())
+            .await
+            .unwrap();
         start(db.clone());
         let mut published = false;
         for _ in 0..100 {
@@ -87,7 +90,10 @@ mod tests {
             }
             tokio::time::sleep(Duration::from_millis(200)).await;
         }
-        assert!(published, "worker did not publish the pending event within 20s");
+        assert!(
+            published,
+            "worker did not publish the pending event within 20s"
+        );
 
         // A database outage is logged and the loop keeps running.
         let closed = Database::connect(url).await.unwrap();

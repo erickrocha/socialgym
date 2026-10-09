@@ -1,6 +1,6 @@
 use crate::commons::grpc_config::GrpcConfig;
-use crate::proto::proto::person::person_service_client::PersonServiceClient;
 use crate::proto::proto::person::ConsentStatusRequest;
+use crate::proto::proto::person::person_service_client::PersonServiceClient;
 use async_trait::async_trait;
 use domain::business_error::BusinessError;
 

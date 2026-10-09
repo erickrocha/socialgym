@@ -1,8 +1,8 @@
+use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::password_policy::{self, PasswordPolicyViolation};
 use crate::domain::user::{User, UserEntityMapper};
 use crate::gateway::user_gateway::UserGateway;
 use sea_orm::DbConn;
-use crate::commons::entity_mapper::EntityMapper;
 
 #[derive(Debug)]
 pub enum UserUseCaseError {
@@ -29,7 +29,10 @@ impl UserUseCase {
         const MAX_PASSWORD_LEN: usize = 128;
         if user.email.len() > MAX_FIELD_LEN
             || user.password.len() > MAX_PASSWORD_LEN
-            || user.name.as_deref().is_some_and(|n| n.len() > MAX_FIELD_LEN)
+            || user
+                .name
+                .as_deref()
+                .is_some_and(|n| n.len() > MAX_FIELD_LEN)
         {
             log::warn!("Email/name/password exceeds the allowed length");
             return Err(UserUseCaseError::InvalidInput);

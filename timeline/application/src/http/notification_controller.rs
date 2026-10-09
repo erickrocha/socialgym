@@ -1,12 +1,13 @@
 use crate::AppState;
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
 use crate::commons::i18n::{ErrorKey, Locale};
+use crate::http::json::error_response_json::ForbiddenErrorJson;
 use crate::http::json::notification_json::{MarkNotificationReadJson, NotificationJson};
 use crate::infrastructure::mapper::{Mapper, NotificationMapper};
 use axum::Json;
 use axum::extract::{Extension, Path, Query, State};
-use domain::user::User;
 use business::use_cases::mention_notification_use_case::MentionNotificationUseCase;
+use domain::user::User;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -26,6 +27,7 @@ pub struct NotificationQuery {
     responses(
         (status = 200, description = "Notification list", body = [NotificationJson]),
         (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
         (status = 500, description = "Internal server error"),
     ),
     security(("api_key" = []))
@@ -37,9 +39,7 @@ pub async fn list_notifications(
     Path(owner_uuid): Path<String>,
 ) -> HttpResponse<Json<Vec<NotificationJson>>> {
     business::commons::authorization::ensure_owns(&owner_uuid, &current_user.person_uuid)
-        .map_err(|error| {
-            ExceptionResponse::from_business(error, Locale::En, ErrorKey::Unknown)
-        })?;
+        .map_err(|error| ExceptionResponse::from_business(error, Locale::En, ErrorKey::Unknown))?;
     let unread_only = query.unread_only.unwrap_or(false);
     let limit = query.limit.unwrap_or(50).clamp(1, 100);
 
@@ -71,6 +71,7 @@ pub async fn list_notifications(
     responses(
         (status = 200, description = "Notification marked as read", body = MarkNotificationReadJson),
         (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden", body = ForbiddenErrorJson),
         (status = 400, description = "Notification key is not owned by recipient"),
         (status = 500, description = "Internal server error"),
     ),
@@ -82,9 +83,7 @@ pub async fn mark_notification_read(
     Path((owner_uuid, idempotency_key)): Path<(String, String)>,
 ) -> HttpResponse<Json<MarkNotificationReadJson>> {
     business::commons::authorization::ensure_owns(&owner_uuid, &current_user.person_uuid)
-        .map_err(|error| {
-            ExceptionResponse::from_business(error, Locale::En, ErrorKey::Unknown)
-        })?;
+        .map_err(|error| ExceptionResponse::from_business(error, Locale::En, ErrorKey::Unknown))?;
     let updated =
         MentionNotificationUseCase::mark_as_read(&state.database, &owner_uuid, &idempotency_key)
             .await

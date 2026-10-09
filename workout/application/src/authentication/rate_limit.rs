@@ -38,7 +38,10 @@ pub async fn rate_limit(
             .get::<Locale>()
             .copied()
             .unwrap_or(Locale::En);
-        return Err(ExceptionResponse::TooManyRequests(locale, ErrorKey::RateLimited));
+        return Err(ExceptionResponse::TooManyRequests(
+            locale,
+            ErrorKey::RateLimited,
+        ));
     }
 
     Ok(next.run(req).await)
@@ -73,7 +76,6 @@ pub fn legal_limiter() -> RateLimiter {
         .get_or_init(|| RateLimiter::new(60, Duration::from_secs(60)))
         .clone()
 }
-
 
 #[cfg(test)]
 #[path = "../tests/rate_limit_unit_test.rs"]

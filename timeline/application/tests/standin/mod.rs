@@ -105,20 +105,63 @@ impl FriendService for Workout {
             .collect();
         Ok(Response::new(FriendsResponse { friends }))
     }
-    async fn get_friend_page(&self, _: GrpcRequest<FriendPageRequest>) -> Result<Response<FriendPageResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn search_friends(&self, _: GrpcRequest<SearchFriendsRequest>) -> Result<Response<SearchFriendsResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn send_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn accept_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn deny_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn cancel_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn remove_friend(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<RemoveFriendResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn get_friend_profile(&self, _: GrpcRequest<FriendProfileRequest>) -> Result<Response<FriendProfileResponse>, Status> { Err(Status::unimplemented("")) }
+    async fn get_friend_page(
+        &self,
+        _: GrpcRequest<FriendPageRequest>,
+    ) -> Result<Response<FriendPageResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn search_friends(
+        &self,
+        _: GrpcRequest<SearchFriendsRequest>,
+    ) -> Result<Response<SearchFriendsResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn send_friend_request(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn accept_friend_request(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn deny_friend_request(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn cancel_friend_request(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn remove_friend(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<RemoveFriendResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn get_friend_profile(
+        &self,
+        _: GrpcRequest<FriendProfileRequest>,
+    ) -> Result<Response<FriendProfileResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
 }
 
 /// The cast has no Business Profiles: every lookup is NOT_FOUND, like workout's real answer.
 #[tonic::async_trait]
 impl BusinessProfileService for Workout {
-    async fn get_business_profile_by_id(&self, request: GrpcRequest<BusinessProfileRequestId>) -> Result<Response<BusinessProfile>, Status> {
+    async fn get_business_profile_by_id(
+        &self,
+        request: GrpcRequest<BusinessProfileRequestId>,
+    ) -> Result<Response<BusinessProfile>, Status> {
         if self.business_lookup_down {
             return Err(Status::unavailable("workout is down"));
         }
@@ -127,15 +170,64 @@ impl BusinessProfileService for Workout {
         }
         Err(Status::not_found("Business profile not found"))
     }
-    async fn get_business_profile_by_owner_id(&self, _: GrpcRequest<BusinessProfileRequestOwnerId>) -> Result<Response<BusinessProfilesResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn add_business_profile(&self, _: GrpcRequest<BusinessProfile>) -> Result<Response<BusinessProfile>, Status> { Err(Status::unimplemented("")) }
-    async fn update_business_profile(&self, _: GrpcRequest<BusinessProfile>) -> Result<Response<BusinessProfile>, Status> { Err(Status::unimplemented("")) }
-    async fn add_business_profile_address(&self, _: GrpcRequest<BusinessProfileAddress>) -> Result<Response<BusinessProfileAddress>, Status> { Err(Status::unimplemented("")) }
-    async fn update_business_profile_address(&self, _: GrpcRequest<BusinessProfileAddress>) -> Result<Response<BusinessProfileAddress>, Status> { Err(Status::unimplemented("")) }
-    async fn remove_business_profile_address(&self, _: GrpcRequest<RemoveBusinessProfileAddressRequest>) -> Result<Response<RemoveBusinessProfileAddressResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn get_active_business_profile(&self, _: GrpcRequest<GetActiveBusinessProfileRequest>) -> Result<Response<BusinessProfile>, Status> { Err(Status::unimplemented("")) }
-    async fn discover_business_profiles(&self, _: GrpcRequest<DiscoverBusinessProfilesRequest>) -> Result<Response<BusinessProfilesResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn delete_business_profile(&self, _: GrpcRequest<DeleteBusinessProfileRequest>) -> Result<Response<DeleteBusinessProfileResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn get_business_profile_image_upload_url(&self, _: GrpcRequest<BusinessProfileImageUploadRequest>) -> Result<Response<BusinessProfileImageUploadResponse>, Status> { Err(Status::unimplemented("")) }
+    async fn get_business_profile_by_owner_id(
+        &self,
+        _: GrpcRequest<BusinessProfileRequestOwnerId>,
+    ) -> Result<Response<BusinessProfilesResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn add_business_profile(
+        &self,
+        _: GrpcRequest<BusinessProfile>,
+    ) -> Result<Response<BusinessProfile>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn update_business_profile(
+        &self,
+        _: GrpcRequest<BusinessProfile>,
+    ) -> Result<Response<BusinessProfile>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn add_business_profile_address(
+        &self,
+        _: GrpcRequest<BusinessProfileAddress>,
+    ) -> Result<Response<BusinessProfileAddress>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn update_business_profile_address(
+        &self,
+        _: GrpcRequest<BusinessProfileAddress>,
+    ) -> Result<Response<BusinessProfileAddress>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn remove_business_profile_address(
+        &self,
+        _: GrpcRequest<RemoveBusinessProfileAddressRequest>,
+    ) -> Result<Response<RemoveBusinessProfileAddressResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn get_active_business_profile(
+        &self,
+        _: GrpcRequest<GetActiveBusinessProfileRequest>,
+    ) -> Result<Response<BusinessProfile>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn discover_business_profiles(
+        &self,
+        _: GrpcRequest<DiscoverBusinessProfilesRequest>,
+    ) -> Result<Response<BusinessProfilesResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn delete_business_profile(
+        &self,
+        _: GrpcRequest<DeleteBusinessProfileRequest>,
+    ) -> Result<Response<DeleteBusinessProfileResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn get_business_profile_image_upload_url(
+        &self,
+        _: GrpcRequest<BusinessProfileImageUploadRequest>,
+    ) -> Result<Response<BusinessProfileImageUploadResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
 }
-

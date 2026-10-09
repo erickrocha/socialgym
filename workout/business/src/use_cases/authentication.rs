@@ -1,8 +1,11 @@
 use crate::commons::auth_config;
+use crate::commons::entity_mapper::EntityMapper;
 use crate::domain::access_token::{AccessToken, Claims, PendingAccountDeletion};
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::BusinessProfile;
+use crate::domain::person::{Person, PersonEntityMapper};
 use crate::domain::user::{User, UserEntityMapper};
+use crate::gateway::person_gateway::PersonGateway;
 use crate::gateway::token_revocation_gateway::TokenRevocationGateway;
 use crate::gateway::user_gateway::UserGateway;
 use crate::use_cases::token_revocation::TokenRevocation;
@@ -10,9 +13,6 @@ use chrono::{DateTime, Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use sea_orm::DbConn;
 use std::env;
-use crate::commons::entity_mapper::EntityMapper;
-use crate::domain::person::{Person, PersonEntityMapper};
-use crate::gateway::person_gateway::PersonGateway;
 
 pub struct Authentication {}
 
@@ -43,7 +43,11 @@ pub struct AuthenticatedContext {
 }
 
 impl Authentication {
-    pub async fn execute(db: &DbConn, email: String, password: String) -> Result<AccessToken, AuthenticationError> {
+    pub async fn execute(
+        db: &DbConn,
+        email: String,
+        password: String,
+    ) -> Result<AccessToken, AuthenticationError> {
         log::info!("Login attempt");
         if email.is_empty() || password.is_empty() {
             log::info!("Email and password are required");
@@ -86,17 +90,28 @@ impl Authentication {
                     user.failed_login_attempts = 0;
                 } else {
                     let retry_after_seconds = (locked_until - now).num_seconds();
-                    log::info!("Account user_id={} is locked for {}s more", user_id, retry_after_seconds);
-                    return Err(AuthenticationError::AccountLocked { retry_after_seconds });
+                    log::info!(
+                        "Account user_id={} is locked for {}s more",
+                        user_id,
+                        retry_after_seconds
+                    );
+                    return Err(AuthenticationError::AccountLocked {
+                        retry_after_seconds,
+                    });
                 }
             }
         }
 
         // A malformed stored hash must not panic the login handler.
-        let password_matches = bcrypt::verify(password, user.password.as_str()).unwrap_or_else(|e| {
-            log::error!("Error verifying password hash for user_id={}: {}", user_id, e);
-            false
-        });
+        let password_matches =
+            bcrypt::verify(password, user.password.as_str()).unwrap_or_else(|e| {
+                log::error!(
+                    "Error verifying password hash for user_id={}: {}",
+                    user_id,
+                    e
+                );
+                false
+            });
         if password_matches {
             log::info!("User is valid, generating access token");
             if !user.enabled {
@@ -120,8 +135,13 @@ impl Authentication {
                 let new_count = user.failed_login_attempts + 1;
                 let _ = UserGateway::increment_failed_attempts(db, user_id, new_count).await;
                 if new_count >= auth_config::login_max_failed_attempts() as i32 {
-                    let locked_until = Utc::now() + Duration::seconds(auth_config::login_lockout_duration_seconds());
-                    log::warn!("user_id={} exceeded max failed attempts, locking until {}", user_id, locked_until);
+                    let locked_until = Utc::now()
+                        + Duration::seconds(auth_config::login_lockout_duration_seconds());
+                    log::warn!(
+                        "user_id={} exceeded max failed attempts, locking until {}",
+                        user_id,
+                        locked_until
+                    );
                     let _ = UserGateway::lock_account(db, user_id, locked_until).await;
                     if auth_config::token_revocation_enabled() {
                         TokenRevocation::revoke_all_for_user(db, user_id).await;
@@ -132,7 +152,12 @@ impl Authentication {
         }
     }
 
-    pub fn generate_access_token(user: &User,person: &Person,active_business_profile: Option<&BusinessProfile>,reissue_refresh_token: bool) -> AccessToken {
+    pub fn generate_access_token(
+        user: &User,
+        person: &Person,
+        active_business_profile: Option<&BusinessProfile>,
+        reissue_refresh_token: bool,
+    ) -> AccessToken {
         log::info!("Generating access token for person_id={}", user.person_id);
         let expiration = Utc::now()
             .checked_add_signed(chrono::Duration::hours(3))
@@ -141,11 +166,23 @@ impl Authentication {
         let name = user.name.clone().unwrap_or_default();
         let person_uuid = person.uuid.clone().unwrap_or_default();
 
-
-        let person_avatar = person.object_key.clone().unwrap_or_else(|| "default".to_string());
+        let person_avatar = person
+            .object_key
+            .clone()
+            .unwrap_or_else(|| "default".to_string());
         let active_business_profile_id = active_business_profile.and_then(|b| b.id);
         let active_business_profile_uuid = active_business_profile.and_then(|b| b.uuid.clone());
-        let claims = Claims::new(user.email.clone(), expiration, user.uuid.clone().unwrap_or_default(), name, user.person_id,person_uuid, person_avatar, active_business_profile_id, active_business_profile_uuid.clone());
+        let claims = Claims::new(
+            user.email.clone(),
+            expiration,
+            user.uuid.clone().unwrap_or_default(),
+            name,
+            user.person_id,
+            person_uuid,
+            person_avatar,
+            active_business_profile_id,
+            active_business_profile_uuid.clone(),
+        );
         let header = Header::new(Algorithm::HS512);
         let private_key = env::var("ACCESS_TOKEN_SECRET").expect("ACCESS_TOKEN_SECRET must be set");
         let token = encode(
@@ -159,16 +196,18 @@ impl Authentication {
         } else {
             None
         };
-        let pending_account_deletion = match (user.deletion_requested_at, user.deletion_scheduled_at) {
-            (Some(requested_at), Some(scheduled_at)) => {
-                Some(PendingAccountDeletion { requested_at, scheduled_at })
-            }
-            _ => None,
-        };
+        let pending_account_deletion =
+            match (user.deletion_requested_at, user.deletion_scheduled_at) {
+                (Some(requested_at), Some(scheduled_at)) => Some(PendingAccountDeletion {
+                    requested_at,
+                    scheduled_at,
+                }),
+                _ => None,
+            };
         AccessToken {
             access_token: token,
             token_type: "Bearer".to_string(),
-            expire_in:expiration,
+            expire_in: expiration,
             refresh_token,
             username: claims.sub.clone(),
             uuid: claims.uuid.clone(),
@@ -190,17 +229,43 @@ impl Authentication {
             .timestamp();
         let name = user.name.clone().unwrap_or_default();
         let person_uuid = person.uuid.clone().unwrap_or_default();
-        let person_object_key = person.object_key.clone().unwrap_or_else(|| "default".to_string());
-        let claims = Claims::new(user.email.clone(), expiration, user.uuid.clone().unwrap_or_default(), name, user.person_id,person_uuid, person_object_key, None, None);
+        let person_object_key = person
+            .object_key
+            .clone()
+            .unwrap_or_else(|| "default".to_string());
+        let claims = Claims::new(
+            user.email.clone(),
+            expiration,
+            user.uuid.clone().unwrap_or_default(),
+            name,
+            user.person_id,
+            person_uuid,
+            person_object_key,
+            None,
+            None,
+        );
 
         let header = Header::new(Algorithm::HS512);
-        let private_key = env::var("REFRESH_TOKEN_SECRET").expect("REFRESH_TOKEN_SECRET must be set");
-        encode(&header,&claims,&EncodingKey::from_secret(private_key.as_bytes())).unwrap()
+        let private_key =
+            env::var("REFRESH_TOKEN_SECRET").expect("REFRESH_TOKEN_SECRET must be set");
+        encode(
+            &header,
+            &claims,
+            &EncodingKey::from_secret(private_key.as_bytes()),
+        )
+        .unwrap()
     }
 
-    pub async fn validate(db: &DbConn, token: String) -> Result<AuthenticatedContext, ValidateError> {
+    pub async fn validate(
+        db: &DbConn,
+        token: String,
+    ) -> Result<AuthenticatedContext, ValidateError> {
         let public_key = env::var("ACCESS_TOKEN_SECRET").expect("ACCESS_TOKEN_SECRET must be set");
-        let result = decode::<Claims>(&token,&DecodingKey::from_secret(public_key.as_bytes()),&Validation::new(Algorithm::HS512));
+        let result = decode::<Claims>(
+            &token,
+            &DecodingKey::from_secret(public_key.as_bytes()),
+            &Validation::new(Algorithm::HS512),
+        );
 
         if result.is_err() {
             log::info!("Token is invalid: {:?}", result);
@@ -305,7 +370,11 @@ impl Authentication {
     }
 
     /// `Err` when the revocation list cannot be read: the caller must not treat that as "not revoked".
-    pub(crate) async fn is_token_revoked(db: &DbConn, user: &User, claims: &Claims) -> Result<bool, ()> {
+    pub(crate) async fn is_token_revoked(
+        db: &DbConn,
+        user: &User,
+        claims: &Claims,
+    ) -> Result<bool, ()> {
         if let Some(watermark) = user.token_valid_after {
             if let Some(iat) = DateTime::from_timestamp(claims.iat, 0).map(|dt| dt.naive_utc()) {
                 if iat <= watermark {
@@ -313,8 +382,10 @@ impl Authentication {
                 }
             }
         }
-        TokenRevocationGateway::is_revoked(db, &claims.jti).await.map_err(|error| {
-            log::error!("Could not read the revocation list: {error}");
-        })
+        TokenRevocationGateway::is_revoked(db, &claims.jti)
+            .await
+            .map_err(|error| {
+                log::error!("Could not read the revocation list: {error}");
+            })
     }
 }

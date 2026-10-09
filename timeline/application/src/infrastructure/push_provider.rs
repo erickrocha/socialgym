@@ -292,7 +292,7 @@ impl PushProvider {
         if body.contains("UNREGISTERED") || body.contains("registration-token-not-registered") {
             return Err(PushSendError::InvalidToken);
         }
-        Err(Self::classify_status(status, &body))
+        Err(Self::classify_status(status, body))
     }
 
     fn classify_status(status: reqwest::StatusCode, body: &str) -> PushSendError {

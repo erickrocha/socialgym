@@ -22,16 +22,27 @@ fn response(document: Domain) -> LegalDocument {
 
 #[tonic::async_trait]
 impl LegalDocumentService for GrpcLegalDocumentService {
-    async fn list_legal_documents(&self, _: Request<ListLegalDocumentsRequest>) -> Result<Response<ListLegalDocumentsResponse>, Status> {
+    async fn list_legal_documents(
+        &self,
+        _: Request<ListLegalDocumentsRequest>,
+    ) -> Result<Response<ListLegalDocumentsResponse>, Status> {
         Ok(Response::new(ListLegalDocumentsResponse {
-            documents: LegalDocumentUseCase::list().into_iter().map(response).collect(),
+            documents: LegalDocumentUseCase::list()
+                .into_iter()
+                .map(response)
+                .collect(),
         }))
     }
 
-    async fn get_legal_document(&self, request: Request<GetLegalDocumentRequest>) -> Result<Response<LegalDocument>, Status> {
+    async fn get_legal_document(
+        &self,
+        request: Request<GetLegalDocumentRequest>,
+    ) -> Result<Response<LegalDocument>, Status> {
         let locale = locale_of(&request);
         LegalDocumentUseCase::get(&request.into_inner().document)
             .map(|document| Response::new(response(document)))
-            .ok_or_else(|| localized_status(Code::NotFound, ErrorKey::InvalidParameterValue, locale))
+            .ok_or_else(|| {
+                localized_status(Code::NotFound, ErrorKey::InvalidParameterValue, locale)
+            })
     }
 }

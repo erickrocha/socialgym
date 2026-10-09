@@ -59,7 +59,8 @@ pub async fn get_profiles_by_owner_id(
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
         })?;
-    let profiles = BusinessProfileUseCase::present_all(&state.conn, profiles, Some(&current_user)).await;
+    let profiles =
+        BusinessProfileUseCase::present_all(&state.conn, profiles, Some(&current_user)).await;
     Ok(Json(BusinessProfileMapper::json_vec(profiles)))
 }
 
@@ -74,7 +75,8 @@ pub async fn get_profiles_by_owner_uuid(
         .map_err(|error| {
             ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
         })?;
-    let profiles = BusinessProfileUseCase::present_all(&state.conn, profiles, Some(&current_user)).await;
+    let profiles =
+        BusinessProfileUseCase::present_all(&state.conn, profiles, Some(&current_user)).await;
     Ok(Json(BusinessProfileMapper::json_vec(profiles)))
 }
 
@@ -89,10 +91,10 @@ pub async fn add_profile(
         BusinessProfileMapper::domain(payload),
         &current_user,
     )
-        .await
-        .map_err(|error| {
-            ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
-        })?;
+    .await
+    .map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
+    })?;
     Ok((
         StatusCode::CREATED,
         Json(BusinessProfileMapper::json(profile)),
@@ -105,12 +107,15 @@ pub async fn update_profile(
     Extension(locale): Extension<Locale>,
     Json(payload): Json<BusinessProfileJson>,
 ) -> HttpResponse<Json<BusinessProfileJson>> {
-    let profile =
-        BusinessProfileUseCase::update(&state.conn, BusinessProfileMapper::domain(payload), &current_user)
-            .await
-            .map_err(|error| {
-                ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
-            })?;
+    let profile = BusinessProfileUseCase::update(
+        &state.conn,
+        BusinessProfileMapper::domain(payload),
+        &current_user,
+    )
+    .await
+    .map_err(|error| {
+        ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
+    })?;
     Ok(Json(BusinessProfileMapper::json(profile)))
 }
 
@@ -241,7 +246,10 @@ pub async fn get_active(
     // Without an Active Business Profile in the token there is nothing to show: a client error, not the
     // `500` a missing request extension used to give.
     let Some(Extension(active_business_profile)) = active_business_profile else {
-        return Err(ExceptionResponse::BadRequest(locale, ErrorKey::BusinessProfileNotFound));
+        return Err(ExceptionResponse::BadRequest(
+            locale,
+            ErrorKey::BusinessProfileNotFound,
+        ));
     };
     let business_profile_id = active_business_profile.id.unwrap();
 
@@ -317,7 +325,8 @@ pub async fn discover(
     .map_err(|error| {
         ExceptionResponse::from_business(error, locale, ErrorKey::BusinessProfileNotFound)
     })?;
-    let profiles = BusinessProfileUseCase::present_all(&state.conn, profiles, Some(&current_user)).await;
+    let profiles =
+        BusinessProfileUseCase::present_all(&state.conn, profiles, Some(&current_user)).await;
 
     Ok(Json(BusinessProfileMapper::json_vec(profiles)))
 }

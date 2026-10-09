@@ -15,10 +15,19 @@ spec:
       labels:
         app: integration
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
       containers:
         - name: integration
           image: "{{ .Values.integration.image.repository }}:{{ .Values.integration.image.tag }}"
           imagePullPolicy: {{ .Values.integration.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           command: ["/bin/sh", "-c"]
           args:
             - |

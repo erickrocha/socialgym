@@ -47,7 +47,11 @@ impl SettingsUseCase {
 
     /// Create or update settings on behalf of `actor`. Settings belong to exactly
     /// one person, so the owner is always taken from `actor`, never the payload.
-    pub async fn persist(&self, mut domain: Settings, actor: &User) -> Result<Settings, BusinessError> {
+    pub async fn persist(
+        &self,
+        mut domain: Settings,
+        actor: &User,
+    ) -> Result<Settings, BusinessError> {
         log::info!("Persisting settings for person_id={}", actor.person_id);
 
         if let Some(id) = domain.id {
@@ -67,7 +71,9 @@ impl SettingsUseCase {
                 .map_err(|_| BusinessError::infrastructure("Error persisting settings"))?
                 .is_some()
         {
-            return Err(BusinessError::conflict("Settings already exist for this person".to_string()));
+            return Err(BusinessError::conflict(
+                "Settings already exist for this person".to_string(),
+            ));
         }
 
         let result = self.gateway.persist(domain).await;

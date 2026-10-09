@@ -77,6 +77,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=${WORKOUT_AWS_SECRET_ACCESS_KEY}
       - AWS_REGION=${WORKOUT_AWS_REGION:?WORKOUT_AWS_REGION must be explicitly set}
       - AWS_SQS_QUEUE_URL=${WORKOUT_AWS_SQS_QUEUE_URL}
+      - AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL=${AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL:?AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL must be set}
       - RUST_BACKTRACE=1
       - RUST_LOG=${WORKOUT_RUST_LOG:-info}
       - CLOUDFRONT_KEY_PAIR_ID=${WORKOUT_CLOUDFRONT_KEY_PAIR_ID}
@@ -117,6 +118,8 @@ services:
       context: ../../workout
       dockerfile: integration/Dockerfile
     container_name: integration_prod_app
+    # Same reason as timeline-app: the image user (nobody) cannot read the mode-600 TLS key; never root.
+    user: "${CERT_KEY_UID:-1000}:${CERT_KEY_GID:-1000}"
     environment:
       - DATABASE_URL=${WORKOUT_DATABASE_URL}
       - HOST=${INTEGRATION_HOST}
@@ -171,8 +174,8 @@ services:
       dockerfile: Dockerfile
     container_name: timeline_prod_app
     # The image runs as `nobody`, which cannot read the TLS private key mounted below (a host file with mode 600),
-    # so the gRPC server on 50052 failed to start with "Permission denied". integration-app reads the same key as root.
-    user: root
+    # so run as the key's owner instead of root (see CERT_KEY_UID/GID in .env.example).
+    user: "${CERT_KEY_UID:-1000}:${CERT_KEY_GID:-1000}"
     environment:
       - HOST=${TIMELINE_HOST}
       - PORT=${TIMELINE_PORT}
@@ -200,6 +203,7 @@ services:
       - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:?INTERNAL_SERVICE_SECRET must be set}
       # Timeline's own gRPC server (mobile app and workout's internal calls), TLS with the shared certificate.
       # Firebase service-account JSON (one line) for mobile push; without it the push worker logs an ALERT and sends nothing.
+      - AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL=${AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL:?AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL must be set}
       - FCM_SERVICE_ACCOUNT_JSON=${FCM_SERVICE_ACCOUNT_JSON:-}
       - TIMELINE_GRPC_PORT=50052
       - TLS_CERT_PATH=/etc/grpc/certs/server.crt

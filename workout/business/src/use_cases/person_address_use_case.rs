@@ -95,20 +95,33 @@ impl PersonAddressUseCase {
         uuid: String,
         acting_person_id: i32,
     ) -> Result<(), BusinessError> {
-        log::info!("[PersonAddressUseCase::delete_person_address_by_uuid] Executing for uuid={}", uuid);
+        log::info!(
+            "[PersonAddressUseCase::delete_person_address_by_uuid] Executing for uuid={}",
+            uuid
+        );
         let existing = Self::find_by_uuid(db, uuid.clone()).await?;
         ensure_owns(existing.person_id, acting_person_id)?;
-        PersonAddressGateway::delete_by_uuid(db, uuid.clone()).await.map_err(|error| {
-            log::error!("[PersonAddressUseCase::delete_person_address_by_uuid] Failed for uuid={}: {}", uuid, error);
-            BusinessError::infrastructure("Error deleting person address")
-        })
+        PersonAddressGateway::delete_by_uuid(db, uuid.clone())
+            .await
+            .map_err(|error| {
+                log::error!(
+                    "[PersonAddressUseCase::delete_person_address_by_uuid] Failed for uuid={}: {}",
+                    uuid,
+                    error
+                );
+                BusinessError::infrastructure("Error deleting person address")
+            })
     }
 
     async fn find_by_id(db: &DbConn, id: i32) -> Result<PersonAddress, BusinessError> {
         PersonAddressGateway::find_by_id(db, id)
             .await
             .map_err(|error| {
-                log::error!("[PersonAddressUseCase] Failed to load address id={}: {}", id, error);
+                log::error!(
+                    "[PersonAddressUseCase] Failed to load address id={}: {}",
+                    id,
+                    error
+                );
                 BusinessError::infrastructure("Error loading person address")
             })?
             .map(PersonAddressEntityMapper::from_model)
@@ -119,7 +132,11 @@ impl PersonAddressUseCase {
         PersonAddressGateway::find_by_uuid(db, uuid.clone())
             .await
             .map_err(|error| {
-                log::error!("[PersonAddressUseCase] Failed to load address uuid={}: {}", uuid, error);
+                log::error!(
+                    "[PersonAddressUseCase] Failed to load address uuid={}: {}",
+                    uuid,
+                    error
+                );
                 BusinessError::infrastructure("Error loading person address")
             })?
             .map(PersonAddressEntityMapper::from_model)

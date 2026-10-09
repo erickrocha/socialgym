@@ -5,13 +5,13 @@ use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::BusinessProfile;
 use crate::domain::enums::{InviteStatus, Visibility};
 use crate::domain::exercise::ExerciseEntityMapper;
+use crate::domain::person::PersonEntityMapper;
+use crate::domain::user::User;
 use crate::domain::workout::{Workout, WorkoutEntityMapper};
 use crate::gateway::exercise_gateway::ExerciseGateway;
 use crate::gateway::person_gateway::PersonGateway;
 use crate::gateway::workout_exercise_gateway::WorkoutExerciseGateway;
 use crate::gateway::workout_gateway::WorkoutGateway;
-use crate::domain::person::PersonEntityMapper;
-use crate::domain::user::User;
 use crate::use_cases::exercise_use_case::{audience_allows, ExerciseUseCase};
 use crate::use_cases::team_member_use_case::TeamMemberUseCase;
 use sea_orm::DbConn;
@@ -88,7 +88,10 @@ impl WorkoutUseCase {
                 let target_model = PersonGateway::find_by_uuid(db, target_uuid)
                     .await
                     .map_err(|e| {
-                        log::error!("[WorkoutUseCase::persist] Failed to find target person: {}", e);
+                        log::error!(
+                            "[WorkoutUseCase::persist] Failed to find target person: {}",
+                            e
+                        );
                         BusinessError::infrastructure("Error finding person")
                     })?
                     .ok_or_else(|| BusinessError::not_found("Person not found"))?;
@@ -153,7 +156,11 @@ impl WorkoutUseCase {
         // `description` is a `text` column (migration m20260129_000007), so
         // Postgres won't reject an oversized value on its own.
         const MAX_DESCRIPTION_LEN: usize = 5000;
-        if workout.description.as_deref().is_some_and(|d| d.len() > MAX_DESCRIPTION_LEN) {
+        if workout
+            .description
+            .as_deref()
+            .is_some_and(|d| d.len() > MAX_DESCRIPTION_LEN)
+        {
             return Err(BusinessError::validation(format!(
                 "description must be at most {MAX_DESCRIPTION_LEN} characters"
             )));
@@ -174,7 +181,8 @@ impl WorkoutUseCase {
         let workout_id = model.id.clone().unwrap();
 
         let exercise_result =
-            ExerciseUseCase::add_all_to_workout(db, workout_id, exercises, actor, active_profile).await;
+            ExerciseUseCase::add_all_to_workout(db, workout_id, exercises, actor, active_profile)
+                .await;
 
         if exercise_result.is_err() {
             log::error!("Error adding exercise: {}", exercise_result.err().unwrap());
@@ -241,7 +249,10 @@ impl WorkoutUseCase {
         visibility: &Visibility,
         acting: &ActingOwner,
     ) -> Result<(), BusinessError> {
-        Err(crate::use_cases::exercise_use_case::deny_or_hide(db, denied, visibility, owner_id, owner_uuid, acting, "Workout").await)
+        Err(crate::use_cases::exercise_use_case::deny_or_hide(
+            db, denied, visibility, owner_id, owner_uuid, acting, "Workout",
+        )
+        .await)
     }
 
     /// The exercises of a workout the caller may read, without those the caller may not read.
@@ -267,12 +278,18 @@ impl WorkoutUseCase {
         active_profile: Option<&BusinessProfile>,
     ) -> Result<Vec<crate::domain::exercise::Exercise>, AddExercisesError> {
         let acting = ActingOwner::new(user, active_profile);
-        Self::ensure_changeable(db, workout.owner_id, &workout.owner_uuid, &workout.visibility, &acting)
-            .await
-            .map_err(AddExercisesError::Workout)?;
-        let id = workout
-            .id
-            .ok_or_else(|| AddExercisesError::Workout(BusinessError::not_found("Workout not found")))?;
+        Self::ensure_changeable(
+            db,
+            workout.owner_id,
+            &workout.owner_uuid,
+            &workout.visibility,
+            &acting,
+        )
+        .await
+        .map_err(AddExercisesError::Workout)?;
+        let id = workout.id.ok_or_else(|| {
+            AddExercisesError::Workout(BusinessError::not_found("Workout not found"))
+        })?;
         ExerciseUseCase::add_all_to_workout(db, id, exercises, user, active_profile)
             .await
             .map_err(AddExercisesError::Exercises)
@@ -453,7 +470,10 @@ impl WorkoutUseCase {
         let domain = WorkoutGateway::find_by_assigned_by_profile_id(db, profile_id).await;
 
         if domain.is_err() {
-            log::error!("Error finding assigned workouts: {}", domain.as_ref().err().unwrap());
+            log::error!(
+                "Error finding assigned workouts: {}",
+                domain.as_ref().err().unwrap()
+            );
             return Err(BusinessError::infrastructure("Error finding workouts"));
         }
 
@@ -500,7 +520,14 @@ impl WorkoutUseCase {
     ) -> Result<(), BusinessError> {
         log::info!("[WorkoutUseCase::delete_by_id] Executing for id={}", id);
         let existing = Self::find_entity_by_id(db, id).await?;
-        Self::ensure_deletable(db, existing.owner_id, &existing.owner_uuid.to_string(), &Visibility::from_string(&existing.visibility), acting).await?;
+        Self::ensure_deletable(
+            db,
+            existing.owner_id,
+            &existing.owner_uuid.to_string(),
+            &Visibility::from_string(&existing.visibility),
+            acting,
+        )
+        .await?;
         let result = WorkoutGateway::delete_by_id(db, id).await;
         match result {
             Err(_) => {
@@ -524,7 +551,14 @@ impl WorkoutUseCase {
             uuid
         );
         let existing = Self::find_entity_by_uuid(db, uuid.clone()).await?;
-        Self::ensure_deletable(db, existing.owner_id, &existing.owner_uuid.to_string(), &Visibility::from_string(&existing.visibility), acting).await?;
+        Self::ensure_deletable(
+            db,
+            existing.owner_id,
+            &existing.owner_uuid.to_string(),
+            &Visibility::from_string(&existing.visibility),
+            acting,
+        )
+        .await?;
         let result = WorkoutGateway::delete_by_uuid(db, uuid.clone()).await;
         match result {
             Err(_) => {
@@ -546,7 +580,11 @@ impl WorkoutUseCase {
         WorkoutGateway::find_by_id(db, id)
             .await
             .map_err(|error| {
-                log::error!("[WorkoutUseCase] Failed to load workout id={}: {}", id, error);
+                log::error!(
+                    "[WorkoutUseCase] Failed to load workout id={}: {}",
+                    id,
+                    error
+                );
                 BusinessError::infrastructure("Error getting workout")
             })?
             .ok_or_else(|| BusinessError::not_found("Workout not found"))
@@ -577,8 +615,14 @@ impl WorkoutUseCase {
         workout: &Workout,
         acting: &ActingOwner,
     ) -> Result<bool, BusinessError> {
-        audience_allows(db, &workout.visibility, workout.owner_id, &workout.owner_uuid, acting)
-            .await
+        audience_allows(
+            db,
+            &workout.visibility,
+            workout.owner_id,
+            &workout.owner_uuid,
+            acting,
+        )
+        .await
     }
 
     /// An unreadable workout is reported as not found, so a caller cannot tell a

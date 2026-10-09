@@ -98,18 +98,29 @@ impl BusinessProfileAddressUseCase {
         BusinessProfileAddressGateway::find_by_id(db, id)
             .await
             .map_err(|error| {
-                log::error!("[BusinessProfileAddressUseCase] Failed to load id={}: {}", id, error);
+                log::error!(
+                    "[BusinessProfileAddressUseCase] Failed to load id={}: {}",
+                    id,
+                    error
+                );
                 BusinessError::infrastructure("Error loading BusinessProfileAddress")
             })?
             .map(BusinessProfileAddressEntityMapper::from_model)
             .ok_or_else(|| BusinessError::not_found("BusinessProfileAddress not found"))
     }
 
-    async fn find_by_uuid(db: &DbConn, uuid: String) -> Result<BusinessProfileAddress, BusinessError> {
+    async fn find_by_uuid(
+        db: &DbConn,
+        uuid: String,
+    ) -> Result<BusinessProfileAddress, BusinessError> {
         BusinessProfileAddressGateway::find_by_uuid(db, uuid.clone())
             .await
             .map_err(|error| {
-                log::error!("[BusinessProfileAddressUseCase] Failed to load uuid={}: {}", uuid, error);
+                log::error!(
+                    "[BusinessProfileAddressUseCase] Failed to load uuid={}: {}",
+                    uuid,
+                    error
+                );
                 BusinessError::infrastructure("Error loading BusinessProfileAddress")
             })?
             .map(BusinessProfileAddressEntityMapper::from_model)

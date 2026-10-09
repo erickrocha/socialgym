@@ -11,11 +11,15 @@ pub struct GrpcAddressSearchService;
 
 #[tonic::async_trait]
 impl AddressSearchService for GrpcAddressSearchService {
-    async fn search_address(&self, request: Request<SearchAddressRequest>) -> Result<Response<SearchAddressResponse>, Status> {
+    async fn search_address(
+        &self,
+        request: Request<SearchAddressRequest>,
+    ) -> Result<Response<SearchAddressResponse>, Status> {
         let locale = locale_of(&request);
         require_actor(&request)?;
         let payload = request.into_inner();
-        match AddressSearchUseCase::search(&payload.text, payload.latitude, payload.longitude).await {
+        match AddressSearchUseCase::search(&payload.text, payload.latitude, payload.longitude).await
+        {
             Ok(candidates) => Ok(Response::new(SearchAddressResponse {
                 candidates: candidates
                     .into_iter()
@@ -35,7 +39,11 @@ impl AddressSearchService for GrpcAddressSearchService {
                     .collect(),
             })),
             Err(error) => {
-                let key = if error.kind == BusinessErrorKind::Forbidden { ErrorKey::AddressSearchDisabled } else { ErrorKey::AddressSearchFailed };
+                let key = if error.kind == BusinessErrorKind::Forbidden {
+                    ErrorKey::AddressSearchDisabled
+                } else {
+                    ErrorKey::AddressSearchFailed
+                };
                 Err(localized_business_status(error, key, locale))
             }
         }

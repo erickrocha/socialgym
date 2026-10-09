@@ -1,10 +1,10 @@
-use async_trait::async_trait;
 use crate::repositories::repository::Repository;
+use async_trait::async_trait;
 use domain::business_error::BusinessError;
 use domain::workout_session::WorkoutSession;
-use mongodb::bson::{doc, DateTime};
-use mongodb::{Collection, Database};
 use futures::stream::TryStreamExt;
+use mongodb::bson::{DateTime, doc};
+use mongodb::{Collection, Database};
 
 const COLLECTION_NAME: &str = "workouts";
 
@@ -48,7 +48,11 @@ impl Repository<WorkoutSession, String> for WorkoutSessionGateway {
         })
     }
 
-    async fn update(&self, id: String, entity: WorkoutSession) -> Result<WorkoutSession, BusinessError> {
+    async fn update(
+        &self,
+        id: String,
+        entity: WorkoutSession,
+    ) -> Result<WorkoutSession, BusinessError> {
         let filter = doc! { "_id": id.clone() };
 
         let result = self.collection.replace_one(filter, entity).await;
@@ -87,7 +91,12 @@ impl Repository<WorkoutSession, String> for WorkoutSessionGateway {
 }
 
 impl WorkoutSessionGateway {
-    pub async fn find_all_by_person(&self,person_uuid: &str,start: DateTime,end: DateTime) -> Vec<WorkoutSession> {
+    pub async fn find_all_by_person(
+        &self,
+        person_uuid: &str,
+        start: DateTime,
+        end: DateTime,
+    ) -> Vec<WorkoutSession> {
         let filter = doc! {
             "personUuid": person_uuid,
             "startedAt": { "$gte": start, "$lte": end }
@@ -95,7 +104,10 @@ impl WorkoutSessionGateway {
         let cursor = self.collection.find(filter).await;
 
         if cursor.is_err() {
-            log::error!("Error finding workouts by person: {:?}", cursor.err().unwrap());
+            log::error!(
+                "Error finding workouts by person: {:?}",
+                cursor.err().unwrap()
+            );
             return Vec::new();
         }
 

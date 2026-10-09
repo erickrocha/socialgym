@@ -6,3 +6,4 @@
 /infra/certs/server.key
 /infra/dev/certs/server.key
 .idea
+/infra/prod/socialgym-4872c-firebase-adminsdk-fbsvc-6b3fa1243f.json

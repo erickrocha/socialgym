@@ -33,10 +33,18 @@ impl LegalDocumentUseCase {
             ),
             _ => return None,
         };
-        Some(LegalDocument { document, version: legal_documents::current_version(document)?, title, content })
+        Some(LegalDocument {
+            document,
+            version: legal_documents::current_version(document)?,
+            title,
+            content,
+        })
     }
 
     pub fn list() -> Vec<LegalDocument> {
-        legal_documents::ALL.into_iter().filter_map(Self::get).collect()
+        legal_documents::ALL
+            .into_iter()
+            .filter_map(Self::get)
+            .collect()
     }
 }

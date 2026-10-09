@@ -24,11 +24,15 @@ impl GrpcEvolutionCheckInService {
 
 #[tonic::async_trait]
 impl EvolutionCheckInService for GrpcEvolutionCheckInService {
-    async fn add_evolution_check_in(&self, request: Request<AddEvolutionCheckInRequest>) -> Result<Response<EvolutionCheckIn>, Status> {
+    async fn add_evolution_check_in(
+        &self,
+        request: Request<AddEvolutionCheckInRequest>,
+    ) -> Result<Response<EvolutionCheckIn>, Status> {
         let (db, body) = (self.database.clone(), request.get_ref().clone());
         with_caller(&request, |user| async move {
             let check_in = EvolutionCheckInMapper::domain(body, &user.person_uuid)?;
-            let use_case = EvolutionCheckInUseCase::new(EvolutionCheckInGateway::new(&db), ConsentGateway);
+            let use_case =
+                EvolutionCheckInUseCase::new(EvolutionCheckInGateway::new(&db), ConsentGateway);
             let saved = use_case
                 .add(check_in, &user.person_uuid)
                 .await
@@ -38,12 +42,18 @@ impl EvolutionCheckInService for GrpcEvolutionCheckInService {
         .await
     }
 
-    async fn list_evolution_check_ins(&self, request: Request<ListEvolutionCheckInsRequest>) -> Result<Response<ListEvolutionCheckInsResponse>, Status> {
+    async fn list_evolution_check_ins(
+        &self,
+        request: Request<ListEvolutionCheckInsRequest>,
+    ) -> Result<Response<ListEvolutionCheckInsResponse>, Status> {
         let (db, body) = (self.database.clone(), request.get_ref().clone());
         with_caller(&request, |user| async move {
-            let end = optional_text_to_date(body.end_date.as_deref())?.unwrap_or_else(|| Utc::now().naive_utc());
-            let start = optional_text_to_date(body.start_date.as_deref())?.unwrap_or_else(|| end - Duration::days(7));
-            let use_case = EvolutionCheckInUseCase::new(EvolutionCheckInGateway::new(&db), ConsentGateway);
+            let end = optional_text_to_date(body.end_date.as_deref())?
+                .unwrap_or_else(|| Utc::now().naive_utc());
+            let start = optional_text_to_date(body.start_date.as_deref())?
+                .unwrap_or_else(|| end - Duration::days(7));
+            let use_case =
+                EvolutionCheckInUseCase::new(EvolutionCheckInGateway::new(&db), ConsentGateway);
             let found = use_case
                 .find_all_by_owner(
                     user.person_uuid,
@@ -52,7 +62,10 @@ impl EvolutionCheckInService for GrpcEvolutionCheckInService {
                 )
                 .await;
             Ok(Response::new(ListEvolutionCheckInsResponse {
-                check_ins: found.into_iter().map(EvolutionCheckInMapper::proto).collect(),
+                check_ins: found
+                    .into_iter()
+                    .map(EvolutionCheckInMapper::proto)
+                    .collect(),
             }))
         })
         .await

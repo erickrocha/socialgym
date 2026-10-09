@@ -75,7 +75,11 @@ impl EntityMapper<Settings, SettingsEntity, ActiveModel> for SettingsEntityMappe
             notifications_enabled: e.notifications_enabled.unwrap(),
             context_menu_position: Position::from_string(&e.context_menu_position.unwrap()),
             home_page: e.home_page.unwrap(),
-            weight_unit: e.weight_unit.unwrap().as_deref().map(WeightUnit::from_string),
+            weight_unit: e
+                .weight_unit
+                .unwrap()
+                .as_deref()
+                .map(WeightUnit::from_string),
             created_at: Some(e.created_at.unwrap().naive_utc()),
             updated_at: Some(e.updated_at.unwrap().naive_utc()),
         }

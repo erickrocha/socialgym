@@ -1,15 +1,15 @@
+use crate::AppState;
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
 use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::error_response_json::{
     BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,
 };
 use crate::http::json::evolution_check_in_json::EvolutionCheckInJson;
-use business::commons::data_tools::opt_naive_to_bson_datetime;
 use crate::infrastructure::mapper::{EvolutionCheckInMapper, Mapper};
-use crate::AppState;
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
+use business::commons::data_tools::opt_naive_to_bson_datetime;
 use business::gateway::consent_gateway::ConsentGateway;
 use business::gateway::evolution_check_in_gateway::EvolutionCheckInGateway;
 use business::use_cases::evolution_check_in_use_case::EvolutionCheckInUseCase;
@@ -68,6 +68,7 @@ pub async fn add(
     get,
     tag = "timeline",
     path = "/timeline/api/evolution-checkin",
+    description = "Lists the authenticated person's own evolution check-ins in the period. There is no per-person route: the owner comes from the token.",
     params(
         ("startDate" = Option<String>, Query, description = "Start date ISO 8601 (e.g. 2026-03-25T00:00:00). Defaults to 7 days ago."),
         ("endDate" = Option<String>, Query, description = "End date ISO 8601 (e.g. 2026-04-01T23:59:59). Defaults to now."),

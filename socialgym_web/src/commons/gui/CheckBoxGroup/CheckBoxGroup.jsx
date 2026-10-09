@@ -1,10 +1,7 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 import './CheckBoxGroup.scss';
-import {useTranslation} from "react-i18next";
 
 const CheckBoxGroup = ({items, onChange, title, initialValues = [] }) => {
-    const {t} = useTranslation('common');
-
     const [selectedItems, setSelectedItems] = useState(initialValues);
 
     const handleSelectItem = (event, item) => {

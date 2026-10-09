@@ -22,7 +22,11 @@ impl UserGateway {
 
     /// Sets the failed-login counter to `new_count`. Callers compute the new value
     /// themselves (usually `current + 1`) to avoid a read-then-write round trip here.
-    pub async fn increment_failed_attempts(db: &DbConn, user_id: i32, new_count: i32) -> Result<user::UserEntity, DbErr> {
+    pub async fn increment_failed_attempts(
+        db: &DbConn,
+        user_id: i32,
+        new_count: i32,
+    ) -> Result<user::UserEntity, DbErr> {
         let active_model = user::ActiveModel {
             id: Set(user_id),
             failed_login_attempts: Set(new_count),
@@ -31,7 +35,11 @@ impl UserGateway {
         active_model.update(db).await
     }
 
-    pub async fn lock_account(db: &DbConn, user_id: i32, locked_until: DateTime<Utc>) -> Result<user::UserEntity, DbErr> {
+    pub async fn lock_account(
+        db: &DbConn,
+        user_id: i32,
+        locked_until: DateTime<Utc>,
+    ) -> Result<user::UserEntity, DbErr> {
         let active_model = user::ActiveModel {
             id: Set(user_id),
             locked_until: Set(Some(locked_until)),
@@ -53,7 +61,11 @@ impl UserGateway {
 
     /// Sets the revoke-all watermark: any token whose `iat` is at or before `watermark`
     /// is treated as revoked once this is set.
-    pub async fn set_token_valid_after(db: &DbConn, user_id: i32, watermark: DateTime<Utc>) -> Result<user::UserEntity, DbErr> {
+    pub async fn set_token_valid_after(
+        db: &DbConn,
+        user_id: i32,
+        watermark: DateTime<Utc>,
+    ) -> Result<user::UserEntity, DbErr> {
         let active_model = user::ActiveModel {
             id: Set(user_id),
             token_valid_after: Set(Some(watermark)),
@@ -95,7 +107,10 @@ impl UserGateway {
 
     /// Accounts whose grace period (or immediate-deletion request) has elapsed and are
     /// still disabled — i.e. not yet purged. The sweep job's entry point.
-    pub async fn find_due_for_deletion(db: &DbConn, now: DateTime<Utc>) -> Result<Vec<user::UserEntity>, DbErr> {
+    pub async fn find_due_for_deletion(
+        db: &DbConn,
+        now: DateTime<Utc>,
+    ) -> Result<Vec<user::UserEntity>, DbErr> {
         UserQuery::find()
             .filter(user::Column::Enabled.eq(false))
             .filter(user::Column::DeletionScheduledAt.is_not_null())
@@ -106,14 +121,20 @@ impl UserGateway {
 
     /// Deletes the `user` row for a person as part of the account-purge cascade.
     /// Must run after `revoked_token` rows for this user are gone (plain FK, no cascade).
-    pub async fn delete_by_person_id<C: ConnectionTrait>(db: &C, person_id: i32) -> Result<sea_orm::DeleteResult, DbErr> {
+    pub async fn delete_by_person_id<C: ConnectionTrait>(
+        db: &C,
+        person_id: i32,
+    ) -> Result<sea_orm::DeleteResult, DbErr> {
         UserQuery::delete_many()
             .filter(user::Column::PersonId.eq(person_id))
             .exec(db)
             .await
     }
 
-    pub async fn find_by_email(db: &DbConn, email: String) -> Result<Option<user::UserEntity>, DbErr> {
+    pub async fn find_by_email(
+        db: &DbConn,
+        email: String,
+    ) -> Result<Option<user::UserEntity>, DbErr> {
         UserQuery::find()
             .filter(user::Column::Email.eq(email))
             .one(db)

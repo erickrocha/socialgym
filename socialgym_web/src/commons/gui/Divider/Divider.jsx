@@ -1,4 +1,3 @@
-import React from 'react';
 import './Divider.scss';
 import clsx from "clsx";
 import PropTypes from "prop-types";

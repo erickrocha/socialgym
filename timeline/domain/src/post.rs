@@ -1,10 +1,10 @@
-use mongodb::bson::DateTime;
-use crate::media::Media;
-use crate::reaction::Reaction;
 use crate::comment::Comment;
+use crate::media::Media;
+use crate::mention::Mention;
+use crate::reaction::Reaction;
+use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::mention::Mention;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -31,14 +31,45 @@ pub struct Post {
 
 impl Post {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(author_id: i32,author_uuid: String,author_name:String,author_object_key: Option<String>,
-               author_avatar_url: Option<String>, content: String, media: Vec<Media>, mentions: Vec<Mention>) -> Self {
-        Self::updated(Uuid::new_v4().to_string(),author_id, author_uuid, author_name, author_object_key, author_avatar_url, content, media, Vec::new(), Vec::new(), mentions)
+    pub fn new(
+        author_id: i32,
+        author_uuid: String,
+        author_name: String,
+        author_object_key: Option<String>,
+        author_avatar_url: Option<String>,
+        content: String,
+        media: Vec<Media>,
+        mentions: Vec<Mention>,
+    ) -> Self {
+        Self::updated(
+            Uuid::new_v4().to_string(),
+            author_id,
+            author_uuid,
+            author_name,
+            author_object_key,
+            author_avatar_url,
+            content,
+            media,
+            Vec::new(),
+            Vec::new(),
+            mentions,
+        )
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn updated(uuid: String,author_id: i32, author_uuid: String,author_name:String,author_object_key: Option<String>,
-               author_avatar: Option<String>, content: String, media: Vec<Media>, reactions: Vec<Reaction>, comments: Vec<Comment>, mentions: Vec<Mention>) -> Self {
+    pub fn updated(
+        uuid: String,
+        author_id: i32,
+        author_uuid: String,
+        author_name: String,
+        author_object_key: Option<String>,
+        author_avatar: Option<String>,
+        content: String,
+        media: Vec<Media>,
+        reactions: Vec<Reaction>,
+        comments: Vec<Comment>,
+        mentions: Vec<Mention>,
+    ) -> Self {
         let now = DateTime::now();
         Self {
             uuid,

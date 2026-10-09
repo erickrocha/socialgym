@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [workout, timeline]
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ matrix.service }}
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: socialgym_web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: socialgym_web/yarn.lock
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint --max-warnings 0
+      - run: yarn build
+
+  config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Proto mirrors in sync
+        run: bash tool/check_proto_sync.sh
+      - name: Prod compose renders with the example env
+        working-directory: infra/prod
+        run: docker compose --env-file .env.example -f compose.yml config -q
+      - name: Helm chart renders
+        run: helm template socialgym infra/helm/socialgym > /dev/null

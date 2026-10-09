@@ -1,7 +1,9 @@
 //! Shared fixtures for use-case acceptance tests: a disposable MongoDB database and a
 //! plaintext gRPC stand-in for the workout service (roles, friends, team rosters).
 #![allow(dead_code)]
-use business::proto::proto::business_profile::business_profile_service_server::{BusinessProfileService, BusinessProfileServiceServer};
+use business::proto::proto::business_profile::business_profile_service_server::{
+    BusinessProfileService, BusinessProfileServiceServer,
+};
 use business::proto::proto::business_profile::*;
 use business::proto::proto::friend::friend_service_server::{FriendService, FriendServiceServer};
 use business::proto::proto::friend::*;
@@ -29,10 +31,19 @@ pub struct Stub(pub Arc<StubState>);
 
 pub async fn database() -> Database {
     let url = std::env::var("TEST_MONGO_URL").expect("TEST_MONGO_URL must be set");
-    assert!(url.contains("/timeline_test"), "refusing to run against a non-test database");
-    let db = Client::with_uri_str(url).await.unwrap().database("timeline_test");
+    assert!(
+        url.contains("/timeline_test"),
+        "refusing to run against a non-test database"
+    );
+    let db = Client::with_uri_str(url)
+        .await
+        .unwrap()
+        .database("timeline_test");
     for name in db.list_collection_names().await.unwrap() {
-        db.collection::<mongodb::bson::Document>(&name).delete_many(mongodb::bson::doc! {}).await.unwrap();
+        db.collection::<mongodb::bson::Document>(&name)
+            .delete_many(mongodb::bson::doc! {})
+            .await
+            .unwrap();
     }
     db
 }

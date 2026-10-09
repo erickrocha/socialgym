@@ -3,23 +3,27 @@ use std::sync::Arc;
 use crate::infrastructure::mapper::{BusinessProfileAddressMapper, BusinessProfileMapper, Mapper};
 use crate::proto::business_profile::business_profile_service_server::BusinessProfileService;
 use crate::proto::business_profile::{
-    BusinessProfile, BusinessProfileImageUploadRequest, DeleteBusinessProfileRequest, DeleteBusinessProfileResponse,
-    DiscoverBusinessProfilesRequest, GetActiveBusinessProfileRequest, BusinessProfileImageUploadResponse, BusinessProfileRequestId, BusinessProfileRequestOwnerId,
-    BusinessProfilesResponse, RemoveBusinessProfileAddressRequest,
+    BusinessProfile, BusinessProfileImageUploadRequest, BusinessProfileImageUploadResponse,
+    BusinessProfileRequestId, BusinessProfileRequestOwnerId, BusinessProfilesResponse,
+    DeleteBusinessProfileRequest, DeleteBusinessProfileResponse, DiscoverBusinessProfilesRequest,
+    GetActiveBusinessProfileRequest, RemoveBusinessProfileAddressRequest,
     RemoveBusinessProfileAddressResponse,
 };
 use crate::proto::business_profile_address::BusinessProfileAddress;
 
+use crate::infrastructure::utils::{
+    business_status, locale_of, localized_business_status, localized_status,
+    require_active_profile, require_actor, require_person_id, validate_uuid,
+};
+use business::commons::i18n::ErrorKey;
+use business::domain::enums::ProfileType;
 use business::domain::user::User;
 use business::use_cases::business_profile_address_use_case::BusinessProfileAddressUseCase;
 use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
-use sea_orm::DatabaseConnection;
-use tonic::{Request, Response, Status};
-use crate::infrastructure::utils::{business_status, locale_of, localized_business_status, localized_status, require_active_profile, require_actor, require_person_id, validate_uuid};
-use business::commons::i18n::ErrorKey;
-use business::domain::enums::ProfileType;
 use business::use_cases::common_use_case::choose_image_type;
+use sea_orm::DatabaseConnection;
 use tonic::Code;
+use tonic::{Request, Response, Status};
 
 pub struct GrpcBusinessProfileService {
     conn: Arc<DatabaseConnection>,
@@ -51,7 +55,9 @@ impl BusinessProfileService for GrpcBusinessProfileService {
             let business_profile = BusinessProfileUseCase::get_by_uuid(&self.conn, payload.uuid)
                 .await
                 .ok_or_else(|| Status::not_found("Business profile not found"))?;
-            let shown = BusinessProfileUseCase::present(&self.conn, business_profile, viewer.as_ref()).await;
+            let shown =
+                BusinessProfileUseCase::present(&self.conn, business_profile, viewer.as_ref())
+                    .await;
             Ok(Response::new(BusinessProfileMapper::response(shown)))
         } else {
             let profile = BusinessProfileUseCase::get_by_id(&self.conn, payload.id)
@@ -81,7 +87,9 @@ impl BusinessProfileService for GrpcBusinessProfileService {
                 BusinessProfileUseCase::get_by_owner_uuid(&self.conn, payload.owner_uuid)
                     .await
                     .map_err(|e| Status::internal(e.message))?;
-            let shown = BusinessProfileUseCase::present_all(&self.conn, business_profiles, viewer.as_ref()).await;
+            let shown =
+                BusinessProfileUseCase::present_all(&self.conn, business_profiles, viewer.as_ref())
+                    .await;
             let grpc_profiles = BusinessProfileMapper::response_vec(shown);
             Ok(Response::new(BusinessProfilesResponse {
                 business_profiles: grpc_profiles,
@@ -91,7 +99,9 @@ impl BusinessProfileService for GrpcBusinessProfileService {
                 BusinessProfileUseCase::get_by_owner_id(&self.conn, payload.owner_id)
                     .await
                     .map_err(|e| Status::internal(e.message))?;
-            let shown = BusinessProfileUseCase::present_all(&self.conn, business_profiles, viewer.as_ref()).await;
+            let shown =
+                BusinessProfileUseCase::present_all(&self.conn, business_profiles, viewer.as_ref())
+                    .await;
             let grpc_profiles = BusinessProfileMapper::response_vec(shown);
             Ok(Response::new(BusinessProfilesResponse {
                 business_profiles: grpc_profiles,
@@ -186,7 +196,9 @@ impl BusinessProfileService for GrpcBusinessProfileService {
                 .await
                 .map_err(business_status)?;
         } else {
-            return Err(Status::invalid_argument("either id or uuid must be informed"));
+            return Err(Status::invalid_argument(
+                "either id or uuid must be informed",
+            ));
         }
         Ok(Response::new(RemoveBusinessProfileAddressResponse {
             success: true,
@@ -200,13 +212,26 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         let locale = locale_of(&request);
         // The logo and the cover belong to the Active Business Profile of the token, which the
         // authentication layer loads (a person can only activate a profile they own).
-        let profile = require_active_profile(&request)
-            .ok_or_else(|| localized_status(Code::FailedPrecondition, ErrorKey::BusinessProfilePreSignedUrlNotGenerated, locale))?;
+        let profile = require_active_profile(&request).ok_or_else(|| {
+            localized_status(
+                Code::FailedPrecondition,
+                ErrorKey::BusinessProfilePreSignedUrlNotGenerated,
+                locale,
+            )
+        })?;
         let (Some(id), Some(uuid)) = (profile.id, profile.uuid.clone()) else {
-            return Err(localized_status(Code::FailedPrecondition, ErrorKey::BusinessProfilePreSignedUrlNotGenerated, locale));
+            return Err(localized_status(
+                Code::FailedPrecondition,
+                ErrorKey::BusinessProfilePreSignedUrlNotGenerated,
+                locale,
+            ));
         };
         let payload = request.into_inner();
-        let format = if payload.format.is_empty() { "jpg".to_string() } else { payload.format };
+        let format = if payload.format.is_empty() {
+            "jpg".to_string()
+        } else {
+            payload.format
+        };
         let image_storage = BusinessProfileUseCase::upload_business_profile_image(
             &self.conn,
             id,
@@ -215,7 +240,13 @@ impl BusinessProfileService for GrpcBusinessProfileService {
             format,
         )
         .await
-        .map_err(|_| localized_status(Code::InvalidArgument, ErrorKey::BusinessProfilePreSignedUrlNotGenerated, locale))?;
+        .map_err(|_| {
+            localized_status(
+                Code::InvalidArgument,
+                ErrorKey::BusinessProfilePreSignedUrlNotGenerated,
+                locale,
+            )
+        })?;
         Ok(Response::new(BusinessProfileImageUploadResponse {
             url: image_storage.url,
             object_key: image_storage.object_key,
@@ -230,12 +261,20 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         let locale = locale_of(&request);
         let active = require_active_profile(&request)
             .and_then(|profile| profile.id)
-            .ok_or_else(|| localized_status(Code::FailedPrecondition, ErrorKey::BusinessProfileNotFound, locale))?;
+            .ok_or_else(|| {
+                localized_status(
+                    Code::FailedPrecondition,
+                    ErrorKey::BusinessProfileNotFound,
+                    locale,
+                )
+            })?;
         // The Active Business Profile is the caller's own, so the owner's full view applies.
         BusinessProfileUseCase::get_by_id(&self.conn, active)
             .await
             .map(|profile| Response::new(BusinessProfileMapper::response(profile)))
-            .ok_or_else(|| localized_status(Code::NotFound, ErrorKey::BusinessProfileNotFound, locale))
+            .ok_or_else(|| {
+                localized_status(Code::NotFound, ErrorKey::BusinessProfileNotFound, locale)
+            })
     }
 
     async fn discover_business_profiles(
@@ -260,9 +299,14 @@ impl BusinessProfileService for GrpcBusinessProfileService {
             payload.limit.unwrap_or(50),
         )
         .await
-        .map_err(|error| localized_business_status(error, ErrorKey::BusinessProfileNotFound, locale))?;
-        let shown = BusinessProfileUseCase::present_all(&self.conn, profiles, viewer.as_ref()).await;
-        Ok(Response::new(BusinessProfilesResponse { business_profiles: BusinessProfileMapper::response_vec(shown) }))
+        .map_err(|error| {
+            localized_business_status(error, ErrorKey::BusinessProfileNotFound, locale)
+        })?;
+        let shown =
+            BusinessProfileUseCase::present_all(&self.conn, profiles, viewer.as_ref()).await;
+        Ok(Response::new(BusinessProfilesResponse {
+            business_profiles: BusinessProfileMapper::response_vec(shown),
+        }))
     }
 
     async fn delete_business_profile(
@@ -273,7 +317,9 @@ impl BusinessProfileService for GrpcBusinessProfileService {
         let actor = require_actor(&request)?;
         BusinessProfileUseCase::delete(&self.conn, request.into_inner().id, &actor)
             .await
-            .map_err(|error| localized_business_status(error, ErrorKey::BusinessProfileNotFound, locale))?;
+            .map_err(|error| {
+                localized_business_status(error, ErrorKey::BusinessProfileNotFound, locale)
+            })?;
         Ok(Response::new(DeleteBusinessProfileResponse {}))
     }
 }

@@ -3,7 +3,11 @@ use business::domain::business_error::{BusinessError, BusinessErrorKind};
 use tonic::Code;
 
 fn code(kind: BusinessErrorKind) -> Code {
-    business_status(BusinessError { kind, message: "m".into() }).code()
+    business_status(BusinessError {
+        kind,
+        message: "m".into(),
+    })
+    .code()
 }
 
 #[test]
@@ -14,7 +18,11 @@ fn every_business_error_kind_maps_to_its_grpc_status() {
     assert_eq!(code(BusinessErrorKind::NotFound), Code::NotFound);
     assert_eq!(code(BusinessErrorKind::Conflict), Code::AlreadyExists);
     assert_eq!(code(BusinessErrorKind::Locked), Code::FailedPrecondition);
-    assert_eq!(code(BusinessErrorKind::Infrastructure), Code::Unavailable, "a dependency outage is retryable");
+    assert_eq!(
+        code(BusinessErrorKind::Infrastructure),
+        Code::Unavailable,
+        "a dependency outage is retryable"
+    );
 }
 
 #[test]

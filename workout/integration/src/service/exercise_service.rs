@@ -1,4 +1,8 @@
 use crate::infrastructure::mapper::{ExerciseMapper, Mapper};
+use crate::infrastructure::utils::{
+    business_status, require_acting_owner, require_active_profile, require_actor, validate_uuid,
+    validate_uuids,
+};
 use crate::proto::exercise::exercise_request::Identifier;
 use crate::proto::exercise::exercise_service_server::ExerciseService;
 use crate::proto::exercise::{Exercise, ExerciseParams, ExerciseRequest, PaginatedExercise};
@@ -6,10 +10,6 @@ use business::use_cases::exercise_use_case::ExerciseUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
-use crate::infrastructure::utils::{
-    business_status, require_acting_owner, require_active_profile, require_actor, validate_uuid,
-    validate_uuids,
-};
 
 pub struct GrpcExerciseService {
     conn: Arc<DatabaseConnection>,
@@ -80,7 +80,7 @@ impl ExerciseService for GrpcExerciseService {
         validate_uuids(&req.owners, "owners")?;
 
         // Get public_owner_ids, default to empty if not provided
-        let public_owner_uuids = req.owners.iter().cloned().collect::<Vec<String>>();
+        let public_owner_uuids = req.owners.to_vec();
         // The query always runs as the caller's acting identity (their active
         // business profile, if any, else themself); `owner_uuid` in the
         // request is ignored.

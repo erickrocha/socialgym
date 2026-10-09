@@ -10,9 +10,9 @@ use domain::user::User;
 use futures::{SinkExt, StreamExt};
 use serde::Deserialize;
 
+use crate::AppState;
 use crate::http::json::chat_json::ClientFrameJson;
 use crate::infrastructure::mapper::{ClientFrameMapper, ServerEventMapper};
-use crate::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct WsAuthQuery {
@@ -43,11 +43,12 @@ pub async fn ws(
 
     // Same mandatory consents as the REST middleware: a person who has not accepted them
     // cannot open the stream.
-    let consents = business::commons::token_context::with_forwarded_token(Some(token.clone()), async {
-        business::gateway::consent_gateway::ConsentGateway::require("terms").await?;
-        business::gateway::consent_gateway::ConsentGateway::require("privacy").await
-    })
-    .await;
+    let consents =
+        business::commons::token_context::with_forwarded_token(Some(token.clone()), async {
+            business::gateway::consent_gateway::ConsentGateway::require("terms").await?;
+            business::gateway::consent_gateway::ConsentGateway::require("privacy").await
+        })
+        .await;
     if let Err(error) = consents {
         return if error.kind == domain::business_error::BusinessErrorKind::Infrastructure {
             axum::http::StatusCode::INTERNAL_SERVER_ERROR
@@ -109,7 +110,14 @@ async fn handle_socket(socket: WebSocket, state: AppState, user: User, token: St
             }
         };
 
-        ChatSessionUseCase::handle_frame(&state.chat_hub, &state.database, &user, &token, ClientFrameMapper::domain(frame)).await;
+        ChatSessionUseCase::handle_frame(
+            &state.chat_hub,
+            &state.database,
+            &user,
+            &token,
+            ClientFrameMapper::domain(frame),
+        )
+        .await;
     }
 
     outbound.abort();

@@ -235,7 +235,10 @@ impl SqsConsumerUseCase {
             Ok(None) => {} // not yet stored, continue
             Err(e) => {
                 // DB error – treat as transient, propagate so the message is retried
-                return Err(BusinessError::new(format!("DB error checking for duplicate s3_key '{}': {e}",object_key)));
+                return Err(BusinessError::new(format!(
+                    "DB error checking for duplicate s3_key '{}': {e}",
+                    object_key
+                )));
             }
         }
 
@@ -244,11 +247,20 @@ impl SqsConsumerUseCase {
             Ok(Some(p)) => p,
             Ok(None) => {
                 // Person was deleted; nothing to do – discard permanently
-                log::warn!("No person found for uuid '{}' (key '{}') – discarding message", person_uuid, object_key);
+                log::warn!(
+                    "No person found for uuid '{}' (key '{}') – discarding message",
+                    person_uuid,
+                    object_key
+                );
                 return Ok(());
             }
             Err(e) => {
-                log::warn!("Invalid person uuid '{}' in object key '{}': {} – discarding message", person_uuid, object_key, e);
+                log::warn!(
+                    "Invalid person uuid '{}' in object key '{}': {} – discarding message",
+                    person_uuid,
+                    object_key,
+                    e
+                );
                 return Ok(());
             }
         };
@@ -258,23 +270,43 @@ impl SqsConsumerUseCase {
         let content_type = S3Gateway::head_object(s3_client, bucket, object_key)
             .await
             .unwrap_or_else(|e| {
-                log::warn!("HeadObject failed for key '{}': {:?} – defaulting to application/octet-stream",object_key,e);
+                log::warn!(
+                    "HeadObject failed for key '{}': {:?} – defaulting to application/octet-stream",
+                    object_key,
+                    e
+                );
                 "application/octet-stream".to_string()
             });
 
         let mime_type = MimeType::from_content_type(&content_type);
 
-        log::info!("Saving person_media – person_id={} person_uuid={} album={} mime={} key={}",person_id,person_uuid,album,content_type,object_key);
+        log::info!(
+            "Saving person_media – person_id={} person_uuid={} album={} mime={} key={}",
+            person_id,
+            person_uuid,
+            album,
+            content_type,
+            object_key
+        );
 
         // ---- Persist to person_media ----
-        let media = PersonMedia::new(person_id,person_uuid.to_string(),mime_type,album.to_string(),object_key.to_string());
+        let media = PersonMedia::new(
+            person_id,
+            person_uuid.to_string(),
+            mime_type,
+            album.to_string(),
+            object_key.to_string(),
+        );
 
         let persist_result = PersonMediaGateway::save(db, media).await;
 
         match persist_result {
             Ok(active_model) => {
                 let saved_media = PersonMediaEntityMapper::from_active_model(active_model);
-                log::info!("Saved person_media record with id={}",saved_media.id.unwrap());
+                log::info!(
+                    "Saved person_media record with id={}",
+                    saved_media.id.unwrap()
+                );
             }
             Err(e) => {
                 // Check for duplicate-key / unique-constraint violation and treat
@@ -286,7 +318,10 @@ impl SqsConsumerUseCase {
                 }
                 // Genuine transient DB error – propagate for retry
                 log::error!("Failed to persist person_media to DB: {:?}", e);
-                return Err(BusinessError::new(format!("Failed to persist media record {}", err_str)));
+                return Err(BusinessError::new(format!(
+                    "Failed to persist media record {}",
+                    err_str
+                )));
             }
         }
 
@@ -322,7 +357,12 @@ impl SqsConsumerUseCase {
         };
 
         if let Err(e) = update_result {
-            log::error!("Could not sync person.{} for person_id={}: {:?}",album,person_id,e);
+            log::error!(
+                "Could not sync person.{} for person_id={}: {:?}",
+                album,
+                person_id,
+                e
+            );
         }
     }
 

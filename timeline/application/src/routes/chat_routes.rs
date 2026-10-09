@@ -1,9 +1,9 @@
 use crate::authentication::authentication_middleware::authentication;
 use crate::authentication::rate_limit::rate_limit;
-use business::commons::rate_limit::chat_limiter;
-use crate::{http, AppState};
+use crate::{AppState, http};
 use axum::routing::{get, post, put};
-use axum::{middleware, Router};
+use axum::{Router, middleware};
+use business::commons::rate_limit::chat_limiter;
 
 pub fn chat_routes(state: AppState) -> Router<AppState> {
     let auth = || middleware::from_fn_with_state(state.clone(), authentication);

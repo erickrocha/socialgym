@@ -121,8 +121,20 @@ fn team_member_round_trip_preserves_status() {
 #[test]
 fn collection_helpers_map_every_element() {
     let countries = vec![
-        Country { id: Some(1), ddi: "+1".into(), name: "A".into(), acronym: "A".into(), currency: "X".into() },
-        Country { id: Some(2), ddi: "+2".into(), name: "B".into(), acronym: "B".into(), currency: "Y".into() },
+        Country {
+            id: Some(1),
+            ddi: "+1".into(),
+            name: "A".into(),
+            acronym: "A".into(),
+            currency: "X".into(),
+        },
+        Country {
+            id: Some(2),
+            ddi: "+2".into(),
+            name: "B".into(),
+            acronym: "B".into(),
+            currency: "Y".into(),
+        },
     ];
 
     let json = CountryMapper::json_vec(countries);
@@ -130,5 +142,8 @@ fn collection_helpers_map_every_element() {
     assert!(CountryMapper::json_opt(None).is_none());
 
     let back = CountryMapper::domain_vec(json);
-    assert_eq!(back.iter().map(|c| c.id).collect::<Vec<_>>(), vec![Some(1), Some(2)]);
+    assert_eq!(
+        back.iter().map(|c| c.id).collect::<Vec<_>>(),
+        vec![Some(1), Some(2)]
+    );
 }

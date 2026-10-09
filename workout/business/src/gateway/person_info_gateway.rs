@@ -42,7 +42,10 @@ impl PersonInfoGateway {
     }
 
     /// Bulk-deletes the person-info row for a person (account-purge cascade).
-    pub async fn delete_by_person_id<C: ConnectionTrait>(db: &C, person_id: i32) -> Result<DeleteResult, DbErr> {
+    pub async fn delete_by_person_id<C: ConnectionTrait>(
+        db: &C,
+        person_id: i32,
+    ) -> Result<DeleteResult, DbErr> {
         PersonInfoQuery::delete_many()
             .filter(person_info::Column::PersonId.eq(person_id))
             .exec(db)

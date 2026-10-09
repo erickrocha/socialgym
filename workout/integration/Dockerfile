@@ -39,6 +39,8 @@ COPY --from=builder /app/target/release/integration /usr/local/bin/integration
 
 EXPOSE 50051
 
+USER nobody
+
 # TCP-connect liveness check - the gRPC listener has no HTTP health endpoint,
 # so this just confirms the process is up and accepting connections.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \

@@ -310,17 +310,13 @@ async fn start() -> anyhow::Result<()> {
         .merge(welcome_route())
         .route(
             "/legal/documents",
-            get(http::legal_document_controller::list).route_layer(middleware::from_fn_with_state(
-                legal_limiter(),
-                rate_limit,
-            )),
+            get(http::legal_document_controller::list)
+                .route_layer(middleware::from_fn_with_state(legal_limiter(), rate_limit)),
         )
         .route(
             "/legal/documents/{document}",
-            get(http::legal_document_controller::get).route_layer(middleware::from_fn_with_state(
-                legal_limiter(),
-                rate_limit,
-            )),
+            get(http::legal_document_controller::get)
+                .route_layer(middleware::from_fn_with_state(legal_limiter(), rate_limit)),
         )
         .merge(auth_routes(state.clone()))
         // API routes with authentication - nested organization
@@ -371,7 +367,9 @@ mod openapi_tests {
 
     #[test]
     fn refresh_documents_internal_server_error_response() {
-        let document = ApiDoc::openapi().to_json().expect("OpenAPI document serializes");
+        let document = ApiDoc::openapi()
+            .to_json()
+            .expect("OpenAPI document serializes");
         let document: serde_json::Value =
             serde_json::from_str(&document).expect("OpenAPI document is valid JSON");
         let response = &document["paths"]["/refresh"]["post"]["responses"]["500"];

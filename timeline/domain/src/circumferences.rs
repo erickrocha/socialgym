@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Circumferences {
-
     #[serde(rename = "_id")]
     pub uuid: String,
     #[serde(default)]
@@ -67,10 +66,9 @@ impl Thighs {
 }
 
 impl Circumferences {
-
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        uuid:String,
+        uuid: String,
         neck: f64,
         chest: f64,
         waist: f64,

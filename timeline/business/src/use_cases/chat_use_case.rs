@@ -1,18 +1,18 @@
 use domain::business_error::BusinessError;
 use domain::conversation::{
-    team_participants, Conversation, ConversationParticipant, LastMessagePreview,
     CONVERSATION_TYPE_BUSINESS_DIRECT, CONVERSATION_TYPE_BUSINESS_TEAM_GROUP,
-    CONVERSATION_TYPE_DIRECT_PERSON,
+    CONVERSATION_TYPE_DIRECT_PERSON, Conversation, ConversationParticipant, LastMessagePreview,
+    team_participants,
 };
 use domain::in_app_notification::InAppNotification;
 use domain::message::{
-    Message, MessageMedia, MESSAGE_MEDIA_TYPE_IMAGE, SENDER_KIND_BUSINESS_PROFILE,
+    MESSAGE_MEDIA_TYPE_IMAGE, Message, MessageMedia, SENDER_KIND_BUSINESS_PROFILE,
     SENDER_KIND_PERSON,
 };
 use domain::user::User;
 use futures::stream::StreamExt;
-use mongodb::bson::DateTime;
 use mongodb::Database;
+use mongodb::bson::DateTime;
 use uuid::Uuid;
 
 use crate::commons::grpc_config::GrpcConfig;
@@ -66,12 +66,18 @@ impl ChatUseCase {
     /// A conversation just created or fetched, shown the way the list shows it: the business
     /// logo as a signed URL and nothing unread for the caller.
     pub async fn view_of(mut conversation: Conversation) -> ConversationView {
-        if let Some(key) = conversation.business_profile_logo_object_key.clone().filter(|key| !key.is_empty()) {
-            if let Ok(url) = MediaUseCase::generate_cloud_front_signed_url(&key).await {
-                conversation.business_profile_logo_object_key = Some(url);
-            }
+        if let Some(key) = conversation
+            .business_profile_logo_object_key
+            .clone()
+            .filter(|key| !key.is_empty())
+            && let Ok(url) = MediaUseCase::generate_cloud_front_signed_url(&key).await
+        {
+            conversation.business_profile_logo_object_key = Some(url);
         }
-        ConversationView { conversation, unread: false }
+        ConversationView {
+            conversation,
+            unread: false,
+        }
     }
 
     pub async fn get_or_create_direct(
@@ -84,7 +90,9 @@ impl ChatUseCase {
             return Err(BusinessError::validation("targetPersonUuid is required"));
         }
         if target == user.person_uuid {
-            return Err(BusinessError::validation("Cannot start a chat with yourself"));
+            return Err(BusinessError::validation(
+                "Cannot start a chat with yourself",
+            ));
         }
 
         let friends = FriendGateway::new(GrpcConfig::build_endpoint())
@@ -124,17 +132,17 @@ impl ChatUseCase {
 
         let roster = Self::load_roster(bp).await?;
         if !roster.allows(&user.person_uuid) {
-            return Err(BusinessError::forbidden(
-                "You are not part of this team",
-            ));
+            return Err(BusinessError::forbidden("You are not part of this team"));
         }
 
         let dedupe_key = business_team_group_dedupe_key(bp);
         let gateway = ConversationGateway::new(db);
 
         if let Some(existing) = gateway.find_by_dedupe_key(&dedupe_key).await? {
-            let (uuids, participants) =
-                team_participants(&roster.owner_person_uuid, &roster.accepted_member_person_uuids);
+            let (uuids, participants) = team_participants(
+                &roster.owner_person_uuid,
+                &roster.accepted_member_person_uuids,
+            );
             gateway
                 .sync_participants(&existing.uuid, uuids, participants)
                 .await?;
@@ -169,7 +177,8 @@ impl ChatUseCase {
         }
 
         let roster = Self::load_roster(bp).await?;
-        let member = resolve_business_direct_member(&roster, &user.person_uuid, member_person_uuid)?;
+        let member =
+            resolve_business_direct_member(&roster, &user.person_uuid, member_person_uuid)?;
 
         let dedupe_key = business_direct_dedupe_key(bp, &member);
         let gateway = ConversationGateway::new(db);
@@ -199,18 +208,22 @@ impl ChatUseCase {
         user: &User,
         candidates: Vec<String>,
     ) -> Result<Vec<String>, BusinessError> {
-        let mut visible: std::collections::HashSet<String> = FriendGateway::new(GrpcConfig::build_endpoint())
-            .find_friend_uuids(user.person_id, &user.person_uuid)
-            .await?
-            .into_iter()
-            .collect();
+        let mut visible: std::collections::HashSet<String> =
+            FriendGateway::new(GrpcConfig::build_endpoint())
+                .find_friend_uuids(user.person_id, &user.person_uuid)
+                .await?
+                .into_iter()
+                .collect();
         for conversation in ConversationGateway::new(db)
             .find_for_participant(&user.person_uuid, 0, 200)
             .await?
         {
             visible.extend(conversation.participant_person_uuids);
         }
-        Ok(candidates.into_iter().filter(|uuid| visible.contains(uuid)).collect())
+        Ok(candidates
+            .into_iter()
+            .filter(|uuid| visible.contains(uuid))
+            .collect())
     }
 
     pub async fn list_conversations(
@@ -232,7 +245,10 @@ impl ChatUseCase {
                 .find(|p| p.person_uuid == user.person_uuid)
                 .map(|p| unread_for_participant(p, &conversation.last_message))
                 .unwrap_or(false);
-            views.push(ConversationView { conversation, unread });
+            views.push(ConversationView {
+                conversation,
+                unread,
+            });
         }
         Ok(views)
     }
@@ -300,12 +316,13 @@ impl ChatUseCase {
 
         match conversation.conversation_type.as_str() {
             CONVERSATION_TYPE_DIRECT_PERSON => {
-                let other = other_direct_participant(&conversation, &user.person_uuid)
-                    .ok_or_else(|| BusinessError::infrastructure("Malformed direct conversation"))?;
+                let other = other_direct_participant(&conversation, &user.person_uuid).ok_or_else(
+                    || BusinessError::infrastructure("Malformed direct conversation"),
+                )?;
                 let friends = FriendGateway::new(GrpcConfig::build_endpoint())
                     .find_friend_uuids(user.person_id, &user.person_uuid)
                     .await?;
-                if !friends.iter().any(|u| *u == other) {
+                if !friends.contains(&other) {
                     return Err(BusinessError::forbidden(
                         "You are no longer friends with this person",
                     ));
@@ -315,7 +332,9 @@ impl ChatUseCase {
                 let bp_uuid = conversation
                     .business_profile_uuid
                     .as_deref()
-                    .ok_or_else(|| BusinessError::infrastructure("Malformed business conversation"))?;
+                    .ok_or_else(|| {
+                        BusinessError::infrastructure("Malformed business conversation")
+                    })?;
                 let roster = Self::load_roster(bp_uuid).await?;
                 if !roster.allows(&user.person_uuid) {
                     return Err(BusinessError::forbidden(
@@ -482,12 +501,12 @@ impl ChatUseCase {
     }
 
     async fn hydrate_conversation_logo(conversation: &mut Conversation) {
-        if let Some(key) = conversation.business_profile_logo_object_key.clone() {
-            if !key.is_empty() {
-                match MediaUseCase::generate_cloud_front_signed_url(&key).await {
-                    Ok(url) => conversation.business_profile_logo_object_key = Some(url),
-                    Err(e) => log::error!("Failed to sign conversation logo: {}", e.message),
-                }
+        if let Some(key) = conversation.business_profile_logo_object_key.clone()
+            && !key.is_empty()
+        {
+            match MediaUseCase::generate_cloud_front_signed_url(&key).await {
+                Ok(url) => conversation.business_profile_logo_object_key = Some(url),
+                Err(e) => log::error!("Failed to sign conversation logo: {}", e.message),
             }
         }
     }
@@ -500,7 +519,10 @@ impl ChatUseCase {
             let keys: Vec<String> = message.media.iter().map(|m| m.object_key.clone()).collect();
             let results = futures::stream::iter(keys.into_iter().enumerate())
                 .map(|(idx, key)| async move {
-                    (idx, MediaUseCase::generate_cloud_front_signed_url(&key).await)
+                    (
+                        idx,
+                        MediaUseCase::generate_cloud_front_signed_url(&key).await,
+                    )
                 })
                 .buffer_unordered(SIGNED_URL_CONCURRENCY)
                 .collect::<Vec<(usize, Result<String, BusinessError>)>>()
@@ -545,7 +567,9 @@ pub fn page_skip(page: u32, page_size: u64) -> u64 {
 pub fn validate_message(body: &str, media: &[MessageMedia]) -> Result<String, BusinessError> {
     let trimmed = body.trim().to_string();
     if trimmed.is_empty() && media.is_empty() {
-        return Err(BusinessError::validation("Message must have text or an image"));
+        return Err(BusinessError::validation(
+            "Message must have text or an image",
+        ));
     }
     if trimmed.chars().count() > MAX_BODY_LEN {
         return Err(BusinessError::validation(format!(
@@ -557,11 +581,18 @@ pub fn validate_message(body: &str, media: &[MessageMedia]) -> Result<String, Bu
             "At most {MAX_MEDIA_PER_MESSAGE} images per message"
         )));
     }
-    if media.iter().any(|m| m.media_type != MESSAGE_MEDIA_TYPE_IMAGE) {
-        return Err(BusinessError::validation("Only image attachments are allowed"));
+    if media
+        .iter()
+        .any(|m| m.media_type != MESSAGE_MEDIA_TYPE_IMAGE)
+    {
+        return Err(BusinessError::validation(
+            "Only image attachments are allowed",
+        ));
     }
     if media.iter().any(|m| m.object_key.trim().is_empty()) {
-        return Err(BusinessError::validation("Attachment is missing its object key"));
+        return Err(BusinessError::validation(
+            "Attachment is missing its object key",
+        ));
     }
     Ok(trimmed)
 }
@@ -602,7 +633,10 @@ pub fn other_direct_participant(conversation: &Conversation, me: &str) -> Option
         .cloned()
 }
 
-pub fn ensure_participant(conversation: &Conversation, person_uuid: &str) -> Result<(), BusinessError> {
+pub fn ensure_participant(
+    conversation: &Conversation,
+    person_uuid: &str,
+) -> Result<(), BusinessError> {
     if conversation
         .participant_person_uuids
         .iter()
@@ -610,7 +644,9 @@ pub fn ensure_participant(conversation: &Conversation, person_uuid: &str) -> Res
     {
         return Ok(());
     }
-    Err(BusinessError::forbidden("Not a participant of this conversation"))
+    Err(BusinessError::forbidden(
+        "Not a participant of this conversation",
+    ))
 }
 
 /// A business thread message is attributed to the business profile only when
@@ -621,10 +657,11 @@ pub fn resolve_send_as_business(
     caller_person_uuid: &str,
     owner_person_uuid: &str,
 ) -> bool {
-    match (active_business_profile_uuid, conversation_business_profile_uuid) {
-        (Some(active), Some(conv)) => {
-            active == conv && caller_person_uuid == owner_person_uuid
-        }
+    match (
+        active_business_profile_uuid,
+        conversation_business_profile_uuid,
+    ) {
+        (Some(active), Some(conv)) => active == conv && caller_person_uuid == owner_person_uuid,
         _ => false,
     }
 }

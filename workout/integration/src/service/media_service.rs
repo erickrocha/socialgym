@@ -20,19 +20,40 @@ impl GrpcMediaService {
 
 #[tonic::async_trait]
 impl MediaService for GrpcMediaService {
-    async fn get_post_media_upload_url(&self, request: Request<MediaUploadRequest>) -> Result<Response<MediaUploadResponse>, Status> {
+    async fn get_post_media_upload_url(
+        &self,
+        request: Request<MediaUploadRequest>,
+    ) -> Result<Response<MediaUploadResponse>, Status> {
         let locale = locale_of(&request);
         let person_id = require_person_id(&request)?;
         let payload = request.into_inner();
         if payload.album.is_empty() {
-            return Err(localized_status(Code::InvalidArgument, ErrorKey::RequiredParameterMissing, locale));
+            return Err(localized_status(
+                Code::InvalidArgument,
+                ErrorKey::RequiredParameterMissing,
+                locale,
+            ));
         }
-        let format = if payload.format.is_empty() { "image/jpeg".to_string() } else { payload.format };
+        let format = if payload.format.is_empty() {
+            "image/jpeg".to_string()
+        } else {
+            payload.format
+        };
         PersonMediaUseCase::generate_upload_url(&self.conn, person_id, payload.album, format)
             .await
             .map(|image_storage| {
-                Response::new(MediaUploadResponse { url: image_storage.url, object_key: image_storage.object_key, person_id })
+                Response::new(MediaUploadResponse {
+                    url: image_storage.url,
+                    object_key: image_storage.object_key,
+                    person_id,
+                })
             })
-            .map_err(|_| localized_status(Code::InvalidArgument, ErrorKey::PreSignedUrlNotGenerated, locale))
+            .map_err(|_| {
+                localized_status(
+                    Code::InvalidArgument,
+                    ErrorKey::PreSignedUrlNotGenerated,
+                    locale,
+                )
+            })
     }
 }

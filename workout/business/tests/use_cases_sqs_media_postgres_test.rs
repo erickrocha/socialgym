@@ -12,11 +12,27 @@ fn event(bucket: &str, name: &str, key: &str) -> String {
 }
 
 async fn put(bucket: &str, key: &str, content_type: &str) {
-    s3_client().await.put_object().bucket(bucket).key(key).content_type(content_type).body(b"abc".to_vec().into()).send().await.unwrap();
+    s3_client()
+        .await
+        .put_object()
+        .bucket(bucket)
+        .key(key)
+        .content_type(content_type)
+        .body(b"abc".to_vec().into())
+        .send()
+        .await
+        .unwrap();
 }
 
 async fn send(queue: &str, body: String) {
-    sqs_client().await.send_message().queue_url(queue).message_body(body).send().await.unwrap();
+    sqs_client()
+        .await
+        .send_message()
+        .queue_url(queue)
+        .message_body(body)
+        .send()
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
@@ -43,10 +59,26 @@ async fn media_events_are_persisted_idempotently_and_sync_the_person_images() {
     send(&queue, event(&bucket, "ObjectCreated:Put", &cover)).await;
     send(&queue, event(&bucket, "ObjectCreated:Put", &gallery)).await;
     send(&queue, event(&bucket, "ObjectCreated:Put", &avatar)).await; // duplicate delivery
-    send(&queue, event(&bucket, "ObjectCreated:Put", &gallery.replace('/', "%2F"))).await; // keys arrive URL-encoded
+    send(
+        &queue,
+        event(&bucket, "ObjectCreated:Put", &gallery.replace('/', "%2F")),
+    )
+    .await; // keys arrive URL-encoded
     send(&queue, event(&bucket, "ObjectRemoved:Delete", &avatar)).await; // not a creation
-    send(&queue, event(&bucket, "ObjectCreated:Put", "uploads/owner-1/loose-file")).await; // not an album path
-    send(&queue, event(&bucket, "ObjectCreated:Put", &format!("person/{}/avatar/x", uuid::Uuid::new_v4()))).await; // unknown person
+    send(
+        &queue,
+        event(&bucket, "ObjectCreated:Put", "uploads/owner-1/loose-file"),
+    )
+    .await; // not an album path
+    send(
+        &queue,
+        event(
+            &bucket,
+            "ObjectCreated:Put",
+            &format!("person/{}/avatar/x", uuid::Uuid::new_v4()),
+        ),
+    )
+    .await; // unknown person
     send(&queue, "this is not json".to_string()).await; // malformed
     send(&queue, json!({ "Type": "Notification", "Message": event(&bucket, "ObjectCreated:Put", &format!("person/{me}/gallery/{}", uuid::Uuid::new_v4())) }).to_string()).await; // SNS envelope
 
@@ -54,16 +86,39 @@ async fn media_events_are_persisted_idempotently_and_sync_the_person_images() {
     let mut handled = 0;
     for _ in 0..4 {
         handled += SqsConsumerUseCase::poll_and_process(&db).await.unwrap();
-        if handled >= 10 { break; }
+        if handled >= 10 {
+            break;
+        }
     }
     assert_eq!(handled, 10);
 
     let stored = person_media_entity::Entity::find().all(&db).await.unwrap();
-    assert_eq!(stored.len(), 4, "avatar, cover, gallery and the SNS-wrapped gallery item; duplicates and skips add nothing");
-    assert!(stored.iter().any(|m| m.s3_key == gallery && m.album == "gallery"));
-    assert!(stored.iter().any(|m| m.mime_type == "application/octet-stream"), "an object S3 cannot describe is stored as octet-stream instead of poisoning the queue");
-    let row = person_entity::Entity::find_by_id(person.person_id).one(&db).await.unwrap().unwrap();
+    assert_eq!(
+        stored.len(),
+        4,
+        "avatar, cover, gallery and the SNS-wrapped gallery item; duplicates and skips add nothing"
+    );
+    assert!(stored
+        .iter()
+        .any(|m| m.s3_key == gallery && m.album == "gallery"));
+    assert!(
+        stored
+            .iter()
+            .any(|m| m.mime_type == "application/octet-stream"),
+        "an object S3 cannot describe is stored as octet-stream instead of poisoning the queue"
+    );
+    let row = person_entity::Entity::find_by_id(person.person_id)
+        .one(&db)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(row.avatar.as_deref(), Some(avatar.as_str()));
     assert_eq!(row.cover_image.as_deref(), Some(cover.as_str()));
-    assert_eq!(person_media_entity::Entity::find().count(&db).await.unwrap(), 4);
+    assert_eq!(
+        person_media_entity::Entity::find()
+            .count(&db)
+            .await
+            .unwrap(),
+        4
+    );
 }

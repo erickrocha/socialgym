@@ -2,8 +2,9 @@ use crate::infrastructure::mapper::{ConsentMapper, Mapper};
 use crate::infrastructure::utils::{locale_of, localized_business_status, require_actor};
 use crate::proto::consent::consent_service_server::ConsentService;
 use crate::proto::consent::{
-    AcceptConsentRequest, Consent, ListConsentsRequest, ListConsentsResponse, ListPendingConsentsRequest,
-    ListPendingConsentsResponse, PendingConsent, RevokeConsentRequest, RevokeConsentResponse,
+    AcceptConsentRequest, Consent, ListConsentsRequest, ListConsentsResponse,
+    ListPendingConsentsRequest, ListPendingConsentsResponse, PendingConsent, RevokeConsentRequest,
+    RevokeConsentResponse,
 };
 use business::commons::i18n::ErrorKey;
 use business::domain::business_error::BusinessErrorKind;
@@ -25,45 +26,81 @@ impl GrpcConsentService {
 }
 
 fn header<T>(request: &Request<T>, name: &str) -> Option<String> {
-    request.metadata().get(name).and_then(|value| value.to_str().ok()).map(str::to_string)
+    request
+        .metadata()
+        .get(name)
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_string)
 }
 
 #[tonic::async_trait]
 impl ConsentService for GrpcConsentService {
-    async fn list_consents(&self, request: Request<ListConsentsRequest>) -> Result<Response<ListConsentsResponse>, Status> {
+    async fn list_consents(
+        &self,
+        request: Request<ListConsentsRequest>,
+    ) -> Result<Response<ListConsentsResponse>, Status> {
         let (locale, user) = (locale_of(&request), require_actor(&request)?);
         let rows = ConsentUseCase::list(&self.conn, user.person_id)
             .await
             .map_err(|e| localized_business_status(e, ErrorKey::ConsentOperationFailed, locale))?;
-        Ok(Response::new(ListConsentsResponse { consents: ConsentMapper::response_vec(rows) }))
+        Ok(Response::new(ListConsentsResponse {
+            consents: ConsentMapper::response_vec(rows),
+        }))
     }
 
-    async fn list_pending_consents(&self, request: Request<ListPendingConsentsRequest>) -> Result<Response<ListPendingConsentsResponse>, Status> {
+    async fn list_pending_consents(
+        &self,
+        request: Request<ListPendingConsentsRequest>,
+    ) -> Result<Response<ListPendingConsentsResponse>, Status> {
         let (locale, user) = (locale_of(&request), require_actor(&request)?);
         let rows = ConsentUseCase::pending(&self.conn, user.person_id)
             .await
             .map_err(|e| localized_business_status(e, ErrorKey::ConsentOperationFailed, locale))?;
         let pending = rows
             .into_iter()
-            .map(|row| PendingConsent { document: row.document, current_version: row.current_version, accepted_version: row.accepted_version })
+            .map(|row| PendingConsent {
+                document: row.document,
+                current_version: row.current_version,
+                accepted_version: row.accepted_version,
+            })
             .collect();
         Ok(Response::new(ListPendingConsentsResponse { pending }))
     }
 
-    async fn accept_consent(&self, request: Request<AcceptConsentRequest>) -> Result<Response<Consent>, Status> {
+    async fn accept_consent(
+        &self,
+        request: Request<AcceptConsentRequest>,
+    ) -> Result<Response<Consent>, Status> {
         let (locale, user) = (locale_of(&request), require_actor(&request)?);
-        let ip = acceptance_ip(header(&request, "x-real-ip").as_deref(), header(&request, "x-forwarded-for").as_deref());
+        let ip = acceptance_ip(
+            header(&request, "x-real-ip").as_deref(),
+            header(&request, "x-forwarded-for").as_deref(),
+        );
         let payload = request.into_inner();
-        ConsentUseCase::accept_confirmed(&self.conn, user.person_id, &payload.document, &payload.version, payload.accepted, &ip)
-            .await
-            .map(|row| Response::new(ConsentMapper::response(row)))
-            .map_err(|e| {
-                let key = if e.kind == BusinessErrorKind::Validation { ErrorKey::ConsentRequired } else { ErrorKey::ConsentOperationFailed };
-                localized_business_status(e, key, locale)
-            })
+        ConsentUseCase::accept_confirmed(
+            &self.conn,
+            user.person_id,
+            &payload.document,
+            &payload.version,
+            payload.accepted,
+            &ip,
+        )
+        .await
+        .map(|row| Response::new(ConsentMapper::response(row)))
+        .map_err(|e| {
+            let key = if e.kind == BusinessErrorKind::Validation {
+                ErrorKey::ConsentRequired
+            } else {
+                ErrorKey::ConsentOperationFailed
+            };
+            localized_business_status(e, key, locale)
+        })
     }
 
-    async fn revoke_consent(&self, request: Request<RevokeConsentRequest>) -> Result<Response<RevokeConsentResponse>, Status> {
+    async fn revoke_consent(
+        &self,
+        request: Request<RevokeConsentRequest>,
+    ) -> Result<Response<RevokeConsentResponse>, Status> {
         let (locale, user) = (locale_of(&request), require_actor(&request)?);
         ConsentUseCase::revoke_for_user(&self.conn, &user, &request.into_inner().document)
             .await

@@ -1,6 +1,7 @@
 use crate::infrastructure::mapper::{Mapper, PersonAddressMapper, PersonInfoMapper, PersonMapper};
-use crate::infrastructure::utils::{business_status, locale_of, localized_status, require_actor, require_person_id, validate_uuid};
-use business::commons::i18n::ErrorKey;
+use crate::infrastructure::utils::{
+    business_status, locale_of, localized_status, require_actor, require_person_id, validate_uuid,
+};
 use crate::proto::person::person_id_request::Identifier;
 use crate::proto::person::person_params::ParamIdentifier;
 use crate::proto::person::person_service_server::PersonService;
@@ -11,6 +12,7 @@ use crate::proto::person::{
     RemovePersonAddressResponse, RoleStatusRequest, RoleStatusResponse,
     SearchMentionableFriendsRequest,
 };
+use business::commons::i18n::ErrorKey;
 use business::commons::legal_documents;
 use business::domain::person::Person as DomainPerson;
 use business::domain::user::User;
@@ -130,7 +132,9 @@ impl PersonService for GrpcPersonService {
                     .await
                     .map_err(business_status)?;
                 business::commons::authorization::ensure_owns(
-                    person.id.ok_or_else(|| Status::internal("person id missing"))?,
+                    person
+                        .id
+                        .ok_or_else(|| Status::internal("person id missing"))?,
                     actor_id,
                 )
                 .map_err(crate::infrastructure::utils::business_status)?;
@@ -175,7 +179,8 @@ impl PersonService for GrpcPersonService {
         }
 
         // The friends of a person are searched only by that person, as the REST route requires.
-        PersonUseCase::require_owner_access(payload.person_id, actor.person_id).map_err(business_status)?;
+        PersonUseCase::require_owner_access(payload.person_id, actor.person_id)
+            .map_err(business_status)?;
 
         let query = payload.query.trim().trim_start_matches('@').to_string();
         if query.is_empty() {
@@ -367,11 +372,17 @@ impl PersonService for GrpcPersonService {
                 .map_err(business_status)?;
         } else if !payload.uuid.is_empty() {
             validate_uuid(&payload.uuid, "uuid")?;
-            PersonAddressUseCase::delete_person_address_by_uuid(&self.conn, payload.uuid, person_id)
-                .await
-                .map_err(business_status)?;
+            PersonAddressUseCase::delete_person_address_by_uuid(
+                &self.conn,
+                payload.uuid,
+                person_id,
+            )
+            .await
+            .map_err(business_status)?;
         } else {
-            return Err(Status::invalid_argument("either id or uuid must be informed"));
+            return Err(Status::invalid_argument(
+                "either id or uuid must be informed",
+            ));
         }
 
         Ok(Response::new(RemovePersonAddressResponse { success: true }))
@@ -395,7 +406,13 @@ impl PersonService for GrpcPersonService {
         let image_storage =
             PersonUseCase::upload_person_image(&self.conn, person_id, image_type, format)
                 .await
-                .map_err(|_| localized_status(tonic::Code::InvalidArgument, ErrorKey::PersonPreSignedUrlNotGenerated, locale))?;
+                .map_err(|_| {
+                    localized_status(
+                        tonic::Code::InvalidArgument,
+                        ErrorKey::PersonPreSignedUrlNotGenerated,
+                        locale,
+                    )
+                })?;
 
         Ok(Response::new(PersonImageUploadResponse {
             url: image_storage.url,
@@ -416,7 +433,13 @@ impl PersonService for GrpcPersonService {
 
         PersonUseCase::delete_person_image(&self.conn, person_id, image_type)
             .await
-            .map_err(|_| localized_status(tonic::Code::InvalidArgument, ErrorKey::PersonPreSignedUrlNotDeleted, locale))?;
+            .map_err(|_| {
+                localized_status(
+                    tonic::Code::InvalidArgument,
+                    ErrorKey::PersonPreSignedUrlNotDeleted,
+                    locale,
+                )
+            })?;
 
         Ok(Response::new(DeletePersonImageResponse { success: true }))
     }

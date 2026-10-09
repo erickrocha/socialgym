@@ -4,8 +4,8 @@ use crate::gateway::role_gateway::RoleGateway;
 use crate::repositories::repository::Repository;
 use crate::use_cases::post_use_case::PostUseCase;
 use domain::business_error::BusinessError;
-use domain::user::User;
 use domain::content_report::{ContentReport, ModerationEvent};
+use domain::user::User;
 use mongodb::Database;
 use mongodb::bson::DateTime;
 
@@ -28,7 +28,9 @@ impl ContentReportUseCase {
             return Err(BusinessError::validation("invalid content report"));
         }
         // Only a reader of the post can report it; the target must be part of that post.
-        let post = PostUseCase::load_readable(db, &post_id, reporter.person_id, &reporter.person_uuid).await?;
+        let post =
+            PostUseCase::load_readable(db, &post_id, reporter.person_id, &reporter.person_uuid)
+                .await?;
         let target_in_post = match target_type.as_str() {
             "post" => target_id == post.uuid,
             "comment" => post.comments.iter().any(|c| c.uuid == target_id),

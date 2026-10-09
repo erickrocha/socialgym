@@ -64,10 +64,17 @@ impl ExerciseUseCase {
         let existing = WorkoutExerciseGateway::find_by_workout_id(db, workout_id)
             .await
             .map_err(|e| {
-                log::error!("Error loading existing workout_exercise associations: {}", e);
+                log::error!(
+                    "Error loading existing workout_exercise associations: {}",
+                    e
+                );
                 BusinessError::new("Error associating exercises with workout".to_string())
             })?;
-        let mut next_index = existing.iter().map(|we| we.order_index + 1).max().unwrap_or(0);
+        let mut next_index = existing
+            .iter()
+            .map(|we| we.order_index + 1)
+            .max()
+            .unwrap_or(0);
         let mut associations: Vec<WorkoutExercise> = Vec::with_capacity(resolved.len());
         for exercise in &resolved {
             let exercise_id = exercise.id.unwrap();
@@ -160,7 +167,16 @@ impl ExerciseUseCase {
         if let Some(id) = exercise.id {
             let existing = Self::get(db, id).await?;
             if let Err(denied) = ensure_owns_as(existing.owner_id, &existing.owner_uuid, &acting) {
-                return Err(deny_or_hide(db, denied, &existing.visibility, existing.owner_id, &existing.owner_uuid, &acting, "Exercise").await);
+                return Err(deny_or_hide(
+                    db,
+                    denied,
+                    &existing.visibility,
+                    existing.owner_id,
+                    &existing.owner_uuid,
+                    &acting,
+                    "Exercise",
+                )
+                .await);
             }
         }
 
@@ -168,7 +184,11 @@ impl ExerciseUseCase {
         // would reject this anyway, but a validation error is friendlier than a
         // raw DB error surfacing to the client.
         const MAX_DESCRIPTION_LEN: usize = 255;
-        if exercise.description.as_deref().is_some_and(|d| d.len() > MAX_DESCRIPTION_LEN) {
+        if exercise
+            .description
+            .as_deref()
+            .is_some_and(|d| d.len() > MAX_DESCRIPTION_LEN)
+        {
             return Err(BusinessError::validation(format!(
                 "description must be at most {MAX_DESCRIPTION_LEN} characters"
             )));
@@ -194,8 +214,14 @@ impl ExerciseUseCase {
         exercise: &Exercise,
         acting: &ActingOwner,
     ) -> Result<bool, BusinessError> {
-        audience_allows(db, &exercise.visibility, exercise.owner_id, &exercise.owner_uuid, acting)
-            .await
+        audience_allows(
+            db,
+            &exercise.visibility,
+            exercise.owner_id,
+            &exercise.owner_uuid,
+            acting,
+        )
+        .await
     }
 
     /// An unreadable exercise is reported as not found, so a caller cannot tell a
@@ -331,7 +357,16 @@ impl ExerciseUseCase {
 
         let existing = Self::get(db, exercise_id).await?;
         if let Err(denied) = ensure_can_access_as(existing.owner_id, &existing.owner_uuid, acting) {
-            return Err(deny_or_hide(db, denied, &existing.visibility, existing.owner_id, &existing.owner_uuid, acting, "Exercise").await);
+            return Err(deny_or_hide(
+                db,
+                denied,
+                &existing.visibility,
+                existing.owner_id,
+                &existing.owner_uuid,
+                acting,
+                "Exercise",
+            )
+            .await);
         }
 
         let delete_result = ExerciseGateway::delete_by_id(db, exercise_id)
@@ -356,7 +391,16 @@ impl ExerciseUseCase {
 
         let existing = Self::get_by_uuid(db, uuid.clone()).await?;
         if let Err(denied) = ensure_can_access_as(existing.owner_id, &existing.owner_uuid, acting) {
-            return Err(deny_or_hide(db, denied, &existing.visibility, existing.owner_id, &existing.owner_uuid, acting, "Exercise").await);
+            return Err(deny_or_hide(
+                db,
+                denied,
+                &existing.visibility,
+                existing.owner_id,
+                &existing.owner_uuid,
+                acting,
+                "Exercise",
+            )
+            .await);
         }
 
         let delete_result = ExerciseGateway::delete_by_uuid(db, uuid.clone())

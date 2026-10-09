@@ -2,8 +2,8 @@ use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::uuid_to_string;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapper};
-use crate::domain::person::{Person, PersonEntityMapper};
 use crate::domain::enums::InviteStatus;
+use crate::domain::person::{Person, PersonEntityMapper};
 use crate::domain::team_member::{TeamMember, TeamMemberMapper};
 use crate::gateway::business_profile_gateway::BusinessProfileGateway;
 use crate::gateway::person_gateway::PersonGateway;
@@ -163,13 +163,8 @@ impl TeamMemberUseCase {
         business_profile_id: i32,
         person_id: i32,
     ) -> Result<TeamMember, BusinessError> {
-        Self::update_team_member_request(
-            db,
-            business_profile_id,
-            person_id,
-            InviteStatus::Accepted,
-        )
-        .await
+        Self::update_team_member_request(db, business_profile_id, person_id, InviteStatus::Accepted)
+            .await
     }
 
     pub async fn deny_team_member_request(
@@ -177,13 +172,8 @@ impl TeamMemberUseCase {
         business_profile_id: i32,
         person_id: i32,
     ) -> Result<TeamMember, BusinessError> {
-        Self::update_team_member_request(
-            db,
-            business_profile_id,
-            person_id,
-            InviteStatus::Rejected,
-        )
-        .await
+        Self::update_team_member_request(db, business_profile_id, person_id, InviteStatus::Rejected)
+            .await
     }
 
     pub async fn cancel_team_member_request(

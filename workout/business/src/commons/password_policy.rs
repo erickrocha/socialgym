@@ -24,16 +24,22 @@ pub fn validate(password: &str) -> Result<(), Vec<PasswordPolicyViolation>> {
     if password.len() < auth_config::password_min_length() {
         violations.push(PasswordPolicyViolation::TooShort);
     }
-    if auth_config::password_require_uppercase() && !password.chars().any(|c| c.is_ascii_uppercase()) {
+    if auth_config::password_require_uppercase()
+        && !password.chars().any(|c| c.is_ascii_uppercase())
+    {
         violations.push(PasswordPolicyViolation::MissingUppercase);
     }
-    if auth_config::password_require_lowercase() && !password.chars().any(|c| c.is_ascii_lowercase()) {
+    if auth_config::password_require_lowercase()
+        && !password.chars().any(|c| c.is_ascii_lowercase())
+    {
         violations.push(PasswordPolicyViolation::MissingLowercase);
     }
     if auth_config::password_require_digit() && !password.chars().any(|c| c.is_ascii_digit()) {
         violations.push(PasswordPolicyViolation::MissingDigit);
     }
-    if auth_config::password_require_special() && !password.chars().any(|c| !c.is_ascii_alphanumeric()) {
+    if auth_config::password_require_special()
+        && !password.chars().any(|c| !c.is_ascii_alphanumeric())
+    {
         violations.push(PasswordPolicyViolation::MissingSpecial);
     }
 

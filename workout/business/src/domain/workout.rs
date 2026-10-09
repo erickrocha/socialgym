@@ -1,11 +1,11 @@
 use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::{string_to_uuid, uuid_to_string};
 pub use crate::domain::enums::Visibility;
+use crate::domain::enums::{Difficulty, InviteStatus};
 use crate::domain::exercise::Exercise;
 use chrono::NaiveDateTime;
 use entity::workout_entity::{ActiveModel, WorkoutEntity};
 use sea_orm::{NotSet, Set};
-use crate::domain::enums::{Difficulty, InviteStatus};
 
 #[derive(Debug, Clone)]
 pub struct Workout {

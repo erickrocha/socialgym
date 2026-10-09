@@ -21,10 +21,8 @@ impl MigrationTrait for Migration {
             .await?;
         db.execute_unprepared("ALTER TABLE person_address DROP COLUMN longitude")
             .await?;
-        db.execute_unprepared(
-            "ALTER TABLE person_address RENAME COLUMN location_new TO location",
-        )
-        .await?;
+        db.execute_unprepared("ALTER TABLE person_address RENAME COLUMN location_new TO location")
+            .await?;
         db.execute_unprepared(
             "CREATE INDEX idx_person_address_location ON person_address USING GIST (location)",
         )

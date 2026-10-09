@@ -1,8 +1,8 @@
 use domain::business_error::BusinessError;
 
 use crate::commons::grpc_config::GrpcConfig;
-use crate::proto::proto::team_member::team_member_service_client::TeamMemberServiceClient;
 use crate::proto::proto::team_member::TeamRosterRequest;
+use crate::proto::proto::team_member::team_member_service_client::TeamMemberServiceClient;
 
 /// Everyone allowed inside a business profile's team chat, plus the business
 /// identity used to attribute the owner's messages.
@@ -47,12 +47,16 @@ impl TeamMemberGateway {
             .ok()
             .filter(|value| !value.is_empty())
             .and_then(|value| tonic::metadata::MetadataValue::try_from(value).ok())
-            .ok_or_else(|| BusinessError::infrastructure("INTERNAL_SERVICE_SECRET is not configured"))?;
+            .ok_or_else(|| {
+                BusinessError::infrastructure("INTERNAL_SERVICE_SECRET is not configured")
+            })?;
         let channel = GrpcConfig::create_channel(&self.endpoint).await?;
         let mut client = TeamMemberServiceClient::with_interceptor(
             channel,
             move |mut request: tonic::Request<()>| -> Result<_, tonic::Status> {
-                request.metadata_mut().insert("x-internal-secret", secret.clone());
+                request
+                    .metadata_mut()
+                    .insert("x-internal-secret", secret.clone());
                 Ok(request)
             },
         );

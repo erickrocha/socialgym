@@ -43,7 +43,11 @@ impl Related<super::workout_entity::Entity> for Entity {
     }
 
     fn via() -> Option<RelationDef> {
-        Some(super::workout_exercise_entity::Relation::Exercise.def().rev())
+        Some(
+            super::workout_exercise_entity::Relation::Exercise
+                .def()
+                .rev(),
+        )
     }
 }
 

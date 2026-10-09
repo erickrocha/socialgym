@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
@@ -47,6 +47,7 @@ const Workout = () => {
         if (person) {
             dispatch(handler.getWorkouts(person?.id));
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch once on mount
     }, [dispatch]);
 
     const handleSidebarToggle = () => {

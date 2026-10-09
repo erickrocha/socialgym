@@ -34,7 +34,8 @@ impl DataExportUseCase {
     /// The export `id` (a UUID) of `person_id`: validation error for a malformed id, not found for an
     /// export that is missing or belongs to someone else.
     pub async fn get(db: &DbConn, person_id: i32, id: &str) -> Result<DataExport, BusinessError> {
-        let uuid = uuid::Uuid::parse_str(id).map_err(|_| BusinessError::validation("Invalid export id"))?;
+        let uuid = uuid::Uuid::parse_str(id)
+            .map_err(|_| BusinessError::validation("Invalid export id"))?;
         DataExportGateway::find_owned(db, uuid, person_id)
             .await
             .map_err(|e| BusinessError::infrastructure(e.to_string()))?
@@ -42,7 +43,11 @@ impl DataExportUseCase {
     }
 
     /// The download link of a ready, unexpired export; a conflict while the export is not ready.
-    pub async fn download(db: &DbConn, person_id: i32, id: &str) -> Result<ExportDownload, BusinessError> {
+    pub async fn download(
+        db: &DbConn,
+        person_id: i32,
+        id: &str,
+    ) -> Result<ExportDownload, BusinessError> {
         let export = Self::get(db, person_id, id).await?;
         let ready = export.status == "ready" && export.expires_at.is_some_and(|at| at > Utc::now());
         let key = match export.object_key {
@@ -50,6 +55,9 @@ impl DataExportUseCase {
             _ => return Err(BusinessError::conflict("Export is not ready")),
         };
         let url = ImageStorageUseCase::export_download_url(&key).await?;
-        Ok(ExportDownload { url, expires_in_seconds: DOWNLOAD_LINK_SECONDS })
+        Ok(ExportDownload {
+            url,
+            expires_in_seconds: DOWNLOAD_LINK_SECONDS,
+        })
     }
 }

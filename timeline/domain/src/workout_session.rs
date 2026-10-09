@@ -1,9 +1,9 @@
-use mongodb::bson::{DateTime};
-use serde::{Deserialize, Serialize};
 use crate::exercise::Exercise;
+use mongodb::bson::DateTime;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
-#[serde(default,rename_all = "camelCase")]
+#[serde(default, rename_all = "camelCase")]
 pub struct WorkoutSession {
     #[serde(rename = "_id")]
     pub uuid: String,
@@ -24,4 +24,3 @@ pub struct WorkoutSession {
     #[serde(default)]
     pub total_sets: f32,
 }
-

@@ -12,10 +12,15 @@ use domain::post::Post;
 use domain::user::User;
 
 /// The posts as a feed shows them: avatar and media URLs signed.
-async fn signed_posts(posts: Vec<Post>, locale: Locale) -> Result<Vec<PostJson>, ExceptionResponse> {
+async fn signed_posts(
+    posts: Vec<Post>,
+    locale: Locale,
+) -> Result<Vec<PostJson>, ExceptionResponse> {
     let url_cache = PostUseCase::signed_urls_for(&posts)
         .await
-        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::FeedFetchFailed))?;
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::FeedFetchFailed)
+        })?;
     Ok(posts
         .into_iter()
         .map(|post| PostMapper::json(PostUseCase::with_signed_urls(post, &url_cache)))

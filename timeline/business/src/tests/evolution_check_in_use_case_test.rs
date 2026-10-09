@@ -4,7 +4,7 @@ use crate::gateway::evolution_check_in_gateway::EvolutionCheckInGatewayPort;
 use domain::business_error::BusinessError;
 use domain::enums::Visibility;
 use domain::evolution_check_in::EvolutionCheckIn;
-use mongodb::bson::{from_document, to_document, DateTime, Document};
+use mongodb::bson::{DateTime, Document, from_document, to_document};
 use std::sync::Mutex;
 
 struct FakeConsentGateway {

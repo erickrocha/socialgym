@@ -1,7 +1,7 @@
 use domain::business_error::BusinessError;
 use domain::conversation::{Conversation, ConversationParticipant, LastMessagePreview};
 use futures::stream::TryStreamExt;
-use mongodb::bson::{doc, to_bson, DateTime};
+use mongodb::bson::{DateTime, doc, to_bson};
 use mongodb::{Collection, Database};
 
 const COLLECTION_NAME: &str = "conversations";
@@ -29,10 +29,11 @@ impl ConversationGateway {
         let dedupe_key = conversation.dedupe_key.clone();
         match self.collection.insert_one(&conversation).await {
             Ok(_) => Ok(conversation),
-            Err(e) if is_duplicate_key(&e) => self
-                .find_by_dedupe_key(&dedupe_key)
-                .await?
-                .ok_or_else(|| BusinessError::infrastructure("Conversation vanished after conflict")),
+            Err(e) if is_duplicate_key(&e) => {
+                self.find_by_dedupe_key(&dedupe_key).await?.ok_or_else(|| {
+                    BusinessError::infrastructure("Conversation vanished after conflict")
+                })
+            }
             Err(e) => Err(BusinessError::infrastructure(format!(
                 "Failed to insert conversation: {e}"
             ))),
@@ -46,18 +47,14 @@ impl ConversationGateway {
         self.collection
             .find_one(doc! { "dedupeKey": dedupe_key })
             .await
-            .map_err(|e| {
-                BusinessError::infrastructure(format!("Failed to load conversation: {e}"))
-            })
+            .map_err(|e| BusinessError::infrastructure(format!("Failed to load conversation: {e}")))
     }
 
     pub async fn find_by_uuid(&self, uuid: &str) -> Result<Option<Conversation>, BusinessError> {
         self.collection
             .find_one(doc! { "_id": uuid })
             .await
-            .map_err(|e| {
-                BusinessError::infrastructure(format!("Failed to load conversation: {e}"))
-            })
+            .map_err(|e| BusinessError::infrastructure(format!("Failed to load conversation: {e}")))
     }
 
     /// Conversations visible to `person_uuid`, newest activity first, paginated.
@@ -118,9 +115,7 @@ impl ConversationGateway {
             )
             .await
             .map(|_| ())
-            .map_err(|e| {
-                BusinessError::infrastructure(format!("Failed to set last message: {e}"))
-            })
+            .map_err(|e| BusinessError::infrastructure(format!("Failed to set last message: {e}")))
     }
 
     /// Marks the conversation read up to `last_read_message_uuid` for one
@@ -212,9 +207,7 @@ impl ConversationGateway {
             )
             .await
             .map(|_| ())
-            .map_err(|e| {
-                BusinessError::infrastructure(format!("Failed to sync participants: {e}"))
-            })
+            .map_err(|e| BusinessError::infrastructure(format!("Failed to sync participants: {e}")))
     }
 
     /// Account-deletion cascade: drops the person from every conversation and

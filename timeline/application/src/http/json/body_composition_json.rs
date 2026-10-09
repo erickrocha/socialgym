@@ -4,8 +4,6 @@ use utoipa::ToSchema;
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct BodyCompositionJson {
-
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uuid: Option<String>,
 

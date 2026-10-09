@@ -11,9 +11,15 @@ use business::use_cases::data_export_use_case::DataExportUseCase;
 /// How each failure of the export use case reads over REST.
 fn failure(error: BusinessError, locale: Locale) -> ExceptionResponse {
     match error.kind {
-        BusinessErrorKind::Validation => ExceptionResponse::BadRequest(locale, ErrorKey::InvalidParameterValue),
-        BusinessErrorKind::NotFound => ExceptionResponse::NotFound(locale, ErrorKey::DataExportNotReady),
-        BusinessErrorKind::Conflict => ExceptionResponse::Conflict(locale, ErrorKey::DataExportNotReady),
+        BusinessErrorKind::Validation => {
+            ExceptionResponse::BadRequest(locale, ErrorKey::InvalidParameterValue)
+        }
+        BusinessErrorKind::NotFound => {
+            ExceptionResponse::NotFound(locale, ErrorKey::DataExportNotReady)
+        }
+        BusinessErrorKind::Conflict => {
+            ExceptionResponse::Conflict(locale, ErrorKey::DataExportNotReady)
+        }
         _ => ExceptionResponse::InternalServerError(locale, ErrorKey::DataExportFailed),
     }
 }
@@ -60,6 +66,11 @@ pub async fn download(
 ) -> HttpResponse<Json<DataExportDownloadJson>> {
     DataExportUseCase::download(&state.conn, user.person_id, &id)
         .await
-        .map(|link| Json(DataExportDownloadJson { url: link.url, expires_in_seconds: link.expires_in_seconds }))
+        .map(|link| {
+            Json(DataExportDownloadJson {
+                url: link.url,
+                expires_in_seconds: link.expires_in_seconds,
+            })
+        })
         .map_err(|e| failure(e, locale))
 }

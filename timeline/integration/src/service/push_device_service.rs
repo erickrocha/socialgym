@@ -19,18 +19,30 @@ impl GrpcPushDeviceService {
 
 #[tonic::async_trait]
 impl PushDeviceService for GrpcPushDeviceService {
-    async fn register_push_device(&self, request: Request<RegisterPushDeviceRequest>) -> Result<Response<RegisterPushDeviceResponse>, Status> {
+    async fn register_push_device(
+        &self,
+        request: Request<RegisterPushDeviceRequest>,
+    ) -> Result<Response<RegisterPushDeviceResponse>, Status> {
         let (db, body) = (self.database.clone(), request.get_ref().clone());
         with_caller(&request, |user| async move {
-            PushDeviceUseCase::register(&db, &user.person_uuid, &body.device_uuid, &body.platform, &body.registration_token)
-                .await
-                .map_err(|e| business_status(&e))?;
+            PushDeviceUseCase::register(
+                &db,
+                &user.person_uuid,
+                &body.device_uuid,
+                &body.platform,
+                &body.registration_token,
+            )
+            .await
+            .map_err(|e| business_status(&e))?;
             Ok(Response::new(RegisterPushDeviceResponse {}))
         })
         .await
     }
 
-    async fn remove_push_device(&self, request: Request<RemovePushDeviceRequest>) -> Result<Response<RemovePushDeviceResponse>, Status> {
+    async fn remove_push_device(
+        &self,
+        request: Request<RemovePushDeviceRequest>,
+    ) -> Result<Response<RemovePushDeviceResponse>, Status> {
         let (db, device) = (self.database.clone(), request.get_ref().device_uuid.clone());
         with_caller(&request, |user| async move {
             PushDeviceUseCase::remove(&db, &user.person_uuid, &device)

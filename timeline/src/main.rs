@@ -16,7 +16,11 @@ async fn run() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
     dotenvy::dotenv().ok();
 
-    let database = Arc::new(business::commons::db_pool::connect().await.map_err(|error| anyhow::anyhow!(error))?);
+    let database = Arc::new(
+        business::commons::db_pool::connect()
+            .await
+            .map_err(|error| anyhow::anyhow!(error))?,
+    );
     let chat_hub = ChatHub::new();
 
     log::info!("Starting server...");

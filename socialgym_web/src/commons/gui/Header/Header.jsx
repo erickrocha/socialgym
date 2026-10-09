@@ -1,4 +1,3 @@
-import React from 'react';
 
 const Header = ({ children, className = '' }) => (
   <header className={`header ${className}`} role="banner">

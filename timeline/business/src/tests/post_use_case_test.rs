@@ -117,7 +117,10 @@ fn signed_urls_replace_the_avatar_and_media_urls() {
     let post = PostUseCase::with_signed_urls(post_with_media_and_comment(), &cache);
     assert_eq!(post.author_avatar.as_deref(), Some("signed-actor"));
     assert_eq!(post.media[0].url, "signed-media");
-    assert_eq!(post.comments[0].author_avatar.as_deref(), Some("signed-friend"));
+    assert_eq!(
+        post.comments[0].author_avatar.as_deref(),
+        Some("signed-friend")
+    );
 }
 
 #[test]

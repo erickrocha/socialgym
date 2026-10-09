@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import './Toast.scss';
 
 const Toast = ({ message, type = 'error', autoCloseDuration = 5000 }) => {

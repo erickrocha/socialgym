@@ -1,7 +1,7 @@
 use business::use_cases::mention_notification_use_case::MentionNotificationUseCase;
 use mongodb::Database;
 use std::sync::Arc;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 
 pub fn start(db: Arc<Database>) {
     tokio::spawn(async move {

@@ -2,8 +2,8 @@ use domain::business_error::BusinessError;
 use domain::in_app_notification::InAppNotification;
 use domain::mention_notification_event::MentionNotificationEvent;
 use futures::stream::TryStreamExt;
-use mongodb::bson::{doc, DateTime};
 use mongodb::Collection;
+use mongodb::bson::{DateTime, doc};
 
 const EVENT_COLLECTION_NAME: &str = "mention_notification_events";
 const IN_APP_NOTIFICATION_COLLECTION_NAME: &str = "in_app_notifications";
@@ -17,7 +17,8 @@ impl MentionNotificationGateway {
     pub fn new(db: &mongodb::Database) -> Self {
         Self {
             event_collection: db.collection::<MentionNotificationEvent>(EVENT_COLLECTION_NAME),
-            in_app_collection: db.collection::<InAppNotification>(IN_APP_NOTIFICATION_COLLECTION_NAME),
+            in_app_collection: db
+                .collection::<InAppNotification>(IN_APP_NOTIFICATION_COLLECTION_NAME),
         }
     }
 
@@ -40,7 +41,10 @@ impl MentionNotificationGateway {
         Ok(())
     }
 
-    pub async fn list_pending(&self, limit: i64) -> Result<Vec<MentionNotificationEvent>, BusinessError> {
+    pub async fn list_pending(
+        &self,
+        limit: i64,
+    ) -> Result<Vec<MentionNotificationEvent>, BusinessError> {
         let mut cursor = self
             .event_collection
             .find(doc! {
@@ -50,7 +54,9 @@ impl MentionNotificationGateway {
             .sort(doc! { "createdAt": 1 })
             .limit(limit)
             .await
-            .map_err(|e| BusinessError::new(format!("failed to list pending mention events: {e}")))?;
+            .map_err(|e| {
+                BusinessError::new(format!("failed to list pending mention events: {e}"))
+            })?;
 
         let mut events = Vec::new();
         while let Some(event) = cursor
@@ -99,7 +105,9 @@ impl MentionNotificationGateway {
                 },
             )
             .await
-            .map_err(|e| BusinessError::new(format!("failed to mark mention event processed: {e}")))?;
+            .map_err(|e| {
+                BusinessError::new(format!("failed to mark mention event processed: {e}"))
+            })?;
 
         Ok(())
     }
@@ -186,14 +194,18 @@ impl MentionNotificationGateway {
             .sort(doc! { "createdAt": 1 })
             .limit(limit)
             .await
-            .map_err(|error| BusinessError::infrastructure(format!("failed to list pending push notifications: {error}")))?;
+            .map_err(|error| {
+                BusinessError::infrastructure(format!(
+                    "failed to list pending push notifications: {error}"
+                ))
+            })?;
 
         let mut notifications = Vec::new();
-        while let Some(notification) = cursor
-            .try_next()
-            .await
-            .map_err(|error| BusinessError::infrastructure(format!("failed to iterate pending push notifications: {error}")))?
-        {
+        while let Some(notification) = cursor.try_next().await.map_err(|error| {
+            BusinessError::infrastructure(format!(
+                "failed to iterate pending push notifications: {error}"
+            ))
+        })? {
             notifications.push(notification);
         }
         Ok(notifications)
@@ -231,7 +243,9 @@ impl MentionNotificationGateway {
                 } },
             )
             .await
-            .map_err(|error| BusinessError::infrastructure(format!("failed to claim push notification: {error}")))?;
+            .map_err(|error| {
+                BusinessError::infrastructure(format!("failed to claim push notification: {error}"))
+            })?;
         Ok(result.modified_count > 0)
     }
 
@@ -262,7 +276,9 @@ impl MentionNotificationGateway {
                 } },
             )
             .await
-            .map_err(|error| BusinessError::infrastructure(format!("failed to update push state: {error}")))?;
+            .map_err(|error| {
+                BusinessError::infrastructure(format!("failed to update push state: {error}"))
+            })?;
         Ok(())
     }
 
@@ -286,11 +302,9 @@ impl MentionNotificationGateway {
             .map_err(|e| BusinessError::new(format!("failed to list in-app notifications: {e}")))?;
 
         let mut notifications = Vec::new();
-        while let Some(notification) = cursor
-            .try_next()
-            .await
-            .map_err(|e| BusinessError::new(format!("failed to iterate in-app notifications: {e}")))?
-        {
+        while let Some(notification) = cursor.try_next().await.map_err(|e| {
+            BusinessError::new(format!("failed to iterate in-app notifications: {e}"))
+        })? {
             notifications.push(notification);
         }
 
@@ -325,7 +339,10 @@ impl MentionNotificationGateway {
     /// Account-deletion cascade: removes every mention event and in-app
     /// notification involving this person, on either side (author/mentioned,
     /// actor/recipient).
-    pub async fn delete_all_involving_person(&self, person_uuid: &str) -> Result<(), BusinessError> {
+    pub async fn delete_all_involving_person(
+        &self,
+        person_uuid: &str,
+    ) -> Result<(), BusinessError> {
         self.event_collection
             .delete_many(doc! {
                 "$or": [
@@ -344,9 +361,10 @@ impl MentionNotificationGateway {
                 ]
             })
             .await
-            .map_err(|e| BusinessError::new(format!("failed to delete in-app notifications: {e}")))?;
+            .map_err(|e| {
+                BusinessError::new(format!("failed to delete in-app notifications: {e}"))
+            })?;
 
         Ok(())
     }
 }
-

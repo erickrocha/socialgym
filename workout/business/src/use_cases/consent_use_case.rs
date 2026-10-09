@@ -60,7 +60,11 @@ impl ConsentUseCase {
 
     /// Revokes the caller's consent; revoking Terms or Privacy also ends every session of the person,
     /// since the mandatory consent is gone.
-    pub async fn revoke_for_user(db: &DbConn, user: &User, document: &str) -> Result<(), BusinessError> {
+    pub async fn revoke_for_user(
+        db: &DbConn,
+        user: &User,
+        document: &str,
+    ) -> Result<(), BusinessError> {
         Self::revoke(db, user.person_id, document).await?;
         if matches!(document, legal_documents::TERMS | legal_documents::PRIVACY) {
             if let Some(user_id) = user.id {

@@ -12,9 +12,9 @@ use business::commons::functions::parse_uuid;
 use business::commons::legal_documents;
 use business::domain::person::Person;
 use business::domain::user::User;
+use business::use_cases::consent_use_case::ConsentUseCase;
 use business::use_cases::friend_use_case::FriendUseCase;
 use business::use_cases::person_use_case::PersonUseCase;
-use business::use_cases::consent_use_case::ConsentUseCase;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -46,7 +46,10 @@ pub async fn get_person_by_uuid(
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<PersonJson>> {
     if uuid != current_user.person_uuid {
-        return Err(ExceptionResponse::Forbidden(locale, ErrorKey::PersonNotFound));
+        return Err(ExceptionResponse::Forbidden(
+            locale,
+            ErrorKey::PersonNotFound,
+        ));
     }
     let person = PersonUseCase::find_by_uuid(&state.conn, uuid)
         .await
@@ -232,7 +235,9 @@ pub async fn get_my_friend(
 ) -> HttpResponse<Json<PersonJson>> {
     FriendUseCase::ensure_accepted_friend(&state.conn, current_user.person_id, friend_id)
         .await
-        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::FriendNotFound))?;
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::FriendNotFound)
+        })?;
     let person_entity = PersonUseCase::get(&state.conn, friend_id).await;
 
     if person_entity.is_err() {
@@ -242,7 +247,9 @@ pub async fn get_my_friend(
         ));
     }
 
-    Ok(Json(PersonMapper::json(person_entity.unwrap().without_health_details())))
+    Ok(Json(PersonMapper::json(
+        person_entity.unwrap().without_health_details(),
+    )))
 }
 
 #[utoipa::path(
@@ -318,7 +325,10 @@ pub async fn get_me_by_uuid(
         ));
     }
     if uuid != current_user.person_uuid {
-        return Err(ExceptionResponse::Forbidden(locale, ErrorKey::PersonNotFound));
+        return Err(ExceptionResponse::Forbidden(
+            locale,
+            ErrorKey::PersonNotFound,
+        ));
     }
     let person_entity = PersonUseCase::find_by_uuid(&state.conn, uuid).await;
 
@@ -344,9 +354,13 @@ async fn require_health_data_consent(
         .as_ref()
         .is_some_and(|info| info.weight.is_some() || info.height.is_some());
     if exposes_health_data {
-        ConsentUseCase::require_current(&state.conn, person.id.unwrap_or_default(), legal_documents::HEALTH_DATA)
-            .await
-            .map_err(|_| ExceptionResponse::Forbidden(locale, ErrorKey::ConsentRequired))?;
+        ConsentUseCase::require_current(
+            &state.conn,
+            person.id.unwrap_or_default(),
+            legal_documents::HEALTH_DATA,
+        )
+        .await
+        .map_err(|_| ExceptionResponse::Forbidden(locale, ErrorKey::ConsentRequired))?;
     }
     Ok(())
 }

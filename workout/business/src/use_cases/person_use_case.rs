@@ -1,5 +1,5 @@
-use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::authorization::ensure_owns;
+use crate::commons::entity_mapper::EntityMapper;
 use crate::commons::functions::is_valid_coordinate;
 use crate::domain::business_error::BusinessError;
 use crate::domain::business_profile::{BusinessProfile, BusinessProfileEntityMapper};
@@ -25,7 +25,10 @@ use sea_orm::DbConn;
 pub struct PersonUseCase {}
 
 impl PersonUseCase {
-    pub fn require_owner_access(resource_owner_id: i32, acting_person_id: i32) -> Result<(), BusinessError> {
+    pub fn require_owner_access(
+        resource_owner_id: i32,
+        acting_person_id: i32,
+    ) -> Result<(), BusinessError> {
         ensure_owns(resource_owner_id, acting_person_id)
     }
 
@@ -256,8 +259,7 @@ impl PersonUseCase {
 
         let nearby_addresses = match search_point {
             Some((lat, lon)) => {
-                PersonAddressGateway::find_all_within_radius_of_point(db, lat, lon, radius_km)
-                    .await
+                PersonAddressGateway::find_all_within_radius_of_point(db, lat, lon, radius_km).await
             }
             None => PersonAddressGateway::find_all_within_radius(db, person_id, radius_km).await,
         };
@@ -310,8 +312,12 @@ impl PersonUseCase {
         }
         let friends = friends.unwrap();
         let friend_ids: Vec<i32> = match column {
-            entity::friends_entity::Column::PersonId => friends.into_iter().map(|f| f.friend_id).collect(),
-            entity::friends_entity::Column::FriendId => friends.into_iter().map(|f| f.person_id).collect(),
+            entity::friends_entity::Column::PersonId => {
+                friends.into_iter().map(|f| f.friend_id).collect()
+            }
+            entity::friends_entity::Column::FriendId => {
+                friends.into_iter().map(|f| f.person_id).collect()
+            }
             _ => Vec::new(),
         };
         let persons = PersonGateway::find_all_by_id_in(db, friend_ids.clone()).await;
@@ -481,10 +487,7 @@ impl PersonUseCase {
         radius_km: Option<f64>,
         limit: i32,
     ) -> Vec<Person> {
-        let trimmed_query = query
-            .as_deref()
-            .map(str::trim)
-            .filter(|q| !q.is_empty());
+        let trimmed_query = query.as_deref().map(str::trim).filter(|q| !q.is_empty());
 
         let search_point = match (latitude, longitude) {
             (Some(lat), Some(lon)) if is_valid_coordinate(lat, lon) => Some((lat, lon)),
@@ -523,7 +526,10 @@ impl PersonUseCase {
                 PersonAddressGateway::find_all_within_radius_of_point(db, lat, lon, radius)
                     .await
                     .unwrap_or_else(|_| Vec::new());
-            let mut ids: Vec<i32> = nearby.into_iter().map(|address| address.person_id).collect();
+            let mut ids: Vec<i32> = nearby
+                .into_iter()
+                .map(|address| address.person_id)
+                .collect();
             ids.sort();
             ids.dedup();
             Some(ids)

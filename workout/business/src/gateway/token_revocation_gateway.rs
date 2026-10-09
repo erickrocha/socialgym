@@ -11,7 +11,13 @@ use sea_orm::{
 pub struct TokenRevocationGateway {}
 
 impl TokenRevocationGateway {
-    pub async fn revoke(db: &DbConn, jti: String, user_id: i32, token_type: &str, expires_at: NaiveDateTime) -> Result<(), DbErr> {
+    pub async fn revoke(
+        db: &DbConn,
+        jti: String,
+        user_id: i32,
+        token_type: &str,
+        expires_at: NaiveDateTime,
+    ) -> Result<(), DbErr> {
         let revoked = RevokedToken::new(jti, user_id, token_type.to_string(), expires_at);
         let active_model = RevokedTokenMapper::build_active_model(revoked);
         active_model.save(db).await?;
@@ -28,7 +34,10 @@ impl TokenRevocationGateway {
 
     /// Bulk-deletes the revoked-token audit rows for a user — must run before the
     /// `user` row itself is deleted (plain FK, no cascade) in an account-purge cascade.
-    pub async fn delete_all_by_user_id<C: ConnectionTrait>(db: &C, user_id: i32) -> Result<DeleteResult, DbErr> {
+    pub async fn delete_all_by_user_id<C: ConnectionTrait>(
+        db: &C,
+        user_id: i32,
+    ) -> Result<DeleteResult, DbErr> {
         RevokedTokenQuery::delete_many()
             .filter(revoked_token::Column::UserId.eq(user_id))
             .exec(db)

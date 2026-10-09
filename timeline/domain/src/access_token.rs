@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug,Clone,Serialize,Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccessToken {
     pub access_token: String,
     pub token_type: String,
@@ -14,8 +14,7 @@ pub struct AccessToken {
     pub person_object_key: String,
 }
 
-
-#[derive(Debug,Clone, Deserialize,Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Claims {
     pub sub: String,
     pub exp: i64,

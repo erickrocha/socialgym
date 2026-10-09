@@ -17,7 +17,9 @@ pub struct WorkoutExercise {
 
 pub struct WorkoutExerciseEntityMapper {}
 
-impl EntityMapper<WorkoutExercise, WorkoutExerciseEntity, ActiveModel> for WorkoutExerciseEntityMapper {
+impl EntityMapper<WorkoutExercise, WorkoutExerciseEntity, ActiveModel>
+    for WorkoutExerciseEntityMapper
+{
     fn build_active_model(d: WorkoutExercise) -> ActiveModel {
         ActiveModel {
             id: NotSet,

@@ -16,11 +16,16 @@ impl MentionNotificationUseCase {
             .await
     }
 
-    pub async fn enqueue(db: &Database,events: Vec<MentionNotificationEvent>,) -> Result<(), BusinessError> {
+    pub async fn enqueue(
+        db: &Database,
+        events: Vec<MentionNotificationEvent>,
+    ) -> Result<(), BusinessError> {
         if events.is_empty() {
             return Ok(());
         }
-        MentionNotificationGateway::new(db).enqueue_many(events).await
+        MentionNotificationGateway::new(db)
+            .enqueue_many(events)
+            .await
     }
 
     pub async fn process_pending(db: &Database, limit: i64) -> Result<usize, BusinessError> {
@@ -62,14 +67,35 @@ impl MentionNotificationUseCase {
         Ok(processed)
     }
 
-    pub async fn list_notifications(db: &Database,recipient_person_uuid: &str,unread_only: bool,limit: i64) -> Result<Vec<InAppNotification>, BusinessError> {
-        log::info!("Reading notifications for owner uuid: {} unread only: {} limit: {}", recipient_person_uuid, unread_only, limit);
-        MentionNotificationGateway::new(db).list_in_app_notifications(recipient_person_uuid, unread_only, limit).await
+    pub async fn list_notifications(
+        db: &Database,
+        recipient_person_uuid: &str,
+        unread_only: bool,
+        limit: i64,
+    ) -> Result<Vec<InAppNotification>, BusinessError> {
+        log::info!(
+            "Reading notifications for owner uuid: {} unread only: {} limit: {}",
+            recipient_person_uuid,
+            unread_only,
+            limit
+        );
+        MentionNotificationGateway::new(db)
+            .list_in_app_notifications(recipient_person_uuid, unread_only, limit)
+            .await
     }
 
-    pub async fn mark_as_read(db: &Database,recipient_person_uuid: &str,idempotency_key: &str) -> Result<bool, BusinessError> {
-        log::info!("Marking notification read for owner uuid: {} idempotency key: {}", recipient_person_uuid, idempotency_key);
-        MentionNotificationGateway::new(db).mark_in_app_notification_read(idempotency_key, recipient_person_uuid).await
+    pub async fn mark_as_read(
+        db: &Database,
+        recipient_person_uuid: &str,
+        idempotency_key: &str,
+    ) -> Result<bool, BusinessError> {
+        log::info!(
+            "Marking notification read for owner uuid: {} idempotency key: {}",
+            recipient_person_uuid,
+            idempotency_key
+        );
+        MentionNotificationGateway::new(db)
+            .mark_in_app_notification_read(idempotency_key, recipient_person_uuid)
+            .await
     }
 }
-

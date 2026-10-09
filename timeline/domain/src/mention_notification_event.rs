@@ -24,7 +24,6 @@ pub struct MentionNotificationEvent {
 }
 
 impl MentionNotificationEvent {
-
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         uuid: String,
@@ -59,4 +58,3 @@ impl MentionNotificationEvent {
         }
     }
 }
-

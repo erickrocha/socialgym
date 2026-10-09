@@ -31,8 +31,7 @@ fn client_frames_parse_camel_case_fields() {
     assert!(matches!(read, ClientFrameJson::Read { .. }));
 
     let typing: ClientFrameJson =
-        serde_json::from_str(r#"{"type":"typing","conversationUuid":"c1"}"#)
-            .expect("typing frame");
+        serde_json::from_str(r#"{"type":"typing","conversationUuid":"c1"}"#).expect("typing frame");
     assert!(matches!(typing, ClientFrameJson::Typing { .. }));
 }
 
@@ -47,7 +46,10 @@ fn server_frames_use_camel_case_field_names() {
         person_uuid: "p1".to_string(),
     }
     .to_frame();
-    assert_eq!(typing, r#"{"type":"typing","conversationUuid":"c1","personUuid":"p1"}"#);
+    assert_eq!(
+        typing,
+        r#"{"type":"typing","conversationUuid":"c1","personUuid":"p1"}"#
+    );
 
     let read = ServerEventJson::MessageRead {
         conversation_uuid: "c1".to_string(),

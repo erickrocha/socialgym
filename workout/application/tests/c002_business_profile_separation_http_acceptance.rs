@@ -152,7 +152,10 @@ async fn business_profile_context_never_grants_person_profile_authority() {
             "/workout/api/business-profiles",
             business_profile_routes(state.clone()),
         )
-        .nest("/workout/api/team-members", team_member_routes(state.clone()))
+        .nest(
+            "/workout/api/team-members",
+            team_member_routes(state.clone()),
+        )
         .with_state(state);
 
     // Person 1 acting with the business profile active — the same claim
@@ -189,10 +192,7 @@ async fn business_profile_context_never_grants_person_profile_authority() {
     let roster: serde_json::Value = serde_json::from_slice(&body).unwrap();
     let members = roster["members"].as_array().unwrap();
     assert_eq!(members.len(), 1);
-    assert_eq!(
-        members[0]["uuid"],
-        "00000000-0000-0000-0000-000000000072"
-    );
+    assert_eq!(members[0]["uuid"], "00000000-0000-0000-0000-000000000072");
     assert!(
         members[0]["personInfo"].is_null(),
         "team roster leaked health/profile data: {:?}",

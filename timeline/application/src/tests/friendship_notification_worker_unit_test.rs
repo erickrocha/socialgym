@@ -33,8 +33,8 @@ async fn c006_friendship_consumer_materializes_and_acknowledges_idempotently() {
         .expect("TEST_MONGO_URL must point to the disposable timeline_test database");
     let queue_url = std::env::var("AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL")
         .expect("AWS_FRIENDSHIP_NOTIFICATION_QUEUE_URL must point to the test FIFO queue");
-    let endpoint = std::env::var("AWS_ENDPOINT_URL")
-        .expect("AWS_ENDPOINT_URL must point to LocalStack");
+    let endpoint =
+        std::env::var("AWS_ENDPOINT_URL").expect("AWS_ENDPOINT_URL must point to LocalStack");
     let mongo_client = MongoClient::with_uri_str(mongo_url).await.unwrap();
     let database = mongo_client.database("timeline_test");
     let notification_ids = vec![
@@ -106,15 +106,14 @@ async fn c006_friendship_consumer_materializes_and_acknowledges_idempotently() {
             .unwrap();
     }
 
-    assert_eq!(consume_batch(&database, &client, &queue_url).await.unwrap(), 3);
-    let notifications = MentionNotificationUseCase::list_notifications(
-        &database,
-        "c006-tc008-recipient",
-        true,
-        50,
-    )
-    .await
-    .unwrap();
+    assert_eq!(
+        consume_batch(&database, &client, &queue_url).await.unwrap(),
+        3
+    );
+    let notifications =
+        MentionNotificationUseCase::list_notifications(&database, "c006-tc008-recipient", true, 50)
+            .await
+            .unwrap();
     let matching: Vec<_> = notifications
         .into_iter()
         .filter(|notification| notification.uuid == notification_ids[0])
@@ -122,14 +121,10 @@ async fn c006_friendship_consumer_materializes_and_acknowledges_idempotently() {
     assert_eq!(matching.len(), 1);
     assert_eq!(matching[0].notification_type, "FriendRequestCreated");
 
-    let accepted = MentionNotificationUseCase::list_notifications(
-        &database,
-        "c006-tc008-actor",
-        true,
-        50,
-    )
-    .await
-    .unwrap();
+    let accepted =
+        MentionNotificationUseCase::list_notifications(&database, "c006-tc008-actor", true, 50)
+            .await
+            .unwrap();
     assert!(accepted.iter().any(|notification| {
         notification.uuid == notification_ids[1]
             && notification.notification_type == "FriendRequestAccepted"

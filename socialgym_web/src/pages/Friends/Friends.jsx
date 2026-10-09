@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
@@ -67,7 +67,7 @@ const Friends = () => {
         }
     };
 
-    const handleCancelRequest = async (friend) => {
+    const handleCancelRequest = async (_friend) => {
         try {
             // TODO: Implement cancel friend request action
             setToastMessage({type: 'info', message: t('friends.requestCancelled')});
@@ -77,7 +77,7 @@ const Friends = () => {
         }
     };
 
-    const handleRemoveFriend = async (friend) => {
+    const handleRemoveFriend = async (_friend) => {
         try {
             // TODO: Implement remove friend action
             setToastMessage({type: 'info', message: t('friends.friendRemoved')});

@@ -15,10 +15,19 @@ spec:
       labels:
         app: timeline
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
       containers:
         - name: timeline
           image: "{{ .Values.timeline.image.repository }}:{{ .Values.timeline.image.tag }}"
           imagePullPolicy: {{ .Values.timeline.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           # DATABASE_URL is built at container start from discrete MONGO_*
           # env vars so the mongo Secret stays the single source of truth
           # for the app password.

@@ -22,22 +22,25 @@ pub struct TimelineDeletionGateway {}
 
 impl TimelineDeletionGateway {
     async fn client() -> Result<InternalServiceClient<Channel>, BusinessError> {
-        let url = env::var(TIMELINE_GRPC_URL).unwrap_or_else(|_| "https://127.0.0.1:50052".to_string());
-        let mut endpoint = Channel::from_shared(url.clone())
-            .map_err(|e| BusinessError::infrastructure(format!("Invalid {TIMELINE_GRPC_URL}: {e}")))?;
+        let url =
+            env::var(TIMELINE_GRPC_URL).unwrap_or_else(|_| "https://127.0.0.1:50052".to_string());
+        let mut endpoint = Channel::from_shared(url.clone()).map_err(|e| {
+            BusinessError::infrastructure(format!("Invalid {TIMELINE_GRPC_URL}: {e}"))
+        })?;
         if url.starts_with("https://") {
             let mut tls = ClientTlsConfig::new();
             if let Ok(path) = env::var(TIMELINE_GRPC_CERT_PATH) {
-                let pem = std::fs::read_to_string(&path)
-                    .map_err(|e| BusinessError::infrastructure(format!("Cannot read {path}: {e}")))?;
+                let pem = std::fs::read_to_string(&path).map_err(|e| {
+                    BusinessError::infrastructure(format!("Cannot read {path}: {e}"))
+                })?;
                 tls = tls.ca_certificate(Certificate::from_pem(pem));
             }
             if let Ok(domain) = env::var(TIMELINE_GRPC_DOMAIN) {
                 tls = tls.domain_name(domain);
             }
-            endpoint = endpoint
-                .tls_config(tls)
-                .map_err(|e| BusinessError::infrastructure(format!("Invalid timeline TLS config: {e}")))?;
+            endpoint = endpoint.tls_config(tls).map_err(|e| {
+                BusinessError::infrastructure(format!("Invalid timeline TLS config: {e}"))
+            })?;
         }
         let channel = endpoint
             .connect()
@@ -47,13 +50,17 @@ impl TimelineDeletionGateway {
     }
 
     fn request(person_uuid: &str) -> Result<Request<PersonDataRequest>, BusinessError> {
-        let secret = env::var(INTERNAL_SERVICE_SECRET)
-            .map_err(|_| BusinessError::infrastructure("INTERNAL_SERVICE_SECRET is not configured"))?;
-        let mut request = Request::new(PersonDataRequest { person_uuid: person_uuid.to_string() });
+        let secret = env::var(INTERNAL_SERVICE_SECRET).map_err(|_| {
+            BusinessError::infrastructure("INTERNAL_SERVICE_SECRET is not configured")
+        })?;
+        let mut request = Request::new(PersonDataRequest {
+            person_uuid: person_uuid.to_string(),
+        });
         request.metadata_mut().insert(
             "x-internal-secret",
-            MetadataValue::try_from(secret)
-                .map_err(|_| BusinessError::infrastructure("INTERNAL_SERVICE_SECRET is not a valid header value"))?,
+            MetadataValue::try_from(secret).map_err(|_| {
+                BusinessError::infrastructure("INTERNAL_SERVICE_SECRET is not a valid header value")
+            })?,
         );
         Ok(request)
     }
@@ -83,7 +90,9 @@ impl TimelineDeletionGateway {
             .await
             .map_err(|status| {
                 log::error!("Timeline account deletion failed: {}", status.code());
-                BusinessError::infrastructure("Failed to delete timeline data for account".to_string())
+                BusinessError::infrastructure(
+                    "Failed to delete timeline data for account".to_string(),
+                )
             })?;
         Ok(())
     }

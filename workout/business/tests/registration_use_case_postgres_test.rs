@@ -1,6 +1,8 @@
 use business::commons::legal_documents;
 use business::domain::person::Person;
-use business::use_cases::registration_use_case::{RegistrationError, RegistrationRequest, RegistrationUseCase};
+use business::use_cases::registration_use_case::{
+    RegistrationError, RegistrationRequest, RegistrationUseCase,
+};
 use chrono::NaiveDate;
 use entity::{consent_entity, person_entity, person_info_entity, settings_entity, user_entity};
 use migration::{Migrator, MigratorTrait};
@@ -39,12 +41,10 @@ async fn registration_persists_profile_settings_user_and_consents_atomically() {
 
     let db = Database::connect(database_url).await.unwrap();
     Migrator::refresh(&db).await.unwrap();
-    let registered = RegistrationUseCase::execute(
-        &db,
-        registration_request("registration@example.test"),
-    )
-    .await
-    .unwrap();
+    let registered =
+        RegistrationUseCase::execute(&db, registration_request("registration@example.test"))
+            .await
+            .unwrap();
     let person_id = registered.person_id;
 
     assert_eq!(registered.email, "registration@example.test");
@@ -53,7 +53,11 @@ async fn registration_persists_profile_settings_user_and_consents_atomically() {
         1
     );
     assert_eq!(
-        person_info_entity::Entity::find().all(&db).await.unwrap().len(),
+        person_info_entity::Entity::find()
+            .all(&db)
+            .await
+            .unwrap()
+            .len(),
         1
     );
     let settings = settings_entity::Entity::find().all(&db).await.unwrap();
@@ -64,16 +68,28 @@ async fn registration_persists_profile_settings_user_and_consents_atomically() {
     assert_eq!(users[0].person_id, person_id);
     let consents = consent_entity::Entity::find().all(&db).await.unwrap();
     assert_eq!(consents.len(), 2);
-    assert!(consents.iter().any(|consent| consent.document == legal_documents::TERMS));
-    assert!(consents.iter().any(|consent| consent.document == legal_documents::PRIVACY));
+    assert!(consents
+        .iter()
+        .any(|consent| consent.document == legal_documents::TERMS));
+    assert!(consents
+        .iter()
+        .any(|consent| consent.document == legal_documents::PRIVACY));
 
-    let duplicate = RegistrationUseCase::execute(
-        &db,
-        registration_request("registration@example.test"),
-    )
-    .await
-    .unwrap_err();
+    let duplicate =
+        RegistrationUseCase::execute(&db, registration_request("registration@example.test"))
+            .await
+            .unwrap_err();
     assert!(matches!(duplicate, RegistrationError::Persistence));
-    assert_eq!(person_entity::Entity::find().all(&db).await.unwrap().len(), 1);
-    assert_eq!(person_info_entity::Entity::find().all(&db).await.unwrap().len(), 1);
+    assert_eq!(
+        person_entity::Entity::find().all(&db).await.unwrap().len(),
+        1
+    );
+    assert_eq!(
+        person_info_entity::Entity::find()
+            .all(&db)
+            .await
+            .unwrap()
+            .len(),
+        1
+    );
 }

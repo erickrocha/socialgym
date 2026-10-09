@@ -143,6 +143,8 @@ pub async fn delete_person_address_by_uuid(
 ) -> HttpResponse<Json<()>> {
     PersonAddressUseCase::delete_person_address_by_uuid(&state.conn, uuid, current_user.person_id)
         .await
-        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::PersonAddressNotDeleted))?;
+        .map_err(|error| {
+            ExceptionResponse::from_business(error, locale, ErrorKey::PersonAddressNotDeleted)
+        })?;
     Ok(Json(()))
 }

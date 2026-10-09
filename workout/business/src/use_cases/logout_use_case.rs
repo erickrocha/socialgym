@@ -13,19 +13,49 @@ impl LogoutUseCase {
     /// Revokes the caller's current access token (`jti`/`exp`, taken from the already
     /// validated request) and, if provided, its paired refresh token. A no-op when
     /// `TOKEN_REVOCATION_ENABLED`/`AUTH_RULES_ENABLED` disable revocation for dev.
-    pub async fn execute(db: &DbConn, user_id: i32, jti: String, exp: i64, refresh_token: Option<String>) -> Result<(), BusinessError> {
+    pub async fn execute(
+        db: &DbConn,
+        user_id: i32,
+        jti: String,
+        exp: i64,
+        refresh_token: Option<String>,
+    ) -> Result<(), BusinessError> {
         if !auth_config::token_revocation_enabled() {
             return Ok(());
         }
 
-        if let Err(e) = TokenRevocationGateway::revoke(db, jti, user_id, "access", Self::naive_from_timestamp(exp)).await {
-            log::error!("Failed to revoke access token on logout for user_id={}: {}", user_id, e);
+        if let Err(e) = TokenRevocationGateway::revoke(
+            db,
+            jti,
+            user_id,
+            "access",
+            Self::naive_from_timestamp(exp),
+        )
+        .await
+        {
+            log::error!(
+                "Failed to revoke access token on logout for user_id={}: {}",
+                user_id,
+                e
+            );
         }
 
         if let Some(refresh_token) = refresh_token {
             if let Some((refresh_jti, refresh_exp)) = Self::decode_refresh_claims(&refresh_token) {
-                if let Err(e) = TokenRevocationGateway::revoke(db, refresh_jti, user_id, "refresh", Self::naive_from_timestamp(refresh_exp)).await {
-                    log::error!("Failed to revoke refresh token on logout for user_id={}: {}", user_id, e);
+                if let Err(e) = TokenRevocationGateway::revoke(
+                    db,
+                    refresh_jti,
+                    user_id,
+                    "refresh",
+                    Self::naive_from_timestamp(refresh_exp),
+                )
+                .await
+                {
+                    log::error!(
+                        "Failed to revoke refresh token on logout for user_id={}: {}",
+                        user_id,
+                        e
+                    );
                 }
             }
         }

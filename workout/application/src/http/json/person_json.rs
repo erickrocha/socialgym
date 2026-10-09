@@ -1,10 +1,10 @@
+use crate::http::json::business_profile_json::BusinessProfileJson;
+use crate::http::json::person_address_json::PersonAddressJson;
 use crate::http::json::person_info_json::PersonInfoJson;
 use crate::http::json::user_json::UserJson;
 use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use crate::http::json::business_profile_json::BusinessProfileJson;
-use crate::http::json::person_address_json::PersonAddressJson;
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "camelCase")]

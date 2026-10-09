@@ -1,3 +1,4 @@
+use crate::AppState;
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
 use crate::commons::i18n::{ErrorKey, Locale};
 use crate::http::json::chat_json::{
@@ -6,14 +7,15 @@ use crate::http::json::chat_json::{
     MessageJson, PresenceJson, PresenceQuery, SendMessageJson,
 };
 use crate::infrastructure::mapper::{ConversationMapper, MessageMapper};
-use crate::AppState;
-use axum::extract::{Extension, Path, Query, State};
 use axum::Json;
+use axum::extract::{Extension, Path, Query, State};
 use business::use_cases::chat_session_use_case::ChatSessionUseCase;
 use business::use_cases::chat_use_case::ChatUseCase;
 use domain::user::User;
 
-fn business_err(locale: Locale) -> impl Fn(domain::business_error::BusinessError) -> ExceptionResponse {
+fn business_err(
+    locale: Locale,
+) -> impl Fn(domain::business_error::BusinessError) -> ExceptionResponse {
     move |error| ExceptionResponse::from_business(error, locale, ErrorKey::Unknown)
 }
 
@@ -34,9 +36,9 @@ pub async fn create_direct(
         ChatUseCase::get_or_create_direct(&state.database, &user, &payload.target_person_uuid)
             .await
             .map_err(business_err(locale))?;
-    Ok(Json(
-        ConversationMapper::view(ChatUseCase::view_of(conversation).await),
-    ))
+    Ok(Json(ConversationMapper::view(
+        ChatUseCase::view_of(conversation).await,
+    )))
 }
 
 #[utoipa::path(
@@ -59,9 +61,9 @@ pub async fn create_business_team_group(
     )
     .await
     .map_err(business_err(locale))?;
-    Ok(Json(
-        ConversationMapper::view(ChatUseCase::view_of(conversation).await),
-    ))
+    Ok(Json(ConversationMapper::view(
+        ChatUseCase::view_of(conversation).await,
+    )))
 }
 
 #[utoipa::path(
@@ -85,9 +87,9 @@ pub async fn create_business_direct(
     )
     .await
     .map_err(business_err(locale))?;
-    Ok(Json(
-        ConversationMapper::view(ChatUseCase::view_of(conversation).await),
-    ))
+    Ok(Json(ConversationMapper::view(
+        ChatUseCase::view_of(conversation).await,
+    )))
 }
 
 #[utoipa::path(
@@ -103,11 +105,12 @@ pub async fn list_conversations(
     Extension(user): Extension<User>,
     Query(query): Query<ChatPageQuery>,
 ) -> HttpResponse<Json<Vec<ConversationJson>>> {
-    let views =
-        ChatUseCase::list_conversations(&state.database, &user, query.page.unwrap_or(0))
-            .await
-            .map_err(business_err(locale))?;
-    Ok(Json(views.into_iter().map(ConversationMapper::view).collect()))
+    let views = ChatUseCase::list_conversations(&state.database, &user, query.page.unwrap_or(0))
+        .await
+        .map_err(business_err(locale))?;
+    Ok(Json(
+        views.into_iter().map(ConversationMapper::view).collect(),
+    ))
 }
 
 #[utoipa::path(
@@ -145,7 +148,9 @@ pub async fn list_messages(
     }
     .map_err(business_err(locale))?;
 
-    Ok(Json(messages.into_iter().map(MessageMapper::json).collect()))
+    Ok(Json(
+        messages.into_iter().map(MessageMapper::json).collect(),
+    ))
 }
 
 #[utoipa::path(
@@ -234,8 +239,9 @@ pub async fn presence(
         .filter(|uuid| !uuid.is_empty())
         .take(200)
         .collect();
-    let online = ChatSessionUseCase::presence_online(&state.chat_hub, &state.database, &user, candidates)
-        .await
-        .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::Unknown))?;
+    let online =
+        ChatSessionUseCase::presence_online(&state.chat_hub, &state.database, &user, candidates)
+            .await
+            .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::Unknown))?;
     Ok(Json(PresenceJson { online }))
 }

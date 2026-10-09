@@ -71,9 +71,10 @@ export const Chat = () => {
         }
     }, [error, dispatch]);
 
-    const activeMessages = activeConversationUuid
-        ? messagesByConversation[activeConversationUuid] || []
-        : [];
+    const activeMessages = useMemo(
+        () => (activeConversationUuid ? messagesByConversation[activeConversationUuid] || [] : []),
+        [activeConversationUuid, messagesByConversation],
+    );
 
     useEffect(() => {
         if (!activeConversationUuid) return;

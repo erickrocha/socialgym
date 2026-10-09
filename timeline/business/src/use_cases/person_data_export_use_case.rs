@@ -10,7 +10,10 @@ impl PersonDataExportUseCase {
     /// the person's data export. Posts the person wrote are exported whole; on someone else's post
     /// only the person's own comments and reactions are exported, never that post's text, media
     /// or other people's comments.
-    pub async fn export(db: &Database, person_uuid: &str) -> Result<serde_json::Value, BusinessError> {
+    pub async fn export(
+        db: &Database,
+        person_uuid: &str,
+    ) -> Result<serde_json::Value, BusinessError> {
         let rows = |name: &str, filter: Document| Self::documents(db.collection(name), filter);
         let posts = rows(
             "posts",
@@ -48,7 +51,10 @@ impl PersonDataExportUseCase {
                 .map(|items| {
                     items
                         .iter()
-                        .filter(|item| item.as_document().is_some_and(|d| d.get_str(field) == Ok(person_uuid)))
+                        .filter(|item| {
+                            item.as_document()
+                                .is_some_and(|d| d.get_str(field) == Ok(person_uuid))
+                        })
                         .cloned()
                         .collect()
                 })
@@ -61,7 +67,10 @@ impl PersonDataExportUseCase {
         }
     }
 
-    async fn documents(collection: Collection<Document>, filter: Document) -> Result<Vec<Document>, BusinessError> {
+    async fn documents(
+        collection: Collection<Document>,
+        filter: Document,
+    ) -> Result<Vec<Document>, BusinessError> {
         let cursor = collection
             .find(filter)
             .await

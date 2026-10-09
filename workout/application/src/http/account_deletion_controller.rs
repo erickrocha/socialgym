@@ -1,6 +1,8 @@
 use crate::commons::exception_response::{ExceptionResponse, HttpResponse};
 use crate::commons::i18n::{ErrorKey, Locale};
-use crate::http::json::account_deletion_json::{AccountDeletionRequestJson, AccountDeletionStatusJson};
+use crate::http::json::account_deletion_json::{
+    AccountDeletionRequestJson, AccountDeletionStatusJson,
+};
 use crate::http::json::error_response_json::{
     BadRequestErrorJson, ForbiddenErrorJson, InternalServerErrorJson, UnauthorizedErrorJson,
 };
@@ -32,9 +34,12 @@ pub async fn request_account_deletion(
     Extension(locale): Extension<Locale>,
     Json(payload): Json<AccountDeletionRequestJson>,
 ) -> HttpResponse<Json<AccountDeletionStatusJson>> {
-    let result =
-        AccountDeletionUseCase::request_deletion(&state.conn, current_user.id.unwrap(), payload.immediate)
-            .await;
+    let result = AccountDeletionUseCase::request_deletion(
+        &state.conn,
+        current_user.id.unwrap(),
+        payload.immediate,
+    )
+    .await;
 
     match result {
         Ok(status) => Ok(Json(AccountDeletionStatusJson {
@@ -67,7 +72,8 @@ pub async fn cancel_account_deletion(
     Extension(current_user): Extension<User>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<()>> {
-    let result = AccountDeletionUseCase::cancel_deletion(&state.conn, current_user.id.unwrap()).await;
+    let result =
+        AccountDeletionUseCase::cancel_deletion(&state.conn, current_user.id.unwrap()).await;
 
     match result {
         Ok(()) => Ok(Json(())),

@@ -13,7 +13,7 @@ import {useNavigate} from "react-router";
 const SignUp = () => {
     const { t } = useTranslation('common');
 
-    const { register, handleSubmit, watch, formState: { errors } } = useForm();
+    const { register, handleSubmit, watch } = useForm();
     const [showCustomGender, setShowCustomGender] = useState(false);
     const selectedGender = watch("gender");
     const termsAccepted = watch("termsAccepted");

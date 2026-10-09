@@ -37,17 +37,29 @@ pub async fn ensure_indexes(db: &Database) {
         .create_index(session_index)
         .await
     {
-        log::error!("Failed to create compound index on workouts.(personUuid, startedAt): {}", e);
+        log::error!(
+            "Failed to create compound index on workouts.(personUuid, startedAt): {}",
+            e
+        );
     }
 
     // ── Chat ────────────────────────────────────────────────────────────────
     let compound: [(&str, mongodb::bson::Document); 3] = [
         // conversation list: everything a person can see, newest activity first
-        ("conversations", doc! { "participantPersonUuids": 1, "updatedAt": -1 }),
+        (
+            "conversations",
+            doc! { "participantPersonUuids": 1, "updatedAt": -1 },
+        ),
         // paged conversation history (with a stable same-millisecond tie-break)
-        ("messages", doc! { "conversationUuid": 1, "sentAt": -1, "_id": -1 }),
+        (
+            "messages",
+            doc! { "conversationUuid": 1, "sentAt": -1, "_id": -1 },
+        ),
         // cheap ChatMessage filter for the unread badge
-        ("in_app_notifications", doc! { "recipientPersonUuid": 1, "notificationType": 1 }),
+        (
+            "in_app_notifications",
+            doc! { "recipientPersonUuid": 1, "notificationType": 1 },
+        ),
     ];
     for (collection, keys) in compound {
         let index = IndexModel::builder().keys(keys).build();

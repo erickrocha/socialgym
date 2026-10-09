@@ -1,18 +1,17 @@
+use crate::proto;
+use business::domain::access_token::AccessToken as DomainAccessToken;
+use business::domain::enums::{Difficulty, InviteStatus, Position, ProfileType, WeightUnit};
 use business::domain::{
     business_profile::BusinessProfile as DomainBusinessProfile,
     business_profile_address::BusinessProfileAddress as DomainBusinessProfileAddress,
     country::Country as DomainCountry, exercise::Exercise as DomainExercise,
     friend::Friend as DomainFriend, person::Person as DomainPerson,
     person_address::PersonAddress as DomainPersonAddress,
-    person_info::PersonInfo as DomainPersonInfo,
-    user::User as DomainUser, workout::Workout as DomainWorkout,
-    settings::Settings as DomainSettings,
-    team_member::TeamMember as DomainTeamMember,
+    person_info::PersonInfo as DomainPersonInfo, settings::Settings as DomainSettings,
+    team_member::TeamMember as DomainTeamMember, user::User as DomainUser,
+    workout::Workout as DomainWorkout,
 };
 use chrono::NaiveDateTime;
-use business::domain::enums::{Difficulty, InviteStatus, Position, ProfileType, WeightUnit};
-use crate::proto;
-use business::domain::access_token::AccessToken as DomainAccessToken;
 
 // ---------------------------------------------------------------------------
 // Trait
@@ -38,7 +37,6 @@ pub trait Mapper<D, RESPONSE> {
     fn domain_vec(u: Vec<RESPONSE>) -> Vec<D> {
         u.into_iter().map(Self::domain).collect()
     }
-
 }
 
 // ---------------------------------------------------------------------------
@@ -68,13 +66,13 @@ pub struct TeamMemberMapper;
 
 impl Mapper<DomainUser, proto::user::User> for UserMapper {
     fn response(t: DomainUser) -> proto::user::User {
-        proto::user::User  {
+        proto::user::User {
             id: t.id.unwrap_or(0),
             uuid: t.uuid.unwrap_or_default(),
             name: t.name.unwrap_or_default(),
             email: t.email,
             password: t.password,
-        enabled: t.enabled,
+            enabled: t.enabled,
             first_login: t.first_login,
             person_id: t.person_id,
             person_uuid: t.person_uuid,
@@ -86,7 +84,11 @@ impl Mapper<DomainUser, proto::user::User> for UserMapper {
     fn domain(u: proto::user::User) -> DomainUser {
         DomainUser {
             id: if u.id == 0 { None } else { Some(u.id) },
-            uuid: if u.uuid.is_empty() { None } else { Some(u.uuid) },
+            uuid: if u.uuid.is_empty() {
+                None
+            } else {
+                Some(u.uuid)
+            },
             name: Some(u.name),
             email: u.email,
             password: u.password,
@@ -130,7 +132,11 @@ impl Mapper<DomainPersonInfo, proto::person_info::PersonInfo> for PersonInfoMapp
     fn domain(u: proto::person_info::PersonInfo) -> DomainPersonInfo {
         DomainPersonInfo {
             id: if u.id == 0 { None } else { Some(u.id) },
-            uuid: if u.uuid.is_empty() { None } else { Some(u.uuid) },
+            uuid: if u.uuid.is_empty() {
+                None
+            } else {
+                Some(u.uuid)
+            },
             person_id: u.person_id,
             biography: Some(u.biography),
             relationship: Some(u.relationship),
@@ -172,14 +178,26 @@ impl Mapper<DomainPersonAddress, proto::person_address::PersonAddress> for Perso
     fn domain(u: proto::person_address::PersonAddress) -> DomainPersonAddress {
         DomainPersonAddress {
             id: if u.id == 0 { None } else { Some(u.id) },
-            uuid: if u.uuid.is_empty() { None } else { Some(u.uuid) },
+            uuid: if u.uuid.is_empty() {
+                None
+            } else {
+                Some(u.uuid)
+            },
             person_id: u.person_id,
             current: u.current,
             address_line1: u.address_line_1,
-            address_line2: if u.address_line_2.is_empty() { None } else { Some(u.address_line_2) },
+            address_line2: if u.address_line_2.is_empty() {
+                None
+            } else {
+                Some(u.address_line_2)
+            },
             locality: u.locality,
             administrative_area: u.administrative_area,
-            postal_code: if u.postal_code.is_empty() { None } else { Some(u.postal_code) },
+            postal_code: if u.postal_code.is_empty() {
+                None
+            } else {
+                Some(u.postal_code)
+            },
             created_at: NaiveDateTime::parse_from_str(&u.created_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
             updated_at: NaiveDateTime::parse_from_str(&u.updated_at, "%Y-%m-%d %H:%M:%S%.f").ok(),
             country_code: u.country_code,
@@ -216,10 +234,15 @@ impl Mapper<DomainPerson, proto::person::Person> for PersonMapper {
     fn domain(u: proto::person::Person) -> DomainPerson {
         DomainPerson {
             id: if u.id == 0 { None } else { Some(u.id) },
-            uuid: if u.uuid.is_empty() { None } else { Some(u.uuid) },
+            uuid: if u.uuid.is_empty() {
+                None
+            } else {
+                Some(u.uuid)
+            },
             firstname: u.firstname,
             surname: u.surname,
-            date_of_birth: chrono::NaiveDate::parse_from_str(&u.date_of_birth, "%Y-%m-%d").unwrap_or_default(),
+            date_of_birth: chrono::NaiveDate::parse_from_str(&u.date_of_birth, "%Y-%m-%d")
+                .unwrap_or_default(),
             gender: u.gender,
             object_key: Some(u.object_key),
             avatar: Some(u.avatar),
@@ -254,7 +277,11 @@ impl Mapper<DomainFriend, proto::friend::Friend> for FriendMapper {
     fn domain(u: proto::friend::Friend) -> DomainFriend {
         DomainFriend {
             id: if u.id == 0 { None } else { Some(u.id) },
-            uuid: if u.uuid.is_empty() { None } else { Some(u.uuid) },
+            uuid: if u.uuid.is_empty() {
+                None
+            } else {
+                Some(u.uuid)
+            },
             person_id: u.person_id,
             friend_id: u.friend_id,
             person_uuid: u.person_uuid,
@@ -322,7 +349,11 @@ impl Mapper<DomainExercise, proto::exercise::Exercise> for ExerciseMapper {
     fn domain(u: proto::exercise::Exercise) -> DomainExercise {
         use business::domain::enums::{Category, Visibility};
         let id = if u.id == 0 { None } else { Some(u.id) };
-        let uuid = if u.uuid.is_empty() { None } else { Some(u.uuid) };
+        let uuid = if u.uuid.is_empty() {
+            None
+        } else {
+            Some(u.uuid)
+        };
         DomainExercise {
             id,
             uuid,
@@ -369,7 +400,11 @@ impl Mapper<DomainWorkout, proto::workout::Workout> for WorkoutMapper {
     fn domain(u: proto::workout::Workout) -> DomainWorkout {
         use business::domain::enums::Visibility;
         let id = if u.id == 0 { None } else { Some(u.id) };
-        let uuid = if u.uuid.is_empty() { None } else { Some(u.uuid) };
+        let uuid = if u.uuid.is_empty() {
+            None
+        } else {
+            Some(u.uuid)
+        };
         DomainWorkout {
             id,
             uuid,
@@ -422,7 +457,11 @@ impl Mapper<DomainBusinessProfileAddress, proto::business_profile_address::Busin
         u: proto::business_profile_address::BusinessProfileAddress,
     ) -> DomainBusinessProfileAddress {
         let id = if u.id == 0 { None } else { Some(u.id) };
-        let uuid = if u.uuid.is_empty() { None } else { Some(u.uuid) };
+        let uuid = if u.uuid.is_empty() {
+            None
+        } else {
+            Some(u.uuid)
+        };
         DomainBusinessProfileAddress {
             id,
             uuid,
@@ -549,7 +588,11 @@ impl Mapper<DomainTeamMember, proto::team_member::TeamMember> for TeamMemberMapp
     fn domain(u: proto::team_member::TeamMember) -> DomainTeamMember {
         DomainTeamMember {
             id: if u.id == 0 { None } else { Some(u.id) },
-            uuid: if u.uuid.is_empty() { None } else { Some(u.uuid) },
+            uuid: if u.uuid.is_empty() {
+                None
+            } else {
+                Some(u.uuid)
+            },
             business_profile_id: u.business_profile_id,
             business_profile_uuid: u.business_profile_uuid,
             person_id: u.person_id,
@@ -584,9 +627,11 @@ impl AccessTokenMapper {
             person_object_key: t.person_object_key,
             active_business_profile_id: t.active_business_profile_id,
             active_business_profile_uuid: t.active_business_profile_uuid,
-            pending_account_deletion: t.pending_account_deletion.map(|p| proto::auth::PendingAccountDeletion {
-                requested_at: p.requested_at.to_string(),
-                scheduled_at: p.scheduled_at.to_string(),
+            pending_account_deletion: t.pending_account_deletion.map(|p| {
+                proto::auth::PendingAccountDeletion {
+                    requested_at: p.requested_at.to_string(),
+                    scheduled_at: p.scheduled_at.to_string(),
+                }
             }),
         }
     }

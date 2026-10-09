@@ -62,17 +62,60 @@ consent_stub! {
 
 #[tonic::async_trait]
 impl FriendService for ConsentStub {
-    async fn get_friends(&self, _: GrpcRequest<FriendsRequest>) -> Result<Response<FriendsResponse>, Status> {
+    async fn get_friends(
+        &self,
+        _: GrpcRequest<FriendsRequest>,
+    ) -> Result<Response<FriendsResponse>, Status> {
         Ok(Response::new(FriendsResponse { friends: vec![] }))
     }
-    async fn get_friend_page(&self, _: GrpcRequest<FriendPageRequest>) -> Result<Response<FriendPageResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn search_friends(&self, _: GrpcRequest<SearchFriendsRequest>) -> Result<Response<SearchFriendsResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn send_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn accept_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn deny_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn cancel_friend_request(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<Friend>, Status> { Err(Status::unimplemented("")) }
-    async fn remove_friend(&self, _: GrpcRequest<FriendRequestRequest>) -> Result<Response<RemoveFriendResponse>, Status> { Err(Status::unimplemented("")) }
-    async fn get_friend_profile(&self, _: GrpcRequest<FriendProfileRequest>) -> Result<Response<FriendProfileResponse>, Status> { Err(Status::unimplemented("")) }
+    async fn get_friend_page(
+        &self,
+        _: GrpcRequest<FriendPageRequest>,
+    ) -> Result<Response<FriendPageResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn search_friends(
+        &self,
+        _: GrpcRequest<SearchFriendsRequest>,
+    ) -> Result<Response<SearchFriendsResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn send_friend_request(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn accept_friend_request(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn deny_friend_request(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn cancel_friend_request(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<Friend>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn remove_friend(
+        &self,
+        _: GrpcRequest<FriendRequestRequest>,
+    ) -> Result<Response<RemoveFriendResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
+    async fn get_friend_profile(
+        &self,
+        _: GrpcRequest<FriendProfileRequest>,
+    ) -> Result<Response<FriendProfileResponse>, Status> {
+        Err(Status::unimplemented(""))
+    }
 }
 
 const SECRET: &str = "c006-http-test-secret";
@@ -89,11 +132,21 @@ fn token(person_id: i32, person_uuid: &str) -> String {
         active_business_profile_id: None,
         active_business_profile_uuid: None,
     };
-    encode(&Header::new(Algorithm::HS512), &claims, &EncodingKey::from_secret(SECRET.as_bytes()))
-        .unwrap()
+    encode(
+        &Header::new(Algorithm::HS512),
+        &claims,
+        &EncodingKey::from_secret(SECRET.as_bytes()),
+    )
+    .unwrap()
 }
 
-async fn call(app: &Router, method: &str, uri: &str, tok: &str, body: Option<Value>) -> (u16, Value) {
+async fn call(
+    app: &Router,
+    method: &str,
+    uri: &str,
+    tok: &str,
+    body: Option<Value>,
+) -> (u16, Value) {
     let mut req = Request::builder()
         .method(method)
         .uri(uri)
@@ -107,8 +160,13 @@ async fn call(app: &Router, method: &str, uri: &str, tok: &str, body: Option<Val
     };
     let res = app.clone().oneshot(req.body(body).unwrap()).await.unwrap();
     let status = res.status().as_u16();
-    let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
-    (status, serde_json::from_slice(&bytes).unwrap_or(Value::Null))
+    let bytes = axum::body::to_bytes(res.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    (
+        status,
+        serde_json::from_slice(&bytes).unwrap_or(Value::Null),
+    )
 }
 
 fn notification(key: &str, recipient: &str) -> Value {
@@ -127,11 +185,20 @@ fn notification(key: &str, recipient: &str) -> Value {
 #[ignore = "requires a disposable TEST_MONGO_URL targeting the timeline_test database"]
 async fn c006_notification_evolution_and_push_routes_enforce_identity_and_return_stable_outcomes() {
     let mongo_url = std::env::var("TEST_MONGO_URL").expect("TEST_MONGO_URL must be set");
-    assert!(mongo_url.contains("/timeline_test"), "refusing to run against a non-test database");
-    let database = Client::with_uri_str(mongo_url).await.unwrap().database("timeline_test");
+    assert!(
+        mongo_url.contains("/timeline_test"),
+        "refusing to run against a non-test database"
+    );
+    let database = Client::with_uri_str(mongo_url)
+        .await
+        .unwrap()
+        .database("timeline_test");
     let notifications = database.collection::<Value>("in_app_notifications");
     let keys = ["c006-http-n1", "c006-http-n2", "c006-http-other"];
-    notifications.delete_many(doc! { "_id": { "$in": keys.to_vec() } }).await.unwrap();
+    notifications
+        .delete_many(doc! { "_id": { "$in": keys.to_vec() } })
+        .await
+        .unwrap();
     database
         .collection::<Value>("evolutions")
         .delete_many(doc! { "personUuid": "c006-http-owner" })
@@ -160,7 +227,10 @@ async fn c006_notification_evolution_and_push_routes_enforce_identity_and_return
     };
     let app = Router::new()
         .nest("/notifications", notification_routes(state.clone()))
-        .nest("/evolution-checkin", evolution_checkin_routes(state.clone()))
+        .nest(
+            "/evolution-checkin",
+            evolution_checkin_routes(state.clone()),
+        )
         .nest("/push-devices", push_device_routes(state.clone()))
         .with_state(state);
 
@@ -177,11 +247,35 @@ async fn c006_notification_evolution_and_push_routes_enforce_identity_and_return
         .await
         .unwrap();
 
-    assert_eq!(call(&app, "GET", "/notifications/c006-http-owner", "not-a-jwt", None).await.0, 401);
-    // Reading another person's notifications is rejected before touching the database.
-    assert_eq!(call(&app, "GET", "/notifications/c006-http-owner", &other, None).await.0, 403);
     assert_eq!(
-        call(&app, "PUT", "/notifications/c006-http-owner/read/c006-http-n1", &other, None).await.0,
+        call(
+            &app,
+            "GET",
+            "/notifications/c006-http-owner",
+            "not-a-jwt",
+            None
+        )
+        .await
+        .0,
+        401
+    );
+    // Reading another person's notifications is rejected before touching the database.
+    assert_eq!(
+        call(&app, "GET", "/notifications/c006-http-owner", &other, None)
+            .await
+            .0,
+        403
+    );
+    assert_eq!(
+        call(
+            &app,
+            "PUT",
+            "/notifications/c006-http-owner/read/c006-http-n1",
+            &other,
+            None
+        )
+        .await
+        .0,
         403
     );
 
@@ -189,28 +283,66 @@ async fn c006_notification_evolution_and_push_routes_enforce_identity_and_return
     assert_eq!(status, 200, "{list}");
     let list = list.as_array().unwrap();
     assert_eq!(list.len(), 2);
-    assert!(list.iter().all(|n| n["recipientPersonUuid"] == "c006-http-owner"));
+    assert!(
+        list.iter()
+            .all(|n| n["recipientPersonUuid"] == "c006-http-owner")
+    );
 
     // limit is clamped to [1, 100].
-    let (_, limited) = call(&app, "GET", "/notifications/c006-http-owner?limit=0", &owner, None).await;
+    let (_, limited) = call(
+        &app,
+        "GET",
+        "/notifications/c006-http-owner?limit=0",
+        &owner,
+        None,
+    )
+    .await;
     assert_eq!(limited.as_array().unwrap().len(), 1);
 
-    let (status, read) =
-        call(&app, "PUT", "/notifications/c006-http-owner/read/c006-http-n1", &owner, None).await;
+    let (status, read) = call(
+        &app,
+        "PUT",
+        "/notifications/c006-http-owner/read/c006-http-n1",
+        &owner,
+        None,
+    )
+    .await;
     assert_eq!((status, &read["read"]), (200, &json!(true)));
-    let (_, unread) =
-        call(&app, "GET", "/notifications/c006-http-owner?unread_only=true", &owner, None).await;
+    let (_, unread) = call(
+        &app,
+        "GET",
+        "/notifications/c006-http-owner?unread_only=true",
+        &owner,
+        None,
+    )
+    .await;
     let unread = unread.as_array().unwrap();
     assert_eq!(unread.len(), 1);
     assert_eq!(unread[0]["uuid"], "c006-http-n2");
 
     // A key that does not belong to the recipient is a 400, not a state change.
     assert_eq!(
-        call(&app, "PUT", "/notifications/c006-http-owner/read/c006-http-other", &owner, None).await.0,
+        call(
+            &app,
+            "PUT",
+            "/notifications/c006-http-owner/read/c006-http-other",
+            &owner,
+            None
+        )
+        .await
+        .0,
         400
     );
     assert_eq!(
-        call(&app, "PUT", "/notifications/c006-http-owner/read/does-not-exist", &owner, None).await.0,
+        call(
+            &app,
+            "PUT",
+            "/notifications/c006-http-owner/read/does-not-exist",
+            &owner,
+            None
+        )
+        .await
+        .0,
         400
     );
 
@@ -220,10 +352,32 @@ async fn c006_notification_evolution_and_push_routes_enforce_identity_and_return
         "visibility": "Private",
         "composition": { "weight": 82.5, "bodyFatPct": 14.2, "muscleMassPct": 45.0, "visceralFat": 7 }
     });
-    assert_eq!(call(&app, "POST", "/evolution-checkin", "not-a-jwt", Some(checkin.clone())).await.0, 401);
+    assert_eq!(
+        call(
+            &app,
+            "POST",
+            "/evolution-checkin",
+            "not-a-jwt",
+            Some(checkin.clone())
+        )
+        .await
+        .0,
+        401
+    );
 
     CONSENT_ACTIVE.store(false, Ordering::SeqCst);
-    assert_eq!(call(&app, "POST", "/evolution-checkin", &owner, Some(checkin.clone())).await.0, 403);
+    assert_eq!(
+        call(
+            &app,
+            "POST",
+            "/evolution-checkin",
+            &owner,
+            Some(checkin.clone())
+        )
+        .await
+        .0,
+        403
+    );
     CONSENT_ACTIVE.store(true, Ordering::SeqCst);
 
     let (status, saved) = call(&app, "POST", "/evolution-checkin", &owner, Some(checkin)).await;
@@ -258,13 +412,71 @@ async fn c006_notification_evolution_and_push_routes_enforce_identity_and_return
     // ---- Push devices: removal is owner-scoped.
     let device = "d2a7c810-2a10-4cab-8a9e-3df935d20c06";
     let register = json!({ "platform": "android", "registrationToken": "c006-http-token" });
-    assert_eq!(call(&app, "PUT", &format!("/push-devices/{device}"), &owner, Some(register.clone())).await.0, 204);
-    assert_eq!(call(&app, "PUT", "/push-devices/not-a-uuid", &owner, Some(register)).await.0, 400);
-    assert_eq!(call(&app, "DELETE", &format!("/push-devices/{device}"), &other, None).await.0, 404);
-    assert_eq!(call(&app, "DELETE", &format!("/push-devices/{device}"), &owner, None).await.0, 204);
-    assert_eq!(call(&app, "DELETE", &format!("/push-devices/{device}"), &owner, None).await.0, 404);
+    assert_eq!(
+        call(
+            &app,
+            "PUT",
+            &format!("/push-devices/{device}"),
+            &owner,
+            Some(register.clone())
+        )
+        .await
+        .0,
+        204
+    );
+    assert_eq!(
+        call(
+            &app,
+            "PUT",
+            "/push-devices/not-a-uuid",
+            &owner,
+            Some(register)
+        )
+        .await
+        .0,
+        400
+    );
+    assert_eq!(
+        call(
+            &app,
+            "DELETE",
+            &format!("/push-devices/{device}"),
+            &other,
+            None
+        )
+        .await
+        .0,
+        404
+    );
+    assert_eq!(
+        call(
+            &app,
+            "DELETE",
+            &format!("/push-devices/{device}"),
+            &owner,
+            None
+        )
+        .await
+        .0,
+        204
+    );
+    assert_eq!(
+        call(
+            &app,
+            "DELETE",
+            &format!("/push-devices/{device}"),
+            &owner,
+            None
+        )
+        .await
+        .0,
+        404
+    );
 
-    notifications.delete_many(doc! { "_id": { "$in": keys.to_vec() } }).await.unwrap();
+    notifications
+        .delete_many(doc! { "_id": { "$in": keys.to_vec() } })
+        .await
+        .unwrap();
     database
         .collection::<Value>("evolutions")
         .delete_many(doc! { "personUuid": "c006-http-owner" })

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { AppHeader, Sidebar } from '../../commons/gui/index.js';
@@ -66,6 +66,7 @@ const Evolution = () => {
         axios.get('/workout/api/people/me/consents')
             .then(({ data }) => setHealthConsent(data.some((item) => item.document === 'health_data' && !item.revokedAt)))
             .finally(() => setHealthConsentLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the period changes
     }, [period]);
 
     const acceptHealthConsent = async () => {

@@ -43,13 +43,13 @@ const friendSlice = createSlice({
                     error: null
                 })
             })
-            .addCase(sendFriendRequest.fulfilled, (state, {payload}) => {
+            .addCase(sendFriendRequest.fulfilled, (state) => {
                 // The answer is the friendship record, not a person: the page reloads the lists.
                 return updateObject(state, {
                     loading: false,
                 })
             })
-            .addCase(sendFriendRequest.rejected, (state, {payload}) => (
+            .addCase(sendFriendRequest.rejected, (state) => (
                 {
                     ...state,
                     loading: false,
@@ -61,13 +61,13 @@ const friendSlice = createSlice({
                     error: null
                 })
             })
-            .addCase(acceptFriendRequest.fulfilled, (state, {payload}) => {
+            .addCase(acceptFriendRequest.fulfilled, (state) => {
                 // The answer is the friendship record, not a person: the page reloads the lists.
                 return updateObject(state, {
                     loading: false,
                 })
             })
-            .addCase(acceptFriendRequest.rejected, (state, {payload}) => (
+            .addCase(acceptFriendRequest.rejected, (state) => (
                 {
                     ...state,
                     loading: false,
@@ -79,12 +79,12 @@ const friendSlice = createSlice({
                     error: null
                 })
             })
-            .addCase(denyFriendRequest.fulfilled, (state, {payload}) => {
+            .addCase(denyFriendRequest.fulfilled, (state) => {
                 return updateObject(state, {
                     loading: false,
                 })
             })
-            .addCase(denyFriendRequest.rejected, (state, {payload}) => (
+            .addCase(denyFriendRequest.rejected, (state) => (
                 {
                     ...state,
                     loading: false,

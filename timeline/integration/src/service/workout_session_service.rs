@@ -24,11 +24,17 @@ impl GrpcWorkoutSessionService {
 
 #[tonic::async_trait]
 impl WorkoutSessionService for GrpcWorkoutSessionService {
-    async fn create_workout_session(&self, request: Request<CreateWorkoutSessionRequest>) -> Result<Response<WorkoutSession>, Status> {
+    async fn create_workout_session(
+        &self,
+        request: Request<CreateWorkoutSessionRequest>,
+    ) -> Result<Response<WorkoutSession>, Status> {
         enforce(&content_limiter(), &request)?;
         let (db, body) = (self.database.clone(), request.get_ref().clone());
         with_caller(&request, |user| async move {
-            let session = WorkoutSessionMapper::domain(body.session.ok_or_else(|| Status::invalid_argument("session is required"))?)?;
+            let session = WorkoutSessionMapper::domain(
+                body.session
+                    .ok_or_else(|| Status::invalid_argument("session is required"))?,
+            )?;
             let saved = WorkoutSessionUseCase::add(&db, session, &user.person_uuid)
                 .await
                 .map_err(|e| business_status(&e))?;
@@ -37,8 +43,14 @@ impl WorkoutSessionService for GrpcWorkoutSessionService {
         .await
     }
 
-    async fn get_workout_session(&self, request: Request<GetWorkoutSessionRequest>) -> Result<Response<WorkoutSession>, Status> {
-        let (db, id) = (self.database.clone(), request.get_ref().session_uuid.clone());
+    async fn get_workout_session(
+        &self,
+        request: Request<GetWorkoutSessionRequest>,
+    ) -> Result<Response<WorkoutSession>, Status> {
+        let (db, id) = (
+            self.database.clone(),
+            request.get_ref().session_uuid.clone(),
+        );
         with_caller(&request, |user| async move {
             let session = WorkoutSessionUseCase::find_by_id(&db, id, &user.person_uuid)
                 .await
@@ -48,11 +60,16 @@ impl WorkoutSessionService for GrpcWorkoutSessionService {
         .await
     }
 
-    async fn list_workout_sessions(&self, request: Request<ListWorkoutSessionsRequest>) -> Result<Response<ListWorkoutSessionsResponse>, Status> {
+    async fn list_workout_sessions(
+        &self,
+        request: Request<ListWorkoutSessionsRequest>,
+    ) -> Result<Response<ListWorkoutSessionsResponse>, Status> {
         let (db, body) = (self.database.clone(), request.get_ref().clone());
         with_caller(&request, |user| async move {
-            let end = optional_text_to_date(body.end_date.as_deref())?.unwrap_or_else(|| Utc::now().naive_utc());
-            let start = optional_text_to_date(body.start_date.as_deref())?.unwrap_or_else(|| end - Duration::days(7));
+            let end = optional_text_to_date(body.end_date.as_deref())?
+                .unwrap_or_else(|| Utc::now().naive_utc());
+            let start = optional_text_to_date(body.start_date.as_deref())?
+                .unwrap_or_else(|| end - Duration::days(7));
             let found = WorkoutSessionUseCase::find_all_by_person(
                 &db,
                 user.person_uuid,

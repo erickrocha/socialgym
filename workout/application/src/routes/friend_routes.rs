@@ -35,9 +35,12 @@ pub fn friend_routes(state: AppState) -> Router<AppState> {
         )
         .route(
             "/{friend_id}",
-            get(get_friend).delete(remove_friend).route_layer(
-                middleware::from_fn_with_state(state.clone(), authentication),
-            ),
+            get(get_friend)
+                .delete(remove_friend)
+                .route_layer(middleware::from_fn_with_state(
+                    state.clone(),
+                    authentication,
+                )),
         )
         .route(
             "/request/{receiver_id}",

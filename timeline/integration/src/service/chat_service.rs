@@ -32,10 +32,15 @@ impl GrpcChatService {
 
 #[tonic::async_trait]
 impl ChatService for GrpcChatService {
-    async fn list_conversations(&self, request: Request<ListConversationsRequest>) -> Result<Response<ListConversationsResponse>, Status> {
+    async fn list_conversations(
+        &self,
+        request: Request<ListConversationsRequest>,
+    ) -> Result<Response<ListConversationsResponse>, Status> {
         let (db, page) = (self.database.clone(), request.get_ref().page);
         with_caller(&request, |user| async move {
-            let views = ChatUseCase::list_conversations(&db, &user, page).await.map_err(|e| business_status(&e))?;
+            let views = ChatUseCase::list_conversations(&db, &user, page)
+                .await
+                .map_err(|e| business_status(&e))?;
             Ok(Response::new(ListConversationsResponse {
                 conversations: views.into_iter().map(ConversationMapper::proto).collect(),
             }))
@@ -43,8 +48,15 @@ impl ChatService for GrpcChatService {
         .await
     }
 
-    async fn get_presence(&self, request: Request<GetPresenceRequest>) -> Result<Response<GetPresenceResponse>, Status> {
-        let (db, hub, uuids) = (self.database.clone(), self.chat_hub.clone(), request.get_ref().person_uuids.clone());
+    async fn get_presence(
+        &self,
+        request: Request<GetPresenceRequest>,
+    ) -> Result<Response<GetPresenceResponse>, Status> {
+        let (db, hub, uuids) = (
+            self.database.clone(),
+            self.chat_hub.clone(),
+            request.get_ref().person_uuids.clone(),
+        );
         with_caller(&request, |user| async move {
             let online = ChatSessionUseCase::presence_online(&hub, &db, &user, uuids)
                 .await
@@ -54,29 +66,50 @@ impl ChatService for GrpcChatService {
         .await
     }
 
-    async fn create_direct_conversation(&self, request: Request<CreateDirectConversationRequest>) -> Result<Response<Conversation>, Status> {
+    async fn create_direct_conversation(
+        &self,
+        request: Request<CreateDirectConversationRequest>,
+    ) -> Result<Response<Conversation>, Status> {
         enforce(&chat_limiter(), &request)?;
-        let (db, target) = (self.database.clone(), request.get_ref().target_person_uuid.clone());
+        let (db, target) = (
+            self.database.clone(),
+            request.get_ref().target_person_uuid.clone(),
+        );
         with_caller(&request, |user| async move {
-            let conversation = ChatUseCase::get_or_create_direct(&db, &user, &target).await.map_err(|e| business_status(&e))?;
-            Ok(Response::new(ConversationMapper::proto(ChatUseCase::view_of(conversation).await)))
+            let conversation = ChatUseCase::get_or_create_direct(&db, &user, &target)
+                .await
+                .map_err(|e| business_status(&e))?;
+            Ok(Response::new(ConversationMapper::proto(
+                ChatUseCase::view_of(conversation).await,
+            )))
         })
         .await
     }
 
-    async fn create_business_team_group(&self, request: Request<CreateBusinessTeamGroupRequest>) -> Result<Response<Conversation>, Status> {
+    async fn create_business_team_group(
+        &self,
+        request: Request<CreateBusinessTeamGroupRequest>,
+    ) -> Result<Response<Conversation>, Status> {
         enforce(&chat_limiter(), &request)?;
-        let (db, profile) = (self.database.clone(), request.get_ref().business_profile_uuid.clone());
+        let (db, profile) = (
+            self.database.clone(),
+            request.get_ref().business_profile_uuid.clone(),
+        );
         with_caller(&request, |user| async move {
             let conversation = ChatUseCase::get_or_create_business_team_group(&db, &user, &profile)
                 .await
                 .map_err(|e| business_status(&e))?;
-            Ok(Response::new(ConversationMapper::proto(ChatUseCase::view_of(conversation).await)))
+            Ok(Response::new(ConversationMapper::proto(
+                ChatUseCase::view_of(conversation).await,
+            )))
         })
         .await
     }
 
-    async fn create_business_direct_conversation(&self, request: Request<CreateBusinessDirectConversationRequest>) -> Result<Response<Conversation>, Status> {
+    async fn create_business_direct_conversation(
+        &self,
+        request: Request<CreateBusinessDirectConversationRequest>,
+    ) -> Result<Response<Conversation>, Status> {
         enforce(&chat_limiter(), &request)?;
         let (db, body) = (self.database.clone(), request.get_ref().clone());
         with_caller(&request, |user| async move {
@@ -88,17 +121,28 @@ impl ChatService for GrpcChatService {
             )
             .await
             .map_err(|e| business_status(&e))?;
-            Ok(Response::new(ConversationMapper::proto(ChatUseCase::view_of(conversation).await)))
+            Ok(Response::new(ConversationMapper::proto(
+                ChatUseCase::view_of(conversation).await,
+            )))
         })
         .await
     }
 
-    async fn list_messages(&self, request: Request<ListMessagesRequest>) -> Result<Response<ListMessagesResponse>, Status> {
+    async fn list_messages(
+        &self,
+        request: Request<ListMessagesRequest>,
+    ) -> Result<Response<ListMessagesResponse>, Status> {
         enforce(&chat_limiter(), &request)?;
         let (db, body) = (self.database.clone(), request.get_ref().clone());
         with_caller(&request, |user| async move {
             let messages = if body.since_epoch_ms > 0 {
-                ChatUseCase::list_messages_since(&db, &user, &body.conversation_uuid, body.since_epoch_ms).await
+                ChatUseCase::list_messages_since(
+                    &db,
+                    &user,
+                    &body.conversation_uuid,
+                    body.since_epoch_ms,
+                )
+                .await
             } else {
                 ChatUseCase::list_messages(&db, &user, &body.conversation_uuid, body.page).await
             }
@@ -110,11 +154,22 @@ impl ChatService for GrpcChatService {
         .await
     }
 
-    async fn send_message(&self, request: Request<SendMessageRequest>) -> Result<Response<Message>, Status> {
+    async fn send_message(
+        &self,
+        request: Request<SendMessageRequest>,
+    ) -> Result<Response<Message>, Status> {
         enforce(&chat_limiter(), &request)?;
-        let (db, hub, body) = (self.database.clone(), self.chat_hub.clone(), request.get_ref().clone());
+        let (db, hub, body) = (
+            self.database.clone(),
+            self.chat_hub.clone(),
+            request.get_ref().clone(),
+        );
         with_caller(&request, |user| async move {
-            let media = body.media.into_iter().map(MessageMapper::media_domain).collect();
+            let media = body
+                .media
+                .into_iter()
+                .map(MessageMapper::media_domain)
+                .collect();
             let message = ChatSessionUseCase::send_message(
                 &hub,
                 &db,
@@ -131,12 +186,25 @@ impl ChatService for GrpcChatService {
         .await
     }
 
-    async fn mark_conversation_read(&self, request: Request<MarkConversationReadRequest>) -> Result<Response<MarkConversationReadResponse>, Status> {
-        let (db, hub, body) = (self.database.clone(), self.chat_hub.clone(), request.get_ref().clone());
+    async fn mark_conversation_read(
+        &self,
+        request: Request<MarkConversationReadRequest>,
+    ) -> Result<Response<MarkConversationReadResponse>, Status> {
+        let (db, hub, body) = (
+            self.database.clone(),
+            self.chat_hub.clone(),
+            request.get_ref().clone(),
+        );
         with_caller(&request, |user| async move {
-            ChatSessionUseCase::mark_read(&hub, &db, &user, &body.conversation_uuid, &body.last_read_message_uuid)
-                .await
-                .map_err(|e| business_status(&e))?;
+            ChatSessionUseCase::mark_read(
+                &hub,
+                &db,
+                &user,
+                &body.conversation_uuid,
+                &body.last_read_message_uuid,
+            )
+            .await
+            .map_err(|e| business_status(&e))?;
             Ok(Response::new(MarkConversationReadResponse { read: true }))
         })
         .await
@@ -144,7 +212,10 @@ impl ChatService for GrpcChatService {
 
     type OpenStreamStream = ReceiverStream<Result<ServerFrame, Status>>;
 
-    async fn open_stream(&self, request: Request<Streaming<ClientFrame>>) -> Result<Response<Self::OpenStreamStream>, Status> {
+    async fn open_stream(
+        &self,
+        request: Request<Streaming<ClientFrame>>,
+    ) -> Result<Response<Self::OpenStreamStream>, Status> {
         // Same gate as every other operation: valid token, then current Terms and Privacy consent.
         with_caller(&request, |_| async { Ok(()) }).await?;
         let (user, BearerToken(token)) = caller(&request)?;

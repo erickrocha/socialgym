@@ -11,13 +11,18 @@ use sea_orm::{
 /// Escapes `\`, `%` and `_` so user text is matched literally in a `LIKE` pattern
 /// (Postgres uses backslash as the default escape character).
 pub fn escape_like(text: &str) -> String {
-    text.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+    text.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
 }
 
 pub struct BusinessProfileGateway {}
 
 impl BusinessProfileGateway {
-    pub async fn persist<C: ConnectionTrait>(db: &C, entity: BusinessProfile) -> Result<ActiveModel, DbErr> {
+    pub async fn persist<C: ConnectionTrait>(
+        db: &C,
+        entity: BusinessProfile,
+    ) -> Result<ActiveModel, DbErr> {
         let active_model = BusinessProfileEntityMapper::build_active_model(entity);
         active_model.save(db).await
     }
@@ -30,7 +35,10 @@ impl BusinessProfileGateway {
             .unwrap_or(None)
     }
 
-    pub async fn find_by_uuid(db: &DbConn, uuid: &str) -> Result<Option<BusinessProfileEntity>, DbErr> {
+    pub async fn find_by_uuid(
+        db: &DbConn,
+        uuid: &str,
+    ) -> Result<Option<BusinessProfileEntity>, DbErr> {
         let uuid = parse_uuid(uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         BusinessProfileQuery::find()
             .filter(entity::business_profile_entity::Column::Uuid.eq(uuid))
@@ -46,7 +54,10 @@ impl BusinessProfileGateway {
             .unwrap_or_else(|_| Vec::new())
     }
 
-    pub async fn find_by_owner_uuid(db: &DbConn, owner_uuid: &str) -> Result<Vec<BusinessProfileEntity>, DbErr> {
+    pub async fn find_by_owner_uuid(
+        db: &DbConn,
+        owner_uuid: &str,
+    ) -> Result<Vec<BusinessProfileEntity>, DbErr> {
         let owner_uuid = parse_uuid(owner_uuid).map_err(|e| DbErr::Type(e.to_string()))?;
         BusinessProfileQuery::find()
             .filter(entity::business_profile_entity::Column::OwnerUuid.eq(owner_uuid))

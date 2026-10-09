@@ -6,7 +6,10 @@ pub fn constant_time_eq(left: &str, right: &str) -> bool {
     if left.len() != right.len() {
         return false;
     }
-    left.iter().zip(right).fold(0u8, |difference, (a, b)| difference | (a ^ b)) == 0
+    left.iter()
+        .zip(right)
+        .fold(0u8, |difference, (a, b)| difference | (a ^ b))
+        == 0
 }
 
 #[cfg(test)]

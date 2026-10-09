@@ -27,7 +27,11 @@ impl PushDeviceUseCase {
     }
 
     /// Removes the installation only when it belongs to `owner_uuid`.
-    pub async fn remove(db: &Database, owner_uuid: &str, device_uuid: &str) -> Result<(), BusinessError> {
+    pub async fn remove(
+        db: &Database,
+        owner_uuid: &str,
+        device_uuid: &str,
+    ) -> Result<(), BusinessError> {
         if PushDeviceGateway::remove_owned(db, device_uuid, owner_uuid).await? {
             Ok(())
         } else {

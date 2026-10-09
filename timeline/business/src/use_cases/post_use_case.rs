@@ -1,20 +1,20 @@
+use crate::commons::authorization::ensure_owns;
 use crate::commons::grpc_config::GrpcConfig;
 use crate::gateway::business_profile_gateway::BusinessProfileGateway;
 use crate::gateway::friend_gateway::FriendGateway;
+use crate::gateway::mention_notification_gateway::MentionNotificationGateway;
 use crate::gateway::post_gateway::PostGateway;
 use crate::repositories::repository::Repository;
-use crate::commons::authorization::ensure_owns;
-use domain::business_error::BusinessError;
-use domain::user::User;
-use domain::comment::Comment;
-use domain::post::Post;
-use domain::reaction::Reaction;
-use domain::in_app_notification::InAppNotification;
-use mongodb::Database;
-use std::collections::{HashMap, HashSet};
 use crate::use_cases::media_use_case::MediaUseCase;
 use crate::use_cases::mention_use_case::MentionUseCase;
-use crate::gateway::mention_notification_gateway::MentionNotificationGateway;
+use domain::business_error::BusinessError;
+use domain::comment::Comment;
+use domain::in_app_notification::InAppNotification;
+use domain::post::Post;
+use domain::reaction::Reaction;
+use domain::user::User;
+use mongodb::Database;
+use std::collections::{HashMap, HashSet};
 
 pub struct PostUseCase {}
 
@@ -28,7 +28,11 @@ impl PostUseCase {
     /// only thing standing between a client and an unbounded post/comment.
     const MAX_CONTENT_LEN: usize = 5000;
 
-    pub async fn create(db: &Database, author: &User, mut post: Post) -> Result<Post, BusinessError> {
+    pub async fn create(
+        db: &Database,
+        author: &User,
+        mut post: Post,
+    ) -> Result<Post, BusinessError> {
         Self::validate_content(&post.content)?;
         let author_person_id = author.person_id;
         Self::apply_post_author(&mut post, author);
@@ -36,8 +40,13 @@ impl PostUseCase {
         log::info!("Creating post by author: {}", post.author_id);
         let persisted = PostGateway::new(db).persist(post).await?;
 
-        if let Err(e) = MentionUseCase::enqueue_mentions_from_post(db, author_person_id, &persisted).await {
-            log::error!("Failed to enqueue post mention notifications: {}",e.message);
+        if let Err(e) =
+            MentionUseCase::enqueue_mentions_from_post(db, author_person_id, &persisted).await
+        {
+            log::error!(
+                "Failed to enqueue post mention notifications: {}",
+                e.message
+            );
         }
 
         Ok(persisted)
@@ -51,7 +60,9 @@ impl PostUseCase {
         third_party_consent_confirmed: bool,
     ) -> Result<Post, BusinessError> {
         if !post.media.is_empty() && !third_party_consent_confirmed {
-            return Err(BusinessError::validation("third-party consent is required for media"));
+            return Err(BusinessError::validation(
+                "third-party consent is required for media",
+            ));
         }
         Self::create(db, author, post).await
     }
@@ -62,7 +73,7 @@ impl PostUseCase {
             .ok_or_else(|| BusinessError::validation("unknown reaction type"))
     }
 
-    pub async fn delete(db: &Database, uuid: String,) -> Result<(), BusinessError> {
+    pub async fn delete(db: &Database, uuid: String) -> Result<(), BusinessError> {
         log::info!("Deleting post by id: {}", uuid);
         let deleted_post = PostGateway::new(db).delete(uuid).await;
         if let Err(e) = deleted_post {
@@ -80,8 +91,17 @@ impl PostUseCase {
         log::info!("Finding post by id: {}", id);
         PostGateway::new(db).find_by_id(id).await
     }
-    pub async fn get_feed(db: &Database, person_id: i32, person_uuid: String, page: u32) -> Result<Vec<Post>, BusinessError> {
-        log::info!("Fetching friend feed for person_uuid: {}, page: {}",person_uuid,page);
+    pub async fn get_feed(
+        db: &Database,
+        person_id: i32,
+        person_uuid: String,
+        page: u32,
+    ) -> Result<Vec<Post>, BusinessError> {
+        log::info!(
+            "Fetching friend feed for person_uuid: {}, page: {}",
+            person_uuid,
+            page
+        );
 
         let endpoint = GrpcConfig::build_endpoint();
 
@@ -93,12 +113,26 @@ impl PostUseCase {
         }
 
         let gateway = PostGateway::new(db);
-        let posts = gateway.find_feed(friend_uuids, Self::feed_skip(page, DEFAULT_FEED_PAGE_SIZE), DEFAULT_FEED_PAGE_SIZE).await?;
+        let posts = gateway
+            .find_feed(
+                friend_uuids,
+                Self::feed_skip(page, DEFAULT_FEED_PAGE_SIZE),
+                DEFAULT_FEED_PAGE_SIZE,
+            )
+            .await?;
         Ok(posts)
     }
 
-    pub async fn get_business_feed(db: &Database, business_profile_uuid: String, page: u32) -> Result<Vec<Post>, BusinessError> {
-        log::info!("Fetching business feed for business_profile_uuid: {}, page: {}",business_profile_uuid,page);
+    pub async fn get_business_feed(
+        db: &Database,
+        business_profile_uuid: String,
+        page: u32,
+    ) -> Result<Vec<Post>, BusinessError> {
+        log::info!(
+            "Fetching business feed for business_profile_uuid: {}, page: {}",
+            business_profile_uuid,
+            page
+        );
 
         // Only Business Profiles have a public feed; a person's posts are not listable by uuid.
         if !BusinessProfileGateway::exists(&business_profile_uuid).await? {
@@ -107,12 +141,22 @@ impl PostUseCase {
         let uuids = vec![business_profile_uuid.clone()];
 
         let gateway = PostGateway::new(db);
-        let posts = gateway.find_feed(uuids, Self::feed_skip(page, DEFAULT_FEED_PAGE_SIZE), DEFAULT_FEED_PAGE_SIZE).await?;
+        let posts = gateway
+            .find_feed(
+                uuids,
+                Self::feed_skip(page, DEFAULT_FEED_PAGE_SIZE),
+                DEFAULT_FEED_PAGE_SIZE,
+            )
+            .await?;
         Ok(posts)
     }
 
-
-    pub async fn add_comment(db: &Database, author: &User, post_id: String, mut comment: Comment) -> Result<Post, BusinessError> {
+    pub async fn add_comment(
+        db: &Database,
+        author: &User,
+        post_id: String,
+        mut comment: Comment,
+    ) -> Result<Post, BusinessError> {
         Self::validate_content(&comment.content)?;
         let author_person_id = author.person_id;
         Self::apply_comment_author(&mut comment, author);
@@ -132,7 +176,10 @@ impl PostUseCase {
                 .any(|mention| mention.mentioned_uuid == persisted_post.author_uuid);
             if persisted_post.author_uuid != author.person_uuid && !owner_was_mentioned {
                 let notification = InAppNotification::from_social_interaction(
-                    format!("{}:comment:{}", persisted_comment.uuid, persisted_post.author_uuid),
+                    format!(
+                        "{}:comment:{}",
+                        persisted_comment.uuid, persisted_post.author_uuid
+                    ),
                     "Comment".to_string(),
                     persisted_post.author_uuid.clone(),
                     author.person_uuid.clone(),
@@ -156,17 +203,26 @@ impl PostUseCase {
             )
             .await
             {
-                log::error!("Failed to enqueue comment mention notifications: {}", error.message);
+                log::error!(
+                    "Failed to enqueue comment mention notifications: {}",
+                    error.message
+                );
             }
         }
         Ok(persisted_post)
     }
-    pub async fn add_reaction(db: &Database, author: &User, post_id: String, mut reaction: Reaction) -> Result<Post, BusinessError> {
+    pub async fn add_reaction(
+        db: &Database,
+        author: &User,
+        post_id: String,
+        mut reaction: Reaction,
+    ) -> Result<Post, BusinessError> {
         reaction.author_id = author.person_uuid.clone();
         reaction.author_name = author.name.clone();
         log::info!("Adding reaction to post: {}", post_id);
         let gateway = PostGateway::new(db);
-        let before = Some(Self::load_readable(db, &post_id, author.person_id, &author.person_uuid).await?);
+        let before =
+            Some(Self::load_readable(db, &post_id, author.person_id, &author.person_uuid).await?);
         let had_reaction = before.as_ref().is_some_and(|post| {
             post.reactions
                 .iter()
@@ -174,10 +230,7 @@ impl PostUseCase {
         });
         let updated = gateway.add_reaction(&post_id, reaction.clone()).await?;
 
-        if !had_reaction
-            && updated.author_uuid != author.person_uuid
-            && before.is_some()
-        {
+        if !had_reaction && updated.author_uuid != author.person_uuid && before.is_some() {
             let notification = InAppNotification::from_social_interaction(
                 format!("{}:reaction:{}", reaction.uuid, updated.author_uuid),
                 "Reaction".to_string(),
@@ -197,14 +250,26 @@ impl PostUseCase {
         }
         Ok(updated)
     }
-    pub async fn remove_reaction(db: &Database, post_id: String, person_id: i32, person_uuid: String) -> Result<Post, BusinessError> {
+    pub async fn remove_reaction(
+        db: &Database,
+        post_id: String,
+        person_id: i32,
+        person_uuid: String,
+    ) -> Result<Post, BusinessError> {
         log::info!("Removing reaction from post: {}", post_id);
         Self::load_readable(db, &post_id, person_id, &person_uuid).await?;
-        PostGateway::new(db).remove_reaction(&post_id, &person_uuid).await
+        PostGateway::new(db)
+            .remove_reaction(&post_id, &person_uuid)
+            .await
     }
 
     /// Only the author may delete their own post.
-    pub async fn delete_owned(db: &Database, uuid: String, author_person_id: i32, acting_person_uuid: &str) -> Result<(), BusinessError> {
+    pub async fn delete_owned(
+        db: &Database,
+        uuid: String,
+        author_person_id: i32,
+        acting_person_uuid: &str,
+    ) -> Result<(), BusinessError> {
         let gateway = PostGateway::new(db);
         let post = gateway
             .find_by_id_result(&uuid)
@@ -226,7 +291,12 @@ impl PostUseCase {
     /// Post audience (V1): the author, an accepted friend of the author, or any authenticated
     /// person when the author is a Business Profile. Everyone else gets NOT_FOUND so the
     /// post's existence is not revealed.
-    pub(crate) async fn load_readable(db: &Database, post_id: &str, person_id: i32, person_uuid: &str) -> Result<Post, BusinessError> {
+    pub(crate) async fn load_readable(
+        db: &Database,
+        post_id: &str,
+        person_id: i32,
+        person_uuid: &str,
+    ) -> Result<Post, BusinessError> {
         let post = PostGateway::new(db)
             .find_by_id_result(post_id)
             .await?
@@ -235,14 +305,20 @@ impl PostUseCase {
         Ok(post)
     }
 
-    async fn ensure_can_read(post: &Post, person_id: i32, person_uuid: &str) -> Result<(), BusinessError> {
+    async fn ensure_can_read(
+        post: &Post,
+        person_id: i32,
+        person_uuid: &str,
+    ) -> Result<(), BusinessError> {
         if post.author_uuid == person_uuid {
             return Ok(());
         }
         let friends = FriendGateway::new(GrpcConfig::build_endpoint())
             .find_friend_uuids(person_id, person_uuid)
             .await?;
-        if friends.contains(&post.author_uuid) || BusinessProfileGateway::exists(&post.author_uuid).await? {
+        if friends.contains(&post.author_uuid)
+            || BusinessProfileGateway::exists(&post.author_uuid).await?
+        {
             return Ok(());
         }
         Err(BusinessError::not_found("Post not found"))

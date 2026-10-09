@@ -20,17 +20,29 @@ impl GrpcInternalService {
 
 #[tonic::async_trait]
 impl InternalService for GrpcInternalService {
-    async fn delete_person_data(&self, request: Request<PersonDataRequest>) -> Result<Response<DeletePersonDataResponse>, Status> {
-        AccountDataDeletionUseCase::delete_all_for_person(&self.database, &request.get_ref().person_uuid)
-            .await
-            .map_err(|e| business_status(&e))?;
+    async fn delete_person_data(
+        &self,
+        request: Request<PersonDataRequest>,
+    ) -> Result<Response<DeletePersonDataResponse>, Status> {
+        AccountDataDeletionUseCase::delete_all_for_person(
+            &self.database,
+            &request.get_ref().person_uuid,
+        )
+        .await
+        .map_err(|e| business_status(&e))?;
         Ok(Response::new(DeletePersonDataResponse {}))
     }
 
-    async fn export_person_data(&self, request: Request<PersonDataRequest>) -> Result<Response<ExportPersonDataResponse>, Status> {
-        let export = PersonDataExportUseCase::export(&self.database, &request.get_ref().person_uuid)
-            .await
-            .map_err(|e| business_status(&e))?;
-        Ok(Response::new(ExportPersonDataResponse { export_json: export.to_string() }))
+    async fn export_person_data(
+        &self,
+        request: Request<PersonDataRequest>,
+    ) -> Result<Response<ExportPersonDataResponse>, Status> {
+        let export =
+            PersonDataExportUseCase::export(&self.database, &request.get_ref().person_uuid)
+                .await
+                .map_err(|e| business_status(&e))?;
+        Ok(Response::new(ExportPersonDataResponse {
+            export_json: export.to_string(),
+        }))
     }
 }

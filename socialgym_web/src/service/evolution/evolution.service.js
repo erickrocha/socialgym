@@ -1,6 +1,6 @@
 import axios from "../../axios.config";
 
-export const getEvolutionCheckinsApi = async (personId) => {
+export const getEvolutionCheckinsApi = async () => {
     // The API lists the caller's own check-ins; there is no per-person route.
     const { data } = await axios.get('/timeline/api/evolution-checkin');
     return data;

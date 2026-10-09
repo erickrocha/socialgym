@@ -26,10 +26,11 @@ pub fn with_forwarded_token<F: Future>(
 /// Returns `None` when called outside a [`with_forwarded_token`] scope or when
 /// the scope was created with `None`.
 pub fn current_forwarded_token() -> Option<String> {
-    FORWARDED_TOKEN.try_with(|t: &Option<String>| t.clone()).unwrap_or(None)
+    FORWARDED_TOKEN
+        .try_with(|t: &Option<String>| t.clone())
+        .unwrap_or(None)
 }
 
 #[cfg(test)]
 #[path = "../tests/token_context_unit_test.rs"]
 mod tests;
-

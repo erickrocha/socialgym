@@ -15,10 +15,19 @@ spec:
       labels:
         app: workout
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
       containers:
         - name: workout
           image: "{{ .Values.workout.image.repository }}:{{ .Values.workout.image.tag }}"
           imagePullPolicy: {{ .Values.workout.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           # DATABASE_URL is built at container start from discrete
           # POSTGRES_* env vars so the postgres Secret stays the single
           # source of truth for the password (never duplicated into another

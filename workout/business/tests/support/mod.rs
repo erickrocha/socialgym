@@ -14,8 +14,17 @@ use sea_orm::{Database, DatabaseConnection};
 pub async fn fresh_db() -> DatabaseConnection {
     let url = std::env::var("TEST_DATABASE_URL")
         .expect("TEST_DATABASE_URL must point to the disposable workout_test database");
-    let name = url.split('?').next().unwrap_or(&url).rsplit('/').next().unwrap_or_default();
-    assert_eq!(name, "workout_test", "refusing to run against a non-test database");
+    let name = url
+        .split('?')
+        .next()
+        .unwrap_or(&url)
+        .rsplit('/')
+        .next()
+        .unwrap_or_default();
+    assert_eq!(
+        name, "workout_test",
+        "refusing to run against a non-test database"
+    );
     let db = Database::connect(url).await.unwrap();
     Migrator::refresh(&db).await.unwrap();
     db
@@ -26,7 +35,12 @@ pub async fn register(db: &DatabaseConnection, n: u32) -> User {
     RegistrationUseCase::execute(
         db,
         RegistrationRequest {
-            person: Person::new(format!("First{n}"), format!("Last{n}"), NaiveDate::from_ymd_opt(1990, 1, 1).unwrap(), "X".to_string()),
+            person: Person::new(
+                format!("First{n}"),
+                format!("Last{n}"),
+                NaiveDate::from_ymd_opt(1990, 1, 1).unwrap(),
+                "X".to_string(),
+            ),
             email: format!("user{n}@example.test"),
             password: "Str0ng!Password".to_string(),
             language: "en".to_string(),
@@ -70,10 +84,21 @@ use business::domain::enums::{Difficulty, InviteStatus, ProfileType};
 use business::domain::workout::Workout;
 use business::use_cases::business_profile_use_case::BusinessProfileUseCase;
 
-pub async fn business_profile(db: &DatabaseConnection, owner: &User, name: &str) -> BusinessProfile {
+pub async fn business_profile(
+    db: &DatabaseConnection,
+    owner: &User,
+    name: &str,
+) -> BusinessProfile {
     BusinessProfileUseCase::add(
         db,
-        BusinessProfile::new(0, String::new(), "12345678000199".to_string(), name.to_string(), ProfileType::Professional, None),
+        BusinessProfile::new(
+            0,
+            String::new(),
+            "12345678000199".to_string(),
+            name.to_string(),
+            ProfileType::Professional,
+            None,
+        ),
         owner,
     )
     .await
@@ -123,6 +148,13 @@ pub async fn localstack_bucket_and_queue() -> (String, String) {
     let _ = s3.create_bucket().bucket(&bucket).send().await;
     let sqs = business::gateway::aws_clients::sqs_client().await;
     let name = format!("uc-{}", uuid::Uuid::new_v4());
-    let queue = sqs.create_queue().queue_name(name).send().await.expect("LocalStack SQS must be reachable").queue_url.unwrap();
+    let queue = sqs
+        .create_queue()
+        .queue_name(name)
+        .send()
+        .await
+        .expect("LocalStack SQS must be reachable")
+        .queue_url
+        .unwrap();
     (bucket, queue)
 }

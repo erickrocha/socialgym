@@ -11,9 +11,9 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json};
 use business::commons::authorization::ActingOwner;
+use business::domain::business_error::BusinessErrorKind;
 use business::domain::business_profile::BusinessProfile;
 use business::domain::user::User;
-use business::domain::business_error::BusinessErrorKind;
 use business::use_cases::workout_use_case::AddExercisesError;
 use business::use_cases::workout_use_case::WorkoutUseCase;
 
@@ -89,13 +89,14 @@ pub async fn get_workouts_assigned_by_profile(
     active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<Vec<WorkoutJson>>> {
-    let profile_id = active_profile
-        .as_deref()
-        .and_then(|p| p.id)
-        .ok_or(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::WorkoutNotFound,
-        ))?;
+    let profile_id =
+        active_profile
+            .as_deref()
+            .and_then(|p| p.id)
+            .ok_or(ExceptionResponse::BadRequest(
+                locale,
+                ErrorKey::WorkoutNotFound,
+            ))?;
     let workouts = WorkoutUseCase::find_all_assigned_by_profile(&state.conn, profile_id)
         .await
         .map_err(|error| workout_error(error, locale))?;
@@ -117,10 +118,8 @@ pub async fn update_workout(
         active_profile.as_deref(),
         None,
     )
-        .await
-        .map_err(|error| {
-            ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutAddFailed)
-        })?;
+    .await
+    .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutAddFailed))?;
     Ok(Json(WorkoutMapper::json(workout)))
 }
 
@@ -196,13 +195,14 @@ pub async fn cancel_workout_assignment(
     active_profile: Option<Extension<BusinessProfile>>,
     Extension(locale): Extension<Locale>,
 ) -> HttpResponse<Json<WorkoutJson>> {
-    let profile_id = active_profile
-        .as_deref()
-        .and_then(|p| p.id)
-        .ok_or(ExceptionResponse::BadRequest(
-            locale,
-            ErrorKey::WorkoutCancelAssignmentFailed,
-        ))?;
+    let profile_id =
+        active_profile
+            .as_deref()
+            .and_then(|p| p.id)
+            .ok_or(ExceptionResponse::BadRequest(
+                locale,
+                ErrorKey::WorkoutCancelAssignmentFailed,
+            ))?;
     let workout = WorkoutUseCase::cancel_assignment(&state.conn, uuid, profile_id)
         .await
         .map_err(|error| {
@@ -277,10 +277,8 @@ pub async fn add_workout(
         active_profile.as_deref(),
         assign_to_person_uuid.as_deref(),
     )
-        .await
-        .map_err(|error| {
-            ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutAddFailed)
-        })?;
+    .await
+    .map_err(|error| ExceptionResponse::from_business(error, locale, ErrorKey::WorkoutAddFailed))?;
     let payload = WorkoutMapper::json(workout);
     Ok((StatusCode::CREATED, Json(payload)))
 }

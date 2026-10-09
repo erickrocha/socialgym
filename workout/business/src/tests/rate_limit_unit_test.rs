@@ -11,8 +11,14 @@ fn an_address_is_refused_after_its_allowance_and_others_are_not() {
     let limiter = RateLimiter::new(2, Duration::from_secs(60));
     assert!(limiter.check(ip(1)));
     assert!(limiter.check(ip(1)));
-    assert!(!limiter.check(ip(1)), "the third request in the window is refused");
-    assert!(limiter.check(ip(2)), "another address has its own allowance");
+    assert!(
+        !limiter.check(ip(1)),
+        "the third request in the window is refused"
+    );
+    assert!(
+        limiter.check(ip(2)),
+        "another address has its own allowance"
+    );
 }
 
 #[test]
@@ -29,5 +35,8 @@ fn clones_share_one_counter() {
     let limiter = RateLimiter::new(1, Duration::from_secs(60));
     let clone = limiter.clone();
     assert!(limiter.check(ip(1)));
-    assert!(!clone.check(ip(1)), "REST and gRPC handles of one limiter count together");
+    assert!(
+        !clone.check(ip(1)),
+        "REST and gRPC handles of one limiter count together"
+    );
 }

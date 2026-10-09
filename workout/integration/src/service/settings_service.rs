@@ -1,8 +1,13 @@
+use crate::infrastructure::utils::{
+    business_status, locale_of, localized_status, require_actor, require_person_id, validate_uuid,
+};
 use crate::proto::settings::settings_service_server::SettingsService;
 use crate::proto::settings::{
-    OwnerUuidRequest, PushPreferenceResponse, Setting, SettingIdRequest, SettingOwnerIdRequest,
-    GetMySettingsRequest,
+    GetMySettingsRequest, OwnerUuidRequest, PushPreferenceResponse, Setting, SettingIdRequest,
+    SettingOwnerIdRequest,
 };
+use business::commons::authorization::ensure_owns;
+use business::commons::i18n::ErrorKey;
 use business::domain::business_error::BusinessErrorKind;
 use business::domain::enums::{Position, WeightUnit};
 use business::domain::settings::Settings;
@@ -11,9 +16,6 @@ use business::use_cases::setings_use_case::SettingsUseCase;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 use tonic::{Request, Response, Status};
-use crate::infrastructure::utils::{business_status, locale_of, localized_status, require_actor, require_person_id, validate_uuid};
-use business::commons::i18n::ErrorKey;
-use business::commons::authorization::ensure_owns;
 
 pub struct GrpcSettingService {
     conn: Arc<DatabaseConnection>,
@@ -97,7 +99,9 @@ impl SettingsService for GrpcSettingService {
             Err(error) if error.kind == BusinessErrorKind::NotFound => {
                 Err(Status::not_found("Settings not found"))
             }
-            Err(_) => Err(Status::unavailable("Settings service temporarily unavailable")),
+            Err(_) => Err(Status::unavailable(
+                "Settings service temporarily unavailable",
+            )),
         }
     }
 
@@ -137,7 +141,10 @@ impl SettingsService for GrpcSettingService {
         }
     }
 
-    async fn get_by_uuid(&self,request: Request<SettingIdRequest>) -> Result<Response<Setting>, Status> {
+    async fn get_by_uuid(
+        &self,
+        request: Request<SettingIdRequest>,
+    ) -> Result<Response<Setting>, Status> {
         let person_id = require_person_id(&request)?;
         let req = request.into_inner();
         validate_uuid(&req.uuid, "uuid")?;
@@ -151,7 +158,10 @@ impl SettingsService for GrpcSettingService {
         Ok(Response::new(Self::domain_to_proto(settings)))
     }
 
-    async fn get_by_owner_ids(&self,request: Request<SettingOwnerIdRequest>) -> Result<Response<Setting>, Status> {
+    async fn get_by_owner_ids(
+        &self,
+        request: Request<SettingOwnerIdRequest>,
+    ) -> Result<Response<Setting>, Status> {
         let actor = require_actor(&request)?;
         let req = request.into_inner();
         let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
@@ -177,7 +187,10 @@ impl SettingsService for GrpcSettingService {
         Ok(Response::new(Self::domain_to_proto(settings)))
     }
 
-    async fn get_my_settings(&self, request: Request<GetMySettingsRequest>) -> Result<Response<Setting>, Status> {
+    async fn get_my_settings(
+        &self,
+        request: Request<GetMySettingsRequest>,
+    ) -> Result<Response<Setting>, Status> {
         let locale = locale_of(&request);
         let person_id = require_person_id(&request)?;
         let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
@@ -185,10 +198,15 @@ impl SettingsService for GrpcSettingService {
             .get_by_owner_id(person_id)
             .await
             .map(|settings| Response::new(Self::domain_to_proto(settings)))
-            .map_err(|_| localized_status(tonic::Code::NotFound, ErrorKey::SettingsNotFound, locale))
+            .map_err(|_| {
+                localized_status(tonic::Code::NotFound, ErrorKey::SettingsNotFound, locale)
+            })
     }
 
-    async fn update_my_settings(&self, request: Request<Setting>) -> Result<Response<Setting>, Status> {
+    async fn update_my_settings(
+        &self,
+        request: Request<Setting>,
+    ) -> Result<Response<Setting>, Status> {
         let locale = locale_of(&request);
         let actor = require_actor(&request)?;
         let use_case = SettingsUseCase::new(SettingsGateway::new((*self.conn).clone()));
@@ -197,7 +215,13 @@ impl SettingsService for GrpcSettingService {
             .persist(Self::proto_to_domain(request.into_inner()), &actor)
             .await
             .map(|settings| Response::new(Self::domain_to_proto(settings)))
-            .map_err(|_| localized_status(tonic::Code::InvalidArgument, ErrorKey::SettingsUpdatedFailed, locale))
+            .map_err(|_| {
+                localized_status(
+                    tonic::Code::InvalidArgument,
+                    ErrorKey::SettingsUpdatedFailed,
+                    locale,
+                )
+            })
     }
 }
 
@@ -226,7 +250,10 @@ mod tests {
     }
 
     fn by_uuid(uuid: &str) -> SettingIdRequest {
-        SettingIdRequest { uuid: uuid.to_string(), ..Default::default() }
+        SettingIdRequest {
+            uuid: uuid.to_string(),
+            ..Default::default()
+        }
     }
 
     #[test]
@@ -245,16 +272,33 @@ mod tests {
             ..Default::default()
         };
         let domain = GrpcSettingService::proto_to_domain(proto);
-        assert_eq!((domain.id, domain.uuid.clone()), (None, None), "unset ids stay unset");
-        assert_eq!(domain.weight_unit.as_ref().map(|unit| unit.to_string()), Some("Pounds".to_string()));
+        assert_eq!(
+            (domain.id, domain.uuid.clone()),
+            (None, None),
+            "unset ids stay unset"
+        );
+        assert_eq!(
+            domain.weight_unit.as_ref().map(|unit| unit.to_string()),
+            Some("Pounds".to_string())
+        );
         let back = GrpcSettingService::domain_to_proto(domain);
         assert_eq!((back.id, back.uuid.as_str(), back.owner_id), (0, "", 7));
         assert_eq!(back.weight_unit, "Pounds");
 
-        let unitless = GrpcSettingService::proto_to_domain(Setting { id: 3, uuid: "u".into(), ..Default::default() });
-        assert_eq!((unitless.id, unitless.uuid.as_deref()), (Some(3), Some("u")));
+        let unitless = GrpcSettingService::proto_to_domain(Setting {
+            id: 3,
+            uuid: "u".into(),
+            ..Default::default()
+        });
+        assert_eq!(
+            (unitless.id, unitless.uuid.as_deref()),
+            (Some(3), Some("u"))
+        );
         assert!(unitless.weight_unit.is_none());
-        assert_eq!(GrpcSettingService::domain_to_proto(unitless).weight_unit, "");
+        assert_eq!(
+            GrpcSettingService::domain_to_proto(unitless).weight_unit,
+            ""
+        );
     }
 
     #[tokio::test]
@@ -279,64 +323,239 @@ mod tests {
 
         // Push preference: the internal RPC needs no actor, only a valid owner uuid.
         let preference = |uuid: &str| {
-            let request = Request::new(OwnerUuidRequest { owner_uuid: uuid.to_string() });
+            let request = Request::new(OwnerUuidRequest {
+                owner_uuid: uuid.to_string(),
+            });
             service.get_push_preference_by_owner_uuid(request)
         };
-        assert!(preference(OWNER).await.unwrap().into_inner().notifications_enabled);
-        assert!(!preference(OTHER).await.unwrap().into_inner().notifications_enabled);
-        assert_eq!(preference(LONELY).await.unwrap_err().code(), tonic::Code::NotFound);
-        assert_eq!(preference("not-a-uuid").await.unwrap_err().code(), tonic::Code::InvalidArgument);
+        assert!(
+            preference(OWNER)
+                .await
+                .unwrap()
+                .into_inner()
+                .notifications_enabled
+        );
+        assert!(
+            !preference(OTHER)
+                .await
+                .unwrap()
+                .into_inner()
+                .notifications_enabled
+        );
+        assert_eq!(
+            preference(LONELY).await.unwrap_err().code(),
+            tonic::Code::NotFound
+        );
+        assert_eq!(
+            preference("not-a-uuid").await.unwrap_err().code(),
+            tonic::Code::InvalidArgument
+        );
         let closed = Database::connect(url).await.unwrap();
         closed.close_by_ref().await.unwrap();
         let offline = GrpcSettingService::new(Arc::new(closed));
-        let request = Request::new(OwnerUuidRequest { owner_uuid: OWNER.to_string() });
+        let request = Request::new(OwnerUuidRequest {
+            owner_uuid: OWNER.to_string(),
+        });
         assert_eq!(
-            offline.get_push_preference_by_owner_uuid(request).await.unwrap_err().code(),
+            offline
+                .get_push_preference_by_owner_uuid(request)
+                .await
+                .unwrap_err()
+                .code(),
             tonic::Code::Unavailable,
             "a database outage is retryable, not a permanent failure"
         );
 
         // Reads require an authenticated caller and are limited to the caller's own settings.
-        let anonymous = Request::new(SettingIdRequest { id: 1, ..Default::default() });
-        assert_eq!(service.get_by_id(anonymous).await.unwrap_err().code(), tonic::Code::Unauthenticated);
+        let anonymous = Request::new(SettingIdRequest {
+            id: 1,
+            ..Default::default()
+        });
+        assert_eq!(
+            service.get_by_id(anonymous).await.unwrap_err().code(),
+            tonic::Code::Unauthenticated
+        );
 
-        let own = service.get_by_id(as_person(SettingIdRequest { id: 1, ..Default::default() }, 1, OWNER)).await;
+        let own = service
+            .get_by_id(as_person(
+                SettingIdRequest {
+                    id: 1,
+                    ..Default::default()
+                },
+                1,
+                OWNER,
+            ))
+            .await;
         let own = own.unwrap().into_inner();
-        assert_eq!((own.owner_id, own.owner_uuid.as_str(), own.notifications_enabled), (1, OWNER, true));
-        let foreign = service.get_by_id(as_person(SettingIdRequest { id: 2, ..Default::default() }, 1, OWNER)).await;
+        assert_eq!(
+            (
+                own.owner_id,
+                own.owner_uuid.as_str(),
+                own.notifications_enabled
+            ),
+            (1, OWNER, true)
+        );
+        let foreign = service
+            .get_by_id(as_person(
+                SettingIdRequest {
+                    id: 2,
+                    ..Default::default()
+                },
+                1,
+                OWNER,
+            ))
+            .await;
         assert_eq!(foreign.unwrap_err().code(), tonic::Code::PermissionDenied);
-        let missing = service.get_by_id(as_person(SettingIdRequest { id: 9999, ..Default::default() }, 1, OWNER)).await;
+        let missing = service
+            .get_by_id(as_person(
+                SettingIdRequest {
+                    id: 9999,
+                    ..Default::default()
+                },
+                1,
+                OWNER,
+            ))
+            .await;
         assert_eq!(missing.unwrap_err().code(), tonic::Code::NotFound);
 
-        let by_own_uuid = service.get_by_uuid(as_person(by_uuid("40000000-0000-0000-0000-000000000061"), 1, OWNER)).await;
+        let by_own_uuid = service
+            .get_by_uuid(as_person(
+                by_uuid("40000000-0000-0000-0000-000000000061"),
+                1,
+                OWNER,
+            ))
+            .await;
         assert_eq!(by_own_uuid.unwrap().into_inner().owner_id, 1);
-        let by_foreign = service.get_by_uuid(as_person(by_uuid("40000000-0000-0000-0000-000000000062"), 1, OWNER)).await;
-        assert_eq!(by_foreign.unwrap_err().code(), tonic::Code::PermissionDenied);
-        let bad_uuid = service.get_by_uuid(as_person(by_uuid("nope"), 1, OWNER)).await;
+        let by_foreign = service
+            .get_by_uuid(as_person(
+                by_uuid("40000000-0000-0000-0000-000000000062"),
+                1,
+                OWNER,
+            ))
+            .await;
+        assert_eq!(
+            by_foreign.unwrap_err().code(),
+            tonic::Code::PermissionDenied
+        );
+        let bad_uuid = service
+            .get_by_uuid(as_person(by_uuid("nope"), 1, OWNER))
+            .await;
         assert_eq!(bad_uuid.unwrap_err().code(), tonic::Code::InvalidArgument);
-        let unknown = service.get_by_uuid(as_person(by_uuid("40000000-0000-0000-0000-0000000000ff"), 1, OWNER)).await;
+        let unknown = service
+            .get_by_uuid(as_person(
+                by_uuid("40000000-0000-0000-0000-0000000000ff"),
+                1,
+                OWNER,
+            ))
+            .await;
         assert_eq!(unknown.unwrap_err().code(), tonic::Code::NotFound);
 
         let owner_ids = |caller: i32, owner: i32| {
-            service.get_by_owner_ids(as_person(SettingOwnerIdRequest { owner_id: owner, ..Default::default() }, caller, OWNER))
+            service.get_by_owner_ids(as_person(
+                SettingOwnerIdRequest {
+                    owner_id: owner,
+                    ..Default::default()
+                },
+                caller,
+                OWNER,
+            ))
         };
-        assert_eq!(owner_ids(1, 1).await.unwrap().into_inner().owner_uuid, OWNER);
-        assert_eq!(owner_ids(1, 2).await.unwrap_err().code(), tonic::Code::PermissionDenied);
-        assert_eq!(owner_ids(3, 3).await.unwrap_err().code(), tonic::Code::NotFound);
+        assert_eq!(
+            owner_ids(1, 1).await.unwrap().into_inner().owner_uuid,
+            OWNER
+        );
+        assert_eq!(
+            owner_ids(1, 2).await.unwrap_err().code(),
+            tonic::Code::PermissionDenied
+        );
+        assert_eq!(
+            owner_ids(3, 3).await.unwrap_err().code(),
+            tonic::Code::NotFound
+        );
 
         // Writes: the owner always comes from the caller, never the payload.
-        let update = Setting { id: 1, owner_id: 1, owner_uuid: OWNER.into(), language: "pt".into(), theme: "dark".into(),
-            notifications_enabled: false, context_menu_position: "Right".into(), home_page: "feed".into(), ..Default::default() };
-        let saved = service.persist_settings(as_person(update.clone(), 1, OWNER)).await.unwrap().into_inner();
-        assert_eq!((saved.language.as_str(), saved.notifications_enabled), ("pt", false));
-        assert!(!preference(OWNER).await.unwrap().into_inner().notifications_enabled, "the RPC sees the new preference");
+        let update = Setting {
+            id: 1,
+            owner_id: 1,
+            owner_uuid: OWNER.into(),
+            language: "pt".into(),
+            theme: "dark".into(),
+            notifications_enabled: false,
+            context_menu_position: "Right".into(),
+            home_page: "feed".into(),
+            ..Default::default()
+        };
+        let saved = service
+            .persist_settings(as_person(update.clone(), 1, OWNER))
+            .await
+            .unwrap()
+            .into_inner();
+        assert_eq!(
+            (saved.language.as_str(), saved.notifications_enabled),
+            ("pt", false)
+        );
+        assert!(
+            !preference(OWNER)
+                .await
+                .unwrap()
+                .into_inner()
+                .notifications_enabled,
+            "the RPC sees the new preference"
+        );
 
-        let hijack = service.persist_settings(as_person(Setting { id: 2, ..update.clone() }, 1, OWNER)).await;
-        assert_eq!(hijack.unwrap_err().code(), tonic::Code::Internal, "another person's row is not writable");
-        let duplicate = service.persist_settings(as_person(Setting { id: 0, ..update.clone() }, 1, OWNER)).await;
-        assert_eq!(duplicate.unwrap_err().code(), tonic::Code::Internal, "one settings row per person");
-        let created = service.persist_settings(as_person(Setting { id: 0, owner_id: 99, ..update }, 3, LONELY)).await;
-        assert_eq!(created.unwrap().into_inner().owner_id, 3, "owner is taken from the caller");
-        assert_eq!(service.persist_settings(Request::new(Setting::default())).await.unwrap_err().code(), tonic::Code::Unauthenticated);
+        let hijack = service
+            .persist_settings(as_person(
+                Setting {
+                    id: 2,
+                    ..update.clone()
+                },
+                1,
+                OWNER,
+            ))
+            .await;
+        assert_eq!(
+            hijack.unwrap_err().code(),
+            tonic::Code::Internal,
+            "another person's row is not writable"
+        );
+        let duplicate = service
+            .persist_settings(as_person(
+                Setting {
+                    id: 0,
+                    ..update.clone()
+                },
+                1,
+                OWNER,
+            ))
+            .await;
+        assert_eq!(
+            duplicate.unwrap_err().code(),
+            tonic::Code::Internal,
+            "one settings row per person"
+        );
+        let created = service
+            .persist_settings(as_person(
+                Setting {
+                    id: 0,
+                    owner_id: 99,
+                    ..update
+                },
+                3,
+                LONELY,
+            ))
+            .await;
+        assert_eq!(
+            created.unwrap().into_inner().owner_id,
+            3,
+            "owner is taken from the caller"
+        );
+        assert_eq!(
+            service
+                .persist_settings(Request::new(Setting::default()))
+                .await
+                .unwrap_err()
+                .code(),
+            tonic::Code::Unauthenticated
+        );
     }
 }

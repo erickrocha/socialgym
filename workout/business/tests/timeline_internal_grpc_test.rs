@@ -13,12 +13,24 @@ async fn the_gateway_exports_and_deletes_through_the_real_timeline_over_tls() {
         std::env::set_var("INTERNAL_SERVICE_SECRET", "c005-internal-secret");
     }
     let person = "00000000-0000-0000-0000-00000000c009";
-    let export = TimelineDeletionGateway::export_person_data(person).await.expect("export");
+    let export = TimelineDeletionGateway::export_person_data(person)
+        .await
+        .expect("export");
     for key in ["posts", "evolutions", "workoutSessions", "notifications"] {
-        assert!(export.get(key).is_some_and(|v| v.is_array()), "missing {key}");
+        assert!(
+            export.get(key).is_some_and(|v| v.is_array()),
+            "missing {key}"
+        );
     }
-    TimelineDeletionGateway::delete_person_data(person).await.expect("delete");
+    TimelineDeletionGateway::delete_person_data(person)
+        .await
+        .expect("delete");
 
     unsafe { std::env::set_var("INTERNAL_SERVICE_SECRET", "wrong-secret") };
-    assert!(TimelineDeletionGateway::export_person_data(person).await.is_err(), "a wrong secret is refused");
+    assert!(
+        TimelineDeletionGateway::export_person_data(person)
+            .await
+            .is_err(),
+        "a wrong secret is refused"
+    );
 }

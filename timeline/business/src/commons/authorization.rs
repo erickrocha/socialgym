@@ -5,7 +5,10 @@ use domain::business_error::BusinessError;
 /// Timeline resources are keyed by the owning person's uuid. Every mutating use
 /// case takes the acting person uuid and routes it through here, so no caller
 /// can fall back to trusting an owner id from the request body.
-pub fn ensure_owns(resource_owner_uuid: &str, acting_person_uuid: &str) -> Result<(), BusinessError> {
+pub fn ensure_owns(
+    resource_owner_uuid: &str,
+    acting_person_uuid: &str,
+) -> Result<(), BusinessError> {
     if resource_owner_uuid == acting_person_uuid {
         return Ok(());
     }

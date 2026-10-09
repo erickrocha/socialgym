@@ -31,7 +31,10 @@ impl PersonAddressGateway {
             .await
     }
 
-    pub async fn find_by_uuid(db: &DbConn, uuid: String) -> Result<Option<PersonAddressEntity>, DbErr> {
+    pub async fn find_by_uuid(
+        db: &DbConn,
+        uuid: String,
+    ) -> Result<Option<PersonAddressEntity>, DbErr> {
         let uuid = parse_uuid(&uuid).map_err(|error| DbErr::Type(error.to_string()))?;
         PersonAddressQuery::find()
             .filter(person_address::Column::Uuid.eq(uuid))
@@ -111,7 +114,11 @@ impl PersonAddressGateway {
                          ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
                          $3
                      )"#,
-                [longitude.into(), latitude.into(), (radius_km * 1_000.0).into()],
+                [
+                    longitude.into(),
+                    latitude.into(),
+                    (radius_km * 1_000.0).into(),
+                ],
             ))
             .all(db)
             .await
@@ -155,7 +162,10 @@ impl PersonAddressGateway {
     }
 
     /// Bulk-deletes every address row for a person (account-purge cascade).
-    pub async fn delete_all_by_person_id<C: ConnectionTrait>(db: &C, person_id: i32) -> Result<sea_orm::DeleteResult, DbErr> {
+    pub async fn delete_all_by_person_id<C: ConnectionTrait>(
+        db: &C,
+        person_id: i32,
+    ) -> Result<sea_orm::DeleteResult, DbErr> {
         person_address::Entity::delete_many()
             .filter(person_address::Column::PersonId.eq(person_id))
             .exec(db)

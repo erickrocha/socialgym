@@ -47,20 +47,59 @@ async fn c006_outbox_gateway_reports_database_outage_and_rejects_malformed_ids()
     Migrator::refresh(&db).await.unwrap();
 
     // Malformed ids never reach the database.
-    let bad = FriendshipOutboxGateway::persist(&db, event("not-a-uuid")).await.unwrap_err();
-    assert!(bad.message.contains("Invalid friendship event UUID"), "{}", bad.message);
+    let bad = FriendshipOutboxGateway::persist(&db, event("not-a-uuid"))
+        .await
+        .unwrap_err();
+    assert!(
+        bad.message.contains("Invalid friendship event UUID"),
+        "{}",
+        bad.message
+    );
 
     // Healthy round trip so the later failures are attributable to the closed connection.
     let valid = event(&Uuid::new_v4().to_string());
-    FriendshipOutboxGateway::persist(&db, valid.clone()).await.unwrap();
-    assert!(FriendshipOutboxGateway::persist(&db, valid).await.is_err(), "event uuid is unique");
-    assert!(!FriendshipOutboxGateway::find_pending(&db, 10).await.unwrap().is_empty());
+    FriendshipOutboxGateway::persist(&db, valid.clone())
+        .await
+        .unwrap();
+    assert!(
+        FriendshipOutboxGateway::persist(&db, valid).await.is_err(),
+        "event uuid is unique"
+    );
+    assert!(!FriendshipOutboxGateway::find_pending(&db, 10)
+        .await
+        .unwrap()
+        .is_empty());
 
     db.close_by_ref().await.unwrap();
     let message = |e: business::domain::business_error::BusinessError| e.message;
-    assert!(message(FriendshipOutboxGateway::find_pending(&db, 10).await.unwrap_err()).contains("pending friendship events"));
-    assert!(message(FriendshipOutboxGateway::has_earlier_unpublished(&db, &model()).await.unwrap_err()).contains("event order"));
-    assert!(message(FriendshipOutboxGateway::persist(&db, event(&Uuid::new_v4().to_string())).await.unwrap_err()).contains("persist friendship event"));
-    assert!(message(FriendshipOutboxGateway::mark_published(&db, model()).await.unwrap_err()).contains("mark friendship event published"));
-    assert!(message(FriendshipOutboxGateway::mark_failed(&db, model(), "boom").await.unwrap_err()).contains("retry"));
+    assert!(message(
+        FriendshipOutboxGateway::find_pending(&db, 10)
+            .await
+            .unwrap_err()
+    )
+    .contains("pending friendship events"));
+    assert!(message(
+        FriendshipOutboxGateway::has_earlier_unpublished(&db, &model())
+            .await
+            .unwrap_err()
+    )
+    .contains("event order"));
+    assert!(message(
+        FriendshipOutboxGateway::persist(&db, event(&Uuid::new_v4().to_string()))
+            .await
+            .unwrap_err()
+    )
+    .contains("persist friendship event"));
+    assert!(message(
+        FriendshipOutboxGateway::mark_published(&db, model())
+            .await
+            .unwrap_err()
+    )
+    .contains("mark friendship event published"));
+    assert!(message(
+        FriendshipOutboxGateway::mark_failed(&db, model(), "boom")
+            .await
+            .unwrap_err()
+    )
+    .contains("retry"));
 }

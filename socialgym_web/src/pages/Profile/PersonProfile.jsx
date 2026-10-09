@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -39,6 +39,7 @@ const PersonProfile = () => {
         if (id) {
             load();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the profile id changes
     }, [id]);
 
     const avatar = friend?.avatar ? `data:image/jpeg;base64,${friend.avatar}` : (friend?.gender === 'Female' ? defaultAvatarFemale : defaultAvatarMale);

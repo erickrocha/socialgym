@@ -1,4 +1,3 @@
-import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { uploadFileToS3 } from '../../../redux/reducers/upload/index.js';
 

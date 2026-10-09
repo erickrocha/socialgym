@@ -202,5 +202,7 @@ async fn received_and_sent_requests_are_empty_when_nothing_is_pending() {
     assert!(PersonUseCase::get_all_received_requests(&db, 1)
         .await
         .is_empty());
-    assert!(PersonUseCase::get_all_sent_requests(&db, 1).await.is_empty());
+    assert!(PersonUseCase::get_all_sent_requests(&db, 1)
+        .await
+        .is_empty());
 }

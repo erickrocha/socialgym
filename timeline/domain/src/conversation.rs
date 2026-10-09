@@ -100,7 +100,13 @@ impl Conversation {
 
     /// Direct person-to-person conversation. `a` / `b` are person uuids;
     /// ordering does not matter — the dedupe key is computed from a sorted pair.
-    pub fn new_direct(uuid: String, dedupe_key: String, a: String, b: String, creator: String) -> Self {
+    pub fn new_direct(
+        uuid: String,
+        dedupe_key: String,
+        a: String,
+        b: String,
+        creator: String,
+    ) -> Self {
         let participants = vec![
             ConversationParticipant::new(a.clone(), PARTICIPANT_ROLE_MEMBER),
             ConversationParticipant::new(b.clone(), PARTICIPANT_ROLE_MEMBER),
@@ -193,7 +199,8 @@ pub fn team_participants(
 
     for member in member_person_uuids {
         let trimmed = member.trim();
-        if trimmed.is_empty() || trimmed == owner_person_uuid || uuids.iter().any(|u| u == trimmed) {
+        if trimmed.is_empty() || trimmed == owner_person_uuid || uuids.iter().any(|u| u == trimmed)
+        {
             continue;
         }
         uuids.push(trimmed.to_string());

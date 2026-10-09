@@ -1,6 +1,6 @@
+use crate::mention::Mention;
 use mongodb::bson::DateTime;
 use serde::{Deserialize, Serialize};
-use crate::mention::Mention;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
