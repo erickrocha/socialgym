@@ -19,6 +19,7 @@ import '../services/grpc/grpc_settings_service.dart';
 import '../services/grpc/grpc_team_member_service.dart';
 import '../services/grpc/grpc_workout_service.dart';
 import '../services/push_registration_service.dart';
+import '../utils/jwt_decoder.dart';
 
 class AuthProvider extends ChangeNotifier {
   AuthResponse? _auth;
@@ -87,6 +88,31 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  /// Makes sure the stored session is usable on app start: keeps a still-valid access token (unless [force]),
+  /// otherwise trades the refresh token for a new one. Signs out and returns false when neither works.
+  Future<bool> restoreSession({bool force = false}) async {
+    final current = _auth;
+    if (current == null || current.accessToken.isEmpty) return false;
+    final claims = JwtDecoder.decode(current.accessToken);
+    if (!force && claims != null && !claims.isExpired()) return true;
+
+    final refreshToken = current.refreshToken;
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      try {
+        final refreshed = await GrpcAuthService.refresh(refreshToken);
+        _auth = refreshed.copyWith(refreshToken: refreshed.refreshToken ?? refreshToken);
+        await _saveToStorage(_auth!);
+        unawaited(PushRegistrationService.bindAuthenticatedUser(_auth!));
+        notifyListeners();
+        return true;
+      } catch (_) {
+        // fall through to sign-out
+      }
+    }
+    await signOut();
+    return false;
   }
 
   Future<bool> signUp(SignUpRequest request) async {

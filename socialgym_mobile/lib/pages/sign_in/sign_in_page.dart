@@ -62,10 +62,24 @@ class _SignInPageState extends State<SignInPage> {
       final resourceProvider = context.read<ResourceProvider>();
       final settingsProvider = context.read<SettingsProvider>();
       final localeProvider = context.read<LocaleProvider>();
-      final token = authProvider.auth!.accessToken;
 
-      await personProvider.fetchMe();
-      await personProvider.restoreActiveBusinessProfileFromToken(token);
+      var sessionOk = await authProvider.restoreSession();
+      var meLoaded = sessionOk && await personProvider.fetchMe();
+      if (sessionOk && !meLoaded) {
+        // Token looked valid but the server rejected it (e.g. revoked).
+        sessionOk = await authProvider.restoreSession(force: true);
+        meLoaded = sessionOk && await personProvider.fetchMe();
+        if (sessionOk && !meLoaded) {
+          await authProvider.signOut();
+          sessionOk = false;
+        }
+      }
+      if (!sessionOk) {
+        personProvider.clear();
+        if (mounted) setState(() => _checkingAuth = false);
+        return;
+      }
+      await personProvider.restoreActiveBusinessProfileFromToken(authProvider.auth!.accessToken);
 
       // Only fetch resources if settings are not already cached
       // This avoids redundant API calls when settings exist locally

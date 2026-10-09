@@ -45,7 +45,10 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
     if (activeProfile == null) return;
     await provider.load(uuid: activeProfile.uuid);
     final loaded = provider.current;
-    if (loaded != null && mounted) _captureOriginalValues(loaded);
+    if (loaded != null && mounted) {
+      _captureOriginalValues(loaded);
+      await _syncPerson();
+    }
   }
 
   void _captureOriginalValues(BusinessProfile profile) {
@@ -81,6 +84,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
     final success = await provider.update(updated);
     if (!mounted) return;
     if (success) {
+      await _syncPerson();
       setState(() => _isEditing = false);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,10 +107,19 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
         ? await provider.uploadLogo(picked)
         : await provider.uploadCover(picked);
     if (!mounted) return;
-    if (!success) {
+    if (success) {
+      await _syncPerson();
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(provider.error ?? 'Failed to upload image.')),
       );
+    }
+  }
+
+  Future<void> _syncPerson() async {
+    final current = context.read<BusinessProfileProvider>().current;
+    if (current != null) {
+      await context.read<PersonProvider>().syncBusinessProfile(current);
     }
   }
 
@@ -245,9 +258,13 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
         SizedBox(
           height: 180,
           width: double.infinity,
-          child: profile.coverImage != null
-              ? CachedNetworkImage(imageUrl: profile.coverImage!, fit: BoxFit.cover)
-              : Container(color: AppColors.professionalPrimaryDisabled),
+          child: (profile.coverImage?.isNotEmpty ?? false)
+              ? CachedNetworkImage(
+                  imageUrl: profile.coverImage!,
+                  fit: BoxFit.cover,
+                  errorWidget: (_, _, _) => _coverPlaceholder(),
+                )
+              : _coverPlaceholder(),
         ),
         Positioned(
           top: 8,
@@ -270,9 +287,13 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                   child: SizedBox(
                     width: 88,
                     height: 88,
-                    child: profile.logo != null
-                        ? CachedNetworkImage(imageUrl: profile.logo!, fit: BoxFit.cover)
-                        : const Icon(Icons.storefront, size: 40, color: AppColors.professionalPrimary),
+                    child: (profile.logo?.isNotEmpty ?? false)
+                        ? CachedNetworkImage(
+                            imageUrl: profile.logo!,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, _, _) => _logoPlaceholder(),
+                          )
+                        : _logoPlaceholder(),
                   ),
                 ),
               ),
@@ -291,6 +312,10 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
       ],
     );
   }
+
+  Widget _coverPlaceholder() => Container(color: AppColors.professionalPrimaryDisabled);
+
+  Widget _logoPlaceholder() => Image.asset('assets/images/avatar_personal_trainer.png', fit: BoxFit.cover);
 
   Widget _buildFieldsSection(AppLocalizations l10n, BusinessProfile profile) {
     return Padding(

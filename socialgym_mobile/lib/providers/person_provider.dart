@@ -480,6 +480,23 @@ class PersonProvider extends ChangeNotifier {
     }
   }
 
+  /// Replaces the stale copy of [profile] held by the person's profile list and the active profile, so
+  /// menus/avatars reflect edits and new images.
+  Future<void> syncBusinessProfile(BusinessProfile profile) async {
+    final person = _person;
+    if (person != null) {
+      _person = person.withBusinessProfiles([
+        for (final p in person.businessProfiles) p.uuid == profile.uuid ? profile : p,
+      ]);
+      await _saveToStorage(_person!);
+    }
+    if (_activeBusinessProfile?.uuid == profile.uuid) {
+      _activeBusinessProfile = profile;
+      await _saveActiveBusinessProfileToStorage(profile);
+    }
+    notifyListeners();
+  }
+
   Future<void> restoreActiveBusinessProfileFromToken(String token) async {
     final claims = JwtDecoder.decode(token);
     if (claims == null || !claims.isBusinessProfile || _person == null) {

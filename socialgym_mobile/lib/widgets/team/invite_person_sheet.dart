@@ -68,12 +68,16 @@ class _InvitePersonSheetState extends State<_InvitePersonSheet> {
             _searching = false;
           });
         }
-      } catch (_) {
+      } catch (e) {
+        debugPrint('Team invite search failed: $e');
         if (mounted) {
           setState(() {
             _results = [];
             _searching = false;
           });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$e'), backgroundColor: AppColors.danger),
+          );
         }
       }
     });

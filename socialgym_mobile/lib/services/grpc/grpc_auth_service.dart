@@ -69,6 +69,16 @@ class GrpcAuthService {
         return _response(token);
       });
 
+  /// Exchanges a refresh token for a new access token (reachable without an access token).
+  static Future<AuthResponse> refresh(String refreshToken) =>
+      GrpcWorkoutChannel.guard('Session expired', () async {
+        final token = await _ensureClient().refresh(
+          $auth.RefreshRequest(refreshToken: refreshToken),
+          options: GrpcWorkoutChannel.options,
+        );
+        return _response(token);
+      });
+
   /// Activates a business profile, returning a new token scoped to it.
   static Future<AuthResponse> activateBusinessProfile({required String businessProfileUuid}) =>
       GrpcWorkoutChannel.guard('Failed to activate business profile', () async {

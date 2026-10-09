@@ -257,6 +257,25 @@ class Person {
 
   String get fullName => '$firstname $surname';
 
+  Person withBusinessProfiles(List<BusinessProfile> profiles) => Person(
+    id: id,
+    uuid: uuid,
+    firstname: firstname,
+    surname: surname,
+    dateOfBirth: dateOfBirth,
+    gender: gender,
+    avatar: avatar,
+    objectKey: objectKey,
+    cover: cover,
+    personInfo: personInfo,
+    addresses: addresses,
+    hasBusinessProfiles: hasBusinessProfiles,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+    businessProfiles: profiles,
+    friendshipUuid: friendshipUuid,
+  );
+
   factory Person.fromJson(Map<String, dynamic> json) {
     return Person(
       id: json['id'] as int,
